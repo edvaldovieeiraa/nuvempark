@@ -154,3 +154,11 @@ input, select, textarea {
     height: 100%;
   }
 }
+
+/* Impressão da prestação de contas: só o relatório. */
+@media print {
+  aside { display: none !important; }
+  main { padding: 0 !important; }
+  .fundo-aurora { background: none !important; }
+  .print\:hidden { display: none !important; }
+}
