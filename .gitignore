@@ -1,41 +1,77 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ============================================================
+# NuvemPark — .gitignore (raiz cobre api/ web/ app/)
+# ============================================================
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
+# ---- Segredos (NUNCA versionar) ----
+.env
+.env.*
+!.env.example
+*.env
+web/.env.local
+api/.env
+app/android/key.properties
+app/android/app/*.jks
+app/android/app/*.keystore
+*.jks
+*.keystore
+*.p12
 *.pem
 
-# debug
+# ---- Node / npm ----
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
+# ---- Next.js / build web ----
+.next/
+out/
+build/
+dist/
 *.tsbuildinfo
 next-env.d.ts
+
+# ---- Vercel ----
+.vercel/
+
+# ---- Flutter / Dart ----
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.packages
+app/build/
+app/**/build/
+app/.pub-cache/
+app/.pub/
+**/*.g.dart.lock
+app/android/.gradle/
+app/android/local.properties
+app/android/app/debug/
+app/android/app/profile/
+app/android/app/release/
+app/ios/Flutter/Flutter.framework
+app/ios/Flutter/Flutter.podspec
+app/ios/Pods/
+app/.fvm/
+
+# ---- APK / AAB / binários grandes ----
+*.apk
+*.aab
+*.symbols
+
+# ---- Editores / OS ----
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+*.swp
+
+# ---- Logs / temporários ----
+*.log
+tmp/
+temp/
+
+# ---- Claude Code (config local de máquina) ----
+.claude/settings.local.json

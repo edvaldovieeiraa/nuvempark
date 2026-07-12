@@ -1,0 +1,18 @@
+name: nuvempark_core
+description: "NuvemPark — componentes compartilhados entre apps/superfícies Flutter"
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  dio: ^5.9.2
+  flutter_secure_storage: ^10.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

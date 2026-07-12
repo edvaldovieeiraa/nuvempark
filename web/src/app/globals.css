@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+/* ============================================================
+   NuvemPark — Design System v2 (vibrante, moderno, light-first)
+   ============================================================ */
+@theme {
+  /* Marca — escala emerald vibrante */
+  --color-brand-50: #ECFDF5;
+  --color-brand-100: #D1FAE5;
+  --color-brand-200: #A7F3D0;
+  --color-brand-300: #6EE7B7;
+  --color-brand-400: #34D399;
+  --color-brand-500: #10B981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+  --color-brand-800: #065F46;
+  --color-brand-900: #064E3B;
+  --color-brand: #059669;
+  --color-brand-light: #10B981;
+  --color-brand-bg: #ECFDF5;
+
+  /* Acentos — paleta viva p/ o site (verde continua protagonista) */
+  --color-acento: #0EA5E9;
+  --color-acento-teal: #14B8A6;
+  --color-violeta: #8B5CF6;
+  --color-ambar: #F59E0B;
+  --color-ceu: #0EA5E9;
+
+  /* Neutros */
+  --color-fundo: #F4F7F5;
+  --color-superficie: #FFFFFF;
+  --color-borda: #E3EAE4;
+  --color-texto: #101B14;
+  --color-texto-2: #56655B;
+  --color-texto-3: #8FA096;
+
+  /* Sidebar dark navy-green */
+  --color-noite: #0B1512;
+  --color-noite-2: #10201A;
+  --color-noite-3: #1A2E25;
+
+  /* Semânticos */
+  --color-saida: #F97316;
+  --color-saida-bg: #FFF3E8;
+  --color-perigo: #EF4444;
+  --color-perigo-bg: #FEF1F1;
+  --color-aviso: #F59E0B;
+  --color-aviso-bg: #FEF7E6;
+  --color-info: #3B82F6;
+  --color-info-bg: #EEF4FF;
+
+  /* Sombras suaves em camadas */
+  --shadow-card: 0 1px 2px rgb(16 27 20 / 0.04), 0 4px 16px -4px rgb(16 27 20 / 0.06);
+  --shadow-card-hover: 0 2px 4px rgb(16 27 20 / 0.05), 0 12px 32px -8px rgb(16 27 20 / 0.14);
+  --shadow-brand: 0 8px 24px -6px rgb(5 150 105 / 0.4);
+  --shadow-pop: 0 24px 64px -16px rgb(16 27 20 / 0.25);
+
+  /* Animações utilitárias (classes animate-*) */
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.4s ease both;
+  --animate-shimmer: shimmer 1.8s linear infinite;
+  --animate-ping-slow: ping-slow 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes ping-slow {
+  0% { transform: scale(1); opacity: 0.7; }
+  70%, 100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+body {
+  background: var(--color-fundo);
+  color: var(--color-texto);
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Fundo com brilho radial sutil (profundidade sem poluir) */
+.fundo-aurora {
+  background:
+    radial-gradient(1200px 500px at 85% -10%, rgb(16 185 129 / 0.09), transparent 60%),
+    radial-gradient(900px 400px at -10% 20%, rgb(14 165 233 / 0.06), transparent 55%),
+    var(--color-fundo);
+}
+
+/* Texto com gradiente da marca */
+.texto-brand-gradiente {
+  background: linear-gradient(120deg, #059669, #14B8A6 55%, #0EA5E9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Gradiente vibrante do hero (sobre fundo escuro) */
+.texto-hero-gradiente {
+  background: linear-gradient(120deg, #34D399, #2DD4BF 45%, #38BDF8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Mesh colorido sutil para fundos claros do site */
+.fundo-mesh {
+  background:
+    radial-gradient(600px 320px at 12% 8%, rgb(16 185 129 / 0.10), transparent 60%),
+    radial-gradient(520px 300px at 88% 12%, rgb(14 165 233 / 0.09), transparent 60%),
+    radial-gradient(460px 280px at 78% 88%, rgb(139 92 246 / 0.06), transparent 60%),
+    radial-gradient(420px 260px at 8% 85%, rgb(245 158 11 / 0.06), transparent 60%),
+    #FFFFFF;
+}
+
+/* Scrollbar discreta */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgb(143 160 150 / 0.35);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: rgb(143 160 150 / 0.6); }
+
+/* Seleção com a cor da marca */
+::selection { background: rgb(16 185 129 / 0.25); }
+
+/* Inputs: aparência consistente */
+input, select, textarea {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
