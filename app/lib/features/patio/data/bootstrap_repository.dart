@@ -25,6 +25,10 @@ class BootstrapRepository {
     final configJson = data['config'] as Map<String, dynamic>? ?? {};
     final tarifasJson = (data['tarifas'] as List?) ?? const [];
     final clientesJson = (data['clientes'] as List?) ?? const [];
+    // Campo aditivo (Camada 2): backend antigo omite → lista vazia, sem erro.
+    final removidosIds = <String>[
+      for (final e in (data['tickets_removidos'] as List?) ?? const []) e as String,
+    ];
 
     // ── OperacaoCache (config do pátio) ──────────────────────────────────────
     final configStr = jsonEncode({
@@ -108,5 +112,18 @@ class BootstrapRepository {
       }
     }
     await db.clientesDao.replaceClientes(patioId, clientesComp, placasComp);
+
+    // ── Convergência da Limpeza de Pátio (Camada 2) ──────────────────────────
+    // Para cada ticket removido no painel: apaga o ticket local e limpa os itens
+    // de outbox dele (foto pendente sai junto, por viver na linha do ticket).
+    // As duas escritas de cada id na MESMA transação (padrão do projeto).
+    if (removidosIds.isNotEmpty) {
+      await db.transaction(() async {
+        for (final id in removidosIds) {
+          await db.ticketsDao.deletar(id);
+          await db.syncDao.removerItensDoTicket(id);
+        }
+      });
+    }
   }
 }

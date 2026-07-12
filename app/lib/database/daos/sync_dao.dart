@@ -79,6 +79,17 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
             ..limit(limit))
           .get();
 
+  /// Remove os itens de outbox ainda não resolvidos (pendente/falhou) de um
+  /// ticket removido no painel — evita reenvio inútil após a convergência local.
+  /// Mantém o histórico já 'sincronizado' intacto.
+  Future<void> removerItensDoTicket(String ticketId) =>
+      (delete(syncLog)
+            ..where((s) =>
+                s.entidade.equals('ticket') &
+                s.entidadeId.equals(ticketId) &
+                s.status.isNotValue('sincronizado')))
+          .go();
+
   /// Recoloca todos os itens 'falhou' na fila para retry imediato.
   Future<void> retryFalhos() => customUpdate(
         '''

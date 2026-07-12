@@ -102,6 +102,18 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       .eq('tenant_id', operador.tenant_id)
       .maybeSingle();
 
+    // Tickets removidos no painel (Limpeza de Pátio) nos últimos 30 dias — o app
+    // converge o estado local por aqui na abertura. Usa o índice parcial
+    // idx_tickets_removidos (patio_id, removido_em desc) where status='removido'.
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: removidos } = await db
+      .from('tickets')
+      .select('id')
+      .eq('patio_id', patioId)
+      .eq('status', 'removido')
+      .gte('removido_em', cutoff)
+      .order('removido_em', { ascending: false });
+
     return reply.send({
       patio: { id: patio.id, nome: patio.nome, codigo: patio.codigo, qtd_vagas: patio.qtd_vagas },
       config: {
@@ -116,6 +128,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       tarifas: tarifas ?? [],
       clientes: clientesOut,
       assinatura_estado: assinatura?.estado ?? 'ativa',
+      tickets_removidos: (removidos ?? []).map((r) => r.id),
     });
   });
 }

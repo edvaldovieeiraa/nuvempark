@@ -76,4 +76,10 @@ class TicketsDao extends DatabaseAccessor<AppDatabase> with _$TicketsDaoMixin {
   Future<void> marcarFotoEnviada(String id) =>
       (update(tickets)..where((t) => t.id.equals(id)))
           .write(const TicketsCompanion(fotoEntradaEnviada: Value(true)));
+
+  /// Remove um ticket local — usado na convergência da Limpeza de Pátio
+  /// (bootstrap ou resposta 'ignorado' do sync). A foto pendente daquele ticket
+  /// deixa de existir junto (getFotosPendentes lê a própria tabela de tickets).
+  Future<void> deletar(String id) =>
+      (delete(tickets)..where((t) => t.id.equals(id))).go();
 }

@@ -102,7 +102,7 @@ class SyncEngine {
     try {
       final payload = jsonDecode(item.payload) as Map<String, dynamic>;
 
-      await dio.post<void>(
+      final resp = await dio.post<dynamic>(
         Env.syncUrl,
         data: {
           'app_id': Env.appId,
@@ -115,12 +115,27 @@ class SyncEngine {
         },
       );
 
+      // Camada 2: o servidor pode responder 200 sinalizando que ignorou o update
+      // porque o ticket foi removido no painel (Limpeza de Pátio). Isso é SUCESSO
+      // do item — nunca retry — e dispara a convergência local do ticket.
+      final body = resp.data;
+      final ignoradoRemovido = item.entidade == 'ticket' &&
+          body is Map &&
+          body['ignorado'] == true &&
+          body['motivo'] == 'removido';
+
       // Marca o sync_log e a flag da entidade na MESMA transação: sem isto, se
       // o app morre entre as duas escritas, o sync_log fica 'sincronizado' mas
       // o ticket permanece 'pendente' para sempre (e nunca sobe a foto).
       await db.transaction(() async {
         await db.syncDao.marcarSucesso(item.id);
         await _marcarEntidadeSincronizada(item.entidade, item.entidadeId);
+        if (ignoradoRemovido) {
+          // Converge: apaga o ticket local e limpa a outbox remanescente dele
+          // (a foto pendente sai junto, por viver na linha do ticket).
+          await db.ticketsDao.deletar(item.entidadeId);
+          await db.syncDao.removerItensDoTicket(item.entidadeId);
+        }
       });
       return _Envio.ok;
     } on DioException catch (e) {
