@@ -27,7 +27,7 @@ const FAQ = [
   },
   {
     p: "Quanto tempo leva para começar?",
-    r: "Minutos. Nossa equipe cria sua conta, você instala o app nos celulares dos operadores e já pode registrar a primeira entrada.",
+    r: "Minutos, e você mesmo faz. Cria sua conta grátis aqui no site, cadastra seus operadores no painel e eles baixam o app no Android. Na primeira entrada você já está cobrando.",
   },
   {
     p: "As atualizações são cobradas à parte?",

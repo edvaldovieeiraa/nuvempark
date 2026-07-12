@@ -1,15 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginConteudo />
+    </Suspense>
+  );
+}
+
+function LoginConteudo() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
+  const confirmado = searchParams.get("confirmado") === "1";
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [verSenha, setVerSenha] = useState(false);
@@ -74,6 +84,12 @@ export default function LoginPage() {
           transition={{ duration: 0.4 }}
           className="bg-superficie/80 backdrop-blur-xl border border-borda rounded-2xl p-6 shadow-[var(--shadow-card-hover)] space-y-4"
         >
+          {confirmado && (
+            <div className="flex items-center gap-2 text-sm font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-xl px-3.5 py-2.5">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              E-mail confirmado! Agora é só entrar.
+            </div>
+          )}
           <div>
             <label className="block text-xs font-bold text-texto-2 mb-1.5">
               E-mail

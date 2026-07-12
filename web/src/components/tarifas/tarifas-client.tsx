@@ -203,7 +203,7 @@ export function TarifasClient({
                           </div>
                           {i === 0 && (
                             <span
-                              className="text-[9px] font-black uppercase text-brand-700 leading-tight"
+                              className="text-[10px] font-black uppercase text-brand-700 leading-tight"
                               title="Já vem selecionada no app"
                             >
                               padrão

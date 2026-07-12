@@ -76,6 +76,26 @@ Future<void> seedTicket(
   );
 }
 
+/// Abre uma sessão de caixa mínima (sem enfileirar sync — só o estado local).
+Future<void> seedCaixaAberto(
+  AppDatabase db, {
+  required String id,
+  required String patio,
+  String operadorId = 'op1',
+}) {
+  final now = DateTime.now().millisecondsSinceEpoch;
+  return db.caixaDao.abrirSessao(
+    CaixaSessoesCompanion.insert(
+      id: id,
+      operacaoId: patio,
+      operadorId: operadorId,
+      operadorNome: 'Operador',
+      fundoCaixa: 100.0,
+      aberturaEpoch: now,
+    ),
+  );
+}
+
 /// Enfileira um item de outbox 'pendente' para um ticket.
 Future<void> enqueueTicket(AppDatabase db, String ticketId) {
   return db.syncDao.enqueue(

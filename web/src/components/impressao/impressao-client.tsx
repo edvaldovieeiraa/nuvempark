@@ -172,6 +172,7 @@ export function ImpressaoClient({
             ) : (
               <p className="text-center text-texto-3">(sem rodapé)</p>
             )}
+            {/* impeccable-disable design-system-font-size -- preview do ticket térmico 58mm: 9px imita o tamanho físico do papel, não é a rampa de UI */}
             <p className="mt-3 text-center text-[9px] text-texto-3">
               nuvempark.com
             </p>

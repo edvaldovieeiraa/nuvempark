@@ -349,7 +349,7 @@ function LinhaCliente({
           disabled={pendente}
           title={cliente.bloqueado ? "Desbloquear" : "Bloquear"}
           aria-label={cliente.bloqueado ? "Desbloquear cliente" : "Bloquear cliente"}
-          className={`w-8 h-8 rounded-lg grid place-items-center transition-colors ${
+          className={`toque-44 w-8 h-8 rounded-lg grid place-items-center transition-colors ${
             cliente.bloqueado
               ? "text-perigo hover:bg-perigo-bg"
               : "text-texto-3 hover:text-aviso hover:bg-aviso-bg"
@@ -364,7 +364,7 @@ function LinhaCliente({
         <button
           onClick={() => setExpandido((e) => !e)}
           aria-label="Ver detalhes"
-          className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors"
+          className="toque-44 w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors"
         >
           <motion.span animate={{ rotate: expandido ? 180 : 0 }}>
             <ChevronDown className="w-4 h-4" />
@@ -441,7 +441,7 @@ function VeiculoLinha({ veiculo }: { veiculo: Veiculo }) {
           <button
             onClick={abrir}
             aria-label={`Remover placa ${veiculo.placa}`}
-            className="w-6 h-6 rounded grid place-items-center text-texto-3 hover:text-perigo hover:bg-perigo-bg transition-colors"
+            className="toque-44 w-6 h-6 rounded grid place-items-center text-texto-3 hover:text-perigo hover:bg-perigo-bg transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-12T00:00:00Z",
+  "title": "Design System: NuvemPark",
+  "extensions": {
+    "colorMeta": {
+      "brand": { "role": "primary", "displayName": "Esmeralda NuvemPark", "canonical": "#059669", "tonalRamp": ["#064E3B", "#065F46", "#047857", "#059669", "#10B981", "#34D399", "#6EE7B7", "#D1FAE5"] },
+      "acento": { "role": "secondary", "displayName": "Céu", "canonical": "#0EA5E9", "tonalRamp": ["#0C4A6E", "#075985", "#0369A1", "#0284C7", "#0EA5E9", "#38BDF8", "#7DD3FC", "#E0F2FE"] },
+      "acento-teal": { "role": "secondary", "displayName": "Teal", "canonical": "#14B8A6", "tonalRamp": ["#134E4A", "#115E59", "#0F766E", "#0D9488", "#14B8A6", "#2DD4BF", "#5EEAD4", "#CCFBF1"] },
+      "noite": { "role": "neutral", "displayName": "Navy-Esverdeado", "canonical": "#0B1512", "tonalRamp": ["#0B1512", "#10201A", "#1A2E25", "#264A3B", "#3B6B54", "#56957A", "#8FC0A9", "#D5E8DD"] },
+      "texto": { "role": "neutral", "displayName": "Tinta", "canonical": "#101B14", "tonalRamp": ["#101B14", "#1E2E24", "#33443A", "#56655B", "#8FA096", "#B4C0B8", "#D7DFDA", "#F4F7F5"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Títulos de hero e cabeçalhos de página." },
+      "metric": { "displayName": "Metric", "purpose": "Valor numérico de destaque em KPI cards (24px, tabular)." },
+      "caption": { "displayName": "Caption", "purpose": "Metadados densos e subitens de menu (13px)." },
+      "micro": { "displayName": "Micro", "purpose": "Micro-rótulos e badges onde o espaço é apertado (10px)." },
+      "mono": { "displayName": "Mono", "purpose": "Identificadores: placa, código de pátio, timestamp." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 1px 2px rgb(16 27 20 / 0.04), 0 4px 16px -4px rgb(16 27 20 / 0.06)", "purpose": "Superfície em repouso." },
+      { "name": "card-hover", "value": "0 2px 4px rgb(16 27 20 / 0.05), 0 12px 32px -8px rgb(16 27 20 / 0.14)", "purpose": "Resposta ao hover." },
+      { "name": "brand", "value": "0 8px 24px -6px rgb(5 150 105 / 0.4)", "purpose": "Halo verde sob CTAs primários." },
+      { "name": "pop", "value": "0 24px 64px -16px rgb(16 27 20 / 0.25)", "purpose": "Modais, popovers, dropdowns." }
+    ],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Entradas (fade-up, reveal) e indicador de nav ativo." },
+      { "name": "float", "value": "float 6s ease-in-out infinite", "purpose": "Blobs e cards flutuantes decorativos do hero." },
+      { "name": "ping-slow", "value": "ping-slow 2.2s cubic-bezier(0,0,0.2,1) infinite", "purpose": "Pulsos de tempo real e marcadores de avaria." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "CTA principal; gradiente de marca com halo verde.",
+      "html": "<button class=\"ds-btn-primary\">Começar grátis</button>",
+      "css": ".ds-btn-primary { display:inline-flex; align-items:center; gap:8px; height:48px; padding:0 28px; border:none; border-radius:12px; font-weight:700; font-size:14px; color:#fff; background:linear-gradient(90deg,#059669,#10B981); box-shadow:0 8px 24px -6px rgba(5,150,105,0.4); cursor:pointer; transition:filter .2s, transform .15s; } .ds-btn-primary:hover { filter:brightness(1.1); transform:translateY(-1px); } .ds-btn-primary:active { transform:scale(0.96); } .ds-btn-primary:focus-visible { outline:none; box-shadow:0 0 0 4px rgba(16,185,129,0.2); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Ação secundária; borda que ganha marca no hover.",
+      "html": "<button class=\"ds-btn-ghost\">Prefiro falar no WhatsApp</button>",
+      "css": ".ds-btn-ghost { display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 24px; border:1px solid #E3EAE4; border-radius:12px; font-weight:700; font-size:14px; color:#56655B; background:#fff; cursor:pointer; transition:all .2s; } .ds-btn-ghost:hover { border-color:#6EE7B7; color:#047857; background:#ECFDF5; }"
+    },
+    {
+      "name": "KPI Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Métrica do dashboard com rótulo em label, valor em black tabular, ícone colorido.",
+      "html": "<div class=\"ds-kpi\"><div class=\"ds-kpi-top\"><span class=\"ds-kpi-label\">Faturamento hoje</span><span class=\"ds-kpi-icon\"></span></div><div class=\"ds-kpi-val\">R$ 4.820</div></div>",
+      "css": ".ds-kpi { border:1px solid #E3EAE4; background:#fff; border-radius:16px; padding:20px; box-shadow:0 1px 2px rgba(16,27,20,0.04),0 4px 16px -4px rgba(16,27,20,0.06); } .ds-kpi-top { display:flex; justify-content:space-between; align-items:center; } .ds-kpi-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#8FA096; } .ds-kpi-icon { width:32px; height:32px; border-radius:8px; background:#ECFDF5; } .ds-kpi-val { margin-top:8px; font-size:26px; font-weight:900; font-variant-numeric:tabular-nums; color:#101B14; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo com label acima; foco em ring de marca.",
+      "html": "<input class=\"ds-input\" placeholder=\"voce@empresa.com.br\" />",
+      "css": ".ds-input { width:100%; height:48px; padding:0 14px; border:1px solid #E3EAE4; border-radius:12px; background:#fff; font-size:14px; color:#101B14; transition:border-color .15s, box-shadow .15s; } .ds-input::placeholder { color:#8FA096; } .ds-input:focus { outline:none; border-color:#34D399; box-shadow:0 0 0 4px rgba(16,185,129,0.15); }"
+    },
+    {
+      "name": "Nav Item (active)",
+      "kind": "nav",
+      "refersTo": "button-primary",
+      "description": "Item ativo da sidebar escura: pill de marca sólido sobre navy.",
+      "html": "<div class=\"ds-nav\"><a class=\"ds-nav-item ds-active\">Dashboard</a><a class=\"ds-nav-item\">Financeiro</a></div>",
+      "css": ".ds-nav { display:flex; flex-direction:column; gap:2px; background:#0B1512; padding:12px; border-radius:16px; } .ds-nav-item { display:flex; align-items:center; padding:10px 14px; border-radius:12px; font-size:14px; font-weight:600; color:rgba(255,255,255,0.55); text-decoration:none; transition:all .15s; } .ds-nav-item:hover { color:#fff; background:rgba(255,255,255,0.05); } .ds-nav-item.ds-active { color:#fff; font-weight:700; background:linear-gradient(90deg,#059669,#10B981); box-shadow:0 8px 24px -6px rgba(5,150,105,0.4); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Torre de Controle",
+    "overview": "O NuvemPark é a torre de controle do estacionamento: leve e respirada por fora, densa e precisa por dentro. A superfície é clara (light-first) para que o dado seja o elemento com mais peso na tela. O verde-esmeralda é a marca e o sinal de dinheiro no lugar certo; o navy-esverdeado escuro ancora a navegação como o casco de um instrumento. Rejeita a estética de sistema legado corporativo: nada de cinza morto de ERP, tabelas infinitas ou telas que exigem manual.",
+    "keyCharacteristics": [
+      "Light-first: fundo claro esverdeado, dado em primeiro plano.",
+      "Verde-esmeralda como marca e semântica de dinheiro/sucesso.",
+      "Navegação em navy-esverdeado escuro como âncora de instrumento.",
+      "Tempo real como protagonista (pulsos, ao vivo, sincronização).",
+      "Denso porém calmo: hierarquia forte, zero ruído decorativo."
+    ],
+    "rules": [
+      { "name": "A Regra do Verde-Dinheiro", "body": "O esmeralda é reservado ao que significa dinheiro/sucesso/marca. Não usar verde como cor decorativa neutra.", "section": "colors" },
+      { "name": "A Regra do Escuro-Instrumento", "body": "O noite é a moldura, não o palco. Aparece na navegação e em seções deliberadas, nunca como fundo padrão de conteúdo.", "section": "colors" },
+      { "name": "A Regra do Peso, não da Fonte", "body": "A hierarquia vem de peso (400 a 900) e tamanho numa família só (Geist). Nunca pareie com outra sans parecida.", "section": "typography" },
+      { "name": "A Regra da Sombra-Difusa", "body": "Sombras grandes, suaves e de baixa opacidade. Se parecer sombra dura de app antigo, o blur está pequeno e a opacidade alta.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do manter o produto light-first: fundo claro, dado em primeiro plano; noite só na navegação.",
+      "Do reservar o verde-esmeralda para dinheiro/sucesso/marca.",
+      "Do usar mono para identificadores (placa, código, horário).",
+      "Do dar contraste real ao chip/ícone ativo (fundo sólido de marca + texto branco).",
+      "Do garantir corpo maior ou igual a 16px e contraste WCAG AA (4.5:1).",
+      "Do manter sombras grandes, suaves e de baixa opacidade."
+    ],
+    "donts": [
+      "Don't parecer sistema legado corporativo: cinza morto de ERP, tabelas infinitas, menus aninhados confusos.",
+      "Don't usar jargão técnico em rótulos, erros ou vazios.",
+      "Don't empilhar cards genéricos idênticos; cards aninhados nunca.",
+      "Don't usar noite como fundo padrão de conteúdo.",
+      "Don't aplicar gradiente decorativo em texto nem borda lateral colorida maior que 1px como acento.",
+      "Don't deixar texto cinza-3 (#8FA096) em corpo de leitura."
+    ]
+  }
+}

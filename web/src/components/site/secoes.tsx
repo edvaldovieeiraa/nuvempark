@@ -13,9 +13,12 @@ import {
   Check,
   ArrowRight,
   Car,
+  Camera,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
+import { PlayBadge } from "@/components/site/play-badge";
 
 /** WhatsApp comercial da NuvemPark. */
 export const WHATSAPP =
@@ -26,19 +29,17 @@ export const WHATSAPP =
    ========================================================= */
 export function Numeros() {
   const itens = [
-    { valor: "100%", rotulo: "offline — a fila anda mesmo sem internet", grad: "from-brand-600 to-acento-teal" },
-    { valor: "3 seg", rotulo: "da placa lida ao ticket na mão do cliente", grad: "from-ceu to-acento-teal" },
-    { valor: "R$ 0", rotulo: "de equipamento — funciona no celular que você já tem", grad: "from-violeta to-ceu" },
-    { valor: "1 painel", rotulo: "para enxergar todos os seus pátios ao vivo", grad: "from-ambar to-saida" },
+    { valor: "100%", rotulo: "offline — a fila anda mesmo sem internet" },
+    { valor: "3 seg", rotulo: "da placa lida ao ticket na mão do cliente" },
+    { valor: "R$ 0", rotulo: "de equipamento — funciona no celular que você já tem" },
+    { valor: "1 painel", rotulo: "para enxergar todos os seus pátios ao vivo" },
   ];
   return (
     <section className="border-y border-borda bg-fundo">
       <div className="mx-auto max-w-6xl px-5 py-10 grid grid-cols-2 lg:grid-cols-4 gap-6">
         {itens.map((n, i) => (
           <Reveal key={n.rotulo} delay={i * 0.08} className="text-center">
-            <div
-              className={`text-2xl sm:text-3xl font-black bg-gradient-to-r ${n.grad} bg-clip-text text-transparent`}
-            >
+            <div className="text-3xl sm:text-4xl font-black text-brand-700 tabular-nums">
               {n.valor}
             </div>
             <div className="mt-1 text-xs sm:text-sm text-texto-2 font-medium">
@@ -124,6 +125,13 @@ const RECURSOS: Recurso[] = [
     titulo: "Cada centavo tem dono",
     texto:
       "Caixa por operador, sangria registrada, fechamento com conferência. Se faltar dinheiro, você sabe exatamente onde e quando.",
+    cor: COR.ambar,
+  },
+  {
+    Icone: Camera,
+    titulo: "Avaria fotografada na entrada",
+    texto:
+      "Arranhão, amassado, retrovisor quebrado — o operador registra com foto e descrição na hora que o carro chega. Quando o cliente reclamar, você tem a prova, não a discussão.",
     cor: COR.ambar,
   },
 ];
@@ -250,28 +258,28 @@ export function ComoFunciona() {
   const passos = [
     {
       n: "01",
-      Icone: Smartphone,
-      titulo: "Hoje: a gente configura tudo",
+      Icone: UserPlus,
+      titulo: "Crie sua conta em 1 minuto",
       texto:
-        "Você fala com a nossa equipe, sua rede é criada em minutos e o app entra no celular dos operadores. Sem técnico no local, sem obra, sem espera.",
+        "Cadastro grátis aqui no site, sem cartão e sem falar com vendedor. Confirmou o e-mail, seu painel já abre — com 15 dias liberados na hora.",
       grad: "from-brand-500 to-acento-teal",
       numCor: "text-brand-100",
     },
     {
       n: "02",
-      Icone: Car,
-      titulo: "Amanhã: seu time já opera sozinho",
+      Icone: Smartphone,
+      titulo: "Baixe o app e chame sua equipe",
       texto:
-        "Carro chega, câmera lê a placa, ticket sai impresso. Na saída, QR Code e valor na tela. Operador aprende em 10 minutos — de verdade.",
+        "Você cadastra seus pátios e operadores no painel. Eles baixam o app no Android e entram com o código do pátio — sem instalação técnica, sem obra.",
       grad: "from-ceu to-acento-teal",
       numCor: "text-sky-100",
     },
     {
       n: "03",
       Icone: RefreshCw,
-      titulo: "Sempre: você enxerga tudo",
+      titulo: "Opere e acompanhe ao vivo",
       texto:
-        "Cada movimento aparece no seu painel na hora. A pergunta “quanto faturou hoje?” deixa de ser respondida de cabeça.",
+        "Carro chega, câmera lê a placa, ticket sai impresso. Cada entrada e cada real aparecem no seu painel na hora — a pergunta “quanto faturou hoje?” some.",
       grad: "from-violeta to-ceu",
       numCor: "text-violet-100",
     },
@@ -285,12 +293,12 @@ export function ComoFunciona() {
             Como funciona
           </span>
           <h2 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-texto">
-            Decidiu hoje?
-            <br className="hidden sm:block" /> Amanhã já está cobrando.
+            Do cadastro ao primeiro
+            <br className="hidden sm:block" /> ticket, no mesmo dia.
           </h2>
           <p className="mt-4 text-texto-2 leading-relaxed">
             Sistema de estacionamento costuma significar semanas de instalação e
-            equipamento caro. Aqui é diferente:
+            equipamento caro. Aqui você mesmo põe pra rodar — em 3 passos:
           </p>
         </Reveal>
 
@@ -316,6 +324,17 @@ export function ComoFunciona() {
             </Reveal>
           ))}
         </div>
+
+        <Reveal delay={0.2} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link
+            href="/cadastro"
+            className="group inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
+          >
+            Criar minha conta grátis
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+          <PlayBadge />
+        </Reveal>
       </div>
     </section>
   );
@@ -348,12 +367,14 @@ export function Precos() {
             Preço
           </span>
           <h2 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-texto">
-            R$ 129,90 por pátio.
-            <br className="hidden sm:block" /> E acabou a conta.
+            Teste 15 dias grátis.
+            <br className="hidden sm:block" /> Depois, R$ 129,90 por pátio.
           </h2>
           <p className="mt-4 text-texto-2 leading-relaxed">
-            Sem taxa de instalação, sem cobrança por operador, sem surpresa no
-            boleto. Um carro por dia paga o sistema — o resto é lucro seu.
+            Comece hoje sem pagar nada e sem cartão. Só vira mensalidade se você
+            decidir ficar — e aí é um preço só: sem taxa de instalação, sem
+            cobrança por operador, sem surpresa no boleto. Um carro por dia paga
+            o sistema.
           </p>
         </Reveal>
 
@@ -364,7 +385,7 @@ export function Precos() {
               {/* Preço */}
               <div className="p-8 sm:p-10 flex flex-col justify-center">
                 <span className="inline-flex w-fit items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-brand-700 bg-brand-50 border border-brand-200 px-3 py-1 rounded-full">
-                  Plano NuvemPark
+                  15 dias grátis, depois:
                 </span>
                 <div className="mt-5 flex items-end gap-2">
                   <span className="text-5xl sm:text-6xl font-black tabular-nums text-texto">
@@ -378,17 +399,16 @@ export function Precos() {
                   Menos do que um único cliente deixa no seu caixa por dia.
                   Adicione ou remova pátios quando quiser — o valor acompanha.
                 </p>
-                <a
-                  href={WHATSAPP}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href="/cadastro"
                   className="mt-7 inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
                 >
-                  Quero começar agora
+                  Começar grátis agora
                   <ArrowRight className="w-4 h-4" />
-                </a>
+                </Link>
                 <p className="mt-3 text-[11px] text-texto-3">
-                  Não gostou? Cancela quando quiser. Sem multa, sem drama.
+                  Sem cartão para testar. Só cobramos se você decidir continuar —
+                  e cancela quando quiser, sem multa.
                 </p>
               </div>
 
@@ -417,6 +437,32 @@ export function Precos() {
 }
 
 /* =========================================================
+   FAIXA DE GARANTIAS (tira o medo do clique, antes do CTA)
+   ========================================================= */
+export function Garantias() {
+  const itens = [
+    { Icone: Smartphone, t: "Você mesmo cria a conta", d: "Sem vendedor, sem espera. Em 1 minuto está dentro do painel." },
+    { Icone: ShieldCheck, t: "Sem cartão para testar", d: "15 dias completos, todos os recursos. Só paga se decidir ficar." },
+    { Icone: RefreshCw, t: "Cancele quando quiser", d: "Sem fidelidade e sem multa. Seus dados são seus." },
+  ];
+  return (
+    <section className="py-16 bg-fundo border-y border-borda">
+      <div className="mx-auto max-w-5xl px-5 grid sm:grid-cols-3 gap-6">
+        {itens.map((g, i) => (
+          <Reveal key={g.t} delay={i * 0.1} className="text-center sm:text-left">
+            <span className="inline-grid place-items-center w-11 h-11 rounded-xl bg-brand-50 text-brand-600 mb-3">
+              <g.Icone className="w-5 h-5" />
+            </span>
+            <h3 className="font-extrabold text-texto">{g.t}</h3>
+            <p className="mt-1 text-sm text-texto-2 leading-relaxed">{g.d}</p>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
    CTA FINAL
    ========================================================= */
 export function CtaFinal() {
@@ -432,27 +478,32 @@ export function CtaFinal() {
               <span className="texto-brand-gradiente">faturou hoje?</span>
             </h2>
             <p className="mt-4 text-texto-2 max-w-xl mx-auto leading-relaxed">
-              Se a resposta foi &ldquo;preciso perguntar ao operador&rdquo;, a
-              gente precisa conversar. Em uma mensagem você entende como
-              funciona — em um dia, está rodando no seu pátio.
+              Se a resposta foi &ldquo;preciso perguntar ao operador&rdquo;, você
+              já tem um bom motivo para testar. Crie sua conta agora e comece a
+              enxergar o faturamento em tempo real{" "}
+              <b className="text-texto">hoje mesmo</b> — grátis por 15 dias, sem
+              cartão.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                href="/cadastro"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
+              >
+                Criar minha conta grátis
+                <ArrowRight className="w-4 h-4" />
+              </Link>
               <a
                 href={WHATSAPP}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
-              >
-                Falar no WhatsApp
-                <ArrowRight className="w-4 h-4" />
-              </a>
-              <Link
-                href="/login"
                 className="w-full sm:w-auto inline-flex items-center justify-center h-12 px-8 rounded-xl border border-borda bg-white text-texto font-bold hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50 transition-all"
               >
-                Acessar painel
-              </Link>
+                Tirar dúvidas no WhatsApp
+              </a>
             </div>
+            <p className="mt-4 text-xs text-texto-3">
+              Leva 1 minuto. Você mesmo cria a conta — sem espera, sem vendedor.
+            </p>
           </div>
         </Reveal>
       </div>
@@ -483,6 +534,7 @@ export function SiteFooter() {
     {
       titulo: "Acesso",
       links: [
+        { href: "/cadastro", label: "Começar grátis" },
         { href: "/login", label: "Painel do gestor" },
         { href: WHATSAPP, label: "Falar no WhatsApp", externo: true },
       ],
@@ -506,6 +558,9 @@ export function SiteFooter() {
               O sistema que cabe no bolso do operador — e coloca o faturamento
               do pátio na sua mão.
             </p>
+            <div className="mt-4">
+              <PlayBadge />
+            </div>
           </div>
 
           {colunas.map((c) => (

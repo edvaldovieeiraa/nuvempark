@@ -74,12 +74,12 @@ export function SiteHeader() {
             >
               Entrar
             </Link>
-            <a
-              href="/precos"
+            <Link
+              href="/cadastro"
               className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
             >
-              Começar agora
-            </a>
+              Começar grátis
+            </Link>
           </div>
 
           <button
@@ -114,13 +114,13 @@ export function SiteHeader() {
               >
                 Entrar
               </Link>
-              <a
-                href="/precos"
+              <Link
+                href="/cadastro"
                 onClick={() => setAberto(false)}
                 className="flex-1 text-center px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500"
               >
-                Começar
-              </a>
+                Começar grátis
+              </Link>
             </div>
           </motion.div>
         )}

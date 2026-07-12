@@ -157,7 +157,7 @@ function ValorPlano({ plano }: { plano: Plano }) {
         onClick={salvar}
         disabled={salvando}
         aria-label="Salvar valor"
-        className="w-8 h-8 rounded-lg grid place-items-center text-brand-700 bg-brand-50 hover:bg-brand-100 disabled:opacity-60"
+        className="toque-44 w-8 h-8 rounded-lg grid place-items-center text-brand-700 bg-brand-50 hover:bg-brand-100 disabled:opacity-60"
       >
         <Check className="w-4 h-4" />
       </button>
@@ -192,7 +192,7 @@ function BotaoDesativarPlano({
         <button
           onClick={abrir}
           aria-label={`Desativar plano ${plano.nome}`}
-          className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-perigo hover:bg-perigo-bg transition-colors"
+          className="toque-44 w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-perigo hover:bg-perigo-bg transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

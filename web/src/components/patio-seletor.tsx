@@ -47,7 +47,7 @@ export function PatioSeletor({
 
   if (patios.length === 0) {
     return (
-      <div className="mx-3 mb-2 px-3.5 py-3 rounded-xl bg-white/5 border border-white/8 text-xs text-white/40">
+      <div className="mx-3 mb-2 px-3.5 py-3 rounded-xl bg-white/5 border border-white/8 text-xs text-white/55">
         Nenhum pátio ativo
       </div>
     );
@@ -63,7 +63,7 @@ export function PatioSeletor({
           <ParkingSquare className="w-4 h-4 text-white" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-white/55">
             Pátio
           </div>
           <div className="text-sm font-bold text-white truncate">
@@ -102,7 +102,7 @@ export function PatioSeletor({
                   <ParkingSquare className="w-4 h-4 shrink-0" />
                   <span className="flex-1 text-left truncate">{p.nome}</span>
                   {p.codigo_acesso && (
-                    <span className="font-mono text-[11px] font-black tracking-widest text-white/40">
+                    <span className="font-mono text-[11px] font-black tracking-widest text-white/55">
                       {p.codigo_acesso}
                     </span>
                   )}

@@ -13,6 +13,7 @@ import 'tables/caixa_movimentos_table.dart';
 import 'tables/sync_log_table.dart';
 import 'tables/patio_clientes_table.dart';
 import 'tables/patio_cliente_placas_table.dart';
+import 'tables/mensalidade_pagamentos_table.dart';
 
 part 'app_database.g.dart';
 part 'daos/operacao_dao.dart';
@@ -20,6 +21,7 @@ part 'daos/tickets_dao.dart';
 part 'daos/caixa_dao.dart';
 part 'daos/sync_dao.dart';
 part 'daos/clientes_dao.dart';
+part 'daos/mensalidade_pagamentos_dao.dart';
 
 @DriftDatabase(
   tables: [
@@ -31,6 +33,7 @@ part 'daos/clientes_dao.dart';
     SyncLog,
     PatioClientes,
     PatioClientePlacas,
+    MensalidadePagamentos,
   ],
   daos: [
     OperacaoDao,
@@ -38,21 +41,29 @@ part 'daos/clientes_dao.dart';
     CaixaDao,
     SyncDao,
     ClientesDao,
+    MensalidadePagamentosDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.executor);
 
-  // App novo: schema final já completo em v1 (sem migrações históricas).
+  // v2: mensalidade_pagamentos + planos.valor (Entrega 4b).
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
           await _criarIndices(m);
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(mensalidadePagamentos);
+            await m.addColumn(patioClientes, patioClientes.planoValor);
+            await _criarIndicesMensalidade(m);
+          }
         },
       );
 
@@ -69,6 +80,17 @@ class AppDatabase extends _$AppDatabase {
     );
     await m.database.customStatement(
       'CREATE INDEX IF NOT EXISTS idx_synclog_status_prox ON sync_log(status, proxima_tentativa_epoch)',
+    );
+    await _criarIndicesMensalidade(m);
+  }
+
+  /// Índices da tabela de mensalidades (usados no onCreate e no onUpgrade v2).
+  Future<void> _criarIndicesMensalidade(Migrator m) async {
+    await m.database.customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_menspag_cliente ON mensalidade_pagamentos(cliente_id, competencia)',
+    );
+    await m.database.customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_menspag_sync ON mensalidade_pagamentos(sync_status)',
     );
   }
 }

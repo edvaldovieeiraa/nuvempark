@@ -199,6 +199,8 @@ class SyncEngine {
         await db.caixaDao.marcarSessaoSincronizada(entidadeId);
       case 'caixa_movimento':
         await db.caixaDao.marcarMovimentoSincronizado(entidadeId);
+      case 'mensalidade_pagamento':
+        await db.mensalidadePagamentosDao.marcarSincronizado(entidadeId);
     }
   }
 

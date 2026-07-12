@@ -25,6 +25,19 @@ class ClientesDao extends DatabaseAccessor<AppDatabase> with _$ClientesDaoMixin 
         }
       });
 
+  /// Todos os clientes do pátio (tela Mensalistas), ordenados por nome.
+  Future<List<PatioCliente>> getClientes(String operacaoId) =>
+      (select(patioClientes)
+            ..where((t) => t.operacaoId.equals(operacaoId))
+            ..orderBy([(t) => OrderingTerm.asc(t.nome)]))
+          .get();
+
+  /// Placas do pátio (para busca por placa na tela Mensalistas).
+  Future<List<PatioClientePlaca>> getPlacas(String operacaoId) =>
+      (select(patioClientePlacas)
+            ..where((t) => t.operacaoId.equals(operacaoId)))
+          .get();
+
   /// Lookup offline: retorna o cliente dono da placa, se houver.
   Future<PatioCliente?> getClienteByPlaca(
     String operacaoId,

@@ -191,6 +191,35 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
           break;
         }
 
+        // -------------------------------------------- MENSALIDADE_PAGAMENTO
+        case 'mensalidade_pagamento': {
+          const row = compact({
+            id: entidadeId,
+            patio_id: patioId,
+            tenant_id: tenantId,
+            cliente_id: str(payload.cliente_id),
+            plano_id: str(payload.plano_id),
+            competencia: str(payload.competencia), // 'YYYY-MM-01'
+            valor: num(payload.valor) ?? 0,
+            forma_pagamento: str(payload.forma_pagamento),
+            pago_em: toIso(payload.pago_em) ?? agora, // epoch-ms → iso
+            origem: str(payload.origem) ?? 'app',
+            registrado_por: str(payload.registrado_por) ?? operador.sub,
+            registrado_por_nome: str(payload.registrado_por_nome),
+            caixa_sessao_id: str(payload.caixa_sessao_id),
+            caixa_movimento_id: str(payload.caixa_movimento_id),
+            observacao: str(payload.observacao),
+            sincronizado_em: agora,
+          });
+          // Imutável (create-only), mesma estratégia do caixa_movimento:
+          // re-envio é no-op.
+          const res = await db
+            .from('mensalidade_pagamentos')
+            .upsert(row, { onConflict: 'id', ignoreDuplicates: true });
+          if (res.error) throw res.error;
+          break;
+        }
+
         default:
           return reply.code(400).send({ error: `Entidade desconhecida: ${entidade}` });
       }

@@ -244,7 +244,7 @@ function LinhaTenant({ tenant }: { tenant: TenantRow }) {
           ref={botaoRef}
           onClick={abrirMenu}
           aria-label="Ações"
-          className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-texto hover:bg-fundo transition-colors"
+          className="toque-44 w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-texto hover:bg-fundo transition-colors"
         >
           <MoreVertical className="w-4 h-4" />
         </button>

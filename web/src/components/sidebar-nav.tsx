@@ -214,11 +214,11 @@ export function SidebarNav() {
                           className={`flex items-center gap-3 pl-[46px] pr-3.5 py-2 rounded-xl text-[13px] font-semibold transition-colors ${
                             fAtivo
                               ? "text-white bg-brand-500/15"
-                              : "text-white/45 hover:text-white hover:bg-white/5"
+                              : "text-white/60 hover:text-white hover:bg-white/5"
                           }`}
                         >
                           <f.Icone
-                            className={`w-4 h-4 ${fAtivo ? "text-brand-400" : "text-white/35"}`}
+                            className={`w-4 h-4 ${fAtivo ? "text-brand-400" : "text-white/45"}`}
                           />
                           {f.label}
                         </Link>

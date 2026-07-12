@@ -5,8 +5,10 @@ import {
   ComoFunciona,
   RoadmapTeaser,
   Precos,
+  Garantias,
   CtaFinal,
 } from "@/components/site/secoes";
+import { Avaria } from "@/components/site/avaria";
 
 export const metadata = {
   title: "NuvemPark — Gestão de estacionamento na nuvem",
@@ -21,8 +23,10 @@ export default function HomePage() {
       <Numeros />
       <Recursos resumido />
       <ComoFunciona />
+      <Avaria />
       <RoadmapTeaser />
       <Precos />
+      <Garantias />
       <CtaFinal />
     </>
   );

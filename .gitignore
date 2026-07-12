@@ -75,3 +75,7 @@ temp/
 
 # ---- Claude Code (config local de máquina) ----
 .claude/settings.local.json
+
+# ---- Impeccable (config/cache local de máquina) ----
+**/.impeccable/config.local.json
+**/.impeccable/hook.cache.json

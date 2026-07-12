@@ -74,7 +74,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       clienteIds.length
         ? db.from('cliente_veiculos').select('cliente_id, placa, descricao, codigo_cartao').in('cliente_id', clienteIds)
         : Promise.resolve({ data: [] as Array<{ cliente_id: string; placa: string; descricao: string | null; codigo_cartao: string | null }> }),
-      db.from('planos').select('id, nome, tipo').eq('patio_id', patioId).eq('ativo', true),
+      db.from('planos').select('id, nome, tipo, valor').eq('patio_id', patioId).eq('ativo', true),
     ]);
 
     const veiculosPorCliente = new Map<string, Array<{ placa: string; descricao: string | null; codigo_cartao: string | null }>>();

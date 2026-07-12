@@ -5121,6 +5121,17 @@ class $PatioClientesTable extends PatioClientes
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _planoValorMeta = const VerificationMeta(
+    'planoValor',
+  );
+  @override
+  late final GeneratedColumn<double> planoValor = GeneratedColumn<double>(
+    'plano_valor',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _vagasMeta = const VerificationMeta('vagas');
   @override
   late final GeneratedColumn<int> vagas = GeneratedColumn<int>(
@@ -5165,6 +5176,7 @@ class $PatioClientesTable extends PatioClientes
     planoId,
     planoNome,
     planoTipo,
+    planoValor,
     vagas,
     vencimentoEpoch,
     bloqueado,
@@ -5218,6 +5230,12 @@ class $PatioClientesTable extends PatioClientes
       context.handle(
         _planoTipoMeta,
         planoTipo.isAcceptableOrUnknown(data['plano_tipo']!, _planoTipoMeta),
+      );
+    }
+    if (data.containsKey('plano_valor')) {
+      context.handle(
+        _planoValorMeta,
+        planoValor.isAcceptableOrUnknown(data['plano_valor']!, _planoValorMeta),
       );
     }
     if (data.containsKey('vagas')) {
@@ -5274,6 +5292,10 @@ class $PatioClientesTable extends PatioClientes
         DriftSqlType.string,
         data['${effectivePrefix}plano_tipo'],
       ),
+      planoValor: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}plano_valor'],
+      ),
       vagas: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}vagas'],
@@ -5302,6 +5324,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
   final String? planoId;
   final String? planoNome;
   final String? planoTipo;
+  final double? planoValor;
   final int vagas;
   final int? vencimentoEpoch;
   final bool bloqueado;
@@ -5312,6 +5335,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
     this.planoId,
     this.planoNome,
     this.planoTipo,
+    this.planoValor,
     required this.vagas,
     this.vencimentoEpoch,
     required this.bloqueado,
@@ -5330,6 +5354,9 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
     }
     if (!nullToAbsent || planoTipo != null) {
       map['plano_tipo'] = Variable<String>(planoTipo);
+    }
+    if (!nullToAbsent || planoValor != null) {
+      map['plano_valor'] = Variable<double>(planoValor);
     }
     map['vagas'] = Variable<int>(vagas);
     if (!nullToAbsent || vencimentoEpoch != null) {
@@ -5353,6 +5380,9 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
       planoTipo: planoTipo == null && nullToAbsent
           ? const Value.absent()
           : Value(planoTipo),
+      planoValor: planoValor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(planoValor),
       vagas: Value(vagas),
       vencimentoEpoch: vencimentoEpoch == null && nullToAbsent
           ? const Value.absent()
@@ -5373,6 +5403,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
       planoId: serializer.fromJson<String?>(json['planoId']),
       planoNome: serializer.fromJson<String?>(json['planoNome']),
       planoTipo: serializer.fromJson<String?>(json['planoTipo']),
+      planoValor: serializer.fromJson<double?>(json['planoValor']),
       vagas: serializer.fromJson<int>(json['vagas']),
       vencimentoEpoch: serializer.fromJson<int?>(json['vencimentoEpoch']),
       bloqueado: serializer.fromJson<bool>(json['bloqueado']),
@@ -5388,6 +5419,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
       'planoId': serializer.toJson<String?>(planoId),
       'planoNome': serializer.toJson<String?>(planoNome),
       'planoTipo': serializer.toJson<String?>(planoTipo),
+      'planoValor': serializer.toJson<double?>(planoValor),
       'vagas': serializer.toJson<int>(vagas),
       'vencimentoEpoch': serializer.toJson<int?>(vencimentoEpoch),
       'bloqueado': serializer.toJson<bool>(bloqueado),
@@ -5401,6 +5433,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
     Value<String?> planoId = const Value.absent(),
     Value<String?> planoNome = const Value.absent(),
     Value<String?> planoTipo = const Value.absent(),
+    Value<double?> planoValor = const Value.absent(),
     int? vagas,
     Value<int?> vencimentoEpoch = const Value.absent(),
     bool? bloqueado,
@@ -5411,6 +5444,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
     planoId: planoId.present ? planoId.value : this.planoId,
     planoNome: planoNome.present ? planoNome.value : this.planoNome,
     planoTipo: planoTipo.present ? planoTipo.value : this.planoTipo,
+    planoValor: planoValor.present ? planoValor.value : this.planoValor,
     vagas: vagas ?? this.vagas,
     vencimentoEpoch: vencimentoEpoch.present
         ? vencimentoEpoch.value
@@ -5427,6 +5461,9 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
       planoId: data.planoId.present ? data.planoId.value : this.planoId,
       planoNome: data.planoNome.present ? data.planoNome.value : this.planoNome,
       planoTipo: data.planoTipo.present ? data.planoTipo.value : this.planoTipo,
+      planoValor: data.planoValor.present
+          ? data.planoValor.value
+          : this.planoValor,
       vagas: data.vagas.present ? data.vagas.value : this.vagas,
       vencimentoEpoch: data.vencimentoEpoch.present
           ? data.vencimentoEpoch.value
@@ -5444,6 +5481,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
           ..write('planoId: $planoId, ')
           ..write('planoNome: $planoNome, ')
           ..write('planoTipo: $planoTipo, ')
+          ..write('planoValor: $planoValor, ')
           ..write('vagas: $vagas, ')
           ..write('vencimentoEpoch: $vencimentoEpoch, ')
           ..write('bloqueado: $bloqueado')
@@ -5459,6 +5497,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
     planoId,
     planoNome,
     planoTipo,
+    planoValor,
     vagas,
     vencimentoEpoch,
     bloqueado,
@@ -5473,6 +5512,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
           other.planoId == this.planoId &&
           other.planoNome == this.planoNome &&
           other.planoTipo == this.planoTipo &&
+          other.planoValor == this.planoValor &&
           other.vagas == this.vagas &&
           other.vencimentoEpoch == this.vencimentoEpoch &&
           other.bloqueado == this.bloqueado);
@@ -5485,6 +5525,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
   final Value<String?> planoId;
   final Value<String?> planoNome;
   final Value<String?> planoTipo;
+  final Value<double?> planoValor;
   final Value<int> vagas;
   final Value<int?> vencimentoEpoch;
   final Value<bool> bloqueado;
@@ -5496,6 +5537,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
     this.planoId = const Value.absent(),
     this.planoNome = const Value.absent(),
     this.planoTipo = const Value.absent(),
+    this.planoValor = const Value.absent(),
     this.vagas = const Value.absent(),
     this.vencimentoEpoch = const Value.absent(),
     this.bloqueado = const Value.absent(),
@@ -5508,6 +5550,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
     this.planoId = const Value.absent(),
     this.planoNome = const Value.absent(),
     this.planoTipo = const Value.absent(),
+    this.planoValor = const Value.absent(),
     this.vagas = const Value.absent(),
     this.vencimentoEpoch = const Value.absent(),
     this.bloqueado = const Value.absent(),
@@ -5522,6 +5565,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
     Expression<String>? planoId,
     Expression<String>? planoNome,
     Expression<String>? planoTipo,
+    Expression<double>? planoValor,
     Expression<int>? vagas,
     Expression<int>? vencimentoEpoch,
     Expression<bool>? bloqueado,
@@ -5534,6 +5578,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
       if (planoId != null) 'plano_id': planoId,
       if (planoNome != null) 'plano_nome': planoNome,
       if (planoTipo != null) 'plano_tipo': planoTipo,
+      if (planoValor != null) 'plano_valor': planoValor,
       if (vagas != null) 'vagas': vagas,
       if (vencimentoEpoch != null) 'vencimento_epoch': vencimentoEpoch,
       if (bloqueado != null) 'bloqueado': bloqueado,
@@ -5548,6 +5593,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
     Value<String?>? planoId,
     Value<String?>? planoNome,
     Value<String?>? planoTipo,
+    Value<double?>? planoValor,
     Value<int>? vagas,
     Value<int?>? vencimentoEpoch,
     Value<bool>? bloqueado,
@@ -5560,6 +5606,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
       planoId: planoId ?? this.planoId,
       planoNome: planoNome ?? this.planoNome,
       planoTipo: planoTipo ?? this.planoTipo,
+      planoValor: planoValor ?? this.planoValor,
       vagas: vagas ?? this.vagas,
       vencimentoEpoch: vencimentoEpoch ?? this.vencimentoEpoch,
       bloqueado: bloqueado ?? this.bloqueado,
@@ -5588,6 +5635,9 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
     if (planoTipo.present) {
       map['plano_tipo'] = Variable<String>(planoTipo.value);
     }
+    if (planoValor.present) {
+      map['plano_valor'] = Variable<double>(planoValor.value);
+    }
     if (vagas.present) {
       map['vagas'] = Variable<int>(vagas.value);
     }
@@ -5612,6 +5662,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
           ..write('planoId: $planoId, ')
           ..write('planoNome: $planoNome, ')
           ..write('planoTipo: $planoTipo, ')
+          ..write('planoValor: $planoValor, ')
           ..write('vagas: $vagas, ')
           ..write('vencimentoEpoch: $vencimentoEpoch, ')
           ..write('bloqueado: $bloqueado, ')
@@ -5943,6 +5994,951 @@ class PatioClientePlacasCompanion extends UpdateCompanion<PatioClientePlaca> {
   }
 }
 
+class $MensalidadePagamentosTable extends MensalidadePagamentos
+    with TableInfo<$MensalidadePagamentosTable, MensalidadePagamento> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MensalidadePagamentosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operacaoIdMeta = const VerificationMeta(
+    'operacaoId',
+  );
+  @override
+  late final GeneratedColumn<String> operacaoId = GeneratedColumn<String>(
+    'operacao_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _clienteIdMeta = const VerificationMeta(
+    'clienteId',
+  );
+  @override
+  late final GeneratedColumn<String> clienteId = GeneratedColumn<String>(
+    'cliente_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _clienteNomeMeta = const VerificationMeta(
+    'clienteNome',
+  );
+  @override
+  late final GeneratedColumn<String> clienteNome = GeneratedColumn<String>(
+    'cliente_nome',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _planoIdMeta = const VerificationMeta(
+    'planoId',
+  );
+  @override
+  late final GeneratedColumn<String> planoId = GeneratedColumn<String>(
+    'plano_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _competenciaMeta = const VerificationMeta(
+    'competencia',
+  );
+  @override
+  late final GeneratedColumn<String> competencia = GeneratedColumn<String>(
+    'competencia',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valorMeta = const VerificationMeta('valor');
+  @override
+  late final GeneratedColumn<double> valor = GeneratedColumn<double>(
+    'valor',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _formaPagamentoMeta = const VerificationMeta(
+    'formaPagamento',
+  );
+  @override
+  late final GeneratedColumn<String> formaPagamento = GeneratedColumn<String>(
+    'forma_pagamento',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pagoEmEpochMeta = const VerificationMeta(
+    'pagoEmEpoch',
+  );
+  @override
+  late final GeneratedColumn<int> pagoEmEpoch = GeneratedColumn<int>(
+    'pago_em_epoch',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _origemMeta = const VerificationMeta('origem');
+  @override
+  late final GeneratedColumn<String> origem = GeneratedColumn<String>(
+    'origem',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('app'),
+  );
+  static const VerificationMeta _registradoPorMeta = const VerificationMeta(
+    'registradoPor',
+  );
+  @override
+  late final GeneratedColumn<String> registradoPor = GeneratedColumn<String>(
+    'registrado_por',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _caixaSessaoIdMeta = const VerificationMeta(
+    'caixaSessaoId',
+  );
+  @override
+  late final GeneratedColumn<String> caixaSessaoId = GeneratedColumn<String>(
+    'caixa_sessao_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _caixaMovimentoIdMeta = const VerificationMeta(
+    'caixaMovimentoId',
+  );
+  @override
+  late final GeneratedColumn<String> caixaMovimentoId = GeneratedColumn<String>(
+    'caixa_movimento_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacaoMeta = const VerificationMeta(
+    'observacao',
+  );
+  @override
+  late final GeneratedColumn<String> observacao = GeneratedColumn<String>(
+    'observacao',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pendente'),
+  );
+  static const VerificationMeta _criadoEmMeta = const VerificationMeta(
+    'criadoEm',
+  );
+  @override
+  late final GeneratedColumn<int> criadoEm = GeneratedColumn<int>(
+    'criado_em',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    operacaoId,
+    clienteId,
+    clienteNome,
+    planoId,
+    competencia,
+    valor,
+    formaPagamento,
+    pagoEmEpoch,
+    origem,
+    registradoPor,
+    caixaSessaoId,
+    caixaMovimentoId,
+    observacao,
+    syncStatus,
+    criadoEm,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'mensalidade_pagamentos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MensalidadePagamento> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('operacao_id')) {
+      context.handle(
+        _operacaoIdMeta,
+        operacaoId.isAcceptableOrUnknown(data['operacao_id']!, _operacaoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_operacaoIdMeta);
+    }
+    if (data.containsKey('cliente_id')) {
+      context.handle(
+        _clienteIdMeta,
+        clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_clienteIdMeta);
+    }
+    if (data.containsKey('cliente_nome')) {
+      context.handle(
+        _clienteNomeMeta,
+        clienteNome.isAcceptableOrUnknown(
+          data['cliente_nome']!,
+          _clienteNomeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_clienteNomeMeta);
+    }
+    if (data.containsKey('plano_id')) {
+      context.handle(
+        _planoIdMeta,
+        planoId.isAcceptableOrUnknown(data['plano_id']!, _planoIdMeta),
+      );
+    }
+    if (data.containsKey('competencia')) {
+      context.handle(
+        _competenciaMeta,
+        competencia.isAcceptableOrUnknown(
+          data['competencia']!,
+          _competenciaMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_competenciaMeta);
+    }
+    if (data.containsKey('valor')) {
+      context.handle(
+        _valorMeta,
+        valor.isAcceptableOrUnknown(data['valor']!, _valorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valorMeta);
+    }
+    if (data.containsKey('forma_pagamento')) {
+      context.handle(
+        _formaPagamentoMeta,
+        formaPagamento.isAcceptableOrUnknown(
+          data['forma_pagamento']!,
+          _formaPagamentoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pago_em_epoch')) {
+      context.handle(
+        _pagoEmEpochMeta,
+        pagoEmEpoch.isAcceptableOrUnknown(
+          data['pago_em_epoch']!,
+          _pagoEmEpochMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_pagoEmEpochMeta);
+    }
+    if (data.containsKey('origem')) {
+      context.handle(
+        _origemMeta,
+        origem.isAcceptableOrUnknown(data['origem']!, _origemMeta),
+      );
+    }
+    if (data.containsKey('registrado_por')) {
+      context.handle(
+        _registradoPorMeta,
+        registradoPor.isAcceptableOrUnknown(
+          data['registrado_por']!,
+          _registradoPorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('caixa_sessao_id')) {
+      context.handle(
+        _caixaSessaoIdMeta,
+        caixaSessaoId.isAcceptableOrUnknown(
+          data['caixa_sessao_id']!,
+          _caixaSessaoIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('caixa_movimento_id')) {
+      context.handle(
+        _caixaMovimentoIdMeta,
+        caixaMovimentoId.isAcceptableOrUnknown(
+          data['caixa_movimento_id']!,
+          _caixaMovimentoIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacao')) {
+      context.handle(
+        _observacaoMeta,
+        observacao.isAcceptableOrUnknown(data['observacao']!, _observacaoMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('criado_em')) {
+      context.handle(
+        _criadoEmMeta,
+        criadoEm.isAcceptableOrUnknown(data['criado_em']!, _criadoEmMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_criadoEmMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MensalidadePagamento map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MensalidadePagamento(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      operacaoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operacao_id'],
+      )!,
+      clienteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cliente_id'],
+      )!,
+      clienteNome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cliente_nome'],
+      )!,
+      planoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plano_id'],
+      ),
+      competencia: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}competencia'],
+      )!,
+      valor: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}valor'],
+      )!,
+      formaPagamento: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}forma_pagamento'],
+      ),
+      pagoEmEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pago_em_epoch'],
+      )!,
+      origem: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origem'],
+      )!,
+      registradoPor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}registrado_por'],
+      ),
+      caixaSessaoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caixa_sessao_id'],
+      ),
+      caixaMovimentoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caixa_movimento_id'],
+      ),
+      observacao: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacao'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      criadoEm: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}criado_em'],
+      )!,
+    );
+  }
+
+  @override
+  $MensalidadePagamentosTable createAlias(String alias) {
+    return $MensalidadePagamentosTable(attachedDatabase, alias);
+  }
+}
+
+class MensalidadePagamento extends DataClass
+    implements Insertable<MensalidadePagamento> {
+  final String id;
+  final String operacaoId;
+  final String clienteId;
+  final String clienteNome;
+  final String? planoId;
+  final String competencia;
+  final double valor;
+  final String? formaPagamento;
+  final int pagoEmEpoch;
+  final String origem;
+  final String? registradoPor;
+  final String? caixaSessaoId;
+  final String? caixaMovimentoId;
+  final String? observacao;
+  final String syncStatus;
+  final int criadoEm;
+  const MensalidadePagamento({
+    required this.id,
+    required this.operacaoId,
+    required this.clienteId,
+    required this.clienteNome,
+    this.planoId,
+    required this.competencia,
+    required this.valor,
+    this.formaPagamento,
+    required this.pagoEmEpoch,
+    required this.origem,
+    this.registradoPor,
+    this.caixaSessaoId,
+    this.caixaMovimentoId,
+    this.observacao,
+    required this.syncStatus,
+    required this.criadoEm,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['operacao_id'] = Variable<String>(operacaoId);
+    map['cliente_id'] = Variable<String>(clienteId);
+    map['cliente_nome'] = Variable<String>(clienteNome);
+    if (!nullToAbsent || planoId != null) {
+      map['plano_id'] = Variable<String>(planoId);
+    }
+    map['competencia'] = Variable<String>(competencia);
+    map['valor'] = Variable<double>(valor);
+    if (!nullToAbsent || formaPagamento != null) {
+      map['forma_pagamento'] = Variable<String>(formaPagamento);
+    }
+    map['pago_em_epoch'] = Variable<int>(pagoEmEpoch);
+    map['origem'] = Variable<String>(origem);
+    if (!nullToAbsent || registradoPor != null) {
+      map['registrado_por'] = Variable<String>(registradoPor);
+    }
+    if (!nullToAbsent || caixaSessaoId != null) {
+      map['caixa_sessao_id'] = Variable<String>(caixaSessaoId);
+    }
+    if (!nullToAbsent || caixaMovimentoId != null) {
+      map['caixa_movimento_id'] = Variable<String>(caixaMovimentoId);
+    }
+    if (!nullToAbsent || observacao != null) {
+      map['observacao'] = Variable<String>(observacao);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['criado_em'] = Variable<int>(criadoEm);
+    return map;
+  }
+
+  MensalidadePagamentosCompanion toCompanion(bool nullToAbsent) {
+    return MensalidadePagamentosCompanion(
+      id: Value(id),
+      operacaoId: Value(operacaoId),
+      clienteId: Value(clienteId),
+      clienteNome: Value(clienteNome),
+      planoId: planoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(planoId),
+      competencia: Value(competencia),
+      valor: Value(valor),
+      formaPagamento: formaPagamento == null && nullToAbsent
+          ? const Value.absent()
+          : Value(formaPagamento),
+      pagoEmEpoch: Value(pagoEmEpoch),
+      origem: Value(origem),
+      registradoPor: registradoPor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(registradoPor),
+      caixaSessaoId: caixaSessaoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(caixaSessaoId),
+      caixaMovimentoId: caixaMovimentoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(caixaMovimentoId),
+      observacao: observacao == null && nullToAbsent
+          ? const Value.absent()
+          : Value(observacao),
+      syncStatus: Value(syncStatus),
+      criadoEm: Value(criadoEm),
+    );
+  }
+
+  factory MensalidadePagamento.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MensalidadePagamento(
+      id: serializer.fromJson<String>(json['id']),
+      operacaoId: serializer.fromJson<String>(json['operacaoId']),
+      clienteId: serializer.fromJson<String>(json['clienteId']),
+      clienteNome: serializer.fromJson<String>(json['clienteNome']),
+      planoId: serializer.fromJson<String?>(json['planoId']),
+      competencia: serializer.fromJson<String>(json['competencia']),
+      valor: serializer.fromJson<double>(json['valor']),
+      formaPagamento: serializer.fromJson<String?>(json['formaPagamento']),
+      pagoEmEpoch: serializer.fromJson<int>(json['pagoEmEpoch']),
+      origem: serializer.fromJson<String>(json['origem']),
+      registradoPor: serializer.fromJson<String?>(json['registradoPor']),
+      caixaSessaoId: serializer.fromJson<String?>(json['caixaSessaoId']),
+      caixaMovimentoId: serializer.fromJson<String?>(json['caixaMovimentoId']),
+      observacao: serializer.fromJson<String?>(json['observacao']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      criadoEm: serializer.fromJson<int>(json['criadoEm']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'operacaoId': serializer.toJson<String>(operacaoId),
+      'clienteId': serializer.toJson<String>(clienteId),
+      'clienteNome': serializer.toJson<String>(clienteNome),
+      'planoId': serializer.toJson<String?>(planoId),
+      'competencia': serializer.toJson<String>(competencia),
+      'valor': serializer.toJson<double>(valor),
+      'formaPagamento': serializer.toJson<String?>(formaPagamento),
+      'pagoEmEpoch': serializer.toJson<int>(pagoEmEpoch),
+      'origem': serializer.toJson<String>(origem),
+      'registradoPor': serializer.toJson<String?>(registradoPor),
+      'caixaSessaoId': serializer.toJson<String?>(caixaSessaoId),
+      'caixaMovimentoId': serializer.toJson<String?>(caixaMovimentoId),
+      'observacao': serializer.toJson<String?>(observacao),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'criadoEm': serializer.toJson<int>(criadoEm),
+    };
+  }
+
+  MensalidadePagamento copyWith({
+    String? id,
+    String? operacaoId,
+    String? clienteId,
+    String? clienteNome,
+    Value<String?> planoId = const Value.absent(),
+    String? competencia,
+    double? valor,
+    Value<String?> formaPagamento = const Value.absent(),
+    int? pagoEmEpoch,
+    String? origem,
+    Value<String?> registradoPor = const Value.absent(),
+    Value<String?> caixaSessaoId = const Value.absent(),
+    Value<String?> caixaMovimentoId = const Value.absent(),
+    Value<String?> observacao = const Value.absent(),
+    String? syncStatus,
+    int? criadoEm,
+  }) => MensalidadePagamento(
+    id: id ?? this.id,
+    operacaoId: operacaoId ?? this.operacaoId,
+    clienteId: clienteId ?? this.clienteId,
+    clienteNome: clienteNome ?? this.clienteNome,
+    planoId: planoId.present ? planoId.value : this.planoId,
+    competencia: competencia ?? this.competencia,
+    valor: valor ?? this.valor,
+    formaPagamento: formaPagamento.present
+        ? formaPagamento.value
+        : this.formaPagamento,
+    pagoEmEpoch: pagoEmEpoch ?? this.pagoEmEpoch,
+    origem: origem ?? this.origem,
+    registradoPor: registradoPor.present
+        ? registradoPor.value
+        : this.registradoPor,
+    caixaSessaoId: caixaSessaoId.present
+        ? caixaSessaoId.value
+        : this.caixaSessaoId,
+    caixaMovimentoId: caixaMovimentoId.present
+        ? caixaMovimentoId.value
+        : this.caixaMovimentoId,
+    observacao: observacao.present ? observacao.value : this.observacao,
+    syncStatus: syncStatus ?? this.syncStatus,
+    criadoEm: criadoEm ?? this.criadoEm,
+  );
+  MensalidadePagamento copyWithCompanion(MensalidadePagamentosCompanion data) {
+    return MensalidadePagamento(
+      id: data.id.present ? data.id.value : this.id,
+      operacaoId: data.operacaoId.present
+          ? data.operacaoId.value
+          : this.operacaoId,
+      clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
+      clienteNome: data.clienteNome.present
+          ? data.clienteNome.value
+          : this.clienteNome,
+      planoId: data.planoId.present ? data.planoId.value : this.planoId,
+      competencia: data.competencia.present
+          ? data.competencia.value
+          : this.competencia,
+      valor: data.valor.present ? data.valor.value : this.valor,
+      formaPagamento: data.formaPagamento.present
+          ? data.formaPagamento.value
+          : this.formaPagamento,
+      pagoEmEpoch: data.pagoEmEpoch.present
+          ? data.pagoEmEpoch.value
+          : this.pagoEmEpoch,
+      origem: data.origem.present ? data.origem.value : this.origem,
+      registradoPor: data.registradoPor.present
+          ? data.registradoPor.value
+          : this.registradoPor,
+      caixaSessaoId: data.caixaSessaoId.present
+          ? data.caixaSessaoId.value
+          : this.caixaSessaoId,
+      caixaMovimentoId: data.caixaMovimentoId.present
+          ? data.caixaMovimentoId.value
+          : this.caixaMovimentoId,
+      observacao: data.observacao.present
+          ? data.observacao.value
+          : this.observacao,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      criadoEm: data.criadoEm.present ? data.criadoEm.value : this.criadoEm,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MensalidadePagamento(')
+          ..write('id: $id, ')
+          ..write('operacaoId: $operacaoId, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('clienteNome: $clienteNome, ')
+          ..write('planoId: $planoId, ')
+          ..write('competencia: $competencia, ')
+          ..write('valor: $valor, ')
+          ..write('formaPagamento: $formaPagamento, ')
+          ..write('pagoEmEpoch: $pagoEmEpoch, ')
+          ..write('origem: $origem, ')
+          ..write('registradoPor: $registradoPor, ')
+          ..write('caixaSessaoId: $caixaSessaoId, ')
+          ..write('caixaMovimentoId: $caixaMovimentoId, ')
+          ..write('observacao: $observacao, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('criadoEm: $criadoEm')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    operacaoId,
+    clienteId,
+    clienteNome,
+    planoId,
+    competencia,
+    valor,
+    formaPagamento,
+    pagoEmEpoch,
+    origem,
+    registradoPor,
+    caixaSessaoId,
+    caixaMovimentoId,
+    observacao,
+    syncStatus,
+    criadoEm,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MensalidadePagamento &&
+          other.id == this.id &&
+          other.operacaoId == this.operacaoId &&
+          other.clienteId == this.clienteId &&
+          other.clienteNome == this.clienteNome &&
+          other.planoId == this.planoId &&
+          other.competencia == this.competencia &&
+          other.valor == this.valor &&
+          other.formaPagamento == this.formaPagamento &&
+          other.pagoEmEpoch == this.pagoEmEpoch &&
+          other.origem == this.origem &&
+          other.registradoPor == this.registradoPor &&
+          other.caixaSessaoId == this.caixaSessaoId &&
+          other.caixaMovimentoId == this.caixaMovimentoId &&
+          other.observacao == this.observacao &&
+          other.syncStatus == this.syncStatus &&
+          other.criadoEm == this.criadoEm);
+}
+
+class MensalidadePagamentosCompanion
+    extends UpdateCompanion<MensalidadePagamento> {
+  final Value<String> id;
+  final Value<String> operacaoId;
+  final Value<String> clienteId;
+  final Value<String> clienteNome;
+  final Value<String?> planoId;
+  final Value<String> competencia;
+  final Value<double> valor;
+  final Value<String?> formaPagamento;
+  final Value<int> pagoEmEpoch;
+  final Value<String> origem;
+  final Value<String?> registradoPor;
+  final Value<String?> caixaSessaoId;
+  final Value<String?> caixaMovimentoId;
+  final Value<String?> observacao;
+  final Value<String> syncStatus;
+  final Value<int> criadoEm;
+  final Value<int> rowid;
+  const MensalidadePagamentosCompanion({
+    this.id = const Value.absent(),
+    this.operacaoId = const Value.absent(),
+    this.clienteId = const Value.absent(),
+    this.clienteNome = const Value.absent(),
+    this.planoId = const Value.absent(),
+    this.competencia = const Value.absent(),
+    this.valor = const Value.absent(),
+    this.formaPagamento = const Value.absent(),
+    this.pagoEmEpoch = const Value.absent(),
+    this.origem = const Value.absent(),
+    this.registradoPor = const Value.absent(),
+    this.caixaSessaoId = const Value.absent(),
+    this.caixaMovimentoId = const Value.absent(),
+    this.observacao = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.criadoEm = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MensalidadePagamentosCompanion.insert({
+    required String id,
+    required String operacaoId,
+    required String clienteId,
+    required String clienteNome,
+    this.planoId = const Value.absent(),
+    required String competencia,
+    required double valor,
+    this.formaPagamento = const Value.absent(),
+    required int pagoEmEpoch,
+    this.origem = const Value.absent(),
+    this.registradoPor = const Value.absent(),
+    this.caixaSessaoId = const Value.absent(),
+    this.caixaMovimentoId = const Value.absent(),
+    this.observacao = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required int criadoEm,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       operacaoId = Value(operacaoId),
+       clienteId = Value(clienteId),
+       clienteNome = Value(clienteNome),
+       competencia = Value(competencia),
+       valor = Value(valor),
+       pagoEmEpoch = Value(pagoEmEpoch),
+       criadoEm = Value(criadoEm);
+  static Insertable<MensalidadePagamento> custom({
+    Expression<String>? id,
+    Expression<String>? operacaoId,
+    Expression<String>? clienteId,
+    Expression<String>? clienteNome,
+    Expression<String>? planoId,
+    Expression<String>? competencia,
+    Expression<double>? valor,
+    Expression<String>? formaPagamento,
+    Expression<int>? pagoEmEpoch,
+    Expression<String>? origem,
+    Expression<String>? registradoPor,
+    Expression<String>? caixaSessaoId,
+    Expression<String>? caixaMovimentoId,
+    Expression<String>? observacao,
+    Expression<String>? syncStatus,
+    Expression<int>? criadoEm,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (operacaoId != null) 'operacao_id': operacaoId,
+      if (clienteId != null) 'cliente_id': clienteId,
+      if (clienteNome != null) 'cliente_nome': clienteNome,
+      if (planoId != null) 'plano_id': planoId,
+      if (competencia != null) 'competencia': competencia,
+      if (valor != null) 'valor': valor,
+      if (formaPagamento != null) 'forma_pagamento': formaPagamento,
+      if (pagoEmEpoch != null) 'pago_em_epoch': pagoEmEpoch,
+      if (origem != null) 'origem': origem,
+      if (registradoPor != null) 'registrado_por': registradoPor,
+      if (caixaSessaoId != null) 'caixa_sessao_id': caixaSessaoId,
+      if (caixaMovimentoId != null) 'caixa_movimento_id': caixaMovimentoId,
+      if (observacao != null) 'observacao': observacao,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (criadoEm != null) 'criado_em': criadoEm,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MensalidadePagamentosCompanion copyWith({
+    Value<String>? id,
+    Value<String>? operacaoId,
+    Value<String>? clienteId,
+    Value<String>? clienteNome,
+    Value<String?>? planoId,
+    Value<String>? competencia,
+    Value<double>? valor,
+    Value<String?>? formaPagamento,
+    Value<int>? pagoEmEpoch,
+    Value<String>? origem,
+    Value<String?>? registradoPor,
+    Value<String?>? caixaSessaoId,
+    Value<String?>? caixaMovimentoId,
+    Value<String?>? observacao,
+    Value<String>? syncStatus,
+    Value<int>? criadoEm,
+    Value<int>? rowid,
+  }) {
+    return MensalidadePagamentosCompanion(
+      id: id ?? this.id,
+      operacaoId: operacaoId ?? this.operacaoId,
+      clienteId: clienteId ?? this.clienteId,
+      clienteNome: clienteNome ?? this.clienteNome,
+      planoId: planoId ?? this.planoId,
+      competencia: competencia ?? this.competencia,
+      valor: valor ?? this.valor,
+      formaPagamento: formaPagamento ?? this.formaPagamento,
+      pagoEmEpoch: pagoEmEpoch ?? this.pagoEmEpoch,
+      origem: origem ?? this.origem,
+      registradoPor: registradoPor ?? this.registradoPor,
+      caixaSessaoId: caixaSessaoId ?? this.caixaSessaoId,
+      caixaMovimentoId: caixaMovimentoId ?? this.caixaMovimentoId,
+      observacao: observacao ?? this.observacao,
+      syncStatus: syncStatus ?? this.syncStatus,
+      criadoEm: criadoEm ?? this.criadoEm,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (operacaoId.present) {
+      map['operacao_id'] = Variable<String>(operacaoId.value);
+    }
+    if (clienteId.present) {
+      map['cliente_id'] = Variable<String>(clienteId.value);
+    }
+    if (clienteNome.present) {
+      map['cliente_nome'] = Variable<String>(clienteNome.value);
+    }
+    if (planoId.present) {
+      map['plano_id'] = Variable<String>(planoId.value);
+    }
+    if (competencia.present) {
+      map['competencia'] = Variable<String>(competencia.value);
+    }
+    if (valor.present) {
+      map['valor'] = Variable<double>(valor.value);
+    }
+    if (formaPagamento.present) {
+      map['forma_pagamento'] = Variable<String>(formaPagamento.value);
+    }
+    if (pagoEmEpoch.present) {
+      map['pago_em_epoch'] = Variable<int>(pagoEmEpoch.value);
+    }
+    if (origem.present) {
+      map['origem'] = Variable<String>(origem.value);
+    }
+    if (registradoPor.present) {
+      map['registrado_por'] = Variable<String>(registradoPor.value);
+    }
+    if (caixaSessaoId.present) {
+      map['caixa_sessao_id'] = Variable<String>(caixaSessaoId.value);
+    }
+    if (caixaMovimentoId.present) {
+      map['caixa_movimento_id'] = Variable<String>(caixaMovimentoId.value);
+    }
+    if (observacao.present) {
+      map['observacao'] = Variable<String>(observacao.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (criadoEm.present) {
+      map['criado_em'] = Variable<int>(criadoEm.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MensalidadePagamentosCompanion(')
+          ..write('id: $id, ')
+          ..write('operacaoId: $operacaoId, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('clienteNome: $clienteNome, ')
+          ..write('planoId: $planoId, ')
+          ..write('competencia: $competencia, ')
+          ..write('valor: $valor, ')
+          ..write('formaPagamento: $formaPagamento, ')
+          ..write('pagoEmEpoch: $pagoEmEpoch, ')
+          ..write('origem: $origem, ')
+          ..write('registradoPor: $registradoPor, ')
+          ..write('caixaSessaoId: $caixaSessaoId, ')
+          ..write('caixaMovimentoId: $caixaMovimentoId, ')
+          ..write('observacao: $observacao, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('criadoEm: $criadoEm, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5957,11 +6953,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PatioClientesTable patioClientes = $PatioClientesTable(this);
   late final $PatioClientePlacasTable patioClientePlacas =
       $PatioClientePlacasTable(this);
+  late final $MensalidadePagamentosTable mensalidadePagamentos =
+      $MensalidadePagamentosTable(this);
   late final OperacaoDao operacaoDao = OperacaoDao(this as AppDatabase);
   late final TicketsDao ticketsDao = TicketsDao(this as AppDatabase);
   late final CaixaDao caixaDao = CaixaDao(this as AppDatabase);
   late final SyncDao syncDao = SyncDao(this as AppDatabase);
   late final ClientesDao clientesDao = ClientesDao(this as AppDatabase);
+  late final MensalidadePagamentosDao mensalidadePagamentosDao =
+      MensalidadePagamentosDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5975,6 +6975,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     syncLog,
     patioClientes,
     patioClientePlacas,
+    mensalidadePagamentos,
   ];
 }
 
@@ -8307,6 +9308,7 @@ typedef $$PatioClientesTableCreateCompanionBuilder =
       Value<String?> planoId,
       Value<String?> planoNome,
       Value<String?> planoTipo,
+      Value<double?> planoValor,
       Value<int> vagas,
       Value<int?> vencimentoEpoch,
       Value<bool> bloqueado,
@@ -8320,6 +9322,7 @@ typedef $$PatioClientesTableUpdateCompanionBuilder =
       Value<String?> planoId,
       Value<String?> planoNome,
       Value<String?> planoTipo,
+      Value<double?> planoValor,
       Value<int> vagas,
       Value<int?> vencimentoEpoch,
       Value<bool> bloqueado,
@@ -8362,6 +9365,11 @@ class $$PatioClientesTableFilterComposer
 
   ColumnFilters<String> get planoTipo => $composableBuilder(
     column: $table.planoTipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get planoValor => $composableBuilder(
+    column: $table.planoValor,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8420,6 +9428,11 @@ class $$PatioClientesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get planoValor => $composableBuilder(
+    column: $table.planoValor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get vagas => $composableBuilder(
     column: $table.vagas,
     builder: (column) => ColumnOrderings(column),
@@ -8464,6 +9477,11 @@ class $$PatioClientesTableAnnotationComposer
 
   GeneratedColumn<String> get planoTipo =>
       $composableBuilder(column: $table.planoTipo, builder: (column) => column);
+
+  GeneratedColumn<double> get planoValor => $composableBuilder(
+    column: $table.planoValor,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get vagas =>
       $composableBuilder(column: $table.vagas, builder: (column) => column);
@@ -8514,6 +9532,7 @@ class $$PatioClientesTableTableManager
                 Value<String?> planoId = const Value.absent(),
                 Value<String?> planoNome = const Value.absent(),
                 Value<String?> planoTipo = const Value.absent(),
+                Value<double?> planoValor = const Value.absent(),
                 Value<int> vagas = const Value.absent(),
                 Value<int?> vencimentoEpoch = const Value.absent(),
                 Value<bool> bloqueado = const Value.absent(),
@@ -8525,6 +9544,7 @@ class $$PatioClientesTableTableManager
                 planoId: planoId,
                 planoNome: planoNome,
                 planoTipo: planoTipo,
+                planoValor: planoValor,
                 vagas: vagas,
                 vencimentoEpoch: vencimentoEpoch,
                 bloqueado: bloqueado,
@@ -8538,6 +9558,7 @@ class $$PatioClientesTableTableManager
                 Value<String?> planoId = const Value.absent(),
                 Value<String?> planoNome = const Value.absent(),
                 Value<String?> planoTipo = const Value.absent(),
+                Value<double?> planoValor = const Value.absent(),
                 Value<int> vagas = const Value.absent(),
                 Value<int?> vencimentoEpoch = const Value.absent(),
                 Value<bool> bloqueado = const Value.absent(),
@@ -8549,6 +9570,7 @@ class $$PatioClientesTableTableManager
                 planoId: planoId,
                 planoNome: planoNome,
                 planoTipo: planoTipo,
+                planoValor: planoValor,
                 vagas: vagas,
                 vencimentoEpoch: vencimentoEpoch,
                 bloqueado: bloqueado,
@@ -8775,6 +9797,454 @@ typedef $$PatioClientePlacasTableProcessedTableManager =
       PatioClientePlaca,
       PrefetchHooks Function()
     >;
+typedef $$MensalidadePagamentosTableCreateCompanionBuilder =
+    MensalidadePagamentosCompanion Function({
+      required String id,
+      required String operacaoId,
+      required String clienteId,
+      required String clienteNome,
+      Value<String?> planoId,
+      required String competencia,
+      required double valor,
+      Value<String?> formaPagamento,
+      required int pagoEmEpoch,
+      Value<String> origem,
+      Value<String?> registradoPor,
+      Value<String?> caixaSessaoId,
+      Value<String?> caixaMovimentoId,
+      Value<String?> observacao,
+      Value<String> syncStatus,
+      required int criadoEm,
+      Value<int> rowid,
+    });
+typedef $$MensalidadePagamentosTableUpdateCompanionBuilder =
+    MensalidadePagamentosCompanion Function({
+      Value<String> id,
+      Value<String> operacaoId,
+      Value<String> clienteId,
+      Value<String> clienteNome,
+      Value<String?> planoId,
+      Value<String> competencia,
+      Value<double> valor,
+      Value<String?> formaPagamento,
+      Value<int> pagoEmEpoch,
+      Value<String> origem,
+      Value<String?> registradoPor,
+      Value<String?> caixaSessaoId,
+      Value<String?> caixaMovimentoId,
+      Value<String?> observacao,
+      Value<String> syncStatus,
+      Value<int> criadoEm,
+      Value<int> rowid,
+    });
+
+class $$MensalidadePagamentosTableFilterComposer
+    extends Composer<_$AppDatabase, $MensalidadePagamentosTable> {
+  $$MensalidadePagamentosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clienteId => $composableBuilder(
+    column: $table.clienteId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clienteNome => $composableBuilder(
+    column: $table.clienteNome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get planoId => $composableBuilder(
+    column: $table.planoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get competencia => $composableBuilder(
+    column: $table.competencia,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get valor => $composableBuilder(
+    column: $table.valor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formaPagamento => $composableBuilder(
+    column: $table.formaPagamento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pagoEmEpoch => $composableBuilder(
+    column: $table.pagoEmEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origem => $composableBuilder(
+    column: $table.origem,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get registradoPor => $composableBuilder(
+    column: $table.registradoPor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get caixaSessaoId => $composableBuilder(
+    column: $table.caixaSessaoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get caixaMovimentoId => $composableBuilder(
+    column: $table.caixaMovimentoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacao => $composableBuilder(
+    column: $table.observacao,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get criadoEm => $composableBuilder(
+    column: $table.criadoEm,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MensalidadePagamentosTableOrderingComposer
+    extends Composer<_$AppDatabase, $MensalidadePagamentosTable> {
+  $$MensalidadePagamentosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clienteId => $composableBuilder(
+    column: $table.clienteId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clienteNome => $composableBuilder(
+    column: $table.clienteNome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get planoId => $composableBuilder(
+    column: $table.planoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get competencia => $composableBuilder(
+    column: $table.competencia,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get valor => $composableBuilder(
+    column: $table.valor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formaPagamento => $composableBuilder(
+    column: $table.formaPagamento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pagoEmEpoch => $composableBuilder(
+    column: $table.pagoEmEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origem => $composableBuilder(
+    column: $table.origem,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get registradoPor => $composableBuilder(
+    column: $table.registradoPor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get caixaSessaoId => $composableBuilder(
+    column: $table.caixaSessaoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get caixaMovimentoId => $composableBuilder(
+    column: $table.caixaMovimentoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacao => $composableBuilder(
+    column: $table.observacao,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get criadoEm => $composableBuilder(
+    column: $table.criadoEm,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MensalidadePagamentosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MensalidadePagamentosTable> {
+  $$MensalidadePagamentosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get clienteId =>
+      $composableBuilder(column: $table.clienteId, builder: (column) => column);
+
+  GeneratedColumn<String> get clienteNome => $composableBuilder(
+    column: $table.clienteNome,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get planoId =>
+      $composableBuilder(column: $table.planoId, builder: (column) => column);
+
+  GeneratedColumn<String> get competencia => $composableBuilder(
+    column: $table.competencia,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get valor =>
+      $composableBuilder(column: $table.valor, builder: (column) => column);
+
+  GeneratedColumn<String> get formaPagamento => $composableBuilder(
+    column: $table.formaPagamento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get pagoEmEpoch => $composableBuilder(
+    column: $table.pagoEmEpoch,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get origem =>
+      $composableBuilder(column: $table.origem, builder: (column) => column);
+
+  GeneratedColumn<String> get registradoPor => $composableBuilder(
+    column: $table.registradoPor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get caixaSessaoId => $composableBuilder(
+    column: $table.caixaSessaoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get caixaMovimentoId => $composableBuilder(
+    column: $table.caixaMovimentoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacao => $composableBuilder(
+    column: $table.observacao,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get criadoEm =>
+      $composableBuilder(column: $table.criadoEm, builder: (column) => column);
+}
+
+class $$MensalidadePagamentosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MensalidadePagamentosTable,
+          MensalidadePagamento,
+          $$MensalidadePagamentosTableFilterComposer,
+          $$MensalidadePagamentosTableOrderingComposer,
+          $$MensalidadePagamentosTableAnnotationComposer,
+          $$MensalidadePagamentosTableCreateCompanionBuilder,
+          $$MensalidadePagamentosTableUpdateCompanionBuilder,
+          (
+            MensalidadePagamento,
+            BaseReferences<
+              _$AppDatabase,
+              $MensalidadePagamentosTable,
+              MensalidadePagamento
+            >,
+          ),
+          MensalidadePagamento,
+          PrefetchHooks Function()
+        > {
+  $$MensalidadePagamentosTableTableManager(
+    _$AppDatabase db,
+    $MensalidadePagamentosTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MensalidadePagamentosTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$MensalidadePagamentosTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$MensalidadePagamentosTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> operacaoId = const Value.absent(),
+                Value<String> clienteId = const Value.absent(),
+                Value<String> clienteNome = const Value.absent(),
+                Value<String?> planoId = const Value.absent(),
+                Value<String> competencia = const Value.absent(),
+                Value<double> valor = const Value.absent(),
+                Value<String?> formaPagamento = const Value.absent(),
+                Value<int> pagoEmEpoch = const Value.absent(),
+                Value<String> origem = const Value.absent(),
+                Value<String?> registradoPor = const Value.absent(),
+                Value<String?> caixaSessaoId = const Value.absent(),
+                Value<String?> caixaMovimentoId = const Value.absent(),
+                Value<String?> observacao = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> criadoEm = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MensalidadePagamentosCompanion(
+                id: id,
+                operacaoId: operacaoId,
+                clienteId: clienteId,
+                clienteNome: clienteNome,
+                planoId: planoId,
+                competencia: competencia,
+                valor: valor,
+                formaPagamento: formaPagamento,
+                pagoEmEpoch: pagoEmEpoch,
+                origem: origem,
+                registradoPor: registradoPor,
+                caixaSessaoId: caixaSessaoId,
+                caixaMovimentoId: caixaMovimentoId,
+                observacao: observacao,
+                syncStatus: syncStatus,
+                criadoEm: criadoEm,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String operacaoId,
+                required String clienteId,
+                required String clienteNome,
+                Value<String?> planoId = const Value.absent(),
+                required String competencia,
+                required double valor,
+                Value<String?> formaPagamento = const Value.absent(),
+                required int pagoEmEpoch,
+                Value<String> origem = const Value.absent(),
+                Value<String?> registradoPor = const Value.absent(),
+                Value<String?> caixaSessaoId = const Value.absent(),
+                Value<String?> caixaMovimentoId = const Value.absent(),
+                Value<String?> observacao = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                required int criadoEm,
+                Value<int> rowid = const Value.absent(),
+              }) => MensalidadePagamentosCompanion.insert(
+                id: id,
+                operacaoId: operacaoId,
+                clienteId: clienteId,
+                clienteNome: clienteNome,
+                planoId: planoId,
+                competencia: competencia,
+                valor: valor,
+                formaPagamento: formaPagamento,
+                pagoEmEpoch: pagoEmEpoch,
+                origem: origem,
+                registradoPor: registradoPor,
+                caixaSessaoId: caixaSessaoId,
+                caixaMovimentoId: caixaMovimentoId,
+                observacao: observacao,
+                syncStatus: syncStatus,
+                criadoEm: criadoEm,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MensalidadePagamentosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MensalidadePagamentosTable,
+      MensalidadePagamento,
+      $$MensalidadePagamentosTableFilterComposer,
+      $$MensalidadePagamentosTableOrderingComposer,
+      $$MensalidadePagamentosTableAnnotationComposer,
+      $$MensalidadePagamentosTableCreateCompanionBuilder,
+      $$MensalidadePagamentosTableUpdateCompanionBuilder,
+      (
+        MensalidadePagamento,
+        BaseReferences<
+          _$AppDatabase,
+          $MensalidadePagamentosTable,
+          MensalidadePagamento
+        >,
+      ),
+      MensalidadePagamento,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8795,6 +10265,8 @@ class $AppDatabaseManager {
       $$PatioClientesTableTableManager(_db, _db.patioClientes);
   $$PatioClientePlacasTableTableManager get patioClientePlacas =>
       $$PatioClientePlacasTableTableManager(_db, _db.patioClientePlacas);
+  $$MensalidadePagamentosTableTableManager get mensalidadePagamentos =>
+      $$MensalidadePagamentosTableTableManager(_db, _db.mensalidadePagamentos);
 }
 
 mixin _$OperacaoDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -8870,5 +10342,22 @@ class ClientesDaoManager {
       $$PatioClientePlacasTableTableManager(
         _db.attachedDatabase,
         _db.patioClientePlacas,
+      );
+}
+
+mixin _$MensalidadePagamentosDaoMixin on DatabaseAccessor<AppDatabase> {
+  $MensalidadePagamentosTable get mensalidadePagamentos =>
+      attachedDatabase.mensalidadePagamentos;
+  MensalidadePagamentosDaoManager get managers =>
+      MensalidadePagamentosDaoManager(this);
+}
+
+class MensalidadePagamentosDaoManager {
+  final _$MensalidadePagamentosDaoMixin _db;
+  MensalidadePagamentosDaoManager(this._db);
+  $$MensalidadePagamentosTableTableManager get mensalidadePagamentos =>
+      $$MensalidadePagamentosTableTableManager(
+        _db.attachedDatabase,
+        _db.mensalidadePagamentos,
       );
 }

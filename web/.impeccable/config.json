@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreFiles": [
+      "src/components/site/hero.tsx",
+      "src/components/site/avaria.tsx"
+    ],
+    "ignoreRules": [],
+    "ignoreValues": []
+  },
+  "hook": {
+    "enabled": true,
+    "limits": {
+      "maxFindings": 5,
+      "maxChars": 8000
+    }
+  }
+}

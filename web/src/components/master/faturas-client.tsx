@@ -271,7 +271,7 @@ function LinhaFatura({
         <button
           onClick={() => setMenu((m) => !m)}
           aria-label="Ações"
-          className="w-9 h-9 rounded-lg grid place-items-center text-texto-3 hover:text-texto hover:bg-fundo transition-colors"
+          className="toque-44 w-9 h-9 rounded-lg grid place-items-center text-texto-3 hover:text-texto hover:bg-fundo transition-colors"
         >
           <MoreVertical className="w-4 h-4" />
         </button>

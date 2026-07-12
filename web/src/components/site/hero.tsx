@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Printer,
 } from "lucide-react";
+import { WHATSAPP } from "@/components/site/secoes";
 
 const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -37,14 +38,14 @@ export function Hero() {
       <div className="relative mx-auto max-w-6xl px-5">
         <div className="max-w-3xl mx-auto text-center">
           <motion.a
-            href="/recursos"
+            href="/cadastro"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 rounded-full border border-borda bg-white px-3.5 py-1.5 text-xs font-bold text-texto-2 shadow-[var(--shadow-card)] hover:border-brand-300 hover:text-brand-700 transition-colors"
+            className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3.5 py-1.5 text-xs font-bold text-brand-700 shadow-[var(--shadow-card)] hover:border-brand-300 hover:bg-brand-100 transition-colors"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
-            Para quem vive de estacionamento — de 1 pátio a uma rede
+            15 dias grátis · sem cartão de crédito
             <ArrowRight className="w-3.5 h-3.5" />
           </motion.a>
 
@@ -67,7 +68,9 @@ export function Hero() {
           >
             Aposente o caderno e o sistema caro. Seus operadores registram tudo
             pelo celular — <b className="text-texto">até sem internet</b> — e
-            você acompanha o faturamento ao vivo, de onde estiver.
+            você acompanha o faturamento ao vivo, de onde estiver.{" "}
+            <b className="text-texto">Crie sua conta e comece a usar hoje mesmo</b>,
+            sem instalação e sem falar com vendedor.
           </motion.p>
 
           <motion.div
@@ -76,28 +79,41 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3"
           >
-            <a
-              href="/precos"
+            <Link
+              href="/cadastro"
               className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
             >
-              Comece por R$ 129,90/mês
+              Começar grátis por 15 dias
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </a>
-            <Link
-              href="/contato"
+            </Link>
+            <a
+              href={WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
               className="w-full sm:w-auto inline-flex items-center justify-center h-12 px-7 rounded-xl border border-borda bg-white text-texto font-bold hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50 transition-all"
             >
-              Ver funcionando primeiro
-            </Link>
+              Prefiro falar no WhatsApp
+            </a>
           </motion.div>
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="mt-4 text-xs text-texto-3"
+            className="mt-4 text-xs text-texto-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1"
           >
-            Sem cancela, sem servidor, sem fidelidade. Só um celular Android.
+            <span className="inline-flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-brand-500" /> Sem cartão de
+              crédito
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-brand-500" /> Liberação na
+              hora
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-brand-500" /> Cancele quando
+              quiser
+            </span>
           </motion.p>
         </div>
 

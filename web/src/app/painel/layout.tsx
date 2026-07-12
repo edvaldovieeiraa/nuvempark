@@ -72,7 +72,7 @@ export default async function PainelLayout({
               <div className="font-extrabold text-white leading-tight tracking-tight">
                 Nuvem<span className="text-brand-400">Park</span>
               </div>
-              <div className="text-[11px] text-white/40 leading-tight">
+              <div className="text-[11px] text-white/55 leading-tight">
                 Painel do gestor
               </div>
             </div>
@@ -99,7 +99,7 @@ export default async function PainelLayout({
               <div className="text-xs text-white/60 group-hover:text-white truncate transition-colors">
                 {user.email}
               </div>
-              <div className="text-[10px] text-white/35 truncate">
+              <div className="text-[10px] text-white/55 truncate">
                 {tenant?.nome ?? "Minha conta"} · ver perfil
               </div>
             </div>

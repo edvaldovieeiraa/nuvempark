@@ -9,6 +9,7 @@ class PatioClientes extends Table {
   TextColumn get planoId => text().nullable()();
   TextColumn get planoNome => text().nullable()();
   TextColumn get planoTipo => text().nullable()(); // 'mensalista' | 'credenciado'
+  RealColumn get planoValor => real().nullable()(); // valor mensal do plano
   IntColumn get vagas => integer().withDefault(const Constant(1))();
   IntColumn get vencimentoEpoch => integer().nullable()();
   BoolColumn get bloqueado => boolean().withDefault(const Constant(false))();

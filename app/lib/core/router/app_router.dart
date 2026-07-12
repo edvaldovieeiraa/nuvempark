@@ -14,6 +14,7 @@ import '../../features/tickets/presentation/saida_screen.dart';
 import '../../features/tickets/presentation/movimentos_screen.dart';
 import '../../features/caixa/presentation/caixa_screen.dart';
 import '../../features/caixa/presentation/caixa_movimentos_screen.dart';
+import '../../features/mensalistas/presentation/mensalistas_screen.dart';
 import '../../features/printing/presentation/printer_settings_screen.dart';
 
 abstract final class Routes {
@@ -28,6 +29,7 @@ abstract final class Routes {
   static const movimentos = '/movimentos';
   static const caixa = '/caixa';
   static const caixaMovimentos = '/caixa/movimentos';
+  static const mensalistas = '/mensalistas';
   static const impressora = '/impressora';
   static String saidaDetalhe(String id) => '/saida/$id';
 }
@@ -64,6 +66,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.caixaMovimentos,
         builder: (context, state) => const CaixaMovimentosScreen(),
+      ),
+      GoRoute(
+        path: Routes.mensalistas,
+        builder: (context, state) => const MensalistasScreen(),
       ),
       GoRoute(path: Routes.impressora, builder: (context, state) => const PrinterSettingsScreen()),
     ],

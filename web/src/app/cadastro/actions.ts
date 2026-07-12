@@ -111,7 +111,7 @@ export async function criarContaTrial(
     type: "signup",
     email,
     password: senha,
-    options: { redirectTo: `${site}/login` },
+    options: { redirectTo: `${site}/auth/callback` },
   });
   const linkConfirmacao = linkData?.properties?.action_link;
 

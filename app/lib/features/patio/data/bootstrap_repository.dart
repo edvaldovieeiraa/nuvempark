@@ -94,6 +94,7 @@ class BootstrapRepository {
         planoId: Value(plano?['id'] as String?),
         planoNome: Value(plano?['nome'] as String?),
         planoTipo: Value(plano?['tipo'] as String?),
+        planoValor: Value((plano?['valor'] as num?)?.toDouble()),
         vagas: Value((m['vagas'] as num?)?.toInt() ?? 1),
         vencimentoEpoch: Value(venc != null
             ? DateTime.parse('${venc}T00:00:00').millisecondsSinceEpoch
