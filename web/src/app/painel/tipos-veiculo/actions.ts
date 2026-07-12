@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { registrarAuditoria } from "@/lib/auditoria";
 
 export type Resultado = { ok: boolean; msg: string } | null;
 
@@ -29,6 +30,14 @@ export async function salvarTiposVeiculo(
   if (limpos.length === 0)
     return { ok: false, msg: "Mantenha pelo menos um tipo de veículo." };
 
+  // Estado anterior para o antes→depois.
+  const { data: antesRow } = await sb
+    .from("patio_config")
+    .select("tipos_veiculo")
+    .eq("patio_id", patioId)
+    .maybeSingle();
+  const antes = (antesRow?.tipos_veiculo as string[] | null) ?? [];
+
   const { error } = await sb
     .from("patio_config")
     .upsert(
@@ -37,7 +46,21 @@ export async function salvarTiposVeiculo(
     );
   if (error) return { ok: false, msg: "Não foi possível salvar." };
 
+  const mudou = antes.join("|") !== limpos.join("|");
+  await registrarAuditoria({
+    modulo: "tipos-veiculo",
+    acao: antes.length === 0 ? "criou" : "alterou",
+    patioId,
+    descricao: mudou
+      ? `Alterou os tipos de veículo: ${antes.join(", ") || "—"} → ${limpos.join(", ")}`
+      : `Salvou os tipos de veículo (${limpos.join(", ")}) sem mudança`,
+    dados: { antes, depois: limpos },
+  });
+
   revalidatePath("/painel/tipos-veiculo");
   revalidatePath("/painel/tarifas");
-  return { ok: true, msg: "Tipos de veículo atualizados — o app recebe no próximo sync." };
+  return {
+    ok: true,
+    msg: "Tipos de veículo atualizados — o app recebe no próximo sync.",
+  };
 }

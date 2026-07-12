@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { createClient } from "@/lib/supabase/server";
+import { registrarAuditoria } from "@/lib/auditoria";
 
 export type Resultado = { ok: boolean; msg: string } | null;
 
@@ -52,6 +53,15 @@ export async function criarOperador(
   if (erroVinculo)
     return { ok: false, msg: "Operador criado, mas falhou o vínculo com o pátio." };
 
+  // Auditoria — NUNCA loga a senha/hash, só o fato.
+  await registrarAuditoria({
+    modulo: "operadores",
+    acao: "criou",
+    patioId: null, // operador é da rede (tenant), vinculado a pátios
+    descricao: `Criou o operador "${nome}" (login ${usuario}) com acesso a 1 pátio`,
+    dados: { usuario, nome, patio_id: patioId },
+  });
+
   revalidatePath("/painel/operadores");
   return { ok: true, msg: `Operador ${nome} criado. Login: ${usuario}.` };
 }
@@ -61,11 +71,26 @@ export async function alternarAtivo(
   ativoAtual: boolean,
 ): Promise<Resultado> {
   const sb = await createClient();
+  const { data: antes } = await sb
+    .from("operadores")
+    .select("nome, usuario")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await sb
     .from("operadores")
     .update({ ativo: !ativoAtual })
     .eq("id", id);
   if (error) return { ok: false, msg: "Não foi possível alterar o status." };
+
+  await registrarAuditoria({
+    modulo: "operadores",
+    acao: "alterou",
+    patioId: null,
+    descricao: `${ativoAtual ? "Desativou" : "Reativou"} o operador "${antes?.nome ?? "?"}" (login ${antes?.usuario ?? "?"})`,
+    dados: { id, ativo: !ativoAtual },
+  });
+
   revalidatePath("/painel/operadores");
   return {
     ok: true,

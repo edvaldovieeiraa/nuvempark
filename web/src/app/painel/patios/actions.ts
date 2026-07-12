@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { registrarAuditoria, diffCampos } from "@/lib/auditoria";
 
 export type Resultado = { ok: boolean; msg: string } | null;
 
@@ -44,6 +45,14 @@ export async function criarPatio(
     ticket_cabecalho: [nome],
   });
 
+  await registrarAuditoria({
+    modulo: "patios",
+    acao: "criou",
+    patioId: null, // pátio é cadastro da rede (tenant)
+    descricao: `Criou o pátio "${nome}" com ${qtdVagas} vaga(s)`,
+    dados: { nome, codigo, qtd_vagas: qtdVagas },
+  });
+
   revalidatePath("/painel/patios");
   return { ok: true, msg: `Pátio "${nome}" criado.` };
 }
@@ -57,15 +66,37 @@ export async function atualizarPatio(
   const nome = String(formData.get("nome") || "").trim();
   if (!nome) return { ok: false, msg: "Informe o nome do pátio." };
 
-  const { error } = await sb
+  const depois = {
+    nome,
+    codigo: String(formData.get("codigo") || "").trim() || null,
+    qtd_vagas: Number(formData.get("qtd_vagas") || 0),
+  };
+
+  const { data: antes } = await sb
     .from("patios")
-    .update({
-      nome,
-      codigo: String(formData.get("codigo") || "").trim() || null,
-      qtd_vagas: Number(formData.get("qtd_vagas") || 0),
-    })
-    .eq("id", id);
+    .select("nome, codigo, qtd_vagas")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { error } = await sb.from("patios").update(depois).eq("id", id);
   if (error) return { ok: false, msg: "Não foi possível salvar." };
+
+  const dif = antes
+    ? diffCampos(antes, depois, {
+        nome: "nome",
+        codigo: "código",
+        qtd_vagas: "vagas",
+      })
+    : { mudou: false, resumo: "", antes: {}, depois: {} };
+  await registrarAuditoria({
+    modulo: "patios",
+    acao: "alterou",
+    patioId: null,
+    descricao: dif.mudou
+      ? `Alterou o pátio "${nome}": ${dif.resumo}`
+      : `Salvou o pátio "${nome}" sem mudanças`,
+    dados: { antes: dif.antes, depois: dif.depois },
+  });
 
   revalidatePath("/painel/patios");
   return { ok: true, msg: "Pátio atualizado." };
@@ -76,11 +107,26 @@ export async function alternarAtivoPatio(
   ativoAtual: boolean,
 ): Promise<Resultado> {
   const { sb } = await tenantDoGestor();
+  const { data: antes } = await sb
+    .from("patios")
+    .select("nome")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await sb
     .from("patios")
     .update({ ativo: !ativoAtual })
     .eq("id", id);
   if (error) return { ok: false, msg: "Não foi possível alterar o status." };
+
+  await registrarAuditoria({
+    modulo: "patios",
+    acao: "alterou",
+    patioId: null,
+    descricao: `${ativoAtual ? "Desativou" : "Reativou"} o pátio "${antes?.nome ?? "?"}"`,
+    dados: { id, ativo: !ativoAtual },
+  });
+
   revalidatePath("/painel/patios");
   return {
     ok: true,
@@ -106,18 +152,43 @@ export async function salvarCupom(
   const cabecalho = linhas(formData.get("cabecalho"));
   const rodape = linhas(formData.get("rodape"));
 
-  const { error } = await sb
+  const { data: antes } = await sb
     .from("patio_config")
-    .upsert(
-      {
-        patio_id: patioId,
-        tenant_id: tenantId,
-        ticket_cabecalho: cabecalho,
-        ticket_rodape: rodape,
-      },
-      { onConflict: "patio_id" },
-    );
+    .select("ticket_cabecalho, ticket_rodape")
+    .eq("patio_id", patioId)
+    .maybeSingle();
+
+  const { error } = await sb.from("patio_config").upsert(
+    {
+      patio_id: patioId,
+      tenant_id: tenantId,
+      ticket_cabecalho: cabecalho,
+      ticket_rodape: rodape,
+    },
+    { onConflict: "patio_id" },
+  );
   if (error) return { ok: false, msg: "Não foi possível salvar o cupom." };
+
+  const antesCab = (antes?.ticket_cabecalho as string[] | null) ?? [];
+  const antesRod = (antes?.ticket_rodape as string[] | null) ?? [];
+  const mudouCab = antesCab.join("|") !== cabecalho.join("|");
+  const mudouRod = antesRod.join("|") !== rodape.join("|");
+  const partes: string[] = [];
+  if (mudouCab) partes.push("cabeçalho");
+  if (mudouRod) partes.push("rodapé");
+
+  await registrarAuditoria({
+    modulo: "config",
+    acao: "alterou",
+    patioId,
+    descricao: partes.length
+      ? `Alterou o ${partes.join(" e ")} do cupom do ticket`
+      : "Salvou o cupom do ticket sem mudanças",
+    dados: {
+      antes: { cabecalho: antesCab, rodape: antesRod },
+      depois: { cabecalho, rodape },
+    },
+  });
 
   revalidatePath("/painel/patios");
   return { ok: true, msg: "Cupom do pátio atualizado." };

@@ -26,6 +26,7 @@ import {
   CarFront,
   SlidersHorizontal,
   Printer,
+  History,
   type LucideIcon,
 } from "lucide-react";
 
@@ -92,6 +93,7 @@ const ITENS: Item[] = [
       { href: "/painel/configuracoes", label: "Geral", Icone: SlidersHorizontal },
       { href: "/painel/patios", label: "Pátios", Icone: Building2 },
       { href: "/painel/impressao", label: "Impressão", Icone: Printer },
+      { href: "/painel/historico", label: "Histórico de alterações", Icone: History },
     ],
   },
 ];

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { registrarAuditoria } from "@/lib/auditoria";
 
 export type Resultado = { ok: boolean; msg: string } | null;
 
@@ -24,15 +25,25 @@ export async function criarPlano(
   if (!tenantId) return { ok: false, msg: "Sessão sem rede vinculada." };
 
   const nome = String(formData.get("nome") || "").trim();
+  const patioId = String(formData.get("patio_id"));
+  const tipo = String(formData.get("tipo") || "mensalista");
   if (!nome) return { ok: false, msg: "Informe o nome do plano." };
 
   const { error } = await sb.from("planos").insert({
     tenant_id: tenantId,
-    patio_id: String(formData.get("patio_id")),
+    patio_id: patioId,
     nome,
-    tipo: String(formData.get("tipo") || "mensalista"),
+    tipo,
   });
   if (error) return { ok: false, msg: "Não foi possível criar o plano." };
+
+  await registrarAuditoria({
+    modulo: "mensalistas",
+    acao: "criou",
+    patioId,
+    descricao: `Criou o plano "${nome}" (${tipo})`,
+    dados: { nome, tipo },
+  });
 
   revalidatePath("/painel/mensalistas");
   return { ok: true, msg: `Plano "${nome}" criado.` };
@@ -40,11 +51,26 @@ export async function criarPlano(
 
 export async function desativarPlano(id: string): Promise<Resultado> {
   const { sb } = await tenantDoGestor();
+  const { data: antes } = await sb
+    .from("planos")
+    .select("nome, tipo, patio_id")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await sb
     .from("planos")
     .update({ ativo: false })
     .eq("id", id);
   if (error) return { ok: false, msg: "Não foi possível desativar o plano." };
+
+  await registrarAuditoria({
+    modulo: "mensalistas",
+    acao: "removeu",
+    patioId: (antes?.patio_id as string | undefined) ?? null,
+    descricao: `Desativou o plano "${antes?.nome ?? "?"}"`,
+    dados: { id },
+  });
+
   revalidatePath("/painel/mensalistas");
   return { ok: true, msg: "Plano desativado." };
 }
@@ -97,6 +123,14 @@ export async function criarCliente(
       };
   }
 
+  await registrarAuditoria({
+    modulo: "mensalistas",
+    acao: "criou",
+    patioId,
+    descricao: `Cadastrou o cliente "${nome}"${placa ? ` com a placa ${placa}` : ""}`,
+    dados: { nome, placa: placa || null },
+  });
+
   revalidatePath("/painel/mensalistas");
   return { ok: true, msg: `Cliente ${nome} cadastrado.` };
 }
@@ -106,11 +140,26 @@ export async function alternarBloqueio(
   bloqueadoAtual: boolean,
 ): Promise<Resultado> {
   const { sb } = await tenantDoGestor();
+  const { data: antes } = await sb
+    .from("clientes")
+    .select("nome, patio_id")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await sb
     .from("clientes")
     .update({ bloqueado: !bloqueadoAtual })
     .eq("id", id);
   if (error) return { ok: false, msg: "Não foi possível alterar o bloqueio." };
+
+  await registrarAuditoria({
+    modulo: "mensalistas",
+    acao: "alterou",
+    patioId: (antes?.patio_id as string | undefined) ?? null,
+    descricao: `${bloqueadoAtual ? "Desbloqueou" : "Bloqueou"} o cliente "${antes?.nome ?? "?"}"`,
+    dados: { id, bloqueado: !bloqueadoAtual },
+  });
+
   revalidatePath("/painel/mensalistas");
   return {
     ok: true,
@@ -130,11 +179,13 @@ export async function adicionarVeiculo(
   const placa = String(formData.get("placa") || "")
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "");
+  const clienteId = String(formData.get("cliente_id"));
+  const patioId = String(formData.get("patio_id"));
   if (placa.length < 7) return { ok: false, msg: "Placa inválida." };
 
   const { error } = await sb.from("cliente_veiculos").insert({
-    cliente_id: String(formData.get("cliente_id")),
-    patio_id: String(formData.get("patio_id")),
+    cliente_id: clienteId,
+    patio_id: patioId,
     tenant_id: tenantId,
     placa,
     descricao: String(formData.get("descricao") || "").trim() || null,
@@ -148,14 +199,44 @@ export async function adicionarVeiculo(
           : "Não foi possível adicionar o veículo.",
     };
 
+  // Nome do cliente para a descrição legível.
+  const { data: cli } = await sb
+    .from("clientes")
+    .select("nome")
+    .eq("id", clienteId)
+    .maybeSingle();
+
+  await registrarAuditoria({
+    modulo: "mensalistas",
+    acao: "criou",
+    patioId,
+    descricao: `Adicionou a placa ${placa} ao cliente "${cli?.nome ?? "?"}"`,
+    dados: { cliente_id: clienteId, placa },
+  });
+
   revalidatePath("/painel/mensalistas");
   return { ok: true, msg: `Placa ${placa} adicionada.` };
 }
 
 export async function removerVeiculo(id: string): Promise<Resultado> {
   const { sb } = await tenantDoGestor();
+  const { data: antes } = await sb
+    .from("cliente_veiculos")
+    .select("placa, patio_id, cliente_id")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await sb.from("cliente_veiculos").delete().eq("id", id);
   if (error) return { ok: false, msg: "Não foi possível remover o veículo." };
+
+  await registrarAuditoria({
+    modulo: "mensalistas",
+    acao: "removeu",
+    patioId: (antes?.patio_id as string | undefined) ?? null,
+    descricao: `Removeu a placa ${antes?.placa ?? "?"} de um mensalista`,
+    dados: { id, placa: antes?.placa ?? null },
+  });
+
   revalidatePath("/painel/mensalistas");
   return { ok: true, msg: "Veículo removido." };
 }

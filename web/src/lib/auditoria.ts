@@ -45,3 +45,50 @@ export async function registrarAuditoria(input: {
     console.error("[auditoria] exceção ao registrar (ignorado):", e);
   }
 }
+
+type Formatador = (v: unknown) => string;
+
+/**
+ * Compara dois conjuntos de campos e devolve um resumo humano
+ * ("rótulo antes → depois; …") + os objetos { antes, depois } só com o que mudou.
+ * Comparação tolerante por String() (números vindos de form vs banco batem).
+ */
+export function diffCampos(
+  antes: Record<string, unknown>,
+  depois: Record<string, unknown>,
+  rotulos: Record<string, string>,
+  fmt: Record<string, Formatador> = {},
+): {
+  mudou: boolean;
+  resumo: string;
+  antes: Record<string, unknown>;
+  depois: Record<string, unknown>;
+} {
+  const a: Record<string, unknown> = {};
+  const d: Record<string, unknown> = {};
+  const frases: string[] = [];
+  for (const chave of Object.keys(rotulos)) {
+    const va = antes[chave];
+    const vd = depois[chave];
+    if (String(va ?? "") !== String(vd ?? "")) {
+      a[chave] = va ?? null;
+      d[chave] = vd ?? null;
+      const f = fmt[chave] ?? ((v: unknown) => String(v ?? "—"));
+      frases.push(`${rotulos[chave]} ${f(va)} → ${f(vd)}`);
+    }
+  }
+  return {
+    mudou: frases.length > 0,
+    resumo: frases.join("; "),
+    antes: a,
+    depois: d,
+  };
+}
+
+/** Formata moeda BRL para descrições de auditoria. */
+export function brl(v: unknown): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(v) || 0);
+}
