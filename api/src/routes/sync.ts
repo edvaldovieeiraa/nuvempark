@@ -87,9 +87,16 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
 
           const { data: existente } = await db
             .from('tickets')
-            .select('id')
+            .select('id, status')
             .eq('id', entidadeId)
             .maybeSingle();
+
+          // Camada 1 (defesa no sync): um ticket removido no painel (Limpeza de
+          // Pátio) NÃO pode ser ressuscitado por um update tardio do app.
+          // Responde sucesso para o app não re-tentar, sinalizando que ignorou.
+          if (existente && existente.status === 'removido') {
+            return reply.send({ ok: true, ignorado: true, motivo: 'removido' });
+          }
 
           const res = existente
             ? await db.from('tickets').update(row).eq('id', entidadeId)
