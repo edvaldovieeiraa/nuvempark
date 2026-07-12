@@ -19,7 +19,7 @@ export default async function PlanosPage({
   const [{ data: planos }, { data: clientes }] = await Promise.all([
     supabase
       .from("planos")
-      .select("id, nome, tipo, ativo")
+      .select("id, nome, tipo, valor, ativo")
       .eq("patio_id", patioId)
       .order("ordem")
       .order("nome"),

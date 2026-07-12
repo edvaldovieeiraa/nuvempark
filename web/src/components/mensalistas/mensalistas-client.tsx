@@ -1,7 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   UserPlus,
@@ -11,17 +18,42 @@ import {
   Trash2,
   ChevronDown,
   BadgeCheck,
+  Banknote,
+  Receipt,
+  X,
+  AlertTriangle,
+  Loader2,
+  Ban,
 } from "lucide-react";
 import {
   alternarBloqueio,
   adicionarVeiculo,
   removerVeiculo,
+  registrarPagamento,
+  listarPagamentos,
+  cancelarPagamento,
   type Resultado,
+  type PagamentoRow,
 } from "@/app/painel/mensalistas/actions";
 import { useToast } from "@/components/ui/toast";
 import { Confirmar } from "@/components/ui/confirmar";
 
-type Plano = { id: string; nome: string };
+const moeda = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
+const FORMAS = [
+  { v: "dinheiro", l: "Dinheiro" },
+  { v: "pix", l: "PIX" },
+  { v: "cartao", l: "Cartão" },
+  { v: "transferencia", l: "Transferência" },
+];
+function rotuloForma(f: string | null): string {
+  return FORMAS.find((x) => x.v === f)?.l ?? (f ?? "—");
+}
+
+type Plano = { id: string; nome: string; tipo: string; valor: number };
 type Veiculo = {
   id: string;
   cliente_id: string;
@@ -39,7 +71,93 @@ type Cliente = {
   vagas: number;
   bloqueado: boolean;
   ativo: boolean;
+  criado_em: string;
 };
+type Hoje = { ano: number; mes: number; dia: number };
+
+type Badge =
+  | { tipo: "credenciado" }
+  | { tipo: "em_dia" }
+  | { tipo: "vence"; dias: number }
+  | { tipo: "atrasado"; meses: number };
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+function mesFirst(ano: number, mes: number): string {
+  return `${ano}-${pad2(mes)}-01`;
+}
+function mesesEntre(aYmd: string, bYmd: string): number {
+  const [ay, am] = aYmd.split("-").map(Number);
+  const [by, bm] = bYmd.split("-").map(Number);
+  return (by - ay) * 12 + (bm - am);
+}
+function competenciaLabel(comp: string): string {
+  return new Date(`${comp.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function calcularBadge(
+  cliente: Cliente,
+  plano: Plano | undefined,
+  pagas: string[],
+  ultima: string | null,
+  hoje: Hoje,
+): Badge {
+  if (plano?.tipo === "credenciado") return { tipo: "credenciado" };
+
+  const mesCorrente = mesFirst(hoje.ano, hoje.mes);
+  if (pagas.includes(mesCorrente)) return { tipo: "em_dia" };
+
+  const diaVenc = cliente.vencimento
+    ? new Date(`${cliente.vencimento}T12:00:00`).getDate()
+    : 10;
+  if (hoje.dia <= diaVenc) return { tipo: "vence", dias: diaVenc - hoje.dia };
+
+  if (ultima)
+    return {
+      tipo: "atrasado",
+      meses: Math.max(1, mesesEntre(ultima, mesCorrente)),
+    };
+
+  const criacao = new Date(cliente.criado_em);
+  const criacaoMes = mesFirst(criacao.getFullYear(), criacao.getMonth() + 1);
+  return {
+    tipo: "atrasado",
+    meses: Math.max(1, mesesEntre(criacaoMes, mesCorrente) + 1),
+  };
+}
+
+function BadgeStatus({ badge }: { badge: Badge }) {
+  const cfg = (() => {
+    switch (badge.tipo) {
+      case "credenciado":
+        return { txt: "Credenciado", cls: "bg-fundo text-texto-2 border-borda" };
+      case "em_dia":
+        return { txt: "Em dia", cls: "bg-brand-50 text-brand-700 border-brand-200" };
+      case "vence":
+        return {
+          txt:
+            badge.dias === 0
+              ? "Vence hoje"
+              : `Vence em ${badge.dias} ${badge.dias === 1 ? "dia" : "dias"}`,
+          cls: "bg-aviso-bg text-aviso border-aviso/25",
+        };
+      case "atrasado":
+        return {
+          txt: badge.meses > 1 ? `Atrasado há ${badge.meses} meses` : "Atrasado",
+          cls: "bg-perigo-bg text-perigo border-perigo/20",
+        };
+    }
+  })();
+  return (
+    <span
+      className={`text-[10px] font-bold uppercase border rounded-full px-2 py-0.5 ${cfg.cls}`}
+    >
+      {cfg.txt}
+    </span>
+  );
+}
 
 export function MensalistasClient({
   patioId,
@@ -47,15 +165,20 @@ export function MensalistasClient({
   planos,
   clientes,
   veiculos,
+  pagasPorCliente,
+  ultimaPagaPorCliente,
+  hoje,
 }: {
   patioId: string;
   patioNome: string;
   planos: Plano[];
   clientes: Cliente[];
   veiculos: Veiculo[];
+  pagasPorCliente: Record<string, string[]>;
+  ultimaPagaPorCliente: Record<string, string>;
+  hoje: Hoje;
 }) {
-  const nomePlano = (id: string | null) =>
-    planos.find((p) => p.id === id)?.nome ?? "sem plano";
+  const planoDe = (id: string | null) => planos.find((p) => p.id === id);
   const veiculosDe = (clienteId: string) =>
     veiculos.filter((v) => v.cliente_id === clienteId);
 
@@ -117,14 +240,28 @@ export function MensalistasClient({
         ) : (
           <ul className="divide-y divide-borda">
             <AnimatePresence initial={false}>
-              {clientes.map((c) => (
-                <LinhaCliente
-                  key={c.id}
-                  cliente={c}
-                  veiculos={veiculosDe(c.id)}
-                  nomePlano={nomePlano(c.plano_id)}
-                />
-              ))}
+              {clientes.map((c) => {
+                const plano = planoDe(c.plano_id);
+                const pagas = pagasPorCliente[c.id] ?? [];
+                const badge = calcularBadge(
+                  c,
+                  plano,
+                  pagas,
+                  ultimaPagaPorCliente[c.id] ?? null,
+                  hoje,
+                );
+                return (
+                  <LinhaCliente
+                    key={c.id}
+                    cliente={c}
+                    plano={plano}
+                    veiculos={veiculosDe(c.id)}
+                    badge={badge}
+                    pagas={pagas}
+                    hoje={hoje}
+                  />
+                );
+              })}
             </AnimatePresence>
           </ul>
         )}
@@ -133,29 +270,35 @@ export function MensalistasClient({
   );
 }
 
-/* ---------- Linha do cliente (expande p/ veículos) ---------- */
+/* ---------- Linha do cliente ---------- */
 
 function LinhaCliente({
   cliente,
+  plano,
   veiculos,
-  nomePlano,
+  badge,
+  pagas,
+  hoje,
 }: {
   cliente: Cliente;
+  plano: Plano | undefined;
   veiculos: Veiculo[];
-  nomePlano: string;
+  badge: Badge;
+  pagas: string[];
+  hoje: Hoje;
 }) {
   const toast = useToast();
   const [expandido, setExpandido] = useState(false);
+  const [pagamentoAberto, setPagamentoAberto] = useState(false);
   const [pendente, comecar] = useTransition();
+
+  const ehCredenciado = plano?.tipo === "credenciado";
 
   async function alternar() {
     const r = await alternarBloqueio(cliente.id, cliente.bloqueado);
     if (r?.ok) (cliente.bloqueado ? toast.sucesso : toast.info)(r.msg);
     else toast.erro(r?.msg ?? "Erro inesperado.");
   }
-
-  const vencido =
-    cliente.vencimento && new Date(cliente.vencimento) < new Date();
 
   return (
     <motion.li
@@ -173,26 +316,33 @@ function LinhaCliente({
           <p className="font-bold text-sm flex items-center gap-2 flex-wrap">
             {cliente.nome}
             <span className="text-[10px] font-bold uppercase text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-2 py-0.5">
-              {nomePlano}
+              {plano?.nome ?? "sem plano"}
             </span>
+            <BadgeStatus badge={badge} />
             {cliente.bloqueado && (
               <span className="text-[10px] font-bold uppercase text-perigo bg-perigo-bg border border-perigo/20 rounded-full px-2 py-0.5">
                 bloqueado
               </span>
             )}
-            {vencido && !cliente.bloqueado && (
-              <span className="text-[10px] font-bold uppercase text-aviso bg-aviso-bg border border-aviso/25 rounded-full px-2 py-0.5">
-                vencido
-              </span>
-            )}
           </p>
           <p className="text-xs text-texto-3">
             {cliente.vencimento
-              ? `Vence ${new Date(cliente.vencimento + "T12:00:00").toLocaleDateString("pt-BR")}`
-              : "Sem vencimento"}
+              ? `Vence dia ${new Date(`${cliente.vencimento}T12:00:00`).getDate()}`
+              : "Vencimento dia 10 (padrão)"}
             {` · ${veiculos.length} ${veiculos.length === 1 ? "placa" : "placas"}`}
           </p>
         </div>
+
+        {!ehCredenciado && (
+          <button
+            onClick={() => setPagamentoAberto(true)}
+            title="Registrar pagamento"
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-brand-50 border border-brand-200 text-xs font-bold text-brand-700 hover:bg-brand-100 transition-colors"
+          >
+            <Banknote className="w-3.5 h-3.5" />
+            Pagamento
+          </button>
+        )}
 
         <button
           onClick={() => comecar(alternar)}
@@ -213,7 +363,7 @@ function LinhaCliente({
         </button>
         <button
           onClick={() => setExpandido((e) => !e)}
-          aria-label="Ver veículos"
+          aria-label="Ver detalhes"
           className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors"
         >
           <motion.span animate={{ rotate: expandido ? 180 : 0 }}>
@@ -230,13 +380,36 @@ function LinhaCliente({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-4 pl-[68px] space-y-2">
-              {veiculos.map((v) => (
-                <VeiculoLinha key={v.id} veiculo={v} />
-              ))}
-              <NovoVeiculoForm cliente={cliente} />
+            <div className="px-5 pb-4 pl-[68px] space-y-4">
+              {/* Veículos */}
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-texto-3 mb-2">
+                  Veículos
+                </p>
+                <div className="space-y-2">
+                  {veiculos.map((v) => (
+                    <VeiculoLinha key={v.id} veiculo={v} />
+                  ))}
+                  <NovoVeiculoForm cliente={cliente} />
+                </div>
+              </div>
+
+              {/* Pagamentos (só faz sentido para quem cobra) */}
+              {!ehCredenciado && <PagamentosSecao clienteId={cliente.id} />}
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {pagamentoAberto && (
+          <ModalPagamento
+            cliente={cliente}
+            plano={plano}
+            pagas={pagas}
+            hoje={hoje}
+            fechar={() => setPagamentoAberto(false)}
+          />
         )}
       </AnimatePresence>
     </motion.li>
@@ -317,5 +490,412 @@ function NovoVeiculoForm({ cliente }: { cliente: Cliente }) {
         + placa
       </button>
     </form>
+  );
+}
+
+/* ---------- Modal: registrar pagamento ---------- */
+
+function ModalPagamento({
+  cliente,
+  plano,
+  pagas,
+  hoje,
+  fechar,
+}: {
+  cliente: Cliente;
+  plano: Plano | undefined;
+  pagas: string[];
+  hoje: Hoje;
+  fechar: () => void;
+}) {
+  const router = useRouter();
+  const toast = useToast();
+  const [mes, setMes] = useState(`${hoje.ano}-${pad2(hoje.mes)}`); // 'YYYY-MM'
+  const [valor, setValor] = useState(String(plano?.valor ?? 0));
+  const [forma, setForma] = useState(FORMAS[0].v);
+  const [obs, setObs] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  const competencia = `${mes}-01`;
+  const jaExiste = pagas.includes(competencia);
+  const valorNum = Number(valor.replace(",", ".")) || 0;
+
+  async function confirmar() {
+    setSalvando(true);
+    const r = await registrarPagamento({
+      clienteId: cliente.id,
+      patioId: cliente.patio_id,
+      planoId: cliente.plano_id,
+      competencia,
+      valor: valorNum,
+      formaPagamento: forma,
+      observacao: obs,
+    });
+    setSalvando(false);
+    if (r?.ok) {
+      toast.sucesso("Pagamento registrado", r.msg);
+      fechar();
+      router.refresh(); // atualiza o badge para EM DIA sem reload manual
+    } else toast.erro("Não deu certo", r?.msg ?? "Erro inesperado.");
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[90] grid place-items-center p-4 bg-noite/50 backdrop-blur-sm"
+      onClick={salvando ? undefined : fechar}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 16 }}
+        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-2xl bg-superficie shadow-[var(--shadow-pop)] p-6 max-h-[92vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-lg font-extrabold flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-brand-600" />
+            Registrar pagamento
+          </h3>
+          <button
+            onClick={fechar}
+            disabled={salvando}
+            aria-label="Fechar"
+            className="text-texto-3 hover:text-texto disabled:opacity-40"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-xs text-texto-2 mb-5">
+          <b className="text-texto">{cliente.nome}</b>
+          {plano ? ` · plano ${plano.nome}` : ""}
+        </p>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-texto-2 mb-1.5">
+              Competência
+            </label>
+            <input
+              type="month"
+              value={mes}
+              onChange={(e) => setMes(e.target.value)}
+              className="w-full h-11 px-3.5 rounded-xl border border-borda bg-superficie text-sm focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-texto-2 mb-1.5">
+              Valor (R$)
+            </label>
+            <input
+              inputMode="decimal"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+              placeholder="0,00"
+              className="w-full h-11 px-3.5 rounded-xl border border-borda bg-superficie text-sm font-bold tabular-nums focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-xs font-bold text-texto-2 mb-1.5">
+            Forma de pagamento
+          </label>
+          <select
+            value={forma}
+            onChange={(e) => setForma(e.target.value)}
+            className="w-full h-11 px-3.5 rounded-xl border border-borda bg-superficie text-sm focus:outline-none focus:border-brand-400"
+          >
+            {FORMAS.map((f) => (
+              <option key={f.v} value={f.v}>
+                {f.l}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-xs font-bold text-texto-2 mb-1.5">
+            Observação (opcional)
+          </label>
+          <textarea
+            value={obs}
+            onChange={(e) => setObs(e.target.value)}
+            rows={2}
+            placeholder="Ex: pagamento parcial, desconto combinado…"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-borda bg-superficie text-sm placeholder:text-texto-3 focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15 resize-none"
+          />
+        </div>
+
+        {jaExiste && (
+          <div className="mt-4 rounded-xl border border-aviso/25 bg-aviso-bg px-3.5 py-3 flex gap-2">
+            <AlertTriangle className="w-4 h-4 text-aviso shrink-0 mt-0.5" />
+            <p className="text-xs text-aviso font-semibold">
+              Já existe um pagamento ativo para {competenciaLabel(competencia)}.
+              Você pode registrar outro (a duplicidade fica visível no histórico).
+            </p>
+          </div>
+        )}
+
+        <div className="mt-6 flex gap-3 justify-end">
+          <button
+            onClick={fechar}
+            disabled={salvando}
+            className="h-11 px-5 rounded-xl border border-borda text-sm font-bold text-texto-2 hover:bg-fundo transition-colors disabled:opacity-60"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={confirmar}
+            disabled={salvando || valorNum < 0}
+            className="h-11 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white text-sm font-bold shadow-[var(--shadow-brand)] hover:brightness-110 inline-flex items-center gap-2 disabled:opacity-60 transition-all"
+          >
+            {salvando && <Loader2 className="w-4 h-4 animate-spin" />}
+            Registrar {moeda.format(valorNum)}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ---------- Seção: histórico de pagamentos (lazy) ---------- */
+
+function PagamentosSecao({ clienteId }: { clienteId: string }) {
+  const [pagamentos, setPagamentos] = useState<PagamentoRow[] | null>(null);
+  const [carregando, comecar] = useTransition();
+
+  useEffect(() => {
+    comecar(async () => {
+      const dados = await listarPagamentos(clienteId);
+      setPagamentos(dados);
+    });
+  }, [clienteId]);
+
+  // Competências com mais de um pagamento ATIVO → duplicidade a destacar.
+  const ativosPorComp: Record<string, number> = {};
+  (pagamentos ?? [])
+    .filter((p) => !p.cancelado_em)
+    .forEach((p) => {
+      ativosPorComp[p.competencia] = (ativosPorComp[p.competencia] ?? 0) + 1;
+    });
+
+  function recarregar() {
+    comecar(async () => {
+      const dados = await listarPagamentos(clienteId);
+      setPagamentos(dados);
+    });
+  }
+
+  return (
+    <div>
+      <p className="text-[11px] font-black uppercase tracking-wider text-texto-3 mb-2">
+        Pagamentos
+      </p>
+
+      {carregando && pagamentos === null ? (
+        <div className="py-4 text-texto-3 flex items-center gap-2 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" /> Carregando…
+        </div>
+      ) : (pagamentos?.length ?? 0) === 0 ? (
+        <p className="text-xs text-texto-3 py-2">
+          Nenhum pagamento registrado ainda.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {pagamentos!.map((p) => (
+            <PagamentoLinha
+              key={p.id}
+              pagamento={p}
+              duplicado={!p.cancelado_em && ativosPorComp[p.competencia] > 1}
+              aoCancelar={recarregar}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PagamentoLinha({
+  pagamento,
+  duplicado,
+  aoCancelar,
+}: {
+  pagamento: PagamentoRow;
+  duplicado: boolean;
+  aoCancelar: () => void;
+}) {
+  const cancelado = Boolean(pagamento.cancelado_em);
+  const [cancelarAberto, setCancelarAberto] = useState(false);
+
+  return (
+    <div
+      className={`rounded-xl border p-3 ${
+        cancelado
+          ? "border-borda bg-fundo/40 opacity-70"
+          : duplicado
+            ? "border-aviso/40 bg-aviso-bg/40"
+            : "border-borda bg-superficie"
+      }`}
+    >
+      <div className="flex items-center gap-2 flex-wrap">
+        <Receipt className="w-4 h-4 text-texto-3 shrink-0" />
+        <span
+          className={`text-sm font-bold capitalize ${cancelado ? "line-through text-texto-3" : ""}`}
+        >
+          {competenciaLabel(pagamento.competencia)}
+        </span>
+        <span
+          className={`text-sm font-black tabular-nums ${cancelado ? "line-through text-texto-3" : "text-texto"}`}
+        >
+          {moeda.format(Number(pagamento.valor) || 0)}
+        </span>
+        <span className="text-[10px] font-bold uppercase text-texto-3 bg-fundo border border-borda rounded-full px-2 py-0.5">
+          {rotuloForma(pagamento.forma_pagamento)}
+        </span>
+        <span
+          className={`text-[10px] font-bold uppercase rounded-full px-2 py-0.5 border ${
+            pagamento.origem === "app"
+              ? "bg-info-bg text-info border-info/20"
+              : "bg-brand-50 text-brand-700 border-brand-200"
+          }`}
+        >
+          {pagamento.origem === "app" ? "app" : "painel"}
+        </span>
+        {duplicado && !cancelado && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-aviso bg-aviso-bg border border-aviso/25 rounded-full px-2 py-0.5">
+            <AlertTriangle className="w-3 h-3" />
+            duplicado
+          </span>
+        )}
+        {cancelado && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-perigo bg-perigo-bg border border-perigo/20 rounded-full px-2 py-0.5">
+            <Ban className="w-3 h-3" />
+            cancelado
+          </span>
+        )}
+
+        {!cancelado && (
+          <button
+            onClick={() => setCancelarAberto(true)}
+            className="ml-auto text-xs font-bold text-texto-3 hover:text-perigo transition-colors"
+          >
+            Cancelar
+          </button>
+        )}
+      </div>
+
+      <p className="text-[11px] text-texto-3 mt-1">
+        Pago em {new Date(pagamento.pago_em).toLocaleDateString("pt-BR")}
+        {pagamento.registrado_por_nome
+          ? ` · por ${pagamento.registrado_por_nome}`
+          : ""}
+        {pagamento.observacao ? ` · ${pagamento.observacao}` : ""}
+      </p>
+
+      {cancelado && pagamento.cancelamento_motivo && (
+        <p className="text-[11px] text-perigo mt-1">
+          Cancelado
+          {pagamento.cancelado_por_nome ? ` por ${pagamento.cancelado_por_nome}` : ""}:{" "}
+          {pagamento.cancelamento_motivo}
+        </p>
+      )}
+
+      <AnimatePresence>
+        {cancelarAberto && (
+          <ModalCancelar
+            pagamento={pagamento}
+            fechar={() => setCancelarAberto(false)}
+            aoCancelar={aoCancelar}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ModalCancelar({
+  pagamento,
+  fechar,
+  aoCancelar,
+}: {
+  pagamento: PagamentoRow;
+  fechar: () => void;
+  aoCancelar: () => void;
+}) {
+  const toast = useToast();
+  const [motivo, setMotivo] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  async function confirmar() {
+    if (!motivo.trim()) return;
+    setSalvando(true);
+    const r = await cancelarPagamento(pagamento.id, motivo.trim());
+    setSalvando(false);
+    if (r?.ok) {
+      toast.sucesso(r.msg);
+      fechar();
+      aoCancelar();
+    } else toast.erro("Não deu certo", r?.msg ?? "Erro inesperado.");
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[95] grid place-items-center p-4 bg-noite/50 backdrop-blur-sm"
+      onClick={salvando ? undefined : fechar}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 16 }}
+        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-2xl bg-superficie shadow-[var(--shadow-pop)] p-6"
+      >
+        <div className="w-12 h-12 rounded-2xl bg-perigo-bg grid place-items-center mb-4">
+          <Ban className="w-6 h-6 text-perigo" />
+        </div>
+        <h3 className="text-lg font-extrabold">Cancelar pagamento?</h3>
+        <p className="text-sm text-texto-2 mt-1.5">
+          {competenciaLabel(pagamento.competencia)} ·{" "}
+          {moeda.format(Number(pagamento.valor) || 0)}. O registro não some — fica
+          marcado como cancelado com o motivo.
+        </p>
+        <label className="block text-xs font-bold text-texto-2 mt-4 mb-1.5">
+          Motivo <span className="text-perigo">*</span>
+        </label>
+        <textarea
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          rows={2}
+          placeholder="Ex: lançado por engano / valor incorreto."
+          className="w-full px-3.5 py-2.5 rounded-xl border border-borda bg-superficie text-sm placeholder:text-texto-3 focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15 resize-none"
+        />
+        <div className="flex gap-3 mt-5">
+          <button
+            onClick={fechar}
+            disabled={salvando}
+            className="flex-1 h-11 rounded-xl border border-borda text-sm font-bold text-texto-2 hover:bg-fundo transition-colors disabled:opacity-60"
+          >
+            Voltar
+          </button>
+          <button
+            onClick={confirmar}
+            disabled={salvando || !motivo.trim()}
+            className="flex-1 h-11 rounded-xl bg-perigo text-white text-sm font-bold hover:brightness-110 inline-flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
+          >
+            {salvando && <Loader2 className="w-4 h-4 animate-spin" />}
+            Cancelar pagamento
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }

@@ -2,9 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { registrarAuditoria } from "@/lib/auditoria";
+import { registrarAuditoria, brl } from "@/lib/auditoria";
 
 export type Resultado = { ok: boolean; msg: string } | null;
+
+/** "julho de 2026" a partir de uma competência 'YYYY-MM-01'. */
+function competenciaLabel(comp: string): string {
+  return new Date(`${comp}T12:00:00`).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+}
 
 async function tenantDoGestor() {
   const sb = await createClient();
@@ -27,6 +35,8 @@ export async function criarPlano(
   const nome = String(formData.get("nome") || "").trim();
   const patioId = String(formData.get("patio_id"));
   const tipo = String(formData.get("tipo") || "mensalista");
+  const valor =
+    Number(String(formData.get("valor") || "0").replace(",", ".")) || 0;
   if (!nome) return { ok: false, msg: "Informe o nome do plano." };
 
   const { error } = await sb.from("planos").insert({
@@ -34,6 +44,7 @@ export async function criarPlano(
     patio_id: patioId,
     nome,
     tipo,
+    valor,
   });
   if (error) return { ok: false, msg: "Não foi possível criar o plano." };
 
@@ -41,8 +52,8 @@ export async function criarPlano(
     modulo: "mensalistas",
     acao: "criou",
     patioId,
-    descricao: `Criou o plano "${nome}" (${tipo})`,
-    dados: { nome, tipo },
+    descricao: `Criou o plano "${nome}" (${tipo}${valor > 0 ? `, ${brl(valor)}/mês` : ""})`,
+    dados: { nome, tipo, valor },
   });
 
   revalidatePath("/painel/mensalistas");
@@ -239,4 +250,185 @@ export async function removerVeiculo(id: string): Promise<Resultado> {
 
   revalidatePath("/painel/mensalistas");
   return { ok: true, msg: "Veículo removido." };
+}
+
+// ============================================================================
+// Entrega 4a — Mensalidades (planos.valor + pagamentos)
+// ============================================================================
+
+/** Edita o valor mensal de um plano existente. */
+export async function atualizarValorPlano(
+  id: string,
+  valor: number,
+): Promise<Resultado> {
+  const { sb } = await tenantDoGestor();
+  const seguro = Number.isFinite(valor) && valor >= 0 ? valor : 0;
+
+  const { data: antes } = await sb
+    .from("planos")
+    .select("nome, valor, patio_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { error } = await sb.from("planos").update({ valor: seguro }).eq("id", id);
+  if (error) return { ok: false, msg: "Não foi possível salvar o valor." };
+
+  await registrarAuditoria({
+    modulo: "mensalistas",
+    acao: "alterou",
+    patioId: (antes?.patio_id as string | undefined) ?? null,
+    descricao: `Alterou o valor do plano "${antes?.nome ?? "?"}": ${brl(antes?.valor)} → ${brl(seguro)}`,
+    dados: { id, antes: antes?.valor ?? 0, depois: seguro },
+  });
+
+  revalidatePath("/painel/mensalistas");
+  return { ok: true, msg: `Valor do plano atualizado para ${brl(seguro)}.` };
+}
+
+export type PagamentoRow = {
+  id: string;
+  competencia: string;
+  valor: number;
+  forma_pagamento: string | null;
+  pago_em: string;
+  origem: string;
+  registrado_por_nome: string | null;
+  observacao: string | null;
+  cancelado_em: string | null;
+  cancelado_por_nome: string | null;
+  cancelamento_motivo: string | null;
+};
+
+/** Registra um pagamento de mensalidade pelo painel (sem caixa — Decisão A). */
+export async function registrarPagamento(input: {
+  clienteId: string;
+  patioId: string;
+  planoId: string | null;
+  competencia: string; // 'YYYY-MM-01'
+  valor: number;
+  formaPagamento: string;
+  observacao?: string;
+}): Promise<Resultado> {
+  const sb = await createClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  const tenantId = (user?.app_metadata as { tenant_id?: string })?.tenant_id;
+  if (!user || !tenantId)
+    return { ok: false, msg: "Sessão sem rede vinculada." };
+  if (!Number.isFinite(input.valor) || input.valor < 0)
+    return { ok: false, msg: "Valor inválido." };
+
+  const nome =
+    (user.user_metadata as { nome?: string } | undefined)?.nome ??
+    user.email ??
+    "gestor";
+
+  const { data: cli } = await sb
+    .from("clientes")
+    .select("nome")
+    .eq("id", input.clienteId)
+    .maybeSingle();
+
+  const { error } = await sb.from("mensalidade_pagamentos").insert({
+    id: crypto.randomUUID(),
+    patio_id: input.patioId,
+    tenant_id: tenantId,
+    cliente_id: input.clienteId,
+    plano_id: input.planoId,
+    competencia: input.competencia,
+    valor: input.valor,
+    forma_pagamento: input.formaPagamento,
+    origem: "painel",
+    registrado_por: user.id,
+    registrado_por_nome: nome,
+    observacao: input.observacao?.trim() || null,
+  });
+  if (error) return { ok: false, msg: "Não foi possível registrar o pagamento." };
+
+  const comp = competenciaLabel(input.competencia);
+  await registrarAuditoria({
+    modulo: "mensalistas",
+    acao: "registrou_pagamento",
+    patioId: input.patioId,
+    descricao: `Registrou pagamento de ${brl(input.valor)} de "${cli?.nome ?? "?"}" (${comp})`,
+    dados: {
+      cliente_id: input.clienteId,
+      competencia: input.competencia,
+      valor: input.valor,
+      forma_pagamento: input.formaPagamento,
+    },
+  });
+
+  revalidatePath("/painel/mensalistas");
+  return { ok: true, msg: `Pagamento de ${brl(input.valor)} registrado (${comp}).` };
+}
+
+/** Lista os pagamentos de um cliente (inclui cancelados). */
+export async function listarPagamentos(
+  clienteId: string,
+): Promise<PagamentoRow[]> {
+  const sb = await createClient();
+  const { data } = await sb
+    .from("mensalidade_pagamentos")
+    .select(
+      "id, competencia, valor, forma_pagamento, pago_em, origem, registrado_por_nome, observacao, cancelado_em, cancelado_por_nome, cancelamento_motivo",
+    )
+    .eq("cliente_id", clienteId)
+    .order("competencia", { ascending: false })
+    .order("pago_em", { ascending: false });
+  return (data ?? []) as PagamentoRow[];
+}
+
+/**
+ * Cancela um pagamento (soft). O trigger do banco só permite tocar os campos de
+ * cancelamento — por isso o UPDATE abaixo NÃO altera mais nada.
+ */
+export async function cancelarPagamento(
+  id: string,
+  motivo: string,
+): Promise<Resultado> {
+  const sb = await createClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return { ok: false, msg: "Sessão inválida." };
+
+  const m = motivo.trim();
+  if (!m) return { ok: false, msg: "Informe o motivo do cancelamento." };
+
+  const nome =
+    (user.user_metadata as { nome?: string } | undefined)?.nome ??
+    user.email ??
+    "gestor";
+
+  const { data: pag } = await sb
+    .from("mensalidade_pagamentos")
+    .select("valor, competencia, patio_id, cancelado_em")
+    .eq("id", id)
+    .maybeSingle();
+  if (pag?.cancelado_em)
+    return { ok: false, msg: "Este pagamento já está cancelado." };
+
+  const { error } = await sb
+    .from("mensalidade_pagamentos")
+    .update({
+      cancelado_em: new Date().toISOString(),
+      cancelado_por: user.id,
+      cancelado_por_nome: nome,
+      cancelamento_motivo: m,
+    })
+    .eq("id", id);
+  if (error) return { ok: false, msg: "Não foi possível cancelar o pagamento." };
+
+  await registrarAuditoria({
+    modulo: "mensalistas",
+    acao: "cancelou_pagamento",
+    patioId: (pag?.patio_id as string | undefined) ?? null,
+    descricao: `Cancelou pagamento de ${brl(pag?.valor)}${pag?.competencia ? ` (${competenciaLabel(String(pag.competencia))})` : ""}. Motivo: ${m}`,
+    dados: { id, motivo: m },
+  });
+
+  revalidatePath("/painel/mensalistas");
+  return { ok: true, msg: "Pagamento cancelado." };
 }

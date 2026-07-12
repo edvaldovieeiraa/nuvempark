@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BadgeCheck, Plus, X } from "lucide-react";
+import { BadgeCheck, Plus, X, Check } from "lucide-react";
 import {
   criarPlano,
   desativarPlano,
+  atualizarValorPlano,
   type Resultado,
 } from "@/app/painel/mensalistas/actions";
 import { useToast } from "@/components/ui/toast";
@@ -13,10 +14,16 @@ import { Botao } from "@/components/ui/botao";
 import { Campo, Input, Select } from "@/components/ui/campos";
 import { Confirmar } from "@/components/ui/confirmar";
 
+const moeda = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
 type Plano = {
   id: string;
   nome: string;
   tipo: string;
+  valor: number;
   ativo: boolean;
 };
 
@@ -74,6 +81,13 @@ export function PlanosClient({
                         : "clientes"}
                     </p>
                   </div>
+                  {p.tipo === "credenciado" ? (
+                    <span className="text-xs text-texto-3 italic mr-1">
+                      não cobra
+                    </span>
+                  ) : (
+                    <ValorPlano plano={p} />
+                  )}
                   <BotaoDesativarPlano
                     plano={p}
                     qtdClientes={qtdClientesPorPlano[p.id] ?? 0}
@@ -87,6 +101,66 @@ export function PlanosClient({
 
       {/* Novo plano — form curto, gerenciamento rápido */}
       <NovoPlanoForm patioId={patioId} />
+    </div>
+  );
+}
+
+/** Valor mensal do plano com edição inline. */
+function ValorPlano({ plano }: { plano: Plano }) {
+  const toast = useToast();
+  const [editando, setEditando] = useState(false);
+  const [valor, setValor] = useState(String(plano.valor ?? 0));
+  const [salvando, comecar] = useTransition();
+
+  function salvar() {
+    const n = Number(valor.replace(",", ".")) || 0;
+    comecar(async () => {
+      const r = await atualizarValorPlano(plano.id, n);
+      if (r?.ok) {
+        toast.sucesso(r.msg);
+        setEditando(false);
+      } else toast.erro(r?.msg ?? "Erro inesperado.");
+    });
+  }
+
+  if (!editando) {
+    return (
+      <button
+        onClick={() => {
+          setValor(String(plano.valor ?? 0));
+          setEditando(true);
+        }}
+        className="text-sm font-bold text-texto-2 hover:text-brand-700 tabular-nums px-2 py-1 rounded-lg hover:bg-brand-50 transition-colors"
+        title="Editar valor mensal"
+      >
+        {moeda.format(Number(plano.valor) || 0)}
+        <span className="text-[10px] text-texto-3 font-normal">/mês</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-xs text-texto-3">R$</span>
+      <input
+        autoFocus
+        value={valor}
+        onChange={(e) => setValor(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") salvar();
+          if (e.key === "Escape") setEditando(false);
+        }}
+        inputMode="decimal"
+        className="w-20 h-8 px-2 rounded-lg border border-brand-300 bg-superficie text-sm font-bold tabular-nums focus:outline-none focus:ring-4 focus:ring-brand-500/15"
+      />
+      <button
+        onClick={salvar}
+        disabled={salvando}
+        aria-label="Salvar valor"
+        className="w-8 h-8 rounded-lg grid place-items-center text-brand-700 bg-brand-50 hover:bg-brand-100 disabled:opacity-60"
+      >
+        <Check className="w-4 h-4" />
+      </button>
     </div>
   );
 }
@@ -167,12 +241,22 @@ function NovoPlanoForm({ patioId }: { patioId: string }) {
             <Input name="nome" required placeholder="Mensalista Diurno" />
           </Campo>
         </div>
-        <div className="w-44">
+        <div className="w-40">
           <Campo label="Tipo">
             <Select name="tipo">
               <option value="mensalista">mensalista</option>
               <option value="credenciado">credenciado</option>
             </Select>
+          </Campo>
+        </div>
+        <div className="w-36">
+          <Campo label="Valor mensal (R$)">
+            <Input
+              name="valor"
+              inputMode="decimal"
+              placeholder="0,00"
+              defaultValue="0"
+            />
           </Campo>
         </div>
         <Botao carregando={pendente} className="h-11">
