@@ -4,6 +4,7 @@ import { Revelar } from "@/components/ui/revelar";
 import { SemPatio } from "@/components/sem-patio";
 import { SyncBadge } from "@/components/sync-badge";
 import { ultimaSincronizacao } from "@/lib/patio-scope";
+import { LimpezaPatio } from "@/components/patio/limpeza-patio";
 import { ParkingSquare, Inbox } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +50,10 @@ export default async function PatioAgoraPage({
               pátio agora
             </p>
           </div>
-          <SyncBadge iso={sincronizadoEm} />
+          <div className="flex items-center gap-3">
+            <LimpezaPatio patioId={patioId} patioNome={patioNome ?? "este pátio"} />
+            <SyncBadge iso={sincronizadoEm} />
+          </div>
         </div>
       </Revelar>
 
