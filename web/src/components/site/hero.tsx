@@ -231,7 +231,7 @@ function MockupDashboard() {
         <span className="w-2.5 h-2.5 rounded-full bg-aviso/40" />
         <span className="w-2.5 h-2.5 rounded-full bg-brand-300" />
         <span className="ml-3 text-[11px] font-mono text-texto-3">
-          nuvempark.com/painel
+          dashboard.nuvempark.com
         </span>
         <span className="ml-auto inline-flex items-center gap-1.5 text-[10px] font-bold text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-2 py-0.5">
           <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />

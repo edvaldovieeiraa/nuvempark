@@ -1,8 +1,49 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// ── Separação de domínios ────────────────────────────────────────────────────
+// dashboard.nuvempark.com = painel (app)  ·  nuvempark.com = site institucional.
+// Um único app Next serve os dois; o roteamento acontece aqui pelo Host.
+// Prefixos que pertencem ao APP (só no host dashboard):
+const PREFIXOS_APP = ["/painel", "/master", "/login", "/cadastro", "/auth"];
+// Config vem de env: só ativa a separação quando AMBOS os hosts existem.
+// Enquanto o DNS/nginx do dashboard não estão prontos, fica passivo (não quebra).
+const HOST_APP = process.env.NEXT_PUBLIC_APP_HOST || ""; // ex.: dashboard.nuvempark.com
+const HOST_SITE = process.env.NEXT_PUBLIC_SITE_HOST || ""; // ex.: nuvempark.com
+
+function ehRotaApp(pathname: string) {
+  return PREFIXOS_APP.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
+}
+
+/** Redireciona painel↔site pro host correto. null = nada a fazer. */
+function redirecionaPorHost(request: NextRequest): NextResponse | null {
+  if (!HOST_APP || !HOST_SITE) return null; // separação desligada
+  const host = request.headers.get("host")?.split(":")[0] ?? "";
+  // Ignora hosts que não são os dois oficiais (localhost, IP, preview).
+  if (host !== HOST_APP && host !== HOST_SITE) return null;
+
+  const { pathname, search } = request.nextUrl;
+  const rotaApp = ehRotaApp(pathname);
+
+  // rota de app fora do host de app → manda pro dashboard
+  if (rotaApp && host !== HOST_APP) {
+    return NextResponse.redirect(`https://${HOST_APP}${pathname}${search}`);
+  }
+  // rota de site no host de app → manda pro site
+  if (!rotaApp && host === HOST_APP) {
+    return NextResponse.redirect(`https://${HOST_SITE}${pathname}${search}`);
+  }
+  return null;
+}
+
 /** Renova a sessão do gestor e protege as rotas do painel. */
 export async function middleware(request: NextRequest) {
+  // 0) Separação de domínios (painel vs site) antes de tudo.
+  const desvio = redirecionaPorHost(request);
+  if (desvio) return desvio;
+
   // Rotas /master têm gate próprio (senha mestra) — não passam pelo auth do gestor.
   if (request.nextUrl.pathname.startsWith("/master")) {
     return NextResponse.next({ request });
