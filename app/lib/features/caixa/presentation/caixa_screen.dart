@@ -206,7 +206,7 @@ class CaixaScreen extends ConsumerWidget {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9,]'))
                 ],
                 decoration: const InputDecoration(labelText: 'Valor (R\$)'),
               ),
@@ -297,12 +297,79 @@ class CaixaScreen extends ConsumerWidget {
       );
 
   Future<void> _dialogFechar(BuildContext context, WidgetRef ref, CaixaModel s) async {
-    final ctrl = TextEditingController(text: s.saldoCalculado.toStringAsFixed(2));
-    final ok = await _dialogValor(context, 'Fechar caixa', 'Valor contado (R\$)', ctrl);
+    // Blindagem 100x: prefill com VÍRGULA. O parser BR remove pontos, então um
+    // prefill "150.50" (toStringAsFixed) fechado sem edição viraria 15050.
+    final ctrl = TextEditingController(
+        text: s.saldoCalculado.toStringAsFixed(2).replaceAll('.', ','));
+    final obsCtrl = TextEditingController();
+    final divergencia = ValueNotifier<double>(0);
+    void recalc() =>
+        divergencia.value = _parseValor(ctrl.text) - s.saldoCalculado;
+    ctrl.addListener(recalc);
+    recalc();
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Fechar caixa'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _confLinha('Saldo esperado', _moeda.format(s.saldoCalculado)),
+              const SizedBox(height: 4),
+              _confLinhaFraca('Fundo', _moeda.format(s.fundoCaixa)),
+              _confLinhaFraca('Entradas', _moeda.format(s.totalEntradas)),
+              _confLinhaFraca('Sangrias', '- ${_moeda.format(s.totalSangrias)}'),
+              const Divider(height: 24),
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9,]'))
+                ],
+                decoration:
+                    const InputDecoration(labelText: 'Valor contado (R\$)'),
+              ),
+              const SizedBox(height: 12),
+              ValueListenableBuilder<double>(
+                valueListenable: divergencia,
+                builder: (_, d, _) => _divergenciaBanner(d),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: obsCtrl,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'Observação (opcional)',
+                  hintText: 'Ex.: sangria feita sem registro',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Fechar caixa')),
+        ],
+      ),
+    );
+    ctrl.removeListener(recalc);
     if (ok != true) return;
+
     final contado = _parseValor(ctrl.text);
+    final obs = obsCtrl.text.trim();
     final fechamento = DateTime.now();
-    final res = await ref.read(caixaSessaoNotifierProvider.notifier).fechar(contado);
+    final res = await ref
+        .read(caixaSessaoNotifierProvider.notifier)
+        .fechar(contado, obs: obs.isEmpty ? null : obs);
     if (res == null) return;
 
     // Imprime o relatório de fechamento (com todos os movimentos da sessão:
@@ -339,12 +406,139 @@ class CaixaScreen extends ConsumerWidget {
       await ref.read(printerNotifierProvider.notifier).print(bytes);
     }
 
-    if (context.mounted) {
-      final msg = res.temDivergencia
-          ? 'Caixa fechado. Divergência: ${_moeda.format(res.divergencia)}'
-          : 'Caixa fechado sem divergência.';
-      AppToast.info(context, msg);
-    }
+    // Conferência PERSISTENTE — fica na tela até o operador confirmar. Antes era
+    // só um toast que sumia em ~2s ("as validações não apareciam").
+    if (context.mounted) await _dialogResultado(context, res);
+  }
+
+  /// Painel de conferência do fechamento: esperado × contado × divergência,
+  /// colorido por resultado. Permanece na tela até o operador concluir.
+  Future<void> _dialogResultado(BuildContext context, FechamentoResult res) {
+    final (Color cor, Color bg, String titulo, IconData icone) =
+        !res.temDivergencia
+            ? (
+                AppColors.success,
+                AppColors.entradaBg,
+                'Caixa confere',
+                Icons.check_circle_outline
+              )
+            : res.emExcesso
+                ? (
+                    AppColors.warning,
+                    const Color(0xFFFFF7E6),
+                    'Sobra no caixa',
+                    Icons.trending_up_rounded
+                  )
+                : (
+                    AppColors.danger,
+                    const Color(0xFFFDECEC),
+                    'Falta no caixa',
+                    Icons.trending_down_rounded
+                  );
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(icone, color: cor),
+            const SizedBox(width: 10),
+            Expanded(child: Text(titulo)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _confLinha('Esperado', _moeda.format(res.totalCalculado)),
+            _confLinha('Contado', _moeda.format(res.totalContado)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(res.temDivergencia ? 'Divergência' : 'Diferença',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, color: cor)),
+                  Text(_moeda.format(res.divergencia.abs()),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 18, color: cor)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Concluir')),
+        ],
+      ),
+    );
+  }
+
+  Widget _confLinha(String k, String v) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(k, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(v, style: const TextStyle(fontWeight: FontWeight.w700)),
+          ],
+        ),
+      );
+
+  Widget _confLinhaFraca(String k, String v) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(k,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.onSurfaceVariant)),
+            Text(v,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.onSurfaceVariant)),
+          ],
+        ),
+      );
+
+  /// Banner de divergência ao vivo — atualiza enquanto o operador digita o
+  /// valor contado. Verde = confere, âmbar = sobra, vermelho = falta.
+  Widget _divergenciaBanner(double d) {
+    final (Color cor, Color bg, String txt) = d.abs() <= 0.01
+        ? (AppColors.success, AppColors.entradaBg, 'Confere — sem divergência')
+        : d > 0
+            ? (
+                AppColors.warning,
+                const Color(0xFFFFF7E6),
+                'Sobra de ${_moeda.format(d)}'
+              )
+            : (
+                AppColors.danger,
+                const Color(0xFFFDECEC),
+                'Falta de ${_moeda.format(d.abs())}'
+              );
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 18, color: cor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(txt,
+                style: TextStyle(color: cor, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<bool?> _dialogValor(
@@ -361,7 +555,7 @@ class CaixaScreen extends ConsumerWidget {
             controller: ctrl,
             autofocus: true,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9,]'))],
             decoration: InputDecoration(labelText: label),
           ),
           actions: [
@@ -371,8 +565,8 @@ class CaixaScreen extends ConsumerWidget {
         ),
       );
 
+  /// Parser BR blindado: a entrada só permite dígitos e vírgula (decimal).
+  /// "150,50" → 150.5 · "1500" → 1500 · "150" → 150. Sem ambiguidade de ponto.
   static double _parseValor(String s) =>
-      double.tryParse(s.replaceAll('.', '').replaceAll(',', '.')) ??
-      double.tryParse(s) ??
-      0.0;
+      double.tryParse(s.trim().replaceAll('.', '').replaceAll(',', '.')) ?? 0.0;
 }

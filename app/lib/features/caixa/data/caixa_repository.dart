@@ -22,6 +22,11 @@ class CaixaRepository {
     required String operadorNome,
     required double fundoCaixa,
   }) async {
+    // Blindagem: nunca abrir uma 2ª sessão se já há uma aberta (duplo-toque /
+    // reabertura). Retorna a existente em vez de duplicar.
+    final existente = await db.caixaDao.getSessaoAberta(patioId, operadorId);
+    if (existente != null) return existente.id;
+
     final id = const Uuid().v4();
     final agora = DateTime.now().millisecondsSinceEpoch;
 
@@ -237,8 +242,18 @@ class CaixaRepository {
     final row = await db.caixaDao.getSessaoById(caixaSessaoId);
     if (row == null) throw Exception('Sessão de caixa não encontrada');
 
-    final totalCalculado =
-        row.fundoCaixa + row.totalEntradas - row.totalSangrias;
+    // Blindagem: recomputa entradas/sangrias dos MOVIMENTOS (fonte da verdade),
+    // não do total acumulado — imune a drift por falha parcial de atualização.
+    // 'isencao' não movimenta dinheiro, então fica fora do saldo.
+    final movs = await db.caixaDao.getMovimentosBySessao(caixaSessaoId);
+    final entradas = movs
+        .where((m) => m.tipo == 'entrada')
+        .fold<double>(0, (t, m) => t + m.valor);
+    final sangrias = movs
+        .where((m) => m.tipo == 'sangria')
+        .fold<double>(0, (t, m) => t + m.valor);
+
+    final totalCalculado = row.fundoCaixa + entradas - sangrias;
     final divergencia = totalContado - totalCalculado;
     final agora = DateTime.now().millisecondsSinceEpoch;
 
