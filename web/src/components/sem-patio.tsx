@@ -12,14 +12,14 @@ export function SemPatio() {
         Nenhum pátio ainda
       </h1>
       <p className="mt-1.5 text-sm text-texto-2">
-        Cadastre o primeiro pátio da sua rede para começar a configurar tarifas,
-        operadores e ver os movimentos.
+        Configure o primeiro pátio da sua rede — o assistente te guia em 4
+        passos rápidos: pátio, tabela de preço, ticket e operador do app.
       </p>
       <Link
-        href="/painel/patios"
+        href="/painel"
         className="inline-flex items-center gap-2 mt-5 h-11 px-6 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
       >
-        Criar primeiro pátio
+        Configurar meu pátio
       </Link>
     </div>
   );

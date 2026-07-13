@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DashboardLive } from "@/components/dashboard-live";
-import { SemPatio } from "@/components/sem-patio";
+import { OnboardingGate } from "@/components/onboarding/onboarding-wizard";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,8 @@ export default async function DashboardPage({
     .order("nome");
 
   const lista = patios ?? [];
-  if (lista.length === 0) return <SemPatio />;
+  // Rede nova sem pátios → onboarding guiado (pátio, tarifa, ticket, operador).
+  if (lista.length === 0) return <OnboardingGate />;
 
   // Pátio em escopo: o do seletor (?patio) ou o primeiro.
   const selecionado = lista.find((p) => p.id === patio) ?? lista[0];
