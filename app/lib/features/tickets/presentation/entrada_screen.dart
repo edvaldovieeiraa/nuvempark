@@ -45,6 +45,17 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
   bool _avariaAberta = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Puxa a config mais recente (tarifas/tipos) ANTES de o operador registrar —
+    // o momento que mais importa: registrar sempre com a tabela atual da nuvem.
+    // Silencioso: se offline, o cache atual segue valendo (offline-first).
+    Future.microtask(
+      () => ref.read(patioNotifierProvider.notifier).bootstrap(silencioso: true),
+    );
+  }
+
+  @override
   void dispose() {
     _placaCtrl.dispose();
     _avariaCtrl.dispose();

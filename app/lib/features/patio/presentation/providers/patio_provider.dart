@@ -82,7 +82,9 @@ class PatioNotifier extends AsyncNotifier<PatioModel?> {
 
   /// Baixa a config atualizada do servidor e recarrega o cache.
   /// Mantém o cache anterior se o bootstrap falhar (offline-first).
-  Future<void> bootstrap() async {
+  /// [silencioso] = não mostra AsyncLoading (usado pelo loop de sync contínuo,
+  /// pra não piscar "carregando" na tela a cada 30s).
+  Future<void> bootstrap({bool silencioso = false}) async {
     if (_bootstrapping) return;
     _bootstrapping = true;
     final patioId = await ref.read(tokenStorageProvider).readPatioId();
@@ -91,7 +93,7 @@ class PatioNotifier extends AsyncNotifier<PatioModel?> {
       return;
     }
     final anterior = state.value;
-    state = const AsyncLoading<PatioModel?>();
+    if (!silencioso) state = const AsyncLoading<PatioModel?>();
     try {
       await ref.read(bootstrapRepositoryProvider).sincronizar(patioId);
       state = AsyncData(await _lerCache(patioId));
@@ -100,7 +102,9 @@ class PatioNotifier extends AsyncNotifier<PatioModel?> {
       final cache = await _lerCache(patioId) ?? anterior;
       if (cache != null) {
         state = AsyncData(cache);
-      } else {
+      } else if (!silencioso) {
+        // No modo silencioso, falha de rede não vira tela de erro — o loop
+        // tenta de novo em 30s e o cache atual continua servindo.
         state = AsyncError(e, st);
       }
     } finally {

@@ -17,7 +17,11 @@ class CaixaDao extends DatabaseAccessor<AppDatabase> with _$CaixaDaoMixin {
                   s.operacaoId.equals(operacaoId) &
                   s.operadorId.equals(operadorId) &
                   s.status.equals('aberta'),
-            ))
+            )
+            // Blindagem: se houver mais de uma sessão aberta (duplo-toque,
+            // multi-device), pega a mais recente em vez de lançar exceção.
+            ..orderBy([(s) => OrderingTerm.desc(s.aberturaEpoch)])
+            ..limit(1))
           .getSingleOrNull();
 
   Future<CaixaSessoe?> getSessaoById(String id) =>

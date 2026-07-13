@@ -33,7 +33,10 @@ abstract final class Env {
 
   static const Duration connectTimeout = Duration(seconds: 20);
   static const Duration receiveTimeout = Duration(seconds: 30);
-  static const Duration syncInterval = Duration(minutes: 5);
+  /// Intervalo do loop de sincronização contínua (push + pull) enquanto o app
+  /// está em primeiro plano. O operador não precisa clicar em nada: cadastros
+  /// da dashboard chegam sozinhos e a fila local sobe sozinha.
+  static const Duration syncInterval = Duration(seconds: 30);
   static const int syncMaxTentativas = 10;
 
   static String get versionDisplay {

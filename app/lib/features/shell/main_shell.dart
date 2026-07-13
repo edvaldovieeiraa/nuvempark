@@ -7,6 +7,7 @@ import '../ajustes/presentation/ajustes_screen.dart';
 import '../../core/platform/lock_task.dart';
 import '../patio/presentation/patio_tab.dart';
 import '../printing/presentation/providers/printer_provider.dart';
+import '../sync/data/sync_loop.dart';
 import 'conexao_banner.dart';
 
 /// Casco principal do app: bottom nav com Início / Pátio / Caixa / Config.
@@ -37,6 +38,17 @@ class _MainShellState extends ConsumerState<MainShell> {
     // Fixa o app na tela (bloqueia barra de notificação/status e botões do
     // sistema). Na 1ª vez o Android pede confirmação (sem device owner).
     Future.microtask(LockTask.iniciar);
+
+    // Sincronização contínua (push + pull a cada 30s) enquanto o app está
+    // aberto. O operador não clica em nada: cadastros da dashboard chegam
+    // sozinhos e a fila local sobe sozinha. Pausa em background.
+    Future.microtask(() => ref.read(syncLoopProvider).iniciar());
+  }
+
+  @override
+  void dispose() {
+    ref.read(syncLoopProvider).parar();
+    super.dispose();
   }
 
   void _irPara(int i) => setState(() => _aba = i);
