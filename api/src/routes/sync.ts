@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
 import { toIso, num, str, compact } from '../lib/coerce.js';
+import { proximoVencimento, hojeYmdUtc } from '../lib/vencimento.js';
 
 /**
  * POST /sync — recebe UM item da outbox do app (não batch).
@@ -193,11 +194,12 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
 
         // -------------------------------------------- MENSALIDADE_PAGAMENTO
         case 'mensalidade_pagamento': {
+          const clienteId = str(payload.cliente_id);
           const row = compact({
             id: entidadeId,
             patio_id: patioId,
             tenant_id: tenantId,
-            cliente_id: str(payload.cliente_id),
+            cliente_id: clienteId,
             plano_id: str(payload.plano_id),
             competencia: str(payload.competencia), // 'YYYY-MM-01'
             valor: num(payload.valor) ?? 0,
@@ -212,11 +214,36 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
             sincronizado_em: agora,
           });
           // Imutável (create-only), mesma estratégia do caixa_movimento:
-          // re-envio é no-op.
-          const res = await db
+          // re-envio é no-op. .select() → só volta linha quando REALMENTE inseriu.
+          const { data: inserido, error: erroPag } = await db
             .from('mensalidade_pagamentos')
-            .upsert(row, { onConflict: 'id', ignoreDuplicates: true });
-          if (res.error) throw res.error;
+            .upsert(row, { onConflict: 'id', ignoreDuplicates: true })
+            .select('id');
+          if (erroPag) throw erroPag;
+
+          // Avança a vigência do cliente SÓ na 1ª chegada do pagamento (mantém a
+          // idempotência: re-envio não avança de novo). Mesma regra do painel.
+          if (inserido && inserido.length > 0 && clienteId) {
+            const { data: cli } = await db
+              .from('clientes')
+              .select('vencimento, dia_vencimento')
+              .eq('id', clienteId)
+              .maybeSingle();
+            if (cli) {
+              const atual = cli.vencimento
+                ? String(cli.vencimento).slice(0, 10)
+                : null;
+              const novo = proximoVencimento(
+                atual,
+                (cli.dia_vencimento as number | null) ?? null,
+                hojeYmdUtc(),
+              );
+              await db
+                .from('clientes')
+                .update({ vencimento: novo })
+                .eq('id', clienteId);
+            }
+          }
           break;
         }
 

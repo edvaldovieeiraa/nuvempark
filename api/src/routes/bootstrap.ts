@@ -65,7 +65,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
     // Clientes livre-passagem (p/ reconhecimento offline de placa).
     const { data: clientes } = await db
       .from('clientes')
-      .select('id, nome, plano_id, vagas, vencimento, bloqueado')
+      .select('id, nome, plano_id, vagas, vencimento, dia_vencimento, bloqueado')
       .eq('patio_id', patioId)
       .eq('ativo', true);
 
@@ -90,6 +90,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       nome: c.nome,
       vagas: c.vagas,
       vencimento: c.vencimento,
+      dia_vencimento: c.dia_vencimento,
       bloqueado: c.bloqueado,
       plano: c.plano_id ? planosById.get(c.plano_id) ?? null : null,
       veiculos: veiculosPorCliente.get(c.id) ?? [],
