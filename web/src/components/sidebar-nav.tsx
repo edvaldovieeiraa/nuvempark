@@ -27,6 +27,7 @@ import {
   SlidersHorizontal,
   Printer,
   History,
+  Gauge,
   type LucideIcon,
 } from "lucide-react";
 
@@ -52,6 +53,7 @@ const ITENS: Item[] = [
     filhos: [
       { href: "/painel/patio", label: "Pátio", Icone: ParkingSquare },
       { href: "/painel/movimentos", label: "Movimentos", Icone: ArrowLeftRight },
+      { href: "/painel/ocupacao", label: "Ocupação", Icone: Gauge },
       { href: "/painel/removidos", label: "Tickets removidos", Icone: Ban },
     ],
   },
