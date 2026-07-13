@@ -32,9 +32,14 @@ import {
   registrarPagamento,
   listarPagamentos,
   cancelarPagamento,
+  atualizarDiaVencimento,
   type Resultado,
   type PagamentoRow,
 } from "@/app/painel/mensalistas/actions";
+import {
+  diasAteVencimento,
+  formatarVencimentoBR,
+} from "@/lib/vencimento";
 import { useToast } from "@/components/ui/toast";
 import { Confirmar } from "@/components/ui/confirmar";
 
@@ -68,6 +73,7 @@ type Cliente = {
   patio_id: string;
   plano_id: string | null;
   vencimento: string | null;
+  dia_vencimento: number | null;
   vagas: number;
   bloqueado: boolean;
   ativo: boolean;
@@ -77,19 +83,12 @@ type Hoje = { ano: number; mes: number; dia: number };
 
 type Badge =
   | { tipo: "credenciado" }
-  | { tipo: "em_dia" }
+  | { tipo: "em_dia"; dias: number }
   | { tipo: "vence"; dias: number }
-  | { tipo: "atrasado"; meses: number };
+  | { tipo: "atrasado"; dias: number }
+  | { tipo: "pendente" };
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
-function mesFirst(ano: number, mes: number): string {
-  return `${ano}-${pad2(mes)}-01`;
-}
-function mesesEntre(aYmd: string, bYmd: string): number {
-  const [ay, am] = aYmd.split("-").map(Number);
-  const [by, bm] = bYmd.split("-").map(Number);
-  return (by - ay) * 12 + (bm - am);
-}
 function competenciaLabel(comp: string): string {
   return new Date(`${comp.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR", {
     month: "long",
@@ -97,35 +96,32 @@ function competenciaLabel(comp: string): string {
   });
 }
 
+/**
+ * Status baseado na DATA de vencimento (rolante): o pagamento avança o
+ * vencimento, então "em dia" = vencimento no futuro; "vence" = próximos 7 dias;
+ * "atrasado" = vencimento no passado. Sem vencimento => "pendente".
+ */
 function calcularBadge(
   cliente: Cliente,
   plano: Plano | undefined,
-  pagas: string[],
-  ultima: string | null,
   hoje: Hoje,
 ): Badge {
   if (plano?.tipo === "credenciado") return { tipo: "credenciado" };
+  if (!cliente.vencimento) return { tipo: "pendente" };
 
-  const mesCorrente = mesFirst(hoje.ano, hoje.mes);
-  if (pagas.includes(mesCorrente)) return { tipo: "em_dia" };
+  const hojeYmd = `${hoje.ano}-${pad2(hoje.mes)}-${pad2(hoje.dia)}`;
+  const dias = diasAteVencimento(cliente.vencimento, hojeYmd);
+  if (dias < 0) return { tipo: "atrasado", dias: -dias };
+  if (dias <= 7) return { tipo: "vence", dias };
+  return { tipo: "em_dia", dias };
+}
 
-  const diaVenc = cliente.vencimento
-    ? new Date(`${cliente.vencimento}T12:00:00`).getDate()
-    : 10;
-  if (hoje.dia <= diaVenc) return { tipo: "vence", dias: diaVenc - hoje.dia };
-
-  if (ultima)
-    return {
-      tipo: "atrasado",
-      meses: Math.max(1, mesesEntre(ultima, mesCorrente)),
-    };
-
-  const criacao = new Date(cliente.criado_em);
-  const criacaoMes = mesFirst(criacao.getFullYear(), criacao.getMonth() + 1);
-  return {
-    tipo: "atrasado",
-    meses: Math.max(1, mesesEntre(criacaoMes, mesCorrente) + 1),
-  };
+function textoAtraso(dias: number): string {
+  if (dias >= 45) {
+    const meses = Math.round(dias / 30);
+    return `Atrasado há ${meses} meses`;
+  }
+  return `Atrasado há ${dias} ${dias === 1 ? "dia" : "dias"}`;
 }
 
 function BadgeStatus({ badge }: { badge: Badge }) {
@@ -135,6 +131,11 @@ function BadgeStatus({ badge }: { badge: Badge }) {
         return { txt: "Credenciado", cls: "bg-fundo text-texto-2 border-borda" };
       case "em_dia":
         return { txt: "Em dia", cls: "bg-brand-50 text-brand-700 border-brand-200" };
+      case "pendente":
+        return {
+          txt: "Sem vencimento",
+          cls: "bg-fundo text-texto-3 border-borda",
+        };
       case "vence":
         return {
           txt:
@@ -145,7 +146,7 @@ function BadgeStatus({ badge }: { badge: Badge }) {
         };
       case "atrasado":
         return {
-          txt: badge.meses > 1 ? `Atrasado há ${badge.meses} meses` : "Atrasado",
+          txt: textoAtraso(badge.dias),
           cls: "bg-perigo-bg text-perigo border-perigo/20",
         };
     }
@@ -166,7 +167,6 @@ export function MensalistasClient({
   clientes,
   veiculos,
   pagasPorCliente,
-  ultimaPagaPorCliente,
   hoje,
 }: {
   patioId: string;
@@ -175,7 +175,6 @@ export function MensalistasClient({
   clientes: Cliente[];
   veiculos: Veiculo[];
   pagasPorCliente: Record<string, string[]>;
-  ultimaPagaPorCliente: Record<string, string>;
   hoje: Hoje;
 }) {
   const planoDe = (id: string | null) => planos.find((p) => p.id === id);
@@ -243,13 +242,7 @@ export function MensalistasClient({
               {clientes.map((c) => {
                 const plano = planoDe(c.plano_id);
                 const pagas = pagasPorCliente[c.id] ?? [];
-                const badge = calcularBadge(
-                  c,
-                  plano,
-                  pagas,
-                  ultimaPagaPorCliente[c.id] ?? null,
-                  hoje,
-                );
+                const badge = calcularBadge(c, plano, hoje);
                 return (
                   <LinhaCliente
                     key={c.id}
@@ -327,8 +320,9 @@ function LinhaCliente({
           </p>
           <p className="text-xs text-texto-3">
             {cliente.vencimento
-              ? `Vence dia ${new Date(`${cliente.vencimento}T12:00:00`).getDate()}`
-              : "Vencimento dia 10 (padrão)"}
+              ? `Vence ${formatarVencimentoBR(cliente.vencimento)}`
+              : "Sem vencimento definido"}
+            {cliente.dia_vencimento ? ` · todo dia ${cliente.dia_vencimento}` : ""}
             {` · ${veiculos.length} ${veiculos.length === 1 ? "placa" : "placas"}`}
           </p>
         </div>
@@ -394,6 +388,9 @@ function LinhaCliente({
                 </div>
               </div>
 
+              {/* Vencimento (dia fixo) — só para quem cobra */}
+              {!ehCredenciado && <DiaVencimentoEditor cliente={cliente} />}
+
               {/* Pagamentos (só faz sentido para quem cobra) */}
               {!ehCredenciado && <PagamentosSecao clienteId={cliente.id} />}
             </div>
@@ -413,6 +410,66 @@ function LinhaCliente({
         )}
       </AnimatePresence>
     </motion.li>
+  );
+}
+
+/* ---------- Editor: dia fixo de vencimento ---------- */
+
+function DiaVencimentoEditor({ cliente }: { cliente: Cliente }) {
+  const toast = useToast();
+  const router = useRouter();
+  const [dia, setDia] = useState(
+    cliente.dia_vencimento ? String(cliente.dia_vencimento) : "",
+  );
+  const [salvando, setSalvando] = useState(false);
+
+  async function salvar() {
+    const n = dia.trim() === "" ? null : Number(dia);
+    if (n !== null && (!Number.isInteger(n) || n < 1 || n > 28)) {
+      toast.erro("Dia inválido", "Use um dia entre 1 e 28.");
+      return;
+    }
+    setSalvando(true);
+    const r = await atualizarDiaVencimento(cliente.id, n);
+    setSalvando(false);
+    if (r?.ok) {
+      toast.sucesso(r.msg);
+      router.refresh();
+    } else toast.erro("Não deu certo", r?.msg ?? "Erro inesperado.");
+  }
+
+  return (
+    <div>
+      <p className="text-[11px] font-black uppercase tracking-wider text-texto-3 mb-2">
+        Vencimento
+      </p>
+      <div className="flex items-center gap-2 flex-wrap">
+        <label className="text-xs font-bold text-texto-2">Dia fixo</label>
+        <input
+          type="number"
+          min={1}
+          max={28}
+          value={dia}
+          onChange={(e) => setDia(e.target.value)}
+          placeholder="—"
+          className="w-20 h-9 px-2.5 rounded-lg border border-borda bg-superficie text-sm font-bold tabular-nums focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15"
+        />
+        <button
+          onClick={salvar}
+          disabled={salvando}
+          className="h-9 px-3 rounded-lg bg-brand-50 border border-brand-200 text-xs font-bold text-brand-700 hover:bg-brand-100 transition-colors disabled:opacity-60 inline-flex items-center gap-1.5"
+        >
+          {salvando && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          Salvar
+        </button>
+        <span className="text-xs text-texto-3">
+          {cliente.vencimento
+            ? `Próximo: ${formatarVencimentoBR(cliente.vencimento)}`
+            : "sem vencimento"}
+          {dia.trim() === "" ? " · ciclo de 30 dias" : ""}
+        </span>
+      </div>
+    </div>
   );
 }
 

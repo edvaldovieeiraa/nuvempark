@@ -3,6 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { registrarAuditoria, brl } from "@/lib/auditoria";
+import {
+  proximoVencimento,
+  hojeYmdSaoPaulo,
+  formatarVencimentoBR,
+} from "@/lib/vencimento";
+
+/** Lê 'dia_vencimento' de um FormData e valida 1..28 (fora da faixa => null). */
+function lerDiaVencimento(fd: FormData): number | null {
+  const n = Number(fd.get("dia_vencimento"));
+  return Number.isInteger(n) && n >= 1 && n <= 28 ? n : null;
+}
 
 export type Resultado = { ok: boolean; msg: string } | null;
 
@@ -110,6 +121,7 @@ export async function criarCliente(
       documento: String(formData.get("documento") || "").trim() || null,
       telefone: String(formData.get("telefone") || "").trim() || null,
       vencimento: String(formData.get("vencimento") || "") || null,
+      dia_vencimento: lerDiaVencimento(formData),
       vagas: Number(formData.get("vagas") || 1),
     })
     .select("id")
@@ -285,6 +297,47 @@ export async function atualizarValorPlano(
   return { ok: true, msg: `Valor do plano atualizado para ${brl(seguro)}.` };
 }
 
+/** Define/limpa o dia fixo de vencimento (1..28; null = ciclo de 30 dias). */
+export async function atualizarDiaVencimento(
+  id: string,
+  dia: number | null,
+): Promise<Resultado> {
+  const { sb } = await tenantDoGestor();
+  const seguro =
+    dia !== null && Number.isInteger(dia) && dia >= 1 && dia <= 28 ? dia : null;
+
+  const { data: antes } = await sb
+    .from("clientes")
+    .select("nome, patio_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { error } = await sb
+    .from("clientes")
+    .update({ dia_vencimento: seguro })
+    .eq("id", id);
+  if (error)
+    return { ok: false, msg: "Não foi possível salvar o dia de vencimento." };
+
+  await registrarAuditoria({
+    modulo: "mensalistas",
+    acao: "alterou",
+    patioId: (antes?.patio_id as string | undefined) ?? null,
+    descricao: seguro
+      ? `Definiu o dia de vencimento de "${antes?.nome ?? "?"}" para o dia ${seguro}`
+      : `Removeu o dia fixo de vencimento de "${antes?.nome ?? "?"}" (volta ao ciclo de 30 dias)`,
+    dados: { id, dia_vencimento: seguro },
+  });
+
+  revalidatePath("/painel/mensalistas");
+  return {
+    ok: true,
+    msg: seguro
+      ? `Vencimento no dia ${seguro} de cada mês.`
+      : "Dia fixo removido — passa a usar ciclo de 30 dias.",
+  };
+}
+
 export type PagamentoRow = {
   id: string;
   competencia: string;
@@ -326,7 +379,7 @@ export async function registrarPagamento(input: {
 
   const { data: cli } = await sb
     .from("clientes")
-    .select("nome")
+    .select("nome, vencimento, dia_vencimento")
     .eq("id", input.clienteId)
     .maybeSingle();
 
@@ -346,22 +399,42 @@ export async function registrarPagamento(input: {
   });
   if (error) return { ok: false, msg: "Não foi possível registrar o pagamento." };
 
+  // Avança a vigência: 1 pagamento = +1 ciclo (dia fixo ou +30 dias). Base é o
+  // vencimento atual (estende de onde estava), ou hoje se ainda não houver.
+  const vencAtual = cli?.vencimento
+    ? String(cli.vencimento).slice(0, 10)
+    : null;
+  const novoVencimento = proximoVencimento(
+    vencAtual,
+    (cli?.dia_vencimento as number | null) ?? null,
+    hojeYmdSaoPaulo(),
+  );
+  await sb
+    .from("clientes")
+    .update({ vencimento: novoVencimento })
+    .eq("id", input.clienteId);
+
   const comp = competenciaLabel(input.competencia);
   await registrarAuditoria({
     modulo: "mensalistas",
     acao: "registrou_pagamento",
     patioId: input.patioId,
-    descricao: `Registrou pagamento de ${brl(input.valor)} de "${cli?.nome ?? "?"}" (${comp})`,
+    descricao: `Registrou pagamento de ${brl(input.valor)} de "${cli?.nome ?? "?"}" (${comp}) — vence ${formatarVencimentoBR(novoVencimento)}`,
     dados: {
       cliente_id: input.clienteId,
       competencia: input.competencia,
       valor: input.valor,
       forma_pagamento: input.formaPagamento,
+      vencimento_anterior: vencAtual,
+      vencimento_novo: novoVencimento,
     },
   });
 
   revalidatePath("/painel/mensalistas");
-  return { ok: true, msg: `Pagamento de ${brl(input.valor)} registrado (${comp}).` };
+  return {
+    ok: true,
+    msg: `Pagamento de ${brl(input.valor)} registrado. Próximo vencimento: ${formatarVencimentoBR(novoVencimento)}.`,
+  };
 }
 
 /** Lista os pagamentos de um cliente (inclui cancelados). */

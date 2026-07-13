@@ -67,6 +67,15 @@ export function NovoClienteForm({
         <Campo label="Vencimento (opcional)">
           <Input name="vencimento" type="date" />
         </Campo>
+        <Campo label="Dia de vencimento (opcional)">
+          <Input
+            name="dia_vencimento"
+            type="number"
+            min={1}
+            max={28}
+            placeholder="ex.: 10"
+          />
+        </Campo>
         <Campo label="Vagas">
           <Input name="vagas" type="number" defaultValue="1" min={1} />
         </Campo>

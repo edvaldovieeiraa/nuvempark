@@ -27,7 +27,7 @@ export default async function MensalistasPage({
       supabase
         .from("clientes")
         .select(
-          "id, nome, documento, telefone, patio_id, plano_id, vencimento, vagas, bloqueado, ativo, criado_em",
+          "id, nome, documento, telefone, patio_id, plano_id, vencimento, dia_vencimento, vagas, bloqueado, ativo, criado_em",
         )
         .eq("patio_id", patioId)
         .eq("ativo", true)
@@ -44,18 +44,11 @@ export default async function MensalistasPage({
         .is("cancelado_em", null),
     ]);
 
-  // Resumo por cliente: competências pagas + última competência paga.
+  // Resumo por cliente: competências pagas (para detectar duplicidade no modal).
   const pagasPorCliente: Record<string, string[]> = {};
-  const ultimaPagaPorCliente: Record<string, string> = {};
   for (const p of pagamentos ?? []) {
     const comp = String(p.competencia); // 'YYYY-MM-01'
     (pagasPorCliente[p.cliente_id] ??= []).push(comp);
-    if (
-      !ultimaPagaPorCliente[p.cliente_id] ||
-      comp > ultimaPagaPorCliente[p.cliente_id]
-    ) {
-      ultimaPagaPorCliente[p.cliente_id] = comp;
-    }
   }
 
   // "Hoje" no fuso de São Paulo (evita erro de status perto da virada do dia/mês).
@@ -76,7 +69,6 @@ export default async function MensalistasPage({
       clientes={clientes ?? []}
       veiculos={veiculos ?? []}
       pagasPorCliente={pagasPorCliente}
-      ultimaPagaPorCliente={ultimaPagaPorCliente}
       hoje={hoje}
     />
   );
