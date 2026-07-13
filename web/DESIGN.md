@@ -159,7 +159,7 @@ Paleta light-first ancorada no verde-esmeralda, com um leque de acentos (céu, t
 ### Named Rules
 **A Regra do Verde-Dinheiro.** O esmeralda é reservado ao que significa dinheiro/sucesso/marca. Não usar verde como cor decorativa neutra; sua carga semântica é o ponto.
 
-**A Regra do Escuro-Instrumento.** O `noite` é a moldura, não o palco. Aparece na navegação e em seções deliberadas — nunca como fundo padrão de conteúdo. O produto é light-first.
+**A Regra do Escuro-Instrumento.** O `noite` é a moldura, não o palco do conteúdo. Aparece na navegação, no **hero do site** ("Torre de Controle à noite": palco escuro, produto claro aceso no centro) e em seções dramáticas deliberadas (ex.: perícia de avaria) — nunca como fundo padrão das telas de produto. O produto é light-first.
 
 ## 3. Typography
 

@@ -61,6 +61,7 @@
   --animate-shimmer: shimmer 1.8s linear infinite;
   --animate-ping-slow: ping-slow 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
   --animate-float: float 6s ease-in-out infinite;
+  --animate-scan: scan 9s ease-in-out 2.4s infinite both;
 }
 
 @keyframes fade-up {
@@ -82,6 +83,19 @@
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-12px); }
+}
+/* Varredura do hero: um feixe cruza o painel como a câmera lendo uma placa. */
+@keyframes scan {
+  0%   { transform: translateX(-110%); opacity: 0; }
+  4%   { opacity: 1; }
+  26%  { transform: translateX(950%); opacity: 0; }
+  100% { transform: translateX(950%); opacity: 0; }
+}
+
+/* Acessibilidade: sem movimento decorativo p/ quem pede menos animação. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float, .animate-shimmer, .animate-scan { animation: none; }
+  .animate-ping-slow { animation: none; opacity: 0; }
 }
 
 body {

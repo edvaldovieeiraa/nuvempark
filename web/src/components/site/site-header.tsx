@@ -19,6 +19,9 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [aberto, setAberto] = useState(false);
 
+  // No topo da home o header flutua sobre a hero escura → texto claro.
+  const escuro = pathname === "/" && !scrolled && !aberto;
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
@@ -32,7 +35,7 @@ export function SiteHeader() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-        scrolled
+        scrolled || aberto
           ? "bg-white/85 backdrop-blur-xl border-b border-borda shadow-[0_1px_12px_rgba(16,27,20,0.06)]"
           : "bg-transparent border-b border-transparent"
       }`}
@@ -43,8 +46,13 @@ export function SiteHeader() {
             <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-acento-teal grid place-items-center shadow-[var(--shadow-brand)]">
               <CloudP />
             </span>
-            <span className="font-extrabold text-texto tracking-tight text-lg">
-              Nuvem<span className="text-brand-600">Park</span>
+            <span
+              className={`font-extrabold tracking-tight text-lg transition-colors ${escuro ? "text-white" : "text-texto"}`}
+            >
+              Nuvem
+              <span className={escuro ? "text-brand-400" : "text-brand-600"}>
+                Park
+              </span>
             </span>
           </Link>
 
@@ -58,7 +66,9 @@ export function SiteHeader() {
                   className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
                     ativo
                       ? "text-brand-700 bg-brand-50"
-                      : "text-texto-2 hover:text-texto hover:bg-fundo"
+                      : escuro
+                        ? "text-white/70 hover:text-white hover:bg-white/10"
+                        : "text-texto-2 hover:text-texto hover:bg-fundo"
                   }`}
                 >
                   {l.label}
@@ -70,7 +80,11 @@ export function SiteHeader() {
           <div className="hidden md:flex items-center gap-2">
             <Link
               href="/login"
-              className="px-4 py-2 rounded-xl text-sm font-bold text-texto-2 border border-borda hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50 transition-all"
+              className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
+                escuro
+                  ? "text-white/85 border-white/20 hover:border-white/40 hover:text-white hover:bg-white/10"
+                  : "text-texto-2 border-borda hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50"
+              }`}
             >
               Entrar
             </Link>
@@ -84,7 +98,9 @@ export function SiteHeader() {
 
           <button
             onClick={() => setAberto((a) => !a)}
-            className="md:hidden w-10 h-10 grid place-items-center rounded-lg text-texto hover:bg-fundo transition-colors"
+            className={`md:hidden w-10 h-10 grid place-items-center rounded-lg transition-colors ${
+              escuro ? "text-white hover:bg-white/10" : "text-texto hover:bg-fundo"
+            }`}
             aria-label={aberto ? "Fechar menu" : "Abrir menu"}
           >
             {aberto ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

@@ -88,7 +88,7 @@
     ],
     "rules": [
       { "name": "A Regra do Verde-Dinheiro", "body": "O esmeralda é reservado ao que significa dinheiro/sucesso/marca. Não usar verde como cor decorativa neutra.", "section": "colors" },
-      { "name": "A Regra do Escuro-Instrumento", "body": "O noite é a moldura, não o palco. Aparece na navegação e em seções deliberadas, nunca como fundo padrão de conteúdo.", "section": "colors" },
+      { "name": "A Regra do Escuro-Instrumento", "body": "O noite é a moldura, não o palco do conteúdo. Aparece na navegação, no hero do site (Torre de Controle à noite) e em seções dramáticas deliberadas — nunca como fundo padrão das telas de produto.", "section": "colors" },
       { "name": "A Regra do Peso, não da Fonte", "body": "A hierarquia vem de peso (400 a 900) e tamanho numa família só (Geist). Nunca pareie com outra sans parecida.", "section": "typography" },
       { "name": "A Regra da Sombra-Difusa", "body": "Sombras grandes, suaves e de baixa opacidade. Se parecer sombra dura de app antigo, o blur está pequeno e a opacidade alta.", "section": "elevation" }
     ],

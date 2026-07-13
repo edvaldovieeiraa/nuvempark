@@ -44,7 +44,7 @@ Regras aprendidas na prática. Violar qualquer uma quebra o deploy:
 
 4. **Build consome RAM e a sessão SSH pode cair.** O `next build` roda alguns minutos e derruba conexões SSH interativas. **Sempre rodar o build em background no servidor** (`nohup ... &`) e depois esperar terminar, em vez de manter o SSH preso. A VPS tem ~7.9GB RAM (folga suficiente).
 
-5. **Nunca dois deploys concorrentes.** Um build por vez. Se um build estiver rodando (`pgrep -f 'next build'`), esperar terminar antes de lançar outro.
+5. **Nunca dois deploys concorrentes.** Um build por vez. Se um build estiver rodando (`pgrep -f 'node_modules/.bin/next build'`), esperar terminar antes de lançar outro.
 
 6. **O restart só vale depois do build OK.** `pm2 restart` sem um `.next` novo e íntegro serve a versão antiga (ou quebra). Confirmar "Compiled successfully" antes de reiniciar.
 
@@ -102,7 +102,7 @@ Depois **esperar** o build terminar (não manter SSH preso) e checar sucesso:
 
 ```bash
 # Poll até o build sumir da lista de processos:
-until ssh ... "pgrep -f 'next build' > /dev/null"; do sleep 10; done
+until ssh ... "pgrep -f 'node_modules/.bin/next build' > /dev/null"; do sleep 10; done
 ssh ... "grep -E 'Compiled successfully|Failed|Type error' /tmp/np_build.log | head -3"
 ```
 
