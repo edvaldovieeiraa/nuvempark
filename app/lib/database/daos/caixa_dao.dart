@@ -27,6 +27,22 @@ class CaixaDao extends DatabaseAccessor<AppDatabase> with _$CaixaDaoMixin {
   Future<CaixaSessoe?> getSessaoById(String id) =>
       (select(caixaSessoes)..where((s) => s.id.equals(id))).getSingleOrNull();
 
+  /// Última sessão FECHADA do operador — base da reimpressão de fechamento.
+  Future<CaixaSessoe?> getUltimaSessaoFechada(
+    String operacaoId,
+    String operadorId,
+  ) =>
+      (select(caixaSessoes)
+            ..where(
+              (s) =>
+                  s.operacaoId.equals(operacaoId) &
+                  s.operadorId.equals(operadorId) &
+                  s.status.equals('fechada'),
+            )
+            ..orderBy([(s) => OrderingTerm.desc(s.fechamentoEpoch)])
+            ..limit(1))
+          .getSingleOrNull();
+
   Future<void> atualizarSessao(String id, CaixaSessoesCompanion c) =>
       (update(caixaSessoes)..where((s) => s.id.equals(id))).write(c);
 

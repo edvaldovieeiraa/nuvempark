@@ -34,6 +34,17 @@ class CaixaSessaoNotifier extends AsyncNotifier<CaixaModel?> {
     Future.microtask(() => ref.read(syncEngineProvider).drain());
   }
 
+  /// Última sessão fechada do operador (base da reimpressão de fechamento).
+  Future<CaixaModel?> ultimoFechamento() async {
+    final storage = ref.read(tokenStorageProvider);
+    final patioId = await storage.readPatioId();
+    final user = await storage.readUser();
+    if (patioId == null || user == null) return null;
+    return ref
+        .read(caixaRepositoryProvider)
+        .getUltimaSessaoFechada(patioId, user.id);
+  }
+
   Future<FechamentoResult?> fechar(double totalContado, {String? obs}) async {
     final atual = state.value;
     if (atual == null) return null;

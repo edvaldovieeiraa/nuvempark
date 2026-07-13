@@ -72,53 +72,11 @@ class CaixaRepository {
     return row != null ? _toModel(row) : null;
   }
 
-  Future<void> registrarSangria({
-    required String caixaSessaoId,
-    required double valor,
-    required String descricao,
-  }) async {
-    final id = const Uuid().v4();
-    final agora = DateTime.now().millisecondsSinceEpoch;
-
-    final payload = jsonEncode({
-      'id': id,
-      'caixa_sessao_id': caixaSessaoId,
-      'tipo': 'sangria',
-      'valor': valor,
-      'descricao': descricao,
-      'criado_em': agora,
-    });
-
-    await db.transaction(() async {
-      await db.caixaDao.inserirMovimento(CaixaMovimentosCompanion(
-        id: Value(id),
-        caixaSessaoId: Value(caixaSessaoId),
-        tipo: const Value('sangria'),
-        valor: Value(valor),
-        descricao: Value(descricao),
-        criadoEm: Value(agora),
-        syncStatus: const Value('pendente'),
-      ));
-
-      final row = await db.caixaDao.getSessaoById(caixaSessaoId);
-      if (row != null) {
-        await db.caixaDao.atualizarSessao(
-          caixaSessaoId,
-          CaixaSessoesCompanion(
-            totalSangrias: Value(row.totalSangrias + valor),
-            syncStatus: const Value('pendente'),
-          ),
-        );
-      }
-
-      await db.syncDao.enqueue(SyncLogCompanion(
-        entidade: const Value('caixa_movimento'),
-        entidadeId: Value(id),
-        operacao: const Value('create'),
-        payload: Value(payload),
-        criadoEm: Value(agora),
-      ));
-    });
+  /// Última sessão fechada do operador — usada para reimprimir o fechamento.
+  Future<CaixaModel?> getUltimaSessaoFechada(
+      String patioId, String operadorId) async {
+    final row = await db.caixaDao.getUltimaSessaoFechada(patioId, operadorId);
+    return row != null ? _toModel(row) : null;
   }
 
   /// Lançamento manual do operador: receita ('entrada') ou despesa

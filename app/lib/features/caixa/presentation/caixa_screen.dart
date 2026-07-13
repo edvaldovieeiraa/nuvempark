@@ -67,6 +67,12 @@ class CaixaScreen extends ConsumerWidget {
                 icon: const Icon(Icons.lock_open_outlined),
                 label: const Text('Abrir caixa'),
               ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => _reimprimirUltimoFechamento(context, ref),
+                icon: const Icon(Icons.print_outlined, size: 18),
+                label: const Text('Reimprimir último fechamento'),
+              ),
             ],
           ),
         ),
@@ -372,43 +378,86 @@ class CaixaScreen extends ConsumerWidget {
         .fechar(contado, obs: obs.isEmpty ? null : obs);
     if (res == null) return;
 
-    // Imprime o relatório de fechamento (com todos os movimentos da sessão:
-    // validações de veículos, receitas e despesas), se houver impressora.
-    final printer = await ref
-          .read(printerNotifierProvider.future)
-          .catchError((_) => const PrinterState());
-    if (printer.temImpressora) {
-      final patioNome = ref.read(patioNotifierProvider).value?.nome ?? 'Patio';
-      final hora = DateFormat('HH:mm');
-      final movs = await ref.read(caixaRepositoryProvider).getMovimentos(s.id);
-      final bytes = PrintTemplates.fechamentoCaixa(
-        operadorNome: s.operadorNome,
-        operacaoNome: patioNome,
-        abertura: s.abertura,
-        fechamento: fechamento,
-        fundoCaixa: s.fundoCaixa,
-        totalEntradas: s.totalEntradas,
-        totalSangrias: s.totalSangrias,
-        totalCalculado: res.totalCalculado,
-        totalContado: res.totalContado,
-        divergencia: res.divergencia,
-        movimentos: movs
-            .map((m) => MovimentoCupom(
-                  hora: hora.format(m.criadoEm),
-                  descricao: m.descricao,
-                  valor:
-                      '${m.tipo == 'sangria' ? '-' : '+'}${_moeda.format(m.valor)}',
-                ))
-            .toList(),
-        cols: printer.cols,
-        avancoFinal: printer.avancoFinal,
-      );
-      await ref.read(printerNotifierProvider.notifier).print(bytes);
-    }
+    // Imprime o relatório (se houver impressora). Mesmo helper da reimpressão.
+    await _imprimirFechamento(ref, s, res, fechamento);
 
     // Conferência PERSISTENTE — fica na tela até o operador confirmar. Antes era
     // só um toast que sumia em ~2s ("as validações não apareciam").
     if (context.mounted) await _dialogResultado(context, res);
+  }
+
+  /// Monta e envia o cupom de fechamento. Reutilizado no fechamento e na
+  /// reimpressão. Retorna false se não houver impressora configurada.
+  Future<bool> _imprimirFechamento(
+    WidgetRef ref,
+    CaixaModel s,
+    FechamentoResult res,
+    DateTime fechamento,
+  ) async {
+    final printer = await ref
+        .read(printerNotifierProvider.future)
+        .catchError((_) => const PrinterState());
+    if (!printer.temImpressora) return false;
+
+    final patioNome = ref.read(patioNotifierProvider).value?.nome ?? 'Patio';
+    final hora = DateFormat('HH:mm');
+    final movs = await ref.read(caixaRepositoryProvider).getMovimentos(s.id);
+    final bytes = PrintTemplates.fechamentoCaixa(
+      operadorNome: s.operadorNome,
+      operacaoNome: patioNome,
+      abertura: s.abertura,
+      fechamento: fechamento,
+      fundoCaixa: s.fundoCaixa,
+      totalEntradas: s.totalEntradas,
+      totalSangrias: s.totalSangrias,
+      totalCalculado: res.totalCalculado,
+      totalContado: res.totalContado,
+      divergencia: res.divergencia,
+      movimentos: movs
+          .map((m) => MovimentoCupom(
+                hora: hora.format(m.criadoEm),
+                descricao: m.descricao,
+                valor:
+                    '${m.tipo == 'sangria' ? '-' : '+'}${_moeda.format(m.valor)}',
+              ))
+          .toList(),
+      cols: printer.cols,
+      avancoFinal: printer.avancoFinal,
+    );
+    await ref.read(printerNotifierProvider.notifier).print(bytes);
+    return true;
+  }
+
+  /// Reimprime o último fechamento — cobre impressora sem papel/desligada na
+  /// hora de fechar. Reconstrói o resultado a partir dos dados persistidos.
+  Future<void> _reimprimirUltimoFechamento(
+      BuildContext context, WidgetRef ref) async {
+    final s = await ref.read(caixaSessaoNotifierProvider.notifier).ultimoFechamento();
+    if (s == null) {
+      if (context.mounted) {
+        AppToast.error(context, 'Nenhum fechamento recente para reimprimir.');
+      }
+      return;
+    }
+    // Recomputa dos movimentos (fonte da verdade), igual ao fechamento.
+    final movs = await ref.read(caixaRepositoryProvider).getMovimentos(s.id);
+    final entradas =
+        movs.where((m) => m.tipo == 'entrada').fold<double>(0, (t, m) => t + m.valor);
+    final sangrias =
+        movs.where((m) => m.tipo == 'sangria').fold<double>(0, (t, m) => t + m.valor);
+    final calculado = s.fundoCaixa + entradas - sangrias;
+    final contado = s.totalFechamento ?? calculado;
+    final res = FechamentoResult(
+      totalCalculado: calculado,
+      totalContado: contado,
+      divergencia: contado - calculado,
+    );
+    final ok =
+        await _imprimirFechamento(ref, s, res, s.fechamento ?? DateTime.now());
+    if (context.mounted) {
+      AppToast.info(
+          context, ok ? 'Fechamento reimpresso.' : 'Nenhuma impressora configurada.');
+    }
   }
 
   /// Painel de conferência do fechamento: esperado × contado × divergência,

@@ -138,7 +138,8 @@ abstract final class PrintTemplates {
           .boldOff();
       for (final m in movimentos) {
         // "22:15 Ticket ABC1D23      +R$ 12,00" — descrição truncada p/ caber.
-        final maxDesc = cols - m.valor.length - 7; // hora(5) + espacos(2)
+        // hora(5) + espacos(2); clamp evita RangeError se o valor for longo.
+        final maxDesc = (cols - m.valor.length - 7).clamp(0, cols);
         final desc = m.descricao.length > maxDesc
             ? m.descricao.substring(0, maxDesc)
             : m.descricao;
