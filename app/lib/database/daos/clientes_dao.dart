@@ -32,6 +32,17 @@ class ClientesDao extends DatabaseAccessor<AppDatabase> with _$ClientesDaoMixin 
             ..orderBy([(t) => OrderingTerm.asc(t.nome)]))
           .get();
 
+  /// Um cliente por id (para ler o vencimento atual antes de avançá-lo).
+  Future<PatioCliente?> getClienteById(String id) =>
+      (select(patioClientes)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  /// Avança o vencimento local do cliente (reflexo imediato do pagamento no
+  /// app; o servidor reconcilia no próximo bootstrap).
+  Future<void> atualizarVencimento(String id, int vencimentoEpoch) =>
+      (update(patioClientes)..where((t) => t.id.equals(id))).write(
+        PatioClientesCompanion(vencimentoEpoch: Value(vencimentoEpoch)),
+      );
+
   /// Placas do pátio (para busca por placa na tela Mensalistas).
   Future<List<PatioClientePlaca>> getPlacas(String operacaoId) =>
       (select(patioClientePlacas)

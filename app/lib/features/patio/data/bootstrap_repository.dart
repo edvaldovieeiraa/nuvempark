@@ -99,6 +99,7 @@ class BootstrapRepository {
         vencimentoEpoch: Value(venc != null
             ? DateTime.parse('${venc}T00:00:00').millisecondsSinceEpoch
             : null),
+        diaVencimento: Value((m['dia_vencimento'] as num?)?.toInt()),
         bloqueado: Value((m['bloqueado'] as bool?) ?? false),
       ));
       final veiculos = (m['veiculos'] as List?) ?? const [];

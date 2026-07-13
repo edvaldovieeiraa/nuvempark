@@ -12,6 +12,7 @@ class PatioClientes extends Table {
   RealColumn get planoValor => real().nullable()(); // valor mensal do plano
   IntColumn get vagas => integer().withDefault(const Constant(1))();
   IntColumn get vencimentoEpoch => integer().nullable()();
+  IntColumn get diaVencimento => integer().nullable()(); // dia fixo 1..28 | null
   BoolColumn get bloqueado => boolean().withDefault(const Constant(false))();
 
   @override

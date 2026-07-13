@@ -49,8 +49,9 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   // v2: mensalidade_pagamentos + planos.valor (Entrega 4b).
+  // v3: patio_clientes.dia_vencimento (dia fixo de vencimento do mensalista).
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -63,6 +64,9 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(mensalidadePagamentos);
             await m.addColumn(patioClientes, patioClientes.planoValor);
             await _criarIndicesMensalidade(m);
+          }
+          if (from < 3) {
+            await m.addColumn(patioClientes, patioClientes.diaVencimento);
           }
         },
       );

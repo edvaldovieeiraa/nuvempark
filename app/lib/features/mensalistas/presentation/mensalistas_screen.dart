@@ -98,7 +98,6 @@ class _MensalistasScreenState extends ConsumerState<MensalistasScreen> {
                               data.placasPorCliente[c.id] ?? const [];
                           return _ClienteCard(
                             cliente: c,
-                            pagas: pagas,
                             placas: placas,
                             onTap: () => _abrirDetalhe(c, pagas),
                           );
@@ -124,27 +123,38 @@ class _MensalistasScreenState extends ConsumerState<MensalistasScreen> {
   }
 }
 
-/// Badge de status financeiro do cliente (a partir do Drift local).
-Widget _badge(PatioCliente c, Set<String> pagas) {
+/// Badge de status a partir da DATA de vencimento (rolante) — o pagamento
+/// avança o vencimento, então "em dia" = vencimento no futuro.
+Widget _badge(PatioCliente c) {
   if (c.planoTipo == 'credenciado') {
     return _chip('Credenciado', AppColors.onSurfaceVariant);
   }
-  if (pagas.contains(_competenciaAtual())) {
-    return _chip('Em dia', AppColors.success);
+  if (c.vencimentoEpoch == null) {
+    return _chip('Sem vencimento', AppColors.onSurfaceVariant);
   }
-  final diaVenc = c.vencimentoEpoch != null
-      ? DateTime.fromMillisecondsSinceEpoch(c.vencimentoEpoch!).day
-      : 10;
-  final hoje = DateTime.now().day;
-  if (hoje <= diaVenc) {
-    final x = diaVenc - hoje;
+  final venc = DateTime.fromMillisecondsSinceEpoch(c.vencimentoEpoch!);
+  final hoje = DateTime.now();
+  final dias = DateTime(venc.year, venc.month, venc.day)
+      .difference(DateTime(hoje.year, hoje.month, hoje.day))
+      .inDays;
+  if (dias < 0) {
+    final atraso = -dias;
+    final txt = atraso >= 45
+        ? 'Atrasado há ${(atraso / 30).round()} meses'
+        : 'Atrasado há $atraso ${atraso == 1 ? 'dia' : 'dias'}';
+    return _chip(txt, AppColors.danger);
+  }
+  if (dias <= 7) {
     return _chip(
-      x == 0 ? 'Vence hoje' : 'Vence em $x ${x == 1 ? 'dia' : 'dias'}',
+      dias == 0 ? 'Vence hoje' : 'Vence em $dias ${dias == 1 ? 'dia' : 'dias'}',
       AppColors.saida,
     );
   }
-  return _chip('Atrasado', AppColors.danger);
+  return _chip('Em dia', AppColors.success);
 }
+
+String _fmtVenc(int epoch) =>
+    DateFormat('dd/MM/yyyy').format(DateTime.fromMillisecondsSinceEpoch(epoch));
 
 Widget _chip(String txt, Color cor) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -161,13 +171,11 @@ Widget _chip(String txt, Color cor) => Container(
 class _ClienteCard extends StatelessWidget {
   const _ClienteCard({
     required this.cliente,
-    required this.pagas,
     required this.placas,
     required this.onTap,
   });
 
   final PatioCliente cliente;
-  final Set<String> pagas;
   final List<String> placas;
   final VoidCallback onTap;
 
@@ -198,13 +206,15 @@ class _ClienteCard extends StatelessWidget {
                                 fontWeight: FontWeight.w700, fontSize: 15)),
                       ),
                       const SizedBox(width: 8),
-                      _badge(cliente, pagas),
+                      _badge(cliente),
                     ],
                   ),
                   const SizedBox(height: 3),
                   Text(
                     [
                       cliente.planoNome ?? 'sem plano',
+                      if (cliente.vencimentoEpoch != null)
+                        'vence ${_fmtVenc(cliente.vencimentoEpoch!)}',
                       if (placas.isNotEmpty) placas.join(', '),
                     ].join(' · '),
                     style: const TextStyle(
@@ -285,12 +295,24 @@ class _ClienteDetalheSheetState extends ConsumerState<_ClienteDetalheSheet> {
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.w800)),
               ),
-              _badge(c, widget.pagas),
+              _badge(c),
             ],
           ),
           const SizedBox(height: 2),
           Text(c.planoNome ?? 'sem plano',
               style: const TextStyle(color: AppColors.onSurfaceVariant)),
+          if (c.vencimentoEpoch != null || c.diaVencimento != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              [
+                if (c.vencimentoEpoch != null)
+                  'Próximo vencimento: ${_fmtVenc(c.vencimentoEpoch!)}',
+                if (c.diaVencimento != null) 'todo dia ${c.diaVencimento}',
+              ].join(' · '),
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.onSurfaceVariant),
+            ),
+          ],
           const SizedBox(height: 16),
           const Text('Pagamentos',
               style: TextStyle(

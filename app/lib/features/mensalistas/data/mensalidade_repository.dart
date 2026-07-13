@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../database/app_database.dart';
+import 'vencimento.dart';
 
 /// Registro de pagamento de mensalidade pelo OPERADOR (offline-first).
 ///
@@ -112,6 +113,18 @@ class MensalidadeRepository {
             syncStatus: const Value('pendente'),
           ),
         );
+      }
+
+      // (e) avança a vigência local do cliente (mesma regra do painel/API) —
+      // reflexo imediato; o servidor reconcilia no próximo bootstrap.
+      final cli = await db.clientesDao.getClienteById(clienteId);
+      if (cli != null) {
+        final atual = cli.vencimentoEpoch != null
+            ? DateTime.fromMillisecondsSinceEpoch(cli.vencimentoEpoch!)
+            : null;
+        final novo = proximoVencimento(atual, cli.diaVencimento);
+        await db.clientesDao
+            .atualizarVencimento(clienteId, novo.millisecondsSinceEpoch);
       }
 
       // (d) enfileira OS DOIS na outbox

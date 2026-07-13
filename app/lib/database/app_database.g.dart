@@ -5153,6 +5153,17 @@ class $PatioClientesTable extends PatioClientes
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _diaVencimentoMeta = const VerificationMeta(
+    'diaVencimento',
+  );
+  @override
+  late final GeneratedColumn<int> diaVencimento = GeneratedColumn<int>(
+    'dia_vencimento',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _bloqueadoMeta = const VerificationMeta(
     'bloqueado',
   );
@@ -5179,6 +5190,7 @@ class $PatioClientesTable extends PatioClientes
     planoValor,
     vagas,
     vencimentoEpoch,
+    diaVencimento,
     bloqueado,
   ];
   @override
@@ -5253,6 +5265,15 @@ class $PatioClientesTable extends PatioClientes
         ),
       );
     }
+    if (data.containsKey('dia_vencimento')) {
+      context.handle(
+        _diaVencimentoMeta,
+        diaVencimento.isAcceptableOrUnknown(
+          data['dia_vencimento']!,
+          _diaVencimentoMeta,
+        ),
+      );
+    }
     if (data.containsKey('bloqueado')) {
       context.handle(
         _bloqueadoMeta,
@@ -5304,6 +5325,10 @@ class $PatioClientesTable extends PatioClientes
         DriftSqlType.int,
         data['${effectivePrefix}vencimento_epoch'],
       ),
+      diaVencimento: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}dia_vencimento'],
+      ),
       bloqueado: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}bloqueado'],
@@ -5327,6 +5352,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
   final double? planoValor;
   final int vagas;
   final int? vencimentoEpoch;
+  final int? diaVencimento;
   final bool bloqueado;
   const PatioCliente({
     required this.id,
@@ -5338,6 +5364,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
     this.planoValor,
     required this.vagas,
     this.vencimentoEpoch,
+    this.diaVencimento,
     required this.bloqueado,
   });
   @override
@@ -5361,6 +5388,9 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
     map['vagas'] = Variable<int>(vagas);
     if (!nullToAbsent || vencimentoEpoch != null) {
       map['vencimento_epoch'] = Variable<int>(vencimentoEpoch);
+    }
+    if (!nullToAbsent || diaVencimento != null) {
+      map['dia_vencimento'] = Variable<int>(diaVencimento);
     }
     map['bloqueado'] = Variable<bool>(bloqueado);
     return map;
@@ -5387,6 +5417,9 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
       vencimentoEpoch: vencimentoEpoch == null && nullToAbsent
           ? const Value.absent()
           : Value(vencimentoEpoch),
+      diaVencimento: diaVencimento == null && nullToAbsent
+          ? const Value.absent()
+          : Value(diaVencimento),
       bloqueado: Value(bloqueado),
     );
   }
@@ -5406,6 +5439,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
       planoValor: serializer.fromJson<double?>(json['planoValor']),
       vagas: serializer.fromJson<int>(json['vagas']),
       vencimentoEpoch: serializer.fromJson<int?>(json['vencimentoEpoch']),
+      diaVencimento: serializer.fromJson<int?>(json['diaVencimento']),
       bloqueado: serializer.fromJson<bool>(json['bloqueado']),
     );
   }
@@ -5422,6 +5456,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
       'planoValor': serializer.toJson<double?>(planoValor),
       'vagas': serializer.toJson<int>(vagas),
       'vencimentoEpoch': serializer.toJson<int?>(vencimentoEpoch),
+      'diaVencimento': serializer.toJson<int?>(diaVencimento),
       'bloqueado': serializer.toJson<bool>(bloqueado),
     };
   }
@@ -5436,6 +5471,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
     Value<double?> planoValor = const Value.absent(),
     int? vagas,
     Value<int?> vencimentoEpoch = const Value.absent(),
+    Value<int?> diaVencimento = const Value.absent(),
     bool? bloqueado,
   }) => PatioCliente(
     id: id ?? this.id,
@@ -5449,6 +5485,9 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
     vencimentoEpoch: vencimentoEpoch.present
         ? vencimentoEpoch.value
         : this.vencimentoEpoch,
+    diaVencimento: diaVencimento.present
+        ? diaVencimento.value
+        : this.diaVencimento,
     bloqueado: bloqueado ?? this.bloqueado,
   );
   PatioCliente copyWithCompanion(PatioClientesCompanion data) {
@@ -5468,6 +5507,9 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
       vencimentoEpoch: data.vencimentoEpoch.present
           ? data.vencimentoEpoch.value
           : this.vencimentoEpoch,
+      diaVencimento: data.diaVencimento.present
+          ? data.diaVencimento.value
+          : this.diaVencimento,
       bloqueado: data.bloqueado.present ? data.bloqueado.value : this.bloqueado,
     );
   }
@@ -5484,6 +5526,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
           ..write('planoValor: $planoValor, ')
           ..write('vagas: $vagas, ')
           ..write('vencimentoEpoch: $vencimentoEpoch, ')
+          ..write('diaVencimento: $diaVencimento, ')
           ..write('bloqueado: $bloqueado')
           ..write(')'))
         .toString();
@@ -5500,6 +5543,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
     planoValor,
     vagas,
     vencimentoEpoch,
+    diaVencimento,
     bloqueado,
   );
   @override
@@ -5515,6 +5559,7 @@ class PatioCliente extends DataClass implements Insertable<PatioCliente> {
           other.planoValor == this.planoValor &&
           other.vagas == this.vagas &&
           other.vencimentoEpoch == this.vencimentoEpoch &&
+          other.diaVencimento == this.diaVencimento &&
           other.bloqueado == this.bloqueado);
 }
 
@@ -5528,6 +5573,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
   final Value<double?> planoValor;
   final Value<int> vagas;
   final Value<int?> vencimentoEpoch;
+  final Value<int?> diaVencimento;
   final Value<bool> bloqueado;
   final Value<int> rowid;
   const PatioClientesCompanion({
@@ -5540,6 +5586,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
     this.planoValor = const Value.absent(),
     this.vagas = const Value.absent(),
     this.vencimentoEpoch = const Value.absent(),
+    this.diaVencimento = const Value.absent(),
     this.bloqueado = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -5553,6 +5600,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
     this.planoValor = const Value.absent(),
     this.vagas = const Value.absent(),
     this.vencimentoEpoch = const Value.absent(),
+    this.diaVencimento = const Value.absent(),
     this.bloqueado = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -5568,6 +5616,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
     Expression<double>? planoValor,
     Expression<int>? vagas,
     Expression<int>? vencimentoEpoch,
+    Expression<int>? diaVencimento,
     Expression<bool>? bloqueado,
     Expression<int>? rowid,
   }) {
@@ -5581,6 +5630,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
       if (planoValor != null) 'plano_valor': planoValor,
       if (vagas != null) 'vagas': vagas,
       if (vencimentoEpoch != null) 'vencimento_epoch': vencimentoEpoch,
+      if (diaVencimento != null) 'dia_vencimento': diaVencimento,
       if (bloqueado != null) 'bloqueado': bloqueado,
       if (rowid != null) 'rowid': rowid,
     });
@@ -5596,6 +5646,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
     Value<double?>? planoValor,
     Value<int>? vagas,
     Value<int?>? vencimentoEpoch,
+    Value<int?>? diaVencimento,
     Value<bool>? bloqueado,
     Value<int>? rowid,
   }) {
@@ -5609,6 +5660,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
       planoValor: planoValor ?? this.planoValor,
       vagas: vagas ?? this.vagas,
       vencimentoEpoch: vencimentoEpoch ?? this.vencimentoEpoch,
+      diaVencimento: diaVencimento ?? this.diaVencimento,
       bloqueado: bloqueado ?? this.bloqueado,
       rowid: rowid ?? this.rowid,
     );
@@ -5644,6 +5696,9 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
     if (vencimentoEpoch.present) {
       map['vencimento_epoch'] = Variable<int>(vencimentoEpoch.value);
     }
+    if (diaVencimento.present) {
+      map['dia_vencimento'] = Variable<int>(diaVencimento.value);
+    }
     if (bloqueado.present) {
       map['bloqueado'] = Variable<bool>(bloqueado.value);
     }
@@ -5665,6 +5720,7 @@ class PatioClientesCompanion extends UpdateCompanion<PatioCliente> {
           ..write('planoValor: $planoValor, ')
           ..write('vagas: $vagas, ')
           ..write('vencimentoEpoch: $vencimentoEpoch, ')
+          ..write('diaVencimento: $diaVencimento, ')
           ..write('bloqueado: $bloqueado, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -9311,6 +9367,7 @@ typedef $$PatioClientesTableCreateCompanionBuilder =
       Value<double?> planoValor,
       Value<int> vagas,
       Value<int?> vencimentoEpoch,
+      Value<int?> diaVencimento,
       Value<bool> bloqueado,
       Value<int> rowid,
     });
@@ -9325,6 +9382,7 @@ typedef $$PatioClientesTableUpdateCompanionBuilder =
       Value<double?> planoValor,
       Value<int> vagas,
       Value<int?> vencimentoEpoch,
+      Value<int?> diaVencimento,
       Value<bool> bloqueado,
       Value<int> rowid,
     });
@@ -9380,6 +9438,11 @@ class $$PatioClientesTableFilterComposer
 
   ColumnFilters<int> get vencimentoEpoch => $composableBuilder(
     column: $table.vencimentoEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diaVencimento => $composableBuilder(
+    column: $table.diaVencimento,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9443,6 +9506,11 @@ class $$PatioClientesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get diaVencimento => $composableBuilder(
+    column: $table.diaVencimento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get bloqueado => $composableBuilder(
     column: $table.bloqueado,
     builder: (column) => ColumnOrderings(column),
@@ -9491,6 +9559,11 @@ class $$PatioClientesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get diaVencimento => $composableBuilder(
+    column: $table.diaVencimento,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get bloqueado =>
       $composableBuilder(column: $table.bloqueado, builder: (column) => column);
 }
@@ -9535,6 +9608,7 @@ class $$PatioClientesTableTableManager
                 Value<double?> planoValor = const Value.absent(),
                 Value<int> vagas = const Value.absent(),
                 Value<int?> vencimentoEpoch = const Value.absent(),
+                Value<int?> diaVencimento = const Value.absent(),
                 Value<bool> bloqueado = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PatioClientesCompanion(
@@ -9547,6 +9621,7 @@ class $$PatioClientesTableTableManager
                 planoValor: planoValor,
                 vagas: vagas,
                 vencimentoEpoch: vencimentoEpoch,
+                diaVencimento: diaVencimento,
                 bloqueado: bloqueado,
                 rowid: rowid,
               ),
@@ -9561,6 +9636,7 @@ class $$PatioClientesTableTableManager
                 Value<double?> planoValor = const Value.absent(),
                 Value<int> vagas = const Value.absent(),
                 Value<int?> vencimentoEpoch = const Value.absent(),
+                Value<int?> diaVencimento = const Value.absent(),
                 Value<bool> bloqueado = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PatioClientesCompanion.insert(
@@ -9573,6 +9649,7 @@ class $$PatioClientesTableTableManager
                 planoValor: planoValor,
                 vagas: vagas,
                 vencimentoEpoch: vencimentoEpoch,
+                diaVencimento: diaVencimento,
                 bloqueado: bloqueado,
                 rowid: rowid,
               ),
