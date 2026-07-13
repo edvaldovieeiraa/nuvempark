@@ -8,7 +8,7 @@ export default async function ConfiguracoesPage() {
 
   const [{ data: tenant }, { data: assinatura }, { data: dispositivos }, { data: patios }] =
     await Promise.all([
-      supabase.from("tenants").select("nome, codigo").single(),
+      supabase.from("tenants").select("nome, codigo, cnpj, razao_social").single(),
       supabase
         .from("assinaturas")
         .select("estado, valor_por_patio, vencimento")

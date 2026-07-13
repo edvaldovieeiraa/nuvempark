@@ -1,6 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Building2,
@@ -9,14 +10,23 @@ import {
   ShieldCheck,
   ShieldX,
   Copy,
+  Save,
+  Loader2,
 } from "lucide-react";
 import {
   alternarDispositivo,
+  atualizarRede,
 } from "@/app/painel/configuracoes/actions";
+import { soDigitos, formatarCnpj, cnpjValido } from "@/lib/cnpj";
 import { useToast } from "@/components/ui/toast";
 import { Confirmar } from "@/components/ui/confirmar";
 
-type Tenant = { nome: string; codigo: string };
+type Tenant = {
+  nome: string;
+  codigo: string;
+  cnpj: string | null;
+  razao_social: string | null;
+};
 type Assinatura = {
   estado: string;
   valor_por_patio: number;
@@ -102,11 +112,10 @@ export function ConfiguracoesClient({
             </span>
             <h2 className="font-bold">Sua rede</h2>
           </div>
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-texto-2">Nome</dt>
-              <dd className="font-bold">{tenant?.nome ?? "—"}</dd>
-            </div>
+
+          <FormRede tenant={tenant} />
+
+          <dl className="mt-4 pt-4 border-t border-borda text-sm">
             <div className="flex justify-between">
               <dt className="text-texto-2">Pátios ativos</dt>
               <dd className="font-bold tabular-nums">{qtdPatiosAtivos}</dd>
@@ -248,6 +257,105 @@ export function ConfiguracoesClient({
           </ul>
         )}
       </motion.section>
+    </div>
+  );
+}
+
+/* ---------- Formulário editável: dados da rede ---------- */
+
+function FormRede({ tenant }: { tenant: Tenant | null }) {
+  const toast = useToast();
+  const router = useRouter();
+  const [nome, setNome] = useState(tenant?.nome ?? "");
+  const [razao, setRazao] = useState(tenant?.razao_social ?? "");
+  const [cnpj, setCnpj] = useState(
+    tenant?.cnpj ? formatarCnpj(tenant.cnpj) : "",
+  );
+  const [salvando, setSalvando] = useState(false);
+
+  const cnpjDigitos = soDigitos(cnpj);
+  const cnpjIncompleto = cnpjDigitos.length > 0 && cnpjDigitos.length < 14;
+  const cnpjInvalido = cnpjDigitos.length === 14 && !cnpjValido(cnpjDigitos);
+  const podeSalvar =
+    nome.trim().length >= 2 && !cnpjIncompleto && !cnpjInvalido && !salvando;
+
+  async function salvar() {
+    if (!podeSalvar) return;
+    setSalvando(true);
+    const r = await atualizarRede({
+      nome: nome.trim(),
+      razaoSocial: razao.trim() || null,
+      cnpj: cnpjDigitos || null,
+    });
+    setSalvando(false);
+    if (r?.ok) {
+      toast.sucesso("Salvo!", r.msg);
+      router.refresh();
+    } else toast.erro("Não deu certo", r?.msg ?? "Erro inesperado.");
+  }
+
+  const inputCls =
+    "w-full h-11 px-3.5 rounded-xl border border-borda bg-superficie text-sm focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15";
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="block text-xs font-bold text-texto-2 mb-1.5">
+          Nome da rede
+        </label>
+        <input
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          placeholder="Ex.: Rede Estacionar"
+          className={inputCls}
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-texto-2 mb-1.5">
+          Razão social (opcional)
+        </label>
+        <input
+          value={razao}
+          onChange={(e) => setRazao(e.target.value)}
+          placeholder="Ex.: Estacionar Serviços Ltda"
+          className={inputCls}
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-texto-2 mb-1.5">
+          CNPJ (opcional)
+        </label>
+        <input
+          value={cnpj}
+          onChange={(e) => setCnpj(formatarCnpj(e.target.value))}
+          inputMode="numeric"
+          placeholder="00.000.000/0000-00"
+          className={`${inputCls} tabular-nums ${
+            cnpjInvalido || cnpjIncompleto
+              ? "border-perigo/50 focus:border-perigo focus:ring-perigo/15"
+              : ""
+          }`}
+        />
+        {(cnpjInvalido || cnpjIncompleto) && (
+          <p className="mt-1 text-xs font-semibold text-perigo">
+            {cnpjIncompleto
+              ? "CNPJ incompleto (14 dígitos)."
+              : "CNPJ inválido — confira os dígitos."}
+          </p>
+        )}
+      </div>
+      <button
+        onClick={salvar}
+        disabled={!podeSalvar}
+        className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white text-sm font-bold shadow-[var(--shadow-brand)] hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+      >
+        {salvando ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Save className="w-4 h-4" />
+        )}
+        Salvar dados da rede
+      </button>
     </div>
   );
 }
