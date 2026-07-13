@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
@@ -12,6 +11,7 @@ import {
   Printer,
 } from "lucide-react";
 import { WHATSAPP } from "@/components/site/secoes";
+import { urlApp } from "@/lib/urls";
 
 const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -69,7 +69,7 @@ export function Hero() {
       <div className="relative mx-auto max-w-6xl px-5">
         <div className="max-w-4xl mx-auto text-center">
           <motion.a
-            href="/cadastro"
+            href={urlApp("/cadastro")}
             {...subir(0.05)}
             className="inline-flex items-center gap-2 rounded-full border border-brand-400/25 bg-brand-500/10 px-3.5 py-1.5 text-xs font-bold text-brand-300 hover:border-brand-400/45 hover:bg-brand-500/15 transition-colors"
           >
@@ -102,13 +102,13 @@ export function Hero() {
             {...subir(0.42)}
             className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3"
           >
-            <Link
-              href="/cadastro"
+            <a
+              href={urlApp("/cadastro")}
               className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
             >
               Começar grátis por 15 dias
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+            </a>
             <a
               href={WHATSAPP}
               target="_blank"

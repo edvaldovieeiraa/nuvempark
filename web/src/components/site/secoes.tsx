@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
 import { PlayBadge } from "@/components/site/play-badge";
+import { urlApp } from "@/lib/urls";
 
 /** WhatsApp comercial da NuvemPark. */
 export const WHATSAPP =
@@ -326,13 +327,13 @@ export function ComoFunciona() {
         </div>
 
         <Reveal delay={0.2} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            href="/cadastro"
+          <a
+            href={urlApp("/cadastro")}
             className="group inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
           >
             Criar minha conta grátis
             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
+          </a>
           <PlayBadge />
         </Reveal>
       </div>
@@ -399,13 +400,13 @@ export function Precos() {
                   Menos do que um único cliente deixa no seu caixa por dia.
                   Adicione ou remova pátios quando quiser — o valor acompanha.
                 </p>
-                <Link
-                  href="/cadastro"
+                <a
+                  href={urlApp("/cadastro")}
                   className="mt-7 inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
                 >
                   Começar grátis agora
                   <ArrowRight className="w-4 h-4" />
-                </Link>
+                </a>
                 <p className="mt-3 text-[11px] text-texto-3">
                   Sem cartão para testar. Só cobramos se você decidir continuar —
                   e cancela quando quiser, sem multa.
@@ -485,13 +486,13 @@ export function CtaFinal() {
               cartão.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                href="/cadastro"
+              <a
+                href={urlApp("/cadastro")}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
               >
                 Criar minha conta grátis
                 <ArrowRight className="w-4 h-4" />
-              </Link>
+              </a>
               <a
                 href={WHATSAPP}
                 target="_blank"
@@ -515,7 +516,10 @@ export function CtaFinal() {
    FOOTER
    ========================================================= */
 export function SiteFooter() {
-  const colunas: { titulo: string; links: { href: string; label: string; externo?: boolean }[] }[] = [
+  const colunas: {
+    titulo: string;
+    links: { href: string; label: string; externo?: boolean; app?: boolean }[];
+  }[] = [
     {
       titulo: "Produto",
       links: [
@@ -534,8 +538,8 @@ export function SiteFooter() {
     {
       titulo: "Acesso",
       links: [
-        { href: "/cadastro", label: "Começar grátis" },
-        { href: "/login", label: "Painel do gestor" },
+        { href: urlApp("/cadastro"), label: "Começar grátis", app: true },
+        { href: urlApp("/login"), label: "Painel do gestor", app: true },
         { href: WHATSAPP, label: "Falar no WhatsApp", externo: true },
       ],
     },
@@ -576,6 +580,15 @@ export function SiteFooter() {
                         href={l.href}
                         target="_blank"
                         rel="noopener noreferrer"
+                        className="text-sm text-texto-2 hover:text-brand-700 transition-colors"
+                      >
+                        {l.label}
+                      </a>
+                    </li>
+                  ) : l.app ? (
+                    <li key={l.label}>
+                      <a
+                        href={l.href}
                         className="text-sm text-texto-2 hover:text-brand-700 transition-colors"
                       >
                         {l.label}

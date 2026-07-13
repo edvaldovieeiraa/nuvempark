@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { urlApp } from "@/lib/urls";
 
 const LINKS = [
   { href: "/recursos", label: "Recursos" },
@@ -78,8 +79,8 @@ export function SiteHeader() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
-            <Link
-              href="/login"
+            <a
+              href={urlApp("/login")}
               className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
                 escuro
                   ? "text-white/85 border-white/20 hover:border-white/40 hover:text-white hover:bg-white/10"
@@ -87,13 +88,13 @@ export function SiteHeader() {
               }`}
             >
               Entrar
-            </Link>
-            <Link
-              href="/cadastro"
+            </a>
+            <a
+              href={urlApp("/cadastro")}
               className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
             >
               Começar grátis
-            </Link>
+            </a>
           </div>
 
           <button
@@ -124,19 +125,19 @@ export function SiteHeader() {
               </Link>
             ))}
             <div className="flex gap-2 pt-2">
-              <Link
-                href="/login"
+              <a
+                href={urlApp("/login")}
                 className="flex-1 text-center px-4 py-2.5 rounded-xl text-sm font-bold text-texto-2 border border-borda"
               >
                 Entrar
-              </Link>
-              <Link
-                href="/cadastro"
+              </a>
+              <a
+                href={urlApp("/cadastro")}
                 onClick={() => setAberto(false)}
                 className="flex-1 text-center px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500"
               >
                 Começar grátis
-              </Link>
+              </a>
             </div>
           </motion.div>
         )}
