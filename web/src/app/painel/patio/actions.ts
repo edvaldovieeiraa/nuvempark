@@ -92,6 +92,7 @@ export async function executarLimpeza(
     removido_em: new Date().toISOString(),
     removido_por: user.id,
     removido_por_nome: nome,
+    removido_por_email: user.email ?? null,
     remocao_motivo: motivo,
   });
   const { data, error } = await aplicarEscopo(query, e).select("id");

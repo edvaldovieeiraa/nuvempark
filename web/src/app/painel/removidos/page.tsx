@@ -20,7 +20,7 @@ export default async function RemovidosPage({
   let query = supabase
     .from("tickets")
     .select(
-      "id, placa, tipo_veiculo, status, entrada, removido_em, removido_por_nome, remocao_motivo",
+      "id, placa, tipo_veiculo, status, entrada, removido_em, removido_por_nome, removido_por_email, remocao_motivo",
       { count: "exact" },
     )
     .eq("patio_id", patioId)
@@ -108,7 +108,14 @@ export default async function RemovidosPage({
                           {t.removido_em ? dataHora(t.removido_em) : "—"}
                         </td>
                         <td className="px-5 py-3 text-texto-2">
-                          {t.removido_por_nome ?? "—"}
+                          <span className="block">
+                            {t.removido_por_nome ?? t.removido_por_email ?? "—"}
+                          </span>
+                          {t.removido_por_email && t.removido_por_nome && (
+                            <span className="block text-[11px] text-texto-3 mt-0.5">
+                              {t.removido_por_email}
+                            </span>
+                          )}
                         </td>
                         <td className="px-5 py-3 text-texto-2 max-w-[260px]">
                           {t.remocao_motivo ? (

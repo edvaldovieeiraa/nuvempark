@@ -266,9 +266,14 @@ export function HistoricoClient({
                       <div className="text-xs font-semibold text-texto-2 tabular-nums">
                         {dataHora(l.criado_em)}
                       </div>
-                      <div className="text-[11px] text-texto-3 truncate max-w-[160px]">
+                      <div className="text-[11px] text-texto-2 truncate max-w-[200px]">
                         {l.usuario_nome ?? l.usuario_email ?? "—"}
                       </div>
+                      {l.usuario_email && l.usuario_nome && (
+                        <div className="text-[10px] text-texto-3 truncate max-w-[200px]">
+                          {l.usuario_email}
+                        </div>
+                      )}
                     </div>
                   </button>
 
