@@ -32,7 +32,7 @@ class EscPosBuilder {
   }
 
   EscPosBuilder text(String s) {
-    _bytes.addAll(latin1.encode(_normalize(s)));
+    _bytes.addAll(latin1.encode(normalize(s)));
     return this;
   }
 
@@ -51,7 +51,7 @@ class EscPosBuilder {
   /// Imprime um QR code nativo (ESC/POS `GS ( k`, model 2).
   /// Impressoras sem suporte ignoram o comando (o resto ainda sai).
   EscPosBuilder qrCode(String data, {int moduleSize = 6}) {
-    final payload = latin1.encode(data);
+    final payload = latin1.encode(normalize(data));
     final len = payload.length + 3;
     final pL = len % 256;
     final pH = len ~/ 256;
@@ -85,23 +85,48 @@ class EscPosBuilder {
   List<int> build() => List.unmodifiable(_bytes);
 
   /// Troca acentos por ASCII para impressoras sem charset estendido.
-  static String _normalize(String s) => s
-      // NBSP (NumberFormat pt_BR insere entre "R$" e valor) vira 0xA0 em latin1,
-      // que na CP850 é "á" — troca por espaço comum.
-      .replaceAll('\u{00A0}', ' ')
-      .replaceAll('\u{202F}', ' ')
-      .replaceAll(RegExp('[ãâàáä]'), 'a')
-      .replaceAll(RegExp('[ÃÂÀÁÄ]'), 'A')
-      .replaceAll(RegExp('[éêèë]'), 'e')
-      .replaceAll(RegExp('[ÉÊÈË]'), 'E')
-      .replaceAll(RegExp('[íîìï]'), 'i')
-      .replaceAll(RegExp('[ÍÎÌÏ]'), 'I')
-      .replaceAll(RegExp('[õôòóö]'), 'o')
-      .replaceAll(RegExp('[ÕÔÒÓÖ]'), 'O')
-      .replaceAll(RegExp('[úûùü]'), 'u')
-      .replaceAll(RegExp('[ÚÛÙÜ]'), 'U')
-      .replaceAll('ç', 'c')
-      .replaceAll('Ç', 'C')
-      .replaceAll('ñ', 'n')
-      .replaceAll('Ñ', 'N');
+  ///
+  /// EXPOSTO PARA TESTE. Precisa ser TOTAL: `latin1.encode` LANÇA em qualquer
+  /// caractere fora da tabela, e a exceção derruba o cupom inteiro. O cupom de
+  /// fechamento imprime texto livre (descrição de movimento, digitada no
+  /// painel), então um travessão — como este — já bastava para não sair nada.
+  static String normalize(String s) {
+    final ascii = s
+        // NBSP (NumberFormat pt_BR insere entre "R$" e valor) vira 0xA0 em latin1,
+        // que na CP850 é "á" — troca por espaço comum.
+        .replaceAll('\u{00A0}', ' ')
+        .replaceAll('\u{202F}', ' ')
+        .replaceAll(RegExp('[ãâàáä]'), 'a')
+        .replaceAll(RegExp('[ÃÂÀÁÄ]'), 'A')
+        .replaceAll(RegExp('[éêèë]'), 'e')
+        .replaceAll(RegExp('[ÉÊÈË]'), 'E')
+        .replaceAll(RegExp('[íîìï]'), 'i')
+        .replaceAll(RegExp('[ÍÎÌÏ]'), 'I')
+        .replaceAll(RegExp('[õôòóö]'), 'o')
+        .replaceAll(RegExp('[ÕÔÒÓÖ]'), 'O')
+        .replaceAll(RegExp('[úûùü]'), 'u')
+        .replaceAll(RegExp('[ÚÛÙÜ]'), 'U')
+        .replaceAll('ç', 'c')
+        .replaceAll('Ç', 'C')
+        .replaceAll('ñ', 'n')
+        .replaceAll('Ñ', 'N')
+        // Pontuação tipográfica: chega por copiar/colar no painel.
+        .replaceAll(RegExp('[‐-―−]'), '-') // hifens e travessoes
+        .replaceAll(RegExp('[‘’‛′]'), "'")
+        .replaceAll(RegExp('[“”‟″]'), '"')
+        .replaceAll('…', '...')
+        .replaceAll('•', '*')
+        .replaceAll(RegExp('[€]'), 'EUR');
+
+    // Rede de segurança: o que sobrar fora do ASCII imprimível (emoji, símbolo
+    // exótico, qualquer coisa que um humano digite) vira '?'. Antes daqui, um
+    // caractere não previsto não "saía errado" — ele NÃO SAÍA, porque o encode
+    // lançava e nada era impresso.
+    final buf = StringBuffer();
+    for (final cu in ascii.codeUnits) {
+      final imprimivel = (cu >= 0x20 && cu <= 0x7E) || cu == 0x0A;
+      buf.writeCharCode(imprimivel ? cu : 0x3F); // '?'
+    }
+    return buf.toString();
+  }
 }

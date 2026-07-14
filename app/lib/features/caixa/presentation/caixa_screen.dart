@@ -379,7 +379,13 @@ class CaixaScreen extends ConsumerWidget {
     if (res == null) return;
 
     // Imprime o relatório (se houver impressora). Mesmo helper da reimpressão.
-    await _imprimirFechamento(ref, s, res, fechamento);
+    // Falha de impressão NÃO invalida o fechamento — ele já está gravado; o
+    // operador reimprime pelo botão da tela de caixa fechado.
+    final impresso = await _imprimirFechamento(ref, s, res, fechamento);
+    if (context.mounted && impresso == false) {
+      AppToast.error(context,
+          'Caixa fechado, mas o cupom não saiu. Use "Reimprimir último fechamento".');
+    }
 
     // Conferência PERSISTENTE — fica na tela até o operador confirmar. Antes era
     // só um toast que sumia em ~2s ("as validações não apareciam").
@@ -387,8 +393,12 @@ class CaixaScreen extends ConsumerWidget {
   }
 
   /// Monta e envia o cupom de fechamento. Reutilizado no fechamento e na
-  /// reimpressão. Retorna false se não houver impressora configurada.
-  Future<bool> _imprimirFechamento(
+  /// reimpressão.
+  ///
+  /// `null` = não há impressora configurada · `true` = saiu · `false` = falhou.
+  /// Antes devolvia `true` sem olhar o resultado de `print()`, então a falha era
+  /// invisível: a reimpressão dizia "Fechamento reimpresso" sem sair papel.
+  Future<bool?> _imprimirFechamento(
     WidgetRef ref,
     CaixaModel s,
     FechamentoResult res,
@@ -397,7 +407,7 @@ class CaixaScreen extends ConsumerWidget {
     final printer = await ref
         .read(printerNotifierProvider.future)
         .catchError((_) => const PrinterState());
-    if (!printer.temImpressora) return false;
+    if (!printer.temImpressora) return null;
 
     final patioNome = ref.read(patioNotifierProvider).value?.nome ?? 'Patio';
     final hora = DateFormat('HH:mm');
@@ -424,8 +434,7 @@ class CaixaScreen extends ConsumerWidget {
       cols: printer.cols,
       avancoFinal: printer.avancoFinal,
     );
-    await ref.read(printerNotifierProvider.notifier).print(bytes);
-    return true;
+    return ref.read(printerNotifierProvider.notifier).print(bytes);
   }
 
   /// Reimprime o último fechamento — cobre impressora sem papel/desligada na
@@ -452,11 +461,16 @@ class CaixaScreen extends ConsumerWidget {
       totalContado: contado,
       divergencia: contado - calculado,
     );
-    final ok =
+    final r =
         await _imprimirFechamento(ref, s, res, s.fechamento ?? DateTime.now());
-    if (context.mounted) {
-      AppToast.info(
-          context, ok ? 'Fechamento reimpresso.' : 'Nenhuma impressora configurada.');
+    if (!context.mounted) return;
+    switch (r) {
+      case null:
+        AppToast.error(context, 'Nenhuma impressora configurada. Veja em Config.');
+      case true:
+        AppToast.success(context, 'Fechamento reimpresso.');
+      case false:
+        AppToast.error(context, 'Falha ao imprimir. Verifique a impressora.');
     }
   }
 
