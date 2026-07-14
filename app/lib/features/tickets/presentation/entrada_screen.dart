@@ -17,6 +17,7 @@ import '../../printing/presentation/providers/printer_provider.dart';
 import '../data/foto_entrada_service.dart';
 import '../data/placa_ocr_service.dart';
 import '../domain/reconhecimento_cliente.dart';
+import 'placa_formatter.dart';
 import 'providers/ticket_provider.dart';
 
 /// Registro de entrada de veículo: captura de placa (câmera+OCR) ou digitação,
@@ -418,7 +419,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                     keyboardType: TextInputType.visiblePassword,
                     inputFormatters: [
                       LengthLimitingTextInputFormatter(7),
-                      _PlacaFormatter(),
+                      const PlacaFormatter(),
                     ],
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: 3),
                     textAlign: TextAlign.center,
@@ -654,24 +655,3 @@ class _ReconhecimentoBanner extends StatelessWidget {
   }
 }
 
-/// Formatter de placa: força maiúsculas e valida char por posição
-/// (Mercosul LLLNLNN + antiga LLLNNNN convivem: pos5 aceita letra ou dígito).
-class _PlacaFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    final t = newValue.text.toUpperCase();
-    final buf = StringBuffer();
-    for (var i = 0; i < t.length && i < 7; i++) {
-      final c = t[i];
-      final ok = switch (i) {
-        0 || 1 || 2 => RegExp(r'[A-Z]').hasMatch(c),
-        3 => RegExp(r'[0-9]').hasMatch(c),
-        4 => RegExp(r'[A-Z0-9]').hasMatch(c),
-        _ => RegExp(r'[0-9]').hasMatch(c),
-      };
-      if (ok) buf.write(c);
-    }
-    final s = buf.toString();
-    return TextEditingValue(text: s, selection: TextSelection.collapsed(offset: s.length));
-  }
-}

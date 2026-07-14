@@ -17,6 +17,7 @@ import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tickets/data/foto_entrada_service.dart';
 import '../../tickets/data/placa_ocr_service.dart';
 import '../../tickets/presentation/providers/ticket_provider.dart';
+import '../../tickets/presentation/placa_formatter.dart';
 import '../../tickets/presentation/qr_scanner_screen.dart';
 
 /// Aba Início: ocupação, status do caixa e as duas grandes ações
@@ -491,6 +492,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               subtitle: const Text('A câmera lê a placa e encontra o veículo'),
               onTap: () => Navigator.pop(ctx, 'foto'),
             ),
+            ListTile(
+              leading:
+                  const Icon(Icons.keyboard_alt_outlined, color: AppColors.primary),
+              title: const Text('Digitar a placa'),
+              subtitle: const Text('Quando o cupom sumiu e a câmera não ajuda'),
+              onTap: () => Navigator.pop(ctx, 'digitar'),
+            ),
             const SizedBox(height: 8),
           ],
         ),
@@ -498,11 +506,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
     if (metodo == null || !mounted) return;
 
-    if (metodo == 'qr') {
-      await _saidaPorQr(messenger);
-    } else {
-      await _saidaPorFoto(messenger);
+    switch (metodo) {
+      case 'qr':
+        await _saidaPorQr(messenger);
+      case 'foto':
+        await _saidaPorFoto(messenger);
+      case 'digitar':
+        await _saidaPorPlacaDigitada(messenger);
     }
+  }
+
+  /// Saída digitando a placa — a rede de segurança quando o cupom se perdeu e a
+  /// câmera não colabora (placa suja, chuva, veículo encostado na parede).
+  Future<void> _saidaPorPlacaDigitada(ScaffoldMessengerState messenger) async {
+    final placa = await showDialog<String>(
+      context: context,
+      builder: (_) => const _DialogDigitarPlaca(),
+    );
+    if (placa == null || !mounted) return;
+
+    final patioId = await ref.read(tokenStorageProvider).readPatioId();
+    if (patioId == null || !mounted) return;
+    final ticket = await ref
+        .read(ticketRepositoryProvider)
+        .ticketAbertoPorPlaca(patioId, placa);
+    if (!mounted) return;
+    if (ticket == null) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Nenhum veículo aberto com a placa $placa.')),
+      );
+      return;
+    }
+    context.push(Routes.saidaDetalhe(ticket.id));
   }
 
   Future<void> _saidaPorQr(ScaffoldMessengerState messenger) async {
@@ -562,5 +597,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     } finally {
       ocrService.dispose();
     }
+  }
+}
+
+/// Diálogo de digitação da placa. Devolve a placa normalizada (7 chars,
+/// maiúsculas) ou `null` se o operador cancelar.
+class _DialogDigitarPlaca extends StatefulWidget {
+  const _DialogDigitarPlaca();
+
+  @override
+  State<_DialogDigitarPlaca> createState() => _DialogDigitarPlacaState();
+}
+
+class _DialogDigitarPlacaState extends State<_DialogDigitarPlaca> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  bool get _completa => _ctrl.text.length == PlacaFormatter.tamanho;
+
+  void _confirmar() {
+    if (!_completa) return;
+    Navigator.pop(context, _ctrl.text.toUpperCase());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Digitar a placa'),
+      content: TextField(
+        controller: _ctrl,
+        autofocus: true,
+        textCapitalization: TextCapitalization.characters,
+        keyboardType: TextInputType.visiblePassword,
+        textAlign: TextAlign.center,
+        // Mesmo formatter da entrada: as duas telas aceitam exatamente as
+        // mesmas placas (Mercosul e antiga).
+        inputFormatters: const [PlacaFormatter()],
+        style: const TextStyle(
+            fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: 3),
+        decoration: const InputDecoration(hintText: 'ABC1D23'),
+        onChanged: (_) => setState(() {}),
+        onSubmitted: (_) => _confirmar(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _completa ? _confirmar : null,
+          child: const Text('Buscar veículo'),
+        ),
+      ],
+    );
   }
 }
