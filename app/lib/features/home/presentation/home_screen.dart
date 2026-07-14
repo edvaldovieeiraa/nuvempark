@@ -144,8 +144,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            _atalhoMensalistas(),
             const SizedBox(height: 24),
           ],
         ),
@@ -430,49 +428,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
     );
   }
-
-  Widget _atalhoMensalistas() => InkWell(
-        onTap: () => context.push(Routes.mensalistas),
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.entradaBg,
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: const Icon(Icons.badge_outlined,
-                    size: 20, color: AppColors.entrada),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Mensalistas',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 14)),
-                    Text('Clientes e recebimento de mensalidades',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.onSurfaceVariant)),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right,
-                  color: AppColors.onSurfaceVariant),
-            ],
-          ),
-        ),
-      );
 
   Widget _bannerAssinatura(String estado) => Container(
         width: double.infinity,
