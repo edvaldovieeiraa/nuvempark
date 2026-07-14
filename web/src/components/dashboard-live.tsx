@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { labelTicketStatus } from "@/lib/status-labels";
 import { useToast } from "@/components/ui/toast";
 import { SyncBadge } from "@/components/sync-badge";
 
@@ -438,7 +439,7 @@ function StatusChip({ status }: { status: string }) {
       ? { cls: "bg-brand-50 text-brand-700 border-brand-200", dot: "bg-brand-500", label: "no pátio" }
       : status === "fechado"
         ? { cls: "bg-fundo text-texto-2 border-borda", dot: "bg-texto-3", label: "saiu" }
-        : { cls: "bg-saida-bg text-saida border-saida/20", dot: "bg-saida", label: status };
+        : { cls: "bg-saida-bg text-saida border-saida/20", dot: "bg-saida", label: labelTicketStatus(status) };
   return (
     <span
       className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${cfg.cls}`}

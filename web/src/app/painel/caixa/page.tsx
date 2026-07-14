@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { labelCaixaStatus } from "@/lib/status-labels";
 import { createClient } from "@/lib/supabase/server";
 import { resolverPatio } from "@/lib/patio-scope";
 import { Revelar } from "@/components/ui/revelar";
@@ -113,7 +114,7 @@ export default async function CaixaPage({
                                 : "bg-texto-3"
                             }`}
                           />
-                          {s.status}
+                          {labelCaixaStatus(s.status)}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-right">

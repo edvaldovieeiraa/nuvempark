@@ -18,6 +18,7 @@ import {
   atualizarRede,
 } from "@/app/painel/configuracoes/actions";
 import { soDigitos, formatarCnpj, cnpjValido } from "@/lib/cnpj";
+import { labelAssinaturaEstado } from "@/lib/status-labels";
 import { useToast } from "@/components/ui/toast";
 import { Confirmar } from "@/components/ui/confirmar";
 
@@ -52,10 +53,11 @@ const moeda = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
-const ESTADOS: Record<string, { cls: string; rotulo: string }> = {
-  ativa: { cls: "bg-brand-50 text-brand-700 border-brand-200", rotulo: "Ativa" },
-  atrasada: { cls: "bg-aviso-bg text-aviso border-aviso/25", rotulo: "Atrasada" },
-  suspensa: { cls: "bg-perigo-bg text-perigo border-perigo/20", rotulo: "Suspensa" },
+// Só as cores por estado — o texto vem de labelAssinaturaEstado (util central).
+const ESTADO_CLS: Record<string, string> = {
+  ativa: "bg-brand-50 text-brand-700 border-brand-200",
+  atrasada: "bg-aviso-bg text-aviso border-aviso/25",
+  suspensa: "bg-perigo-bg text-perigo border-perigo/20",
 };
 
 export function ConfiguracoesClient({
@@ -75,7 +77,8 @@ export function ConfiguracoesClient({
   const nomePatio = (id: string) =>
     patios.find((p) => p.id === id)?.nome ?? "—";
 
-  const estado = ESTADOS[assinatura?.estado ?? "ativa"] ?? ESTADOS.ativa;
+  const estadoCls = ESTADO_CLS[assinatura?.estado ?? "ativa"] ?? ESTADO_CLS.ativa;
+  const estadoRotulo = labelAssinaturaEstado(assinatura?.estado ?? "ativa");
   const mensalidade =
     (Number(assinatura?.valor_por_patio) || 0) * qtdPatiosAtivos;
 
@@ -163,9 +166,9 @@ export function ConfiguracoesClient({
               <h2 className="font-bold">Assinatura</h2>
             </div>
             <span
-              className={`text-xs font-bold px-3 py-1 rounded-full border ${estado.cls}`}
+              className={`text-xs font-bold px-3 py-1 rounded-full border ${estadoCls}`}
             >
-              {estado.rotulo}
+              {estadoRotulo}
             </span>
           </div>
           <dl className="space-y-3 text-sm">

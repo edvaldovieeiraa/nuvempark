@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { labelTicketStatus } from "@/lib/status-labels";
 import { resolverPatio } from "@/lib/patio-scope";
 import { Revelar } from "@/components/ui/revelar";
 import { SemPatio } from "@/components/sem-patio";
@@ -133,7 +134,7 @@ export default async function RemovidosPage({
                           ) : (
                             <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border bg-fundo text-texto-2 border-borda">
                               <span className="w-1.5 h-1.5 rounded-full bg-texto-3" />
-                              {t.status}
+                              {labelTicketStatus(t.status)}
                             </span>
                           )}
                         </td>

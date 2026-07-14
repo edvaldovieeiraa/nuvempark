@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { labelCaixaStatus, labelCaixaTipo } from "@/lib/status-labels";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Revelar } from "@/components/ui/revelar";
@@ -86,7 +87,7 @@ export default async function CaixaDetalhePage({
                 sessao.status === "aberta" ? "bg-brand-500 animate-pulse" : "bg-texto-3"
               }`}
             />
-            {sessao.status}
+            {labelCaixaStatus(sessao.status)}
           </span>
         </div>
       </Revelar>
@@ -149,7 +150,7 @@ export default async function CaixaDetalhePage({
                   <IconeTipo tipo={m.tipo} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold capitalize">
-                      {m.tipo}
+                      {labelCaixaTipo(m.tipo)}
                       {m.forma_pagamento && (
                         <span className="ml-2 text-[11px] font-bold text-texto-3 uppercase">
                           {m.forma_pagamento.replace("_", " ")}

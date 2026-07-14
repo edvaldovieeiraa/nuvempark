@@ -12,6 +12,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { labelAssinaturaEstado } from "@/lib/status-labels";
 import type { FaturaRow } from "@/app/painel/assinatura/page";
 
 type Assinatura = {
@@ -26,12 +27,13 @@ const moeda = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
-const ESTADOS: Record<string, { rotulo: string; cls: string }> = {
-  trial: { rotulo: "Período de teste", cls: "bg-info-bg text-info border-info/25" },
-  ativa: { rotulo: "Ativa", cls: "bg-brand-50 text-brand-700 border-brand-200" },
-  atrasada: { rotulo: "Atrasada", cls: "bg-aviso-bg text-aviso border-aviso/25" },
-  suspensa: { rotulo: "Suspensa", cls: "bg-perigo-bg text-perigo border-perigo/20" },
-  cancelada: { rotulo: "Cancelada", cls: "bg-fundo text-texto-3 border-borda" },
+// Só as CORES por estado — o texto vem de labelAssinaturaEstado (util central).
+const ESTADO_CLS: Record<string, string> = {
+  trial: "bg-info-bg text-info border-info/25",
+  ativa: "bg-brand-50 text-brand-700 border-brand-200",
+  atrasada: "bg-aviso-bg text-aviso border-aviso/25",
+  suspensa: "bg-perigo-bg text-perigo border-perigo/20",
+  cancelada: "bg-fundo text-texto-3 border-borda",
 };
 
 const FORMAS: Record<string, string> = {
@@ -65,7 +67,8 @@ export function AssinaturaClient({
   proximos: FaturaRow[];
   historico: FaturaRow[];
 }) {
-  const estado = ESTADOS[assinatura?.estado ?? "ativa"] ?? ESTADOS.ativa;
+  const estadoCls = ESTADO_CLS[assinatura?.estado ?? "ativa"] ?? ESTADO_CLS.ativa;
+  const estadoRotulo = labelAssinaturaEstado(assinatura?.estado ?? "ativa");
   const valorPatio = Number(assinatura?.valor_por_patio) || 0;
   const mensal = valorPatio * qtdPatiosAtivos;
 
@@ -96,8 +99,8 @@ export function AssinaturaClient({
             </span>
             <h2 className="font-bold">Plano atual</h2>
           </div>
-          <span className={`text-xs font-bold px-3 py-1 rounded-full border ${estado.cls}`}>
-            {estado.rotulo}
+          <span className={`text-xs font-bold px-3 py-1 rounded-full border ${estadoCls}`}>
+            {estadoRotulo}
           </span>
         </div>
 

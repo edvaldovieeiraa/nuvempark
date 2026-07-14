@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, Inbox, X, Camera, AlertTriangle, Loader2 } from "lucide-react";
 import { SyncBadge } from "@/components/sync-badge";
+import { labelTicketStatus } from "@/lib/status-labels";
 import {
   detalheTicket,
   type DetalheTicket,
@@ -404,8 +405,8 @@ function StatusChip({ status }: { status: string }) {
       : status === "fechado"
         ? { cls: "bg-fundo text-texto-2 border-borda", dot: "bg-texto-3", label: "saiu" }
         : status === "cancelado"
-          ? { cls: "bg-perigo-bg text-perigo border-perigo/20", dot: "bg-perigo", label: "cancelado" }
-          : { cls: "bg-saida-bg text-saida border-saida/20", dot: "bg-saida", label: status };
+          ? { cls: "bg-perigo-bg text-perigo border-perigo/20", dot: "bg-perigo", label: labelTicketStatus("cancelado") }
+          : { cls: "bg-saida-bg text-saida border-saida/20", dot: "bg-saida", label: labelTicketStatus(status) };
   return (
     <span
       className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${cfg.cls}`}
