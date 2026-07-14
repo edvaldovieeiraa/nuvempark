@@ -67,7 +67,9 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
 
   Future<void> _capturarFotoAvaria() async {
     try {
-      final path = await _fotoService.capturar();
+      // Perfil de avaria: mais resolução que a foto de placa — o gestor vai dar
+      // zoom no dano. Não passa por OCR, então a nitidez é o que importa.
+      final path = await _fotoService.capturar(perfil: PerfilFoto.avaria);
       if (path != null && mounted) setState(() => _avariaFotos.add(path));
     } catch (_) {
       if (mounted) AppToast.error(context, 'Não foi possível capturar a foto.');
