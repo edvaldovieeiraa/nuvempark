@@ -223,6 +223,10 @@ abstract final class PrintTemplates {
     for (final l in linhas.isEmpty ? padrao : linhas) {
       b.line(l);
     }
+    // Assinatura FIXA da plataforma — vai em TODO cupom (entrada e saída),
+    // depois do rodapé editável do gestor. Duas linhas: a frase inteira (51
+    // chars) quebraria feio numa bobina de 58mm/32 colunas.
+    b.feed().line('www.nuvempark.com').line('Tecnologia para Estacionamentos');
   }
 
   static String _row(String label, String value, int cols) {
