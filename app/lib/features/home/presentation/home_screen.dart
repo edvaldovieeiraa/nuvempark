@@ -35,6 +35,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   static final _moeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  static final _hora = DateFormat('HH:mm');
 
   Timer? _refreshTimer;
 
@@ -259,60 +260,103 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  /// Card de destaque do caixa — mesma geometria do card de ocupação (padding
+  /// 18, raio 16) e o valor na mesma escala do número da ocupação (32px). Não
+  /// repete o gradiente de propósito: dois gradientes lado a lado brigariam
+  /// pela atenção; o peso vem do tamanho do número e do bloco de cor.
+  ///
+  /// Zero lógica nova: o saldo continua vindo de `caixa.saldoCalculado` e o
+  /// "abrir caixa" continua sendo a tela de Caixa que já existe.
   Widget _cardCaixa(CaixaModel? caixa) {
     final aberto = caixa != null;
+    final cor = aberto ? AppColors.entrada : AppColors.onSurfaceVariant;
+    final abrirCaixa = widget.onVerCaixa ?? () => context.push(Routes.caixa);
+
     return InkWell(
-      onTap: widget.onVerCaixa ?? () => context.push(Routes.caixa),
-      borderRadius: BorderRadius.circular(14),
+      onTap: abrirCaixa,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+          color: aberto ? AppColors.entradaBg : AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: aberto
+                ? AppColors.entrada.withValues(alpha: 0.35)
+                : AppColors.border,
+          ),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: aberto ? AppColors.entradaBg : AppColors.surfaceContainer,
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Icon(Icons.point_of_sale_outlined,
-                  size: 20,
-                  color:
-                      aberto ? AppColors.entrada : AppColors.onSurfaceVariant),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(aberto ? 'Caixa aberto' : 'Caixa fechado',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 14)),
-                  Text(
-                    aberto
-                        ? 'Saldo esperado: ${_moeda.format(caixa.saldoCalculado)}'
-                        : 'Toque para abrir o caixa',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.onSurfaceVariant),
+            Row(
+              children: [
+                Text('CAIXA',
+                    style: TextStyle(
+                        fontSize: 11,
+                        letterSpacing: 1,
+                        fontWeight: FontWeight.w700,
+                        color: cor)),
+                const SizedBox(width: 8),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: aberto ? AppColors.success : AppColors.outline,
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
+                ),
+                const Spacer(),
+                Icon(Icons.chevron_right, size: 20, color: cor),
+              ],
             ),
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: aberto ? AppColors.success : AppColors.outline,
-                shape: BoxShape.circle,
+            const SizedBox(height: 8),
+            if (aberto) ...[
+              // O valor é o elemento dominante. FittedBox: um saldo de seis
+              // dígitos não pode estourar a largura num aparelho de 360dp.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _moeda.format(caixa.saldoCalculado),
+                  style: const TextStyle(
+                      fontSize: 32,
+                      height: 1,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.entrada),
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            const Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
+              const SizedBox(height: 6),
+              Text(
+                'Saldo esperado · aberto por ${caixa.operadorNome} às ${_hora.format(caixa.abertura)}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.onSurfaceVariant),
+              ),
+            ] else ...[
+              const FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text('Caixa fechado',
+                    style: TextStyle(
+                        fontSize: 32,
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.onSurface)),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: abrirCaixa,
+                  icon: const Icon(Icons.lock_open, size: 18),
+                  label: const Text('Abrir caixa'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
