@@ -1,25 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Proporção de uma placa Mercosul (400mm × 130mm ≈ 3,08). Arredondado para
-/// 3,1 — a moldura é um guia de enquadramento, não uma medida exata.
-const double kPlacaAspecto = 3.1;
-
-/// Retângulo da moldura-guia dentro de uma área de preview de tamanho [preview].
-///
-/// Fonte ÚNICA da geometria: o pintor desenha exatamente este retângulo e o
-/// recorte de ROI (Bloco 2) mapeia exatamente este retângulo para a imagem.
-/// Assim não há divergência entre o que o operador vê e o que o OCR lê.
-///
-/// Largura = 82% da tela; altura derivada do aspecto da placa; centralizado,
-/// levemente acima do meio (ergonomia: a mão do operador não cobre a placa).
-Rect plateGuideRect(Size preview) {
-  final w = preview.width * 0.82;
-  final h = w / kPlacaAspecto;
-  final left = (preview.width - w) / 2;
-  // 46% da altura (um pouco acima do centro), com piso para não colar no topo.
-  final top = (preview.height * 0.46 - h / 2).clamp(0.0, preview.height - h);
-  return Rect.fromLTWH(left, top, w, h);
-}
+import '../../domain/roi_mapper.dart';
 
 /// Overlay da câmera de placa: escurece tudo fora da moldura-guia e desenha
 /// cantos estilo leitor de QR. Puramente visual — não intercepta toques (o

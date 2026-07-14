@@ -76,14 +76,26 @@ class FotoEntradaService {
   /// caminho final (`<uuid>.jpg`). O arquivo bruto do `takePicture` da câmera
   /// própria é temporário; a foto de entrada precisa sobreviver para sincronizar.
   Future<String> persistirCaptura(String srcPath) async {
+    final dest = await _novoDestino();
+    await File(srcPath).copy(dest);
+    return dest;
+  }
+
+  /// Grava [bytes] JPEG já processados (orientação normalizada) como foto de
+  /// entrada persistente. Usado pela câmera própria após decodificar o quadro.
+  Future<String> salvarBytes(List<int> bytes) async {
+    final dest = await _novoDestino();
+    await File(dest).writeAsBytes(bytes);
+    return dest;
+  }
+
+  Future<String> _novoDestino() async {
     final dir = await getApplicationDocumentsDirectory();
     final fotosDir = Directory(p.join(dir.path, 'fotos_entrada'));
     if (!await fotosDir.exists()) {
       await fotosDir.create(recursive: true);
     }
-    final dest = p.join(fotosDir.path, '${const Uuid().v4()}.jpg');
-    await File(srcPath).copy(dest);
-    return dest;
+    return p.join(fotosDir.path, '${const Uuid().v4()}.jpg');
   }
 }
 

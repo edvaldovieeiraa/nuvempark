@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../data/foto_entrada_service.dart';
+import '../data/placa_captura_processor.dart';
 import '../data/placa_ocr_service.dart';
 import 'widgets/plate_frame_overlay.dart';
 
@@ -57,6 +56,9 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   CameraController? _controller;
   bool _iniciando = true;
   bool _capturando = false;
+  // Tamanho da área de preview no momento do build — o crop de ROI mapeia a
+  // moldura desta mesma área para a imagem capturada.
+  Size _previewSize = Size.zero;
 
   @override
   void initState() {
@@ -133,11 +135,14 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
     setState(() => _capturando = true);
     try {
       final shot = await c.takePicture();
-      final fotoPath = await widget.fotoService.persistirCaptura(shot.path);
-      // Bloco 1: OCR na imagem inteira (baseline). O Bloco 2 recorta a ROI da
-      // moldura antes do ML Kit; a imagem inteira vira o fallback.
-      final placa = await widget.ocrService.lerPlaca(File(fotoPath));
-      _sair(CapturaOk(fotoPath: fotoPath, placa: placa));
+      final processado = await PlacaCapturaProcessor(
+        widget.fotoService,
+        widget.ocrService,
+      ).processar(arquivoBruto: shot.path, previewSize: _previewSize);
+      _sair(CapturaOk(
+        fotoPath: processado.fotoPath,
+        placa: processado.placa,
+      ));
     } catch (_) {
       if (mounted) {
         setState(() => _capturando = false);
@@ -155,21 +160,28 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (pronto) _preview(c) else const _CameraCarregando(),
-          if (pronto) const PlateFrameOverlay(legenda: 'Enquadre a placa na moldura'),
-          _barraSuperior(),
-          if (pronto) _barraInferior(),
-          if (_capturando)
-            Container(
-              color: Colors.black38,
-              child: const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              ),
-            ),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Fonte do previewSize usado no crop: a moldura mede a MESMA área.
+          _previewSize = Size(constraints.maxWidth, constraints.maxHeight);
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              if (pronto) _preview(c) else const _CameraCarregando(),
+              if (pronto)
+                const PlateFrameOverlay(legenda: 'Enquadre a placa na moldura'),
+              _barraSuperior(),
+              if (pronto) _barraInferior(),
+              if (_capturando)
+                Container(
+                  color: Colors.black38,
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
