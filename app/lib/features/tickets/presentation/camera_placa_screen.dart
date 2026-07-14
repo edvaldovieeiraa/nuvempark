@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -60,6 +62,14 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   // moldura desta mesma área para a imagem capturada.
   Size _previewSize = Size.zero;
 
+  // Zoom (pinça + botões) e foco por toque.
+  double _zoom = 1;
+  double _zoomMin = 1;
+  double _zoomMax = 1;
+  double _zoomBase = 1;
+  Offset? _focoPonto;
+  Timer? _focoTimer;
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +80,7 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _focoTimer?.cancel();
     _controller?.dispose();
     super.dispose();
   }
@@ -114,6 +125,10 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
         await controller.dispose();
         return;
       }
+      // Limites de zoom do device (pinça e botões respeitam este intervalo).
+      _zoomMin = await controller.getMinZoomLevel();
+      _zoomMax = await controller.getMaxZoomLevel();
+      _zoom = _zoomBase = _zoomMin;
       setState(() {
         _controller = controller;
         _iniciando = false;
@@ -153,6 +168,49 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
     }
   }
 
+  // ── Foco por toque ──────────────────────────────────────────────────────
+  Future<void> _focar(Offset local) async {
+    final c = _controller;
+    if (c == null || !c.value.isInitialized || _previewSize.isEmpty) return;
+    final ponto = Offset(
+      (local.dx / _previewSize.width).clamp(0.0, 1.0),
+      (local.dy / _previewSize.height).clamp(0.0, 1.0),
+    );
+    try {
+      await c.setFocusPoint(ponto);
+      await c.setExposurePoint(ponto);
+    } catch (_) {
+      // Nem todo device suporta ponto de foco/exposição — ignora em silêncio.
+    }
+    if (!mounted) return;
+    setState(() => _focoPonto = local);
+    _focoTimer?.cancel();
+    _focoTimer = Timer(const Duration(milliseconds: 1200), () {
+      if (mounted) setState(() => _focoPonto = null);
+    });
+  }
+
+  // ── Zoom (pinça + botões) ───────────────────────────────────────────────
+  void _zoomInicio(ScaleStartDetails _) => _zoomBase = _zoom;
+
+  Future<void> _zoomAtualiza(ScaleUpdateDetails d) async {
+    if (d.pointerCount < 2) return; // pinça de 2 dedos; toque de 1 dedo = foco
+    await _aplicarZoom(_zoomBase * d.scale);
+  }
+
+  Future<void> _aplicarZoom(double z) async {
+    final c = _controller;
+    if (c == null || !c.value.isInitialized) return;
+    final alvo = z.clamp(_zoomMin, _zoomMax);
+    if (alvo == _zoom) return;
+    try {
+      await c.setZoomLevel(alvo);
+    } catch (_) {
+      return;
+    }
+    if (mounted) setState(() => _zoom = alvo);
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = _controller;
@@ -168,9 +226,21 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
             fit: StackFit.expand,
             children: [
               if (pronto) _preview(c) else const _CameraCarregando(),
+              // Camada de gestos (abaixo dos botões): 1 dedo = foco, 2 = zoom.
+              if (pronto)
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTapUp: (d) => _focar(d.localPosition),
+                    onScaleStart: _zoomInicio,
+                    onScaleUpdate: _zoomAtualiza,
+                  ),
+                ),
               if (pronto)
                 const PlateFrameOverlay(legenda: 'Enquadre a placa na moldura'),
+              if (_focoPonto != null) _reticuloFoco(_focoPonto!),
               _barraSuperior(),
+              if (pronto && _zoomMax > _zoomMin) _controlesZoom(),
               if (pronto) _barraInferior(),
               if (_capturando)
                 Container(
@@ -203,6 +273,70 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
         ),
       ),
     );
+  }
+
+  /// Retículo mostrado onde o operador tocou para focar (some após 1,2s).
+  Widget _reticuloFoco(Offset pos) {
+    return Positioned(
+      left: pos.dx - 34,
+      top: pos.dy - 34,
+      child: IgnorePointer(
+        child: Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFF34D399), width: 2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Botões de zoom (+/−) e nível atual. A pinça mexe no mesmo estado.
+  Widget _controlesZoom() {
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black45,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  onPressed: () => _aplicarZoom(_zoom + _passoZoom),
+                ),
+                Text(
+                  '${_zoom.toStringAsFixed(1)}x',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.remove, color: Colors.white),
+                  onPressed: () => _aplicarZoom(_zoom - _passoZoom),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Passo do botão: 1/4 do intervalo de zoom do device (mín. 0,5x).
+  double get _passoZoom {
+    final passo = (_zoomMax - _zoomMin) / 4;
+    return passo < 0.5 ? 0.5 : passo;
   }
 
   Widget _barraSuperior() {
