@@ -14,6 +14,11 @@ create table if not exists public.tenant_gateways (
   gateway             text not null default 'asaas',
   subconta_id         text,                              -- id da subconta/wallet no PSP
   api_key_encrypted   text,                              -- chave da subconta, CIFRADA (nunca em claro)
+  -- O Asaas EXIGE um `customer` para criar cobrança, mas quem paga o ticket é
+  -- anônimo (não pedimos CPF a quem só quer sair do estacionamento). Usamos um
+  -- cliente genérico "Pagamento avulso", criado uma vez na subconta do tenant e
+  -- reutilizado em todas as cobranças. Ver api/src/pagamentos/asaas.ts.
+  customer_padrao_id  text,
   split_percentual    numeric(5,2)  not null default 0,  -- % retido pela plataforma
   split_valor_fixo    numeric(10,2) not null default 0,  -- R$ fixo por transação
   ativo               boolean not null default false,
