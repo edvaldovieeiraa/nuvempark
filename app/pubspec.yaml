@@ -41,7 +41,9 @@ dependencies:
   print_bluetooth_thermal: ^1.1.3
   # Permissões (BT/câmera)
   permission_handler: ^11.3.1
-  # Foto de entrada
+  # Câmera própria (preview + moldura-guia + foco/zoom na captura de placa)
+  camera: ^0.11.0
+  # Foto de entrada — fallback quando a câmera própria falha (câmera do sistema)
   image_picker: ^1.2.3
   # OCR de placa on-device
   google_mlkit_text_recognition: ^0.15.1

@@ -17,6 +17,7 @@ import '../../printing/presentation/providers/printer_provider.dart';
 import '../data/foto_entrada_service.dart';
 import '../data/placa_ocr_service.dart';
 import '../domain/reconhecimento_cliente.dart';
+import 'camera_placa_screen.dart';
 import 'placa_formatter.dart';
 import 'providers/ticket_provider.dart';
 
@@ -81,22 +82,54 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
     if (_capturandoFoto) return;
     setState(() => _capturandoFoto = true);
     try {
+      // Câmera própria: preview com moldura-guia + OCR na área da placa.
+      final saida = await Navigator.of(context).push<CapturaSaida>(
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => CameraPlacaScreen(
+            ocrService: _ocrService,
+            fotoService: _fotoService,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      switch (saida) {
+        case CapturaOk(:final fotoPath, :final placa):
+          setState(() => _fotoEntradaPath = fotoPath);
+          await _aplicarPlaca(placa);
+        case CapturaIndisponivel():
+          // Sem câmera própria (permissão/hardware/erro): fluxo antigo.
+          await _capturarFotoFallback();
+        case CapturaCancelada() || null:
+          break;
+      }
+    } finally {
+      if (mounted) setState(() => _capturandoFoto = false);
+    }
+  }
+
+  /// Fluxo antigo (câmera do sistema via image_picker) — rede de segurança
+  /// quando a câmera própria não está disponível. OCR na imagem inteira.
+  Future<void> _capturarFotoFallback() async {
+    try {
       final path = await _fotoService.capturar();
-      if (path == null) return;
+      if (path == null || !mounted) return;
       setState(() => _fotoEntradaPath = path);
       final placa = await _ocrService.lerPlaca(File(path));
-      if (placa != null && mounted) {
-        _placaCtrl.text = placa;
-        await _checarPlaca(placa);
-        if (mounted) AppToast.info(context, 'Placa reconhecida: $placa');
-      }
+      await _aplicarPlaca(placa);
     } on FotoPermissaoNegadaException {
       if (mounted) AppToast.error(context, 'Permissão de câmera negada.');
     } catch (_) {
       if (mounted) AppToast.error(context, 'Não foi possível capturar a foto.');
-    } finally {
-      if (mounted) setState(() => _capturandoFoto = false);
     }
+  }
+
+  /// Pré-preenche o campo com a placa reconhecida (se houver) e checa cliente.
+  Future<void> _aplicarPlaca(String? placa) async {
+    if (placa == null || !mounted) return;
+    _placaCtrl.text = placa;
+    await _checarPlaca(placa);
+    if (mounted) AppToast.info(context, 'Placa reconhecida: $placa');
   }
 
   Future<void> _checarPlaca(String placa) async {

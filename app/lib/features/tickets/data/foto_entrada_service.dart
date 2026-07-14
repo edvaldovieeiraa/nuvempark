@@ -69,13 +69,20 @@ class FotoEntradaService {
     if (shot == null) return null;
     if (!persistir) return shot.path;
 
+    return persistirCaptura(shot.path);
+  }
+
+  /// Copia [srcPath] para o diretório persistente `fotos_entrada/` e devolve o
+  /// caminho final (`<uuid>.jpg`). O arquivo bruto do `takePicture` da câmera
+  /// própria é temporário; a foto de entrada precisa sobreviver para sincronizar.
+  Future<String> persistirCaptura(String srcPath) async {
     final dir = await getApplicationDocumentsDirectory();
     final fotosDir = Directory(p.join(dir.path, 'fotos_entrada'));
     if (!await fotosDir.exists()) {
       await fotosDir.create(recursive: true);
     }
     final dest = p.join(fotosDir.path, '${const Uuid().v4()}.jpg');
-    await File(shot.path).copy(dest);
+    await File(srcPath).copy(dest);
     return dest;
   }
 }
