@@ -10,10 +10,11 @@ import '../../printing/data/print_templates.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tickets/domain/ticket_model.dart';
 import '../../tickets/presentation/providers/ticket_provider.dart';
+import 'detalhe_veiculo_sheet.dart';
 import 'providers/patio_provider.dart';
 
 /// Aba Pátio: todos os veículos dentro do pátio agora, com busca por placa
-/// e permanência. Tocar num veículo abre a saída dele.
+/// e permanência. Tocar num veículo abre o detalhe dele (com a foto de entrada).
 class PatioTab extends ConsumerStatefulWidget {
   const PatioTab({super.key});
 
@@ -128,7 +129,9 @@ class _PatioTabState extends ConsumerState<PatioTab> {
         border: Border.all(color: AppColors.border),
       ),
       child: InkWell(
-        onTap: () => context.push(Routes.saidaDetalhe(t.id)),
+        // Antes ia direto para a saída. Agora abre o detalhe (com a foto de
+        // entrada), e a saída fica a um toque do botão de lá.
+        onTap: () => mostrarDetalheVeiculo(context, t),
         borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
