@@ -11,8 +11,9 @@ import {
   X,
   Calculator,
   Save,
-  ChevronUp,
-  ChevronDown,
+  ArrowUp,
+  ArrowDown,
+  Star,
 } from "lucide-react";
 import { ModalSimulador } from "./simulador-modal";
 import {
@@ -97,7 +98,9 @@ export function TarifasClient({
   const toastRef = useToast();
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    // max-w-3xl (não 2xl como Tipos): a linha de preços é mais longa que um
+    // nome de tipo, e quebrá-la anularia a leitura rápida da tarifa.
+    <div className="space-y-6 max-w-3xl">
       <motion.header
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -107,21 +110,17 @@ export function TarifasClient({
         <div>
           <h1 className="text-[26px] font-black tracking-tight">Tarifas</h1>
           <p className="text-sm text-texto-2">
-            Tabelas de preço do <b className="text-texto">{patioNome}</b> usadas
-            pelo app na cobrança · <b>a ordem importa</b>: o app pré-seleciona a
-            primeira.
+            <b className="text-texto">{patioNome}</b> · as tabelas de preço que o
+            app usa na cobrança. <b>A ordem importa</b>: o app deixa a primeira
+            já selecionada.
           </p>
         </div>
         <div className="flex items-center gap-2">
           {sujo && (
-            <button
-              onClick={salvarOrdem}
-              disabled={salvandoOrdem}
-              className="inline-flex items-center gap-2 h-11 px-4 rounded-xl border border-brand-300 bg-brand-50 text-brand-700 font-bold text-sm hover:bg-brand-100 transition-colors disabled:opacity-60"
-            >
+            <Botao carregando={salvandoOrdem} onClick={salvarOrdem} type="button">
               <Save className="w-4 h-4" />
               Salvar ordem
-            </button>
+            </Botao>
           )}
           <Link
             href={`/painel/tarifas/nova?patio=${patioId}`}
@@ -156,116 +155,93 @@ export function TarifasClient({
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
-                  <th className="px-3 py-3 font-bold w-16">Ordem</th>
-                  <th className="px-5 py-3 font-bold">Nome</th>
-                  <th className="px-5 py-3 font-bold">Veículo</th>
-                  <th className="px-5 py-3 font-bold text-right">Inicial</th>
-                  <th className="px-5 py-3 font-bold text-right">Adicional</th>
-                  <th className="px-5 py-3 font-bold text-right">Diária</th>
-                  <th className="px-5 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                <AnimatePresence initial={false}>
-                  {ordem.map((t, i) => (
-                    <motion.tr
-                      key={t.id}
-                      layout
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -24 }}
-                      transition={{ delay: i * 0.03 }}
-                      className="border-t border-borda hover:bg-brand-50/40 transition-colors"
-                    >
-                      <td className="px-3 py-3.5">
-                        <div className="flex items-center gap-1">
-                          <div className="flex flex-col">
-                            <button
-                              onClick={() => mover(i, -1)}
-                              disabled={i === 0}
-                              aria-label="Subir"
-                              className="w-6 h-5 grid place-items-center text-texto-3 hover:text-brand-700 disabled:opacity-25 disabled:pointer-events-none"
-                            >
-                              <ChevronUp className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => mover(i, 1)}
-                              disabled={i === ordem.length - 1}
-                              aria-label="Descer"
-                              className="w-6 h-5 grid place-items-center text-texto-3 hover:text-brand-700 disabled:opacity-25 disabled:pointer-events-none"
-                            >
-                              <ChevronDown className="w-4 h-4" />
-                            </button>
-                          </div>
-                          {i === 0 && (
-                            <span
-                              className="text-[10px] font-black uppercase text-brand-700 leading-tight"
-                              title="Já vem selecionada no app"
-                            >
-                              padrão
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5 font-bold">{t.nome}</td>
-                      <td className="px-5 py-3.5">
-                        <span className="inline-block text-xs font-bold px-2.5 py-1 rounded-full bg-info-bg text-info">
-                          {nomeAmigavel(t.tipo_veiculo)}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-right tabular-nums">
-                        <b>{moeda.format(t.fracao_inicial_valor)}</b>
-                        <span className="text-texto-3 text-xs">
-                          {" "}
-                          / {t.fracao_inicial_minutos}min
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-right tabular-nums">
-                        <b>{moeda.format(t.fracao_adicional_valor)}</b>
-                        <span className="text-texto-3 text-xs">
-                          {" "}
-                          / {t.fracao_adicional_minutos}min
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-right tabular-nums font-bold">
-                        {t.teto_diaria > 0 ? (
-                          moeda.format(t.teto_diaria)
-                        ) : (
-                          <span className="text-texto-3 font-normal text-xs">
-                            sem teto
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => setSimulando(t)}
-                          aria-label={`Simular cobrança da tarifa ${t.nome}`}
-                          title="Simular cobrança"
-                          className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors"
+          <ul className="divide-y divide-borda">
+            <AnimatePresence initial={false}>
+              {ordem.map((t, i) => (
+                <motion.li
+                  key={t.id}
+                  layout
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="px-4 py-3 flex items-center gap-3"
+                >
+                  <span className="w-9 h-9 rounded-xl bg-brand-50 grid place-items-center shrink-0">
+                    <CircleDollarSign className="w-4 h-4 text-brand-600" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm flex items-center gap-2 flex-wrap">
+                      {t.nome}
+                      {i === 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-2 py-0.5"
+                          title="Já vem selecionada no app do operador"
                         >
-                          <Calculator className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setEditando(t)}
-                          aria-label={`Editar tarifa ${t.nome}`}
-                          className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <BotaoDesativar tarifa={t} />
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          </div>
+                          <Star className="w-3 h-3" />
+                          padrão no app
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-texto-3 tabular-nums">
+                      <span className="font-bold text-info">
+                        {nomeAmigavel(t.tipo_veiculo)}
+                      </span>
+                      {" · "}
+                      {moeda.format(t.fracao_inicial_valor)}/
+                      {t.fracao_inicial_minutos}min
+                      {" · "}+{moeda.format(t.fracao_adicional_valor)}/
+                      {t.fracao_adicional_minutos}min
+                      {" · "}
+                      {t.teto_diaria > 0
+                        ? `diária ${moeda.format(t.teto_diaria)}`
+                        : "sem teto"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSimulando(t)}
+                    aria-label={`Simular cobrança da tarifa ${t.nome}`}
+                    title="Simular cobrança"
+                    className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors"
+                  >
+                    <Calculator className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setEditando(t)}
+                    aria-label={`Editar tarifa ${t.nome}`}
+                    className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => mover(i, -1)}
+                    disabled={i === 0}
+                    aria-label={`Subir ${t.nome}`}
+                    className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors disabled:opacity-25 disabled:pointer-events-none"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => mover(i, 1)}
+                    disabled={i === ordem.length - 1}
+                    aria-label={`Descer ${t.nome}`}
+                    className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors disabled:opacity-25 disabled:pointer-events-none"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </button>
+                  <BotaoDesativar tarifa={t} />
+                </motion.li>
+              ))}
+            </AnimatePresence>
+          </ul>
         )}
       </motion.section>
+
+      {ordem.length > 0 && (
+        <p className="text-xs text-texto-3">
+          Lembre de <b>salvar</b> depois de mexer na ordem. As mudanças chegam ao
+          app na próxima sincronização.
+        </p>
+      )}
 
       <AnimatePresence>
         {editando && (
