@@ -1,17 +1,20 @@
 "use client";
 
-import { useState } from "react";
-
 import { Marca } from "@/components/marca";
 
 /**
- * Miniatura da foto de entrada. Sem foto — ou com a URL assinada quebrada
- * (arquivo ainda não subiu do app) — cai na MARCA em tom esmeralda suave, do
- * mesmo tamanho, para a tabela não "pular".
+ * Miniatura da foto de entrada, 40x40.
  *
- * O selo cheio (gradiente brand→teal, nuvem branca) pesaria demais repetido em
- * dezenas de linhas e roubaria a atenção das fotos reais: aqui a marca entra
- * invertida — nuvem esmeralda sobre fundo brand-50 — como marca d'água.
+ * A MARCA é o fundo permanente e a foto entra por cima. Não é enfeite: o ticket
+ * pode ter `foto_entrada_path` sem o arquivo existir no storage (foto que ainda
+ * não subiu do app), e aí a URL assinada falha. Com a foto por cima e `alt=""`,
+ * a falha simplesmente revela a marca — sem texto quebrado dentro do
+ * quadradinho, e sem depender de um `onError` em JS, que NÃO dispara quando a
+ * imagem falha antes da hidratação (o evento acontece no HTML do servidor,
+ * quando o handler ainda não está preso).
+ *
+ * A imagem é decorativa (`alt=""`) porque quem carrega o rótulo é o wrapper —
+ * assim o leitor de tela ouve uma coisa só, e não a placa duas vezes.
  *
  * A URL vem assinada em lote pela página (ver `assinarFotosEntrada`): o thumb
  * não fala com o Storage.
@@ -25,28 +28,33 @@ export function FotoVeiculoThumb({
   placa: string;
   aoClicar?: () => void;
 }) {
-  const [quebrou, setQuebrou] = useState(false);
-  const temFoto = Boolean(url) && !quebrou;
+  const rotulo = url
+    ? `Foto de entrada do veículo ${placa}`
+    : `Sem foto de entrada do veículo ${placa}`;
 
-  const conteudo = temFoto ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={url}
-      alt={`Foto de entrada do veículo ${placa}`}
-      onError={() => setQuebrou(true)}
-      className="w-10 h-10 rounded-lg object-cover border border-borda bg-fundo"
-    />
-  ) : (
-    <span
-      role="img"
-      aria-label={`Sem foto de entrada do veículo ${placa}`}
-      className="w-10 h-10 rounded-lg border border-brand-200 bg-gradient-to-br from-brand-50 to-superficie grid place-items-center"
-    >
-      <Marca className="w-5 h-5 opacity-70" corNuvem="#059669" corP="#ECFDF5" />
+  const conteudo = (
+    <span className="relative block w-10 h-10 rounded-lg overflow-hidden border border-brand-200 bg-gradient-to-br from-brand-50 to-superficie">
+      <span className="absolute inset-0 grid place-items-center">
+        <Marca className="w-5 h-5 opacity-70" corNuvem="#059669" corP="#ECFDF5" />
+      </span>
+      {url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
     </span>
   );
 
-  if (!aoClicar) return conteudo;
+  if (!aoClicar) {
+    return (
+      <span role="img" aria-label={rotulo} className="block">
+        {conteudo}
+      </span>
+    );
+  }
 
   return (
     <button
@@ -57,7 +65,11 @@ export function FotoVeiculoThumb({
         e.stopPropagation();
         aoClicar();
       }}
-      aria-label={`Ver foto de entrada do veículo ${placa}`}
+      aria-label={
+        url
+          ? `Ver foto de entrada do veículo ${placa}`
+          : `Ver detalhes do veículo ${placa} (sem foto de entrada)`
+      }
       className="block rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/25 hover:brightness-95 transition"
     >
       {conteudo}
