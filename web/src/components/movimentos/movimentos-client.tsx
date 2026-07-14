@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, Inbox, X, Camera, AlertTriangle, Loader2 } from "lucide-react";
+import { Search, Inbox } from "lucide-react";
 import { SyncBadge } from "@/components/sync-badge";
 import { labelTicketStatus } from "@/lib/status-labels";
-import {
-  detalheTicket,
-  type DetalheTicket,
-} from "@/app/painel/movimentos/actions";
+import { FotoVeiculoModal } from "@/components/foto-veiculo/foto-veiculo-modal";
+import { FotoVeiculoThumb } from "@/components/foto-veiculo/foto-veiculo-thumb";
 
 type Ticket = {
   id: string;
@@ -40,6 +38,7 @@ const PERIODOS = [
 
 export function MovimentosClient({
   tickets,
+  fotos,
   total,
   patioNome,
   patioId,
@@ -47,6 +46,8 @@ export function MovimentosClient({
   filtros,
 }: {
   tickets: Ticket[];
+  /** ticket.id → URL assinada da foto de entrada (assinadas em lote). */
+  fotos: Record<string, string>;
   total: number;
   patioNome: string;
   patioId: string;
@@ -57,19 +58,7 @@ export function MovimentosClient({
   const pathname = usePathname();
   const [busca, setBusca] = useState(filtros.q);
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [detalhe, setDetalhe] = useState<{
-    ticket: Ticket;
-    dados: DetalheTicket | null;
-  } | null>(null);
-  const [carregando, comecar] = useTransition();
-
-  function abrirDetalhe(t: Ticket) {
-    setDetalhe({ ticket: t, dados: null });
-    comecar(async () => {
-      const dados = await detalheTicket(t.id, t.foto_entrada_path);
-      setDetalhe({ ticket: t, dados });
-    });
-  }
+  const [detalhe, setDetalhe] = useState<Ticket | null>(null);
 
   function aplicar(mudanca: Partial<Filtros>) {
     const f = { ...filtros, q: busca, ...mudanca };
@@ -186,6 +175,9 @@ export function MovimentosClient({
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
+                  <th className="pl-5 pr-2 py-3 font-bold">
+                    <span className="sr-only">Foto</span>
+                  </th>
                   <th className="px-5 py-3 font-bold">Placa</th>
                   <th className="px-5 py-3 font-bold">Entrada</th>
                   <th className="px-5 py-3 font-bold">Saída</th>
@@ -202,16 +194,20 @@ export function MovimentosClient({
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i * 0.02, 0.4) }}
-                    onClick={() => abrirDetalhe(t)}
+                    onClick={() => setDetalhe(t)}
                     className="border-t border-borda hover:bg-brand-50/40 transition-colors cursor-pointer"
                   >
+                    <td className="pl-5 pr-2 py-3 w-[52px]">
+                      <FotoVeiculoThumb
+                        url={fotos[t.id]}
+                        placa={t.placa}
+                        aoClicar={() => setDetalhe(t)}
+                      />
+                    </td>
                     <td className="px-5 py-3">
                       <span className="font-black tracking-widest text-[13px] bg-fundo border border-borda rounded-md px-2 py-1">
                         {t.placa}
                       </span>
-                      {t.foto_entrada_path && (
-                        <Camera className="inline-block ml-2 w-3.5 h-3.5 text-texto-3" />
-                      )}
                       {t.origem === "plano" && (
                         <span className="ml-2 text-[10px] font-bold text-info bg-info-bg rounded-full px-2 py-0.5">
                           mensalista
@@ -250,133 +246,14 @@ export function MovimentosClient({
 
       <AnimatePresence>
         {detalhe && (
-          <ModalDetalhe
-            ticket={detalhe.ticket}
-            dados={detalhe.dados}
-            carregando={carregando}
+          <FotoVeiculoModal
+            key={detalhe.id}
+            ticket={detalhe}
             fechar={() => setDetalhe(null)}
           />
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function ModalDetalhe({
-  ticket,
-  dados,
-  carregando,
-  fechar,
-}: {
-  ticket: Ticket;
-  dados: DetalheTicket | null;
-  carregando: boolean;
-  fechar: () => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[90] grid place-items-center p-4 bg-noite/50 backdrop-blur-sm"
-      onClick={fechar}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.94, y: 16 }}
-        transition={{ type: "spring", stiffness: 380, damping: 30 }}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-2xl bg-superficie shadow-[var(--shadow-pop)] p-6 max-h-[90vh] overflow-y-auto"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-extrabold tracking-widest">
-              {ticket.placa}
-            </h3>
-            <p className="text-xs text-texto-2 capitalize">
-              {ticket.tipo_veiculo} · entrada {dataHora(ticket.entrada)}
-            </p>
-          </div>
-          <button
-            onClick={fechar}
-            aria-label="Fechar"
-            className="text-texto-3 hover:text-texto"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {carregando ? (
-          <div className="py-16 grid place-items-center text-texto-3">
-            <Loader2 className="w-6 h-6 animate-spin" />
-          </div>
-        ) : (
-          <div className="space-y-5">
-            {/* Foto de entrada */}
-            <div>
-              <p className="text-xs font-black uppercase tracking-wider text-texto-3 mb-2">
-                Foto da entrada
-              </p>
-              {dados?.fotoEntrada ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={dados.fotoEntrada}
-                  alt={`Entrada ${ticket.placa}`}
-                  className="w-full rounded-xl border border-borda"
-                />
-              ) : (
-                <div className="rounded-xl border border-dashed border-borda py-8 grid place-items-center text-sm text-texto-3">
-                  <Camera className="w-6 h-6 mb-1" />
-                  Sem foto de entrada
-                </div>
-              )}
-            </div>
-
-            {/* Avarias */}
-            {(dados?.avarias.length ?? 0) > 0 && (
-              <div>
-                <p className="text-xs font-black uppercase tracking-wider text-saida mb-2 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  Avarias registradas ({dados!.avarias.length})
-                </p>
-                <div className="space-y-3">
-                  {dados!.avarias.map((a) => (
-                    <div
-                      key={a.id}
-                      className="rounded-xl border border-saida/20 bg-saida-bg/40 p-3"
-                    >
-                      <p className="text-sm font-semibold text-texto">
-                        {a.descricao}
-                      </p>
-                      {a.fotos.length > 0 && (
-                        <div className="mt-2 flex gap-2 flex-wrap">
-                          {a.fotos.map((f, i) => (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <a
-                              key={i}
-                              href={f}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <img
-                                src={f}
-                                alt={`Avaria ${i + 1}`}
-                                className="w-20 h-20 object-cover rounded-lg border border-borda hover:brightness-95"
-                              />
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </motion.div>
-    </motion.div>
   );
 }
 

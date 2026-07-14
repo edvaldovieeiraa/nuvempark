@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { resolverPatio, ultimaSincronizacao } from "@/lib/patio-scope";
+import { assinarFotosEntrada } from "@/lib/fotos";
 import { MovimentosClient } from "@/components/movimentos/movimentos-client";
 import { SemPatio } from "@/components/sem-patio";
 
@@ -50,9 +51,13 @@ export default async function MovimentosPage({
     ultimaSincronizacao(patioId),
   ]);
 
+  // Uma única chamada ao Storage para as miniaturas desta página.
+  const fotos = await assinarFotosEntrada(tickets ?? []);
+
   return (
     <MovimentosClient
       tickets={tickets ?? []}
+      fotos={fotos}
       total={count ?? 0}
       patioNome={patioNome ?? ""}
       patioId={patioId}

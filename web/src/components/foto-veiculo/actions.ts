@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { BUCKET_ENTRADAS } from "@/lib/fotos";
 
 export type DetalheTicket = {
   fotoEntrada: string | null;
@@ -12,7 +13,6 @@ export type DetalheTicket = {
   }[];
 };
 
-const BUCKET = "nuvempark-entradas";
 const TTL = 3600; // 1h
 
 /**
@@ -28,7 +28,9 @@ export async function detalheTicket(
 
   async function assinar(path: string | null): Promise<string | null> {
     if (!path) return null;
-    const { data } = await sb.storage.from(BUCKET).createSignedUrl(path, TTL);
+    const { data } = await sb.storage
+      .from(BUCKET_ENTRADAS)
+      .createSignedUrl(path, TTL);
     return data?.signedUrl ?? null;
   }
 
@@ -44,9 +46,9 @@ export async function detalheTicket(
   const avariasComUrl = await Promise.all(
     (avarias ?? []).map(async (a) => {
       const paths = Array.isArray(a.fotos) ? (a.fotos as string[]) : [];
-      const fotos = (
-        await Promise.all(paths.map((p) => assinar(p)))
-      ).filter((u): u is string => Boolean(u));
+      const fotos = (await Promise.all(paths.map((p) => assinar(p)))).filter(
+        (u): u is string => Boolean(u),
+      );
       return {
         id: a.id,
         descricao: a.descricao,
