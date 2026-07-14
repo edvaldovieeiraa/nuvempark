@@ -18,16 +18,30 @@ export default async function PainelLayout({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: tenant }, { data: patios }, { data: assinatura }] =
-    await Promise.all([
-      supabase.from("tenants").select("nome, codigo").single(),
-      supabase
-        .from("patios")
-        .select("id, nome, codigo_acesso")
-        .eq("ativo", true)
-        .order("nome"),
-      supabase.from("assinaturas").select("estado, trial_expira_em").maybeSingle(),
-    ]);
+  const [
+    { data: tenant },
+    { data: patios },
+    { data: assinatura },
+    { count: faturasVencidas },
+  ] = await Promise.all([
+    supabase.from("tenants").select("nome, codigo").single(),
+    supabase
+      .from("patios")
+      .select("id, nome, codigo_acesso")
+      .eq("ativo", true)
+      .order("nome"),
+    supabase.from("assinaturas").select("estado, trial_expira_em").maybeSingle(),
+    supabase
+      .from("faturas")
+      .select("*", { count: "exact", head: true })
+      .eq("estado", "vencida"),
+  ]);
+
+  // Badge de alerta no menu "Assinatura": fatura vencida OU assinatura pendente.
+  const assinaturaAlerta =
+    (faturasVencidas ?? 0) > 0 ||
+    assinatura?.estado === "atrasada" ||
+    assinatura?.estado === "suspensa";
 
   async function sair() {
     "use server";
@@ -84,7 +98,7 @@ export default async function PainelLayout({
           <PatioSeletor patios={patios ?? []} patioIdAtivo={null} />
         </Suspense>
 
-        <SidebarNav />
+        <SidebarNav assinaturaAlerta={assinaturaAlerta} />
 
         <div className="relative p-3 border-t border-white/8">
           {/* Perfil: dados da conta e da rede moram lá */}

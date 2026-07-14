@@ -19,6 +19,7 @@ import {
   CalendarRange,
   BarChart3,
   Building2,
+  CreditCard,
   CircleDollarSign,
   Users,
   BadgeCheck,
@@ -87,6 +88,7 @@ const ITENS: Item[] = [
     ],
   },
   { label: "Relatórios", Icone: BarChart3, href: "/painel/relatorios", porPatio: true },
+  { label: "Assinatura", Icone: CreditCard, href: "/painel/assinatura" },
   {
     label: "Configurações",
     Icone: Settings,
@@ -105,7 +107,7 @@ function rotaAtiva(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function SidebarNav() {
+export function SidebarNav({ assinaturaAlerta = false }: { assinaturaAlerta?: boolean }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const patio = searchParams.get("patio");
@@ -167,6 +169,12 @@ export function SidebarNav() {
               )}
               <item.Icone className="relative w-[18px] h-[18px] shrink-0" />
               <span className="relative min-w-0 truncate">{item.label}</span>
+              {item.href === "/painel/assinatura" && assinaturaAlerta && (
+                <span
+                  title="Há fatura vencida ou assinatura pendente"
+                  className="relative ml-auto w-2 h-2 rounded-full bg-perigo shadow-[0_0_0_3px_rgba(239,68,68,0.25)]"
+                />
+              )}
             </Link>
           );
         }
