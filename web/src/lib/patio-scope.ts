@@ -40,35 +40,45 @@ export async function resolverPatio(patioParam: string | undefined): Promise<{
  * daquele pátio enviou. Olha tickets e caixa_sessoes e pega o mais novo.
  * Retorna null se o pátio nunca sincronizou nada.
  */
+/**
+ * TODAS as tabelas em que o app carimba `sincronizado_em` ao enviar. Antes só
+ * tickets e caixa_sessoes entravam na conta: se a última coisa que subiu foi um
+ * movimento de caixa, um pagamento de mensalista ou uma avaria, o painel ficava
+ * "para trás" do app sem nada estar errado.
+ */
+const TABELAS_SINCRONIZADAS = [
+  "tickets",
+  "caixa_sessoes",
+  "caixa_movimentos",
+  "mensalidade_pagamentos",
+  "avarias",
+] as const;
+
 export async function ultimaSincronizacao(
   patioId: string,
 ): Promise<string | null> {
   const supabase = await createClient();
-  const [ticket, caixa] = await Promise.all([
-    supabase
-      .from("tickets")
-      .select("sincronizado_em")
-      .eq("patio_id", patioId)
-      .not("sincronizado_em", "is", null)
-      .order("sincronizado_em", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("caixa_sessoes")
-      .select("sincronizado_em")
-      .eq("patio_id", patioId)
-      .not("sincronizado_em", "is", null)
-      .order("sincronizado_em", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
 
-  const datas = [
-    ticket.data?.sincronizado_em,
-    caixa.data?.sincronizado_em,
-  ].filter((d): d is string => Boolean(d));
+  const consultas = await Promise.all(
+    TABELAS_SINCRONIZADAS.map((tabela) =>
+      supabase
+        .from(tabela)
+        .select("sincronizado_em")
+        .eq("patio_id", patioId)
+        .not("sincronizado_em", "is", null)
+        .order("sincronizado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ),
+  );
+
+  // Uma tabela que falhe (ex.: RLS) não pode zerar o resultado das outras.
+  const datas = consultas
+    .map((r) => r.data?.sincronizado_em)
+    .filter((d): d is string => typeof d === "string");
 
   if (datas.length === 0) return null;
+  // ISO-8601 UTC ordena lexicograficamente == cronologicamente.
   return datas.sort().at(-1) ?? null;
 }
 

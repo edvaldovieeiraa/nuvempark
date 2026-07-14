@@ -35,11 +35,14 @@ class SyncEngine {
     final patioId = await storage.readPatioId() ?? '';
     int synced = 0;
     int failed = 0;
+    // Carimbo do SERVIDOR do último item aceito (vem na resposta do /sync).
+    DateTime? ultimoServidor;
 
     for (final item in pendentes) {
       final r = await _enviarItem(item, tenantId: tenantId, patioId: patioId);
       if (r == _Envio.ok) {
         synced++;
+        ultimoServidor = _ultimoCarimboServidor ?? ultimoServidor;
       } else {
         failed++;
         // Rede fora: os itens seguintes falhariam igual, cada um esperando o
@@ -53,14 +56,26 @@ class SyncEngine {
     // e nunca marcam a sync como falha — reintentam na próxima drenagem.
     await _enviarFotosPendentes(patioId);
 
-    // Carimbo de "sincronizado com a nuvem": só quando o servidor confirmou
-    // ao menos um item nesta drenagem.
+    // Carimbo de "sincronizado com a nuvem": só quando o servidor confirmou ao
+    // menos um item nesta drenagem.
+    //
+    // Guarda a hora do SERVIDOR (devolvida no /sync), não a do celular. Antes
+    // era `DateTime.now()`, e aí o app mostrava a hora do aparelho enquanto o
+    // painel mostrava a do servidor — os dois divergiam, e com relógio errado
+    // no celular nenhum dos dois era confiável.
+    //
+    // Fallback no relógio local só se o servidor não mandar o campo (API antiga).
     if (synced > 0) {
-      await storage.saveUltimoSync(DateTime.now());
+      await storage.saveUltimoSync(ultimoServidor ?? DateTime.now());
     }
 
     return SyncResult(synced: synced, failed: failed);
   }
+
+  /// Carimbo do servidor da última resposta OK — preenchido por [_enviarItem] e
+  /// lido logo em seguida pelo [drain]. Contido no engine de propósito: não
+  /// muda envelope, payload nem estratégia de retry.
+  DateTime? _ultimoCarimboServidor;
 
   /// Sobe as fotos de entrada de tickets já sincronizados ainda não enviadas.
   /// Falha silenciosa por item (fica pendente p/ próxima run).
@@ -123,6 +138,15 @@ class SyncEngine {
           body is Map &&
           body['ignorado'] == true &&
           body['motivo'] == 'removido';
+
+      // Hora do servidor: é ela que o painel exibe. Guardar a nossa faria as
+      // duas telas mostrarem números diferentes para o mesmo evento.
+      if (body is Map) {
+        final iso = body['sincronizado_em'];
+        if (iso is String) {
+          _ultimoCarimboServidor = DateTime.tryParse(iso)?.toLocal();
+        }
+      }
 
       // Marca o sync_log e a flag da entidade na MESMA transação: sem isto, se
       // o app morre entre as duas escritas, o sync_log fica 'sincronizado' mas

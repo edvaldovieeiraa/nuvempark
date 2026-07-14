@@ -96,7 +96,12 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
           // Pátio) NÃO pode ser ressuscitado por um update tardio do app.
           // Responde sucesso para o app não re-tentar, sinalizando que ignorou.
           if (existente && existente.status === 'removido') {
-            return reply.send({ ok: true, ignorado: true, motivo: 'removido' });
+            return reply.send({
+              ok: true,
+              ignorado: true,
+              motivo: 'removido',
+              sincronizado_em: agora,
+            });
           }
 
           const res = existente
@@ -255,6 +260,11 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(500).send({ error: message });
     }
 
-    return reply.send({ ok: true });
+    // `sincronizado_em`: o MESMO carimbo gravado nas linhas acima. O app guarda
+    // este valor em vez do relógio dele, para que "última sincronização" no app
+    // e no painel sejam o mesmo número — antes o app mostrava a hora do celular
+    // e o painel a do servidor, e os dois divergiam.
+    // Aditivo: cliente antigo ignora o campo.
+    return reply.send({ ok: true, sincronizado_em: agora });
   });
 }
