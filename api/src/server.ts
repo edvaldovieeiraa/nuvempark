@@ -8,6 +8,7 @@ import { syncRoutes } from './routes/sync.js';
 import { dispositivoRoutes } from './routes/dispositivo.js';
 import { appConfigRoutes } from './routes/app-config.js';
 import { fotoRoutes } from './routes/foto.js';
+import { webhookAsaasRoutes } from './routes/webhook-asaas.js';
 
 /**
  * NuvemPark API — servidor Fastify. Consumido pelo app Flutter.
@@ -36,6 +37,18 @@ await app.register(
     await fotoRoutes(scope);
   },
   { prefix: PREFIX },
+);
+
+// Rotas PÚBLICAS: chamadas por quem não é operador — o PSP (webhook) e, na
+// Entrega C, o cliente que escaneou o QR. Prefixo separado de propósito: nada
+// aqui passa pelo middleware de auth do operador, e é preciso que isso seja
+// óbvio para quem lê.
+const PREFIX_PUBLICO = '/api/public/v1';
+await app.register(
+  async (scope) => {
+    await webhookAsaasRoutes(scope);
+  },
+  { prefix: PREFIX_PUBLICO },
 );
 
 try {
