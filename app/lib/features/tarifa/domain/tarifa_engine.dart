@@ -18,10 +18,15 @@ abstract final class TarifaEngine {
     assert(!saida.isBefore(entrada), 'saida deve ser igual ou posterior à entrada');
     assert(tarifa.fracaoAdicionalMinutos > 0, 'fracaoAdicionalMinutos deve ser > 0');
 
-    final duracaoMinutos = saida.difference(entrada).inMinutes;
+    final duracao = saida.difference(entrada);
+    final duracaoSegundos = duracao.inSeconds;
+    // Frações/pernoite/teto seguem em MINUTOS (regra original inalterada).
+    final duracaoMinutos = duracao.inMinutes;
 
     // ── 1. Tolerância ───────────────────────────────────────────────────────
-    if (duracaoMinutos <= tarifa.toleranciaMinutos) {
+    // Tolerância comparada em segundos (fix 2026-07: estadia < 1min com
+    // tolerância 0 saía grátis pelo floor de inMinutes). Mantém o `<=` inclusivo.
+    if (duracaoSegundos <= tarifa.toleranciaMinutos * 60) {
       return FareResult(
         valor: 0.0,
         duracaoMinutos: duracaoMinutos,

@@ -137,4 +137,100 @@ void main() {
       expect(result.valor, closeTo(25.00, 0.001));
     });
   });
+
+  // Tarifa idêntica à padrão, mas com tolerância parametrizável — para exercer o
+  // gate de tolerância com precisão de segundos.
+  TarifaConfig tarifaCom({required int toleranciaMinutos}) => TarifaConfig(
+        id: 'test-tarifa',
+        operacaoId: 'op-zz',
+        nome: 'Padrão',
+        tipoVeiculo: 'carro',
+        ordem: 0,
+        visivelOperador: true,
+        fracaoInicialMinutos: 15,
+        fracaoInicialValor: 5.00,
+        fracaoAdicionalMinutos: 15,
+        fracaoAdicionalValor: 3.00,
+        tetoDiaria: 60.00,
+        toleranciaMinutos: toleranciaMinutos,
+        pernoiteValor: 25.00,
+        pernoiteHoraInicio: 22,
+        pernoiteHoraFim: 6,
+        vigenciaInicio: DateTime.utc(2020),
+        vigenciaFim: null,
+      );
+
+  group('TarifaEngine — tolerância em segundos (fix 2026-07)', () {
+    final entrada = diaBase.add(const Duration(hours: 10));
+
+    test('reproduz o bug: tolerância 0 + estadia 30s → cobra fração inicial', () {
+      // No código antigo (floor p/ minutos) isto saía R\$ 0,00 (0min ≤ 0min).
+      final result = TarifaEngine.calcular(
+        entrada: entrada,
+        saida: entrada.add(const Duration(seconds: 30)),
+        tarifa: tarifaCom(toleranciaMinutos: 0),
+      );
+
+      expect(result.motivo, FareMotivo.normal);
+      expect(result.valor, closeTo(5.00, 0.001));
+    });
+
+    test('tolerância 0 + estadia 1s → cobra fração inicial', () {
+      final result = TarifaEngine.calcular(
+        entrada: entrada,
+        saida: entrada.add(const Duration(seconds: 1)),
+        tarifa: tarifaCom(toleranciaMinutos: 0),
+      );
+
+      expect(result.motivo, FareMotivo.normal);
+      expect(result.valor, closeTo(5.00, 0.001));
+    });
+
+    test('tolerância 0 + estadia 0s → gratuito (limite inclusivo)', () {
+      final result = TarifaEngine.calcular(
+        entrada: entrada,
+        saida: entrada,
+        tarifa: tarifaCom(toleranciaMinutos: 0),
+      );
+
+      expect(result.motivo, FareMotivo.tolerancia);
+      expect(result.valor, closeTo(0.00, 0.001));
+    });
+
+    test('tolerância 10 + estadia exatamente 600s → gratuito (≤ inclusivo)', () {
+      final result = TarifaEngine.calcular(
+        entrada: entrada,
+        saida: entrada.add(const Duration(seconds: 600)),
+        tarifa: tarifaCom(toleranciaMinutos: 10),
+      );
+
+      expect(result.motivo, FareMotivo.tolerancia);
+      expect(result.valor, closeTo(0.00, 0.001));
+    });
+
+    test('tolerância 10 + estadia 601s → cobra (antes saía grátis pelo floor)', () {
+      // Mudança DELIBERADA: 10min01s (601s) antes truncava p/ 10min → grátis.
+      // Agora 601s > 600s → cobra a fração inicial.
+      final result = TarifaEngine.calcular(
+        entrada: entrada,
+        saida: entrada.add(const Duration(seconds: 601)),
+        tarifa: tarifaCom(toleranciaMinutos: 10),
+      );
+
+      expect(result.motivo, FareMotivo.normal);
+      expect(result.valor, closeTo(5.00, 0.001));
+    });
+
+    test('tolerância 10 + estadia 630s → cobra fração inicial', () {
+      // 630s = 10min30s → passa o gate; 10min < 15min da fração inicial.
+      final result = TarifaEngine.calcular(
+        entrada: entrada,
+        saida: entrada.add(const Duration(seconds: 630)),
+        tarifa: tarifaCom(toleranciaMinutos: 10),
+      );
+
+      expect(result.motivo, FareMotivo.normal);
+      expect(result.valor, closeTo(5.00, 0.001));
+    });
+  });
 }
