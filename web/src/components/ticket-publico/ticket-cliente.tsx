@@ -303,9 +303,21 @@ function PixNaTela({
         />
       )}
 
+      <p className="text-center text-xs font-bold uppercase tracking-wider text-texto-3">
+        Pix copia e cola
+      </p>
+
+      {/* O código visível, selecionável. Quem paga em OUTRO aparelho (o QR está
+          na tela do celular do cliente) precisa do texto para copiar à mão. */}
+      <div className="rounded-xl border border-borda bg-fundo p-3">
+        <p className="font-mono text-[11px] leading-relaxed break-all text-texto-2 select-all">
+          {cobranca.pix_copia_cola}
+        </p>
+      </div>
+
       <button
         onClick={() => aoCopiar(cobranca.pix_copia_cola)}
-        className="w-full h-12 rounded-xl border border-brand-300 bg-brand-50 text-brand-700 font-bold inline-flex items-center justify-center gap-2"
+        className="w-full h-12 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold inline-flex items-center justify-center gap-2"
       >
         {copiado ? (
           <>
