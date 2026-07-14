@@ -17,6 +17,7 @@ import {
   Banknote,
   FileCheck2,
   CalendarRange,
+  QrCode,
   BarChart3,
   Building2,
   CreditCard,
@@ -65,6 +66,7 @@ const ITENS: Item[] = [
     filhos: [
       { href: "/painel/caixa", label: "Caixa", Icone: Banknote },
       { href: "/painel/financeiro/prestacao", label: "Prestação de contas", Icone: FileCheck2 },
+      { href: "/painel/financeiro/pix-online", label: "Pix Online", Icone: QrCode },
       { href: "/painel/financeiro/resultados", label: "Resultados", Icone: CalendarRange },
     ],
   },
