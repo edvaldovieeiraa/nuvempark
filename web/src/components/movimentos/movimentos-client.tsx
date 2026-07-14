@@ -8,6 +8,7 @@ import { SyncBadge } from "@/components/sync-badge";
 import { labelTicketStatus } from "@/lib/status-labels";
 import { FotoVeiculoModal } from "@/components/foto-veiculo/foto-veiculo-modal";
 import { FotoVeiculoThumb } from "@/components/foto-veiculo/foto-veiculo-thumb";
+import { Operador } from "@/components/operador";
 
 type Ticket = {
   id: string;
@@ -21,6 +22,8 @@ type Ticket = {
   motivo_isencao: string | null;
   origem: string;
   foto_entrada_path: string | null;
+  /** Quem registrou a ENTRADA. A saída não guarda operador (ver schema). */
+  operador_id: string | null;
 };
 type Filtros = { q: string; status: string; periodo: string };
 
@@ -39,6 +42,7 @@ const PERIODOS = [
 export function MovimentosClient({
   tickets,
   fotos,
+  operadores,
   total,
   patioNome,
   patioId,
@@ -48,6 +52,8 @@ export function MovimentosClient({
   tickets: Ticket[];
   /** ticket.id → URL assinada da foto de entrada (assinadas em lote). */
   fotos: Record<string, string>;
+  /** operador_id → nome (join manual: a tabela não tem FK). */
+  operadores: Record<string, string>;
   total: number;
   patioNome: string;
   patioId: string;
@@ -182,6 +188,7 @@ export function MovimentosClient({
                   <th className="px-5 py-3 font-bold">Entrada</th>
                   <th className="px-5 py-3 font-bold">Saída</th>
                   <th className="px-5 py-3 font-bold">Permanência</th>
+                  <th className="px-5 py-3 font-bold">Operador</th>
                   <th className="px-5 py-3 font-bold">Status</th>
                   <th className="px-5 py-3 font-bold">Pagamento</th>
                   <th className="px-5 py-3 font-bold text-right">Valor</th>
@@ -222,6 +229,9 @@ export function MovimentosClient({
                     </td>
                     <td className="px-5 py-3 text-texto-2 tabular-nums">
                       {permanencia(t.entrada, t.saida)}
+                    </td>
+                    <td className="px-5 py-3 text-texto-2">
+                      <Operador nome={operadores[t.operador_id ?? ""]} />
                     </td>
                     <td className="px-5 py-3">
                       <StatusChip status={t.status} />

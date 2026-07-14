@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { resolverPatio, ultimaSincronizacao } from "@/lib/patio-scope";
 import { assinarFotosEntrada } from "@/lib/fotos";
+import { mapaOperadores } from "@/lib/operadores";
 import { MovimentosClient } from "@/components/movimentos/movimentos-client";
 import { SemPatio } from "@/components/sem-patio";
 
@@ -27,7 +28,7 @@ export default async function MovimentosPage({
   let query = supabase
     .from("tickets")
     .select(
-      "id, placa, tipo_veiculo, status, entrada, saida, valor_cobrado, forma_pagamento, motivo_isencao, origem, foto_entrada_path",
+      "id, placa, tipo_veiculo, status, entrada, saida, valor_cobrado, forma_pagamento, motivo_isencao, origem, foto_entrada_path, operador_id",
       { count: "exact" },
     )
     .eq("patio_id", patioId)
@@ -52,12 +53,16 @@ export default async function MovimentosPage({
   ]);
 
   // Uma única chamada ao Storage para as miniaturas desta página.
-  const fotos = await assinarFotosEntrada(tickets ?? []);
+  const [fotos, operadores] = await Promise.all([
+    assinarFotosEntrada(tickets ?? []),
+    mapaOperadores(),
+  ]);
 
   return (
     <MovimentosClient
       tickets={tickets ?? []}
       fotos={fotos}
+      operadores={operadores}
       total={count ?? 0}
       patioNome={patioNome ?? ""}
       patioId={patioId}

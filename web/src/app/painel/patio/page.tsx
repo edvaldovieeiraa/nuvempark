@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { resolverPatio } from "@/lib/patio-scope";
 import { assinarFotosEntrada } from "@/lib/fotos";
+import { mapaOperadores } from "@/lib/operadores";
 import { Revelar } from "@/components/ui/revelar";
 import { SemPatio } from "@/components/sem-patio";
 import { SyncBadge } from "@/components/sync-badge";
@@ -25,7 +26,7 @@ export default async function PatioAgoraPage({
     await Promise.all([
       supabase
         .from("tickets")
-        .select("id, placa, tipo_veiculo, entrada, origem, foto_entrada_path")
+        .select("id, placa, tipo_veiculo, entrada, origem, foto_entrada_path, operador_id")
         .eq("patio_id", patioId)
         .eq("status", "aberto")
         .order("entrada", { ascending: false }),
@@ -42,7 +43,10 @@ export default async function PatioAgoraPage({
   const pct = vagas > 0 ? Math.min(100, (veiculos.length / vagas) * 100) : 0;
 
   // Uma única chamada ao Storage para as miniaturas desta página.
-  const fotos = await assinarFotosEntrada(veiculos);
+  const [fotos, operadores] = await Promise.all([
+    assinarFotosEntrada(veiculos),
+    mapaOperadores(),
+  ]);
 
   return (
     <div className="space-y-5 max-w-5xl">
@@ -89,7 +93,11 @@ export default async function PatioAgoraPage({
 
       {/* Lista — clicar no veículo (ou na miniatura) abre a foto de entrada. */}
       <Revelar atraso={0.1}>
-        <PatioLista veiculos={veiculos} fotos={fotos} />
+        <PatioLista
+          veiculos={veiculos}
+          fotos={fotos}
+          operadores={operadores}
+        />
       </Revelar>
 
       {veiculos.length > 0 && (

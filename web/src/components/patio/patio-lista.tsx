@@ -6,6 +6,7 @@ import { ParkingSquare } from "lucide-react";
 
 import { FotoVeiculoModal } from "@/components/foto-veiculo/foto-veiculo-modal";
 import { FotoVeiculoThumb } from "@/components/foto-veiculo/foto-veiculo-thumb";
+import { Operador } from "@/components/operador";
 
 type Veiculo = {
   id: string;
@@ -14,6 +15,8 @@ type Veiculo = {
   entrada: string;
   origem: string;
   foto_entrada_path: string | null;
+  /** Quem registrou a entrada. */
+  operador_id: string | null;
 };
 
 /**
@@ -24,10 +27,13 @@ type Veiculo = {
 export function PatioLista({
   veiculos,
   fotos,
+  operadores,
 }: {
   veiculos: Veiculo[];
   /** ticket.id → URL assinada da foto de entrada (assinadas em lote). */
   fotos: Record<string, string>;
+  /** operador_id → nome (join manual: a tabela não tem FK). */
+  operadores: Record<string, string>;
 }) {
   const [detalhe, setDetalhe] = useState<Veiculo | null>(null);
 
@@ -57,6 +63,7 @@ export function PatioLista({
                 <th className="px-5 py-3 font-bold">Placa</th>
                 <th className="px-5 py-3 font-bold">Tipo</th>
                 <th className="px-5 py-3 font-bold">Entrada</th>
+                <th className="px-5 py-3 font-bold">Operador</th>
                 <th className="px-5 py-3 font-bold">Permanência</th>
               </tr>
             </thead>
@@ -89,6 +96,9 @@ export function PatioLista({
                   </td>
                   <td className="px-5 py-3 text-texto-2 tabular-nums">
                     {dataHora(t.entrada)}
+                  </td>
+                  <td className="px-5 py-3 text-texto-2">
+                    <Operador nome={operadores[t.operador_id ?? ""]} />
                   </td>
                   <td className="px-5 py-3 font-bold tabular-nums">
                     {permanencia(t.entrada)}
