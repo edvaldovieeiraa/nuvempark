@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../caixa/presentation/caixa_screen.dart';
 import '../home/presentation/home_screen.dart';
-import '../ajustes/presentation/ajustes_screen.dart';
+import '../menu/presentation/menu_geral_screen.dart';
 import '../../core/platform/lock_task.dart';
 import '../patio/presentation/patio_tab.dart';
 import '../printing/presentation/providers/printer_provider.dart';
 import '../sync/data/sync_loop.dart';
 import 'conexao_banner.dart';
 
-/// Casco principal do app: bottom nav com Início / Pátio / Caixa / Config.
+/// Casco principal do app: bottom nav com Início / Pátio / Caixa / Menu Geral.
 /// As abas vivem num IndexedStack (estado preservado ao trocar).
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -68,7 +68,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 ),
                 const PatioTab(),
                 const CaixaScreen(),
-                const AjustesScreen(),
+                const MenuGeralScreen(),
               ],
             ),
           ),
@@ -96,9 +96,9 @@ class _MainShellState extends ConsumerState<MainShell> {
             label: 'Caixa',
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Config',
+            icon: Icon(Icons.apps_outlined),
+            selectedIcon: Icon(Icons.apps),
+            label: 'Menu Geral',
           ),
         ],
       ),
