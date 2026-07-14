@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import '../../../core/config/env.dart';
 import 'esc_pos_builder.dart';
 
 abstract final class PrintTemplates {
@@ -36,7 +37,9 @@ abstract final class PrintTemplates {
         .line(_row('Entrada :', _fmt.format(entrada), cols))
         .separator(width: cols)
         .centerAlign()
-        .qrCode(ticketId)
+        // QR = URL pública quando TICKET_PUBLIC_BASE_URL está definida; senão, o id
+        // cru (comportamento histórico). O scanner da saída lê os dois formatos.
+        .qrCode(Env.qrDoTicket(ticketId))
         .feed()
         .line('ID: $shortId')
         .separator(width: cols);
@@ -81,7 +84,7 @@ abstract final class PrintTemplates {
         .line(_row(isIsento ? 'Isento   :' : 'Valor    :',
             _moeda.format(valorCobrado), cols))
         .boldOff()
-        .line(_row('Pagamento:', _capitalize(formaPagamento), cols))
+        .line(_row('Pagamento:', _rotuloForma(formaPagamento), cols))
         .separator(width: cols)
         .centerAlign();
     _linhasRodape(b, rodape, const ['Obrigado!']);
@@ -226,6 +229,12 @@ abstract final class PrintTemplates {
     final padding = cols - label.length - value.length;
     return padding > 0 ? '$label${' ' * padding}$value' : '$label $value';
   }
+
+  /// Rótulo da forma no cupom. `pix_online` é o caso que o cliente PRECISA ver
+  /// com clareza: ele pagou pelo celular, e o papel tem de dizer isso.
+  static String _rotuloForma(String forma) => forma == 'pix_online'
+      ? 'PAGO ONLINE (PIX)'
+      : _capitalize(forma.replaceAll('_', ' '));
 
   static String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();

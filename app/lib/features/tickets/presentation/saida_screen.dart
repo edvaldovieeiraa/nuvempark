@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +17,7 @@ import '../../printing/data/print_templates.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tarifa/domain/fare_result.dart';
 import '../../tarifa/domain/tarifa_engine.dart';
+import '../data/pagamento_online_service.dart';
 import '../domain/ticket_model.dart';
 import 'providers/ticket_provider.dart';
 
@@ -36,10 +39,30 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
   bool _fechando = false;
   String? _erro;
 
+  /// Pagamento pelo QR. `null` = não pago, ou não deu para consultar (offline).
+  /// Nos dois casos a saída segue o fluxo manual — a diferença aparece só na UI.
+  PagamentoOnlineStatus? _pagoOnline;
+  bool _consultandoPagamento = false;
+
   @override
   void initState() {
     super.initState();
     _carregarTicket();
+  }
+
+  /// Consulta do pagamento online. BEST-EFFORT: erro ou timeout deixa
+  /// `_pagoOnline` nulo e a tela cai na cobrança normal. Rede caída nunca pode
+  /// prender um carro no pátio.
+  Future<void> _consultarPagamentoOnline() async {
+    setState(() => _consultandoPagamento = true);
+    final r = await ref
+        .read(pagamentoOnlineServiceProvider)
+        .consultar(widget.ticketId);
+    if (!mounted) return;
+    setState(() {
+      _pagoOnline = r;
+      _consultandoPagamento = false;
+    });
   }
 
   Future<void> _carregarTicket() async {
@@ -54,6 +77,9 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
           _erro = 'Este ticket já foi fechado.';
         }
       });
+      if (t != null && t.status == 'aberto') {
+        unawaited(_consultarPagamentoOnline());
+      }
     } catch (_) {
       setState(() {
         _carregando = false;
@@ -74,11 +100,14 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
   Future<void> _confirmarComDialogo(
     PatioModel patio,
     FareResult fare,
-    String formaPagamento,
-  ) async {
+    String formaPagamento, {
+    /// Cobrando só a diferença de um ticket já pago pelo Pix.
+    double? valorCobradoOverride,
+  }) async {
     if (_ticket == null) return;
     final ticket = _ticket!;
     final fmt = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    final valorExibido = valorCobradoOverride ?? fare.valor;
 
     final ok = await showDialog<bool>(
       context: context,
@@ -94,10 +123,10 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Total',
-                    style: TextStyle(
+                Text(valorCobradoOverride != null ? 'Diferenca' : 'Total',
+                    style: const TextStyle(
                         fontSize: 14, color: AppColors.onSurfaceVariant)),
-                Text(fmt.format(fare.valor),
+                Text(fmt.format(valorExibido),
                     style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -117,8 +146,141 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       ),
     );
     if (ok == true) {
-      await _confirmar(patio, fare, formaPagamento);
+      await _confirmar(patio, fare, formaPagamento,
+          valorCobradoOverride: valorCobradoOverride);
     }
+  }
+
+  /// Ticket pago pelo QR e dentro da carência: NÃO se cobra de novo. Some a
+  /// seleção de forma de pagamento — oferecê-la seria convidar o operador a
+  /// cobrar duas vezes o mesmo carro.
+  Widget _buildPagoOnline(
+    PatioModel patio,
+    TicketModel ticket,
+    FareResult fare,
+    PagamentoOnlineStatus pago,
+  ) {
+    final fmt = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    final hora = DateFormat('HH:mm');
+    final valor = pago.valorPago ?? 0.0;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.entradaBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: AppColors.entrada.withValues(alpha: 0.4), width: 1.5),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.verified, size: 40, color: AppColors.entrada),
+                const SizedBox(height: 10),
+                const Text('PAGO ONLINE VIA PIX',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1,
+                        color: AppColors.entrada)),
+                const SizedBox(height: 8),
+                Text(fmt.format(valor),
+                    style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.entrada)),
+                if (pago.pagoEm != null)
+                  Text('às ${hora.format(pago.pagoEm!)}',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  _linha('Placa', ticket.placa),
+                  _linha('Tipo', ticket.tipoVeiculo),
+                  _linha('Permanência', _fmtDuracao(ticket.tempoPermanencia),
+                      last: true),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: _fechando
+                ? null
+                : () => _confirmar(
+                      patio,
+                      fare,
+                      'pix_online',
+                      valorCobradoOverride: valor,
+                      semCaixa: true, // não entra no caixa — ver [semCaixa]
+                    ),
+            child: _fechando
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5, color: Colors.white))
+                : const Text('Confirmar saída'),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'O valor já caiu na conta do estacionamento. Não cobre de novo.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Pagou pelo QR mas ficou além da carência: cobra-se só a diferença.
+  Widget _bannerDiferenca(PagamentoOnlineStatus pago, NumberFormat fmt) {
+    final hora = DateFormat('HH:mm');
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.saidaBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.saida.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.timelapse, color: AppColors.saida),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Já pagou ${fmt.format(pago.valorPago ?? 0)} pelo Pix'
+                  '${pago.pagoEm != null ? ' às ${hora.format(pago.pagoEm!)}' : ''}',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+                const Text(
+                  'O carro ficou mais tempo. Cobre apenas a diferença abaixo.',
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _resumoLinha(String k, String v) => Padding(
@@ -136,18 +298,34 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
         ),
       );
 
+  /// [valorCobradoOverride] troca o que se cobra AGORA sem mexer no valor
+  /// calculado da estadia: é o valor já pago (pix online) ou só a diferença.
+  ///
+  /// [semCaixa] pula o lançamento no caixa. DECISÃO DELIBERADA: saída paga
+  /// online NÃO cria caixa_movimento — o dinheiro caiu na conta Asaas do tenant,
+  /// não passou pela gaveta do operador. Lançar ali estouraria a conferência do
+  /// fechamento (o operador teria de "ter" um dinheiro que nunca recebeu).
+  /// Relatórios que precisem separar receita online leem do ticket
+  /// (valor_pago_online) ou de pagamentos_online.
   Future<void> _confirmar(
     PatioModel patio,
     FareResult fare,
-    String formaPagamento,
-  ) async {
+    String formaPagamento, {
+    double? valorCobradoOverride,
+    bool semCaixa = false,
+  }) async {
     if (_fechando || _ticket == null || _tarifaSelecionada == null) return;
     final ticket = _ticket!;
     final isLivre = formaPagamento == 'livre_passagem';
     final saida = DateTime.now();
+    final valorCobrado =
+        isLivre ? 0.0 : (valorCobradoOverride ?? fare.valor);
+
+    // Caixa: só quando o dinheiro passa pela gaveta AGORA.
+    final movimentaCaixa = !isLivre && valorCobrado > 0 && !semCaixa;
 
     // Barreira final: cobrança > 0 exige caixa aberto (evita corrida).
-    if (!isLivre && fare.valor > 0) {
+    if (movimentaCaixa) {
       final sessaoAtual = await ref.read(caixaSessaoNotifierProvider.future);
       if (sessaoAtual == null) {
         if (mounted) {
@@ -174,20 +352,21 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       await ref.read(ticketRepositoryProvider).fecharTicket(
             ticketId: ticket.id,
             valorCalculado: fare.valor,
-            valorCobrado: isLivre ? 0.0 : fare.valor,
+            valorCobrado: valorCobrado,
             formaPagamento: formaPagamento,
             operadorSaidaId: user.id,
             tabelaPrecoId: _tarifaSelecionada!.id,
           );
 
       // Lança a receita no caixa aberto (garantido aberto pela barreira acima).
-      if (!isLivre && fare.valor > 0) {
+      // Pago online não entra aqui — ver o comentário de [semCaixa].
+      if (movimentaCaixa) {
         final sessao = await ref.read(caixaSessaoNotifierProvider.future);
         if (sessao != null) {
           await ref.read(caixaRepositoryProvider).registrarEntradaTicket(
                 caixaSessaoId: sessao.id,
                 ticketId: ticket.id,
-                valor: fare.valor,
+                valor: valorCobrado,
                 formaPagamento: formaPagamento,
                 placa: ticket.placa,
               );
@@ -208,7 +387,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
           tipoVeiculo: ticket.tipoVeiculo,
           entrada: ticket.entrada,
           saida: saida,
-          valorCobrado: isLivre ? 0.0 : fare.valor,
+          valorCobrado: valorCobrado,
           formaPagamento: formaPagamento,
           operacaoNome: patio.nome,
           isIsento: isLivre,
@@ -272,7 +451,19 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       saida: DateTime.now(),
       tarifa: tarifaCalculo,
     );
-    final valor = livre ? 0.0 : fare.valor;
+
+    // Pago pelo QR e ainda na carência: não se cobra de novo. Tela própria.
+    final pago = _pagoOnline;
+    if (pago != null && pago.pago && pago.dentroCarencia) {
+      return _buildPagoOnline(patio, ticket, fare, pago);
+    }
+
+    // Pago, mas o carro ficou além da carência: cobra-se SÓ a diferença, nunca
+    // o total de novo — o cliente já pagou uma parte pelo Pix.
+    final diferenca =
+        (pago != null && pago.pago && pago.temDiferenca) ? pago.diferenca! : null;
+
+    final valor = livre ? 0.0 : (diferenca ?? fare.valor);
 
     // Regra: saída COM cobrança exige caixa aberto (senão o dinheiro entra sem
     // registro). Livre-passagem/isenção não movimentam caixa → sempre liberadas.
@@ -287,11 +478,45 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Aviso enquanto a consulta corre. Sem ele, o operador poderia cobrar
+          // manualmente nos segundos ANTES de o card "pago online" aparecer — e
+          // o cliente pagaria duas vezes o mesmo carro.
+          if (_consultandoPagamento) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainer,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Row(
+                children: [
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 10),
+                  Text('Verificando pagamento online…',
+                      style: TextStyle(
+                          fontSize: 12, color: AppColors.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          if (diferenca != null && pago != null) ...[
+            _bannerDiferenca(pago, fmtMoeda),
+            const SizedBox(height: 16),
+          ],
+
           // Valor
           Center(
             child: Column(
               children: [
-                const Text('Total a pagar', style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant, letterSpacing: 1)),
+                Text(
+                    diferenca != null ? 'Diferença a pagar' : 'Total a pagar',
+                    style: const TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant, letterSpacing: 1)),
                 const SizedBox(height: 6),
                 Text(
                   livre ? 'Livre passagem' : fmtMoeda.format(valor),
@@ -387,7 +612,8 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
                   child: OutlinedButton(
                     onPressed: _fechando
                         ? null
-                        : () => _confirmarComDialogo(patio, fare, forma),
+                        : () => _confirmarComDialogo(patio, fare, forma,
+                            valorCobradoOverride: diferenca),
                     child: Text(_labelForma(forma)),
                   ),
                 )),

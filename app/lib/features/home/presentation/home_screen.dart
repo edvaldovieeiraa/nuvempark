@@ -17,6 +17,7 @@ import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tickets/data/foto_entrada_service.dart';
 import '../../tickets/data/placa_ocr_service.dart';
 import '../../tickets/presentation/providers/ticket_provider.dart';
+import '../../tickets/domain/ticket_qr.dart';
 import '../../tickets/presentation/placa_formatter.dart';
 import '../../tickets/presentation/qr_scanner_screen.dart';
 
@@ -541,13 +542,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Future<void> _saidaPorQr(ScaffoldMessengerState messenger) async {
-    final ticketId = await Navigator.of(context).push<String>(
+    final lido = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const QrScannerScreen()),
     );
-    if (ticketId == null || ticketId.isEmpty) return; // cancelou
+    if (lido == null || lido.isEmpty) return; // cancelou
 
-    final ticket =
-        await ref.read(ticketRepositoryProvider).getById(ticketId.trim());
+    // O QR pode ser o id cru (cupons já impressos) ou a URL pública (cupons
+    // novos). O mesmo papel serve ao cliente pagar e ao operador dar saída.
+    final ticketId = extrairTicketId(lido);
+    if (!mounted) return;
+    if (ticketId == null) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('QR não reconhecido. Use a aba Pátio.')));
+      return;
+    }
+
+    final ticket = await ref.read(ticketRepositoryProvider).getById(ticketId);
     if (!mounted) return;
     if (ticket == null) {
       messenger.showSnackBar(const SnackBar(

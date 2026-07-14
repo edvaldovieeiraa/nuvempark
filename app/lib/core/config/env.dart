@@ -30,6 +30,22 @@ abstract final class Env {
   static String get dispositivoUrl => '$_prefix/dispositivo';
   static String get refreshUrl => '$_prefix/auth/refresh';
   static String get appConfigUrl => '$_prefix/app-config';
+  /// Consulta de pagamento online do ticket (rota mobile autenticada).
+  static String get pagamentoOnlineUrl => '$_prefix/ticket';
+
+  /// Base da página pública do ticket (o QR do cupom aponta para cá).
+  /// Ex.: `https://nuvempark.com/t` → QR = `https://nuvempark.com/t/<ticket_id>`.
+  ///
+  /// VAZIO por padrão DE PROPÓSITO: sem a var, o QR continua sendo o id cru,
+  /// como sempre foi. Um build antigo ou de dev não pode passar a imprimir uma
+  /// URL que não existe — e o scanner da saída lê os dois formatos.
+  static const String ticketPublicBaseUrl =
+      String.fromEnvironment('TICKET_PUBLIC_BASE_URL', defaultValue: '');
+
+  /// O que vai dentro do QR do cupom de entrada.
+  static String qrDoTicket(String ticketId) => ticketPublicBaseUrl.isEmpty
+      ? ticketId
+      : '${ticketPublicBaseUrl.replaceAll(RegExp(r'/+$'), '')}/$ticketId';
 
   static const Duration connectTimeout = Duration(seconds: 20);
   static const Duration receiveTimeout = Duration(seconds: 30);

@@ -2,11 +2,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/di/providers.dart';
 import '../../data/avaria_service.dart';
+import '../../data/pagamento_online_service.dart';
 import '../../data/ticket_repository.dart';
 import '../../domain/ticket_model.dart';
 
 final ticketRepositoryProvider = Provider<TicketRepository>(
   (ref) => TicketRepository(db: ref.read(appDatabaseProvider)),
+);
+
+final pagamentoOnlineServiceProvider = Provider<PagamentoOnlineService>(
+  (ref) => PagamentoOnlineService(dio: ref.read(dioProvider)),
 );
 
 final avariaServiceProvider = Provider<AvariaService>(
