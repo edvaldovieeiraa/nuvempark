@@ -60,6 +60,213 @@ export async function lerGatewayDoTenant(
   return data as LinhaGatewayTenant;
 }
 
+// ── Leituras da página pública ──────────────────────────────────────────────
+
+export interface TicketPublico {
+  id: string;
+  placa: string;
+  tipo_veiculo: string;
+  entrada: string;
+  status: string;
+  patio_id: string;
+  tenant_id: string;
+  tabela_preco_id: string | null;
+  pago_online_em: string | null;
+  valor_pago_online: number | null;
+  patio_nome: string;
+  patio_ativo: boolean;
+}
+
+export interface TarifaLinha {
+  fracao_inicial_minutos: number;
+  fracao_inicial_valor: number;
+  fracao_adicional_minutos: number;
+  fracao_adicional_valor: number;
+  teto_diaria: number;
+  tolerancia_minutos: number;
+  pernoite_valor: number;
+  pernoite_hora_inicio: number;
+  pernoite_hora_fim: number;
+}
+
+/**
+ * Ticket para a página pública (quem escaneou o QR). Sem tenant na requisição —
+ * o vínculo vem do próprio ticket, achado pelo UUID que já estava no QR.
+ */
+export async function lerTicketPublico(
+  ticketId: string,
+): Promise<TicketPublico | null> {
+  const { data, error } = await servico
+    .from('tickets')
+    .select(
+      'id, placa, tipo_veiculo, entrada, status, patio_id, tenant_id, tabela_preco_id, pago_online_em, valor_pago_online, patios!inner(nome, ativo)',
+    )
+    .eq('id', ticketId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const patio = data.patios as unknown as { nome: string; ativo: boolean };
+  return {
+    id: data.id as string,
+    placa: data.placa as string,
+    tipo_veiculo: data.tipo_veiculo as string,
+    entrada: data.entrada as string,
+    status: data.status as string,
+    patio_id: data.patio_id as string,
+    tenant_id: data.tenant_id as string,
+    tabela_preco_id: (data.tabela_preco_id as string | null) ?? null,
+    pago_online_em: (data.pago_online_em as string | null) ?? null,
+    valor_pago_online:
+      data.valor_pago_online === null ? null : Number(data.valor_pago_online),
+    patio_nome: patio.nome,
+    patio_ativo: patio.ativo,
+  };
+}
+
+/** Gate de assinatura — tenant suspenso não cobra online. */
+export async function assinaturaLibera(tenantId: string): Promise<boolean> {
+  const { data, error } = await servico.rpc('fn_assinatura_libera', {
+    p_tenant: tenantId,
+  });
+  if (error) throw error;
+  return data === true;
+}
+
+/**
+ * A tarifa a aplicar. Prefere a que o OPERADOR escolheu no registro
+ * (`tickets.tabela_preco_id`): se o cliente pagasse por outra, o valor da página
+ * não bateria com o da catraca. Só cai na seleção por menor `ordem` quando o
+ * ticket não guardou tabela (entrada antiga ou tarifa apagada).
+ */
+export async function lerTarifaDoTicket(
+  t: TicketPublico,
+): Promise<TarifaLinha | null> {
+  const campos =
+    'fracao_inicial_minutos, fracao_inicial_valor, fracao_adicional_minutos, fracao_adicional_valor, teto_diaria, tolerancia_minutos, pernoite_valor, pernoite_hora_inicio, pernoite_hora_fim';
+
+  if (t.tabela_preco_id) {
+    const { data, error } = await servico
+      .from('tarifas')
+      .select(campos)
+      .eq('id', t.tabela_preco_id)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) return numerica(data);
+  }
+
+  const agora = new Date().toISOString();
+  const { data, error } = await servico
+    .from('tarifas')
+    .select(campos)
+    .eq('patio_id', t.patio_id)
+    .in('tipo_veiculo', [t.tipo_veiculo, 'ambos'])
+    .eq('ativo', true)
+    .lte('vigencia_inicio', agora)
+    .or(`vigencia_fim.is.null,vigencia_fim.gte.${agora}`)
+    .order('ordem', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? numerica(data) : null;
+}
+
+/** numeric do Postgres chega como string no supabase-js. */
+function numerica(row: Record<string, unknown>): TarifaLinha {
+  return {
+    fracao_inicial_minutos: Number(row.fracao_inicial_minutos),
+    fracao_inicial_valor: Number(row.fracao_inicial_valor),
+    fracao_adicional_minutos: Number(row.fracao_adicional_minutos),
+    fracao_adicional_valor: Number(row.fracao_adicional_valor),
+    teto_diaria: Number(row.teto_diaria),
+    tolerancia_minutos: Number(row.tolerancia_minutos),
+    pernoite_valor: Number(row.pernoite_valor),
+    pernoite_hora_inicio: Number(row.pernoite_hora_inicio),
+    pernoite_hora_fim: Number(row.pernoite_hora_fim),
+  };
+}
+
+export interface CobrancaPendente {
+  id: string;
+  valor: number;
+  pix_copia_cola: string | null;
+  pix_qrcode_base64: string | null;
+  expira_em: string | null;
+  gateway_cobranca_id: string | null;
+  criado_em: string;
+}
+
+/**
+ * Cobrança pendente e ainda válida deste ticket. Existe para NÃO criar cobrança
+ * duplicada no PSP quando o cliente recarrega a página ou toca duas vezes.
+ */
+export async function lerCobrancaPendente(
+  ticketId: string,
+): Promise<CobrancaPendente | null> {
+  const { data, error } = await servico
+    .from('pagamentos_online')
+    .select('id, valor, pix_copia_cola, pix_qrcode_base64, expira_em, gateway_cobranca_id, criado_em')
+    .eq('ticket_id', ticketId)
+    .eq('status', 'pendente')
+    .gt('expira_em', new Date().toISOString())
+    .order('criado_em', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+  return { ...data, valor: Number(data.valor) } as CobrancaPendente;
+}
+
+/** Cria a cobrança local ANTES de falar com o PSP — o id dela é o externalReference. */
+export async function criarPagamento(params: {
+  ticketId: string;
+  patioId: string;
+  tenantId: string;
+  valor: number;
+  expiraEm: Date;
+}): Promise<string> {
+  const { data, error } = await servico
+    .from('pagamentos_online')
+    .insert({
+      ticket_id: params.ticketId,
+      patio_id: params.patioId,
+      tenant_id: params.tenantId,
+      valor: params.valor,
+      status: 'pendente',
+      gateway: 'asaas',
+      expira_em: params.expiraEm.toISOString(),
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data.id as string;
+}
+
+/** Guarda o que o PSP devolveu (copia-e-cola, QR, id da cobrança). */
+export async function salvarDadosCobranca(params: {
+  pagamentoId: string;
+  gatewayCobrancaId: string;
+  pixCopiaCola: string;
+  pixQrcodeBase64: string;
+  expiraEm: Date;
+}): Promise<void> {
+  const { error } = await servico
+    .from('pagamentos_online')
+    .update({
+      gateway_cobranca_id: params.gatewayCobrancaId,
+      pix_copia_cola: params.pixCopiaCola,
+      pix_qrcode_base64: params.pixQrcodeBase64,
+      expira_em: params.expiraEm.toISOString(),
+    })
+    .eq('id', params.pagamentoId);
+
+  if (error) throw error;
+}
+
 export interface LinhaPagamentoOnline {
   id: string;
   ticket_id: string;

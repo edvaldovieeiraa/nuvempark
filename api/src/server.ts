@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import { env, corsOrigins } from './env.js';
 import { authRoutes } from './auth/routes.js';
 import { bootstrapRoutes } from './routes/bootstrap.js';
@@ -9,6 +10,7 @@ import { dispositivoRoutes } from './routes/dispositivo.js';
 import { appConfigRoutes } from './routes/app-config.js';
 import { fotoRoutes } from './routes/foto.js';
 import { webhookAsaasRoutes } from './routes/webhook-asaas.js';
+import { publicoRoutes } from './routes/publico.js';
 
 /**
  * NuvemPark API — servidor Fastify. Consumido pelo app Flutter.
@@ -39,13 +41,25 @@ await app.register(
   { prefix: PREFIX },
 );
 
-// Rotas PÚBLICAS: chamadas por quem não é operador — o PSP (webhook) e, na
-// Entrega C, o cliente que escaneou o QR. Prefixo separado de propósito: nada
-// aqui passa pelo middleware de auth do operador, e é preciso que isso seja
-// óbvio para quem lê.
+// Rotas PÚBLICAS: chamadas por quem não é operador — o PSP (webhook) e o cliente
+// que escaneou o QR do cupom. Prefixo separado de propósito: nada aqui passa
+// pelo middleware de auth do operador, e é preciso que isso seja óbvio.
 const PREFIX_PUBLICO = '/api/public/v1';
 await app.register(
   async (scope) => {
+    // Rate limit SÓ neste grupo: é o único aberto à internet sem credencial, e
+    // o que um scanner de UUID atacaria. As rotas mobile seguem sem limite (o
+    // operador em rede ruim faz rajadas legítimas ao drenar a fila).
+    //
+    // O webhook fica de fora: o Asaas pode mandar rajada legítima de eventos, e
+    // limitá-lo significaria devolver 429 — que ele trata como falha e re-tenta,
+    // piorando o problema.
+    await scope.register(rateLimit, {
+      max: 30,
+      timeWindow: '1 minute',
+      allowList: (req) => req.url.includes('/webhooks/'),
+    });
+    await publicoRoutes(scope);
     await webhookAsaasRoutes(scope);
   },
   { prefix: PREFIX_PUBLICO },
