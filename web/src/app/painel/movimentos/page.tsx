@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { resolverPatio, ultimaSincronizacao } from "@/lib/patio-scope";
 import { assinarFotosEntrada } from "@/lib/fotos";
-import { mapaOperadores } from "@/lib/operadores";
+import { mapaOperadores, operadorSaidaPeloCaixa } from "@/lib/operadores";
 import { MovimentosClient } from "@/components/movimentos/movimentos-client";
 import { SemPatio } from "@/components/sem-patio";
 
@@ -28,7 +28,7 @@ export default async function MovimentosPage({
   let query = supabase
     .from("tickets")
     .select(
-      "id, placa, tipo_veiculo, status, entrada, saida, valor_cobrado, forma_pagamento, motivo_isencao, origem, foto_entrada_path, operador_id",
+      "id, placa, tipo_veiculo, status, entrada, saida, valor_cobrado, forma_pagamento, motivo_isencao, origem, foto_entrada_path, operador_id, operador_saida_id",
       { count: "exact" },
     )
     .eq("patio_id", patioId)
@@ -53,9 +53,17 @@ export default async function MovimentosPage({
   ]);
 
   // Uma única chamada ao Storage para as miniaturas desta página.
-  const [fotos, operadores] = await Promise.all([
+  // `saidaPeloCaixa` cobre o HISTÓRICO: tickets fechados antes de existir a
+  // coluna operador_saida_id não têm o dado, mas a saída paga deixou rastro no
+  // caixa. Ticket novo nem chega a usar isso.
+  const fechadosSemOperadorSaida = (tickets ?? [])
+    .filter((t) => t.status !== "aberto" && !t.operador_saida_id)
+    .map((t) => t.id);
+
+  const [fotos, operadores, saidaPeloCaixa] = await Promise.all([
     assinarFotosEntrada(tickets ?? []),
     mapaOperadores(),
+    operadorSaidaPeloCaixa(fechadosSemOperadorSaida),
   ]);
 
   return (
@@ -63,6 +71,7 @@ export default async function MovimentosPage({
       tickets={tickets ?? []}
       fotos={fotos}
       operadores={operadores}
+      saidaPeloCaixa={saidaPeloCaixa}
       total={count ?? 0}
       patioNome={patioNome ?? ""}
       patioId={patioId}

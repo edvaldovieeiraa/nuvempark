@@ -22,8 +22,10 @@ type Ticket = {
   motivo_isencao: string | null;
   origem: string;
   foto_entrada_path: string | null;
-  /** Quem registrou a ENTRADA. A saída não guarda operador (ver schema). */
+  /** Quem registrou a entrada. */
   operador_id: string | null;
+  /** Quem VALIDOU a saída. Nulo em ticket aberto e no histórico antigo. */
+  operador_saida_id: string | null;
 };
 type Filtros = { q: string; status: string; periodo: string };
 
@@ -43,6 +45,7 @@ export function MovimentosClient({
   tickets,
   fotos,
   operadores,
+  saidaPeloCaixa,
   total,
   patioNome,
   patioId,
@@ -54,6 +57,8 @@ export function MovimentosClient({
   fotos: Record<string, string>;
   /** operador_id → nome (join manual: a tabela não tem FK). */
   operadores: Record<string, string>;
+  /** ticket_id → nome, derivado do caixa. Só para o histórico sem a coluna. */
+  saidaPeloCaixa: Record<string, string>;
   total: number;
   patioNome: string;
   patioId: string;
@@ -188,7 +193,7 @@ export function MovimentosClient({
                   <th className="px-5 py-3 font-bold">Entrada</th>
                   <th className="px-5 py-3 font-bold">Saída</th>
                   <th className="px-5 py-3 font-bold">Permanência</th>
-                  <th className="px-5 py-3 font-bold">Operador</th>
+                  <th className="px-5 py-3 font-bold">Validou</th>
                   <th className="px-5 py-3 font-bold">Status</th>
                   <th className="px-5 py-3 font-bold">Pagamento</th>
                   <th className="px-5 py-3 font-bold text-right">Valor</th>
@@ -231,7 +236,16 @@ export function MovimentosClient({
                       {permanencia(t.entrada, t.saida)}
                     </td>
                     <td className="px-5 py-3 text-texto-2">
-                      <Operador nome={operadores[t.operador_id ?? ""]} />
+                      {/* Quem VALIDOU: a coluna do ticket; e, no histórico que
+                          nasceu sem ela, o nome derivado do caixa. Ticket ainda
+                          no pátio não foi validado por ninguém. */}
+                      <Operador
+                        nome={
+                          operadores[t.operador_saida_id ?? ""] ??
+                          saidaPeloCaixa[t.id]
+                        }
+                        acao="saída"
+                      />
                     </td>
                     <td className="px-5 py-3">
                       <StatusChip status={t.status} />

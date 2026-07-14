@@ -160,11 +160,23 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
 
     setState(() => _fechando = true);
     try {
+      // Quem está VALIDANDO a saída agora — não confundir com o operador da
+      // entrada, que pode ser de outro turno. É o que o painel audita.
+      final user = await ref.read(tokenStorageProvider).readUser();
+      if (user == null) {
+        if (mounted) {
+          AppToast.error(context, 'Sessão inválida. Entre novamente.');
+          setState(() => _fechando = false);
+        }
+        return;
+      }
+
       await ref.read(ticketRepositoryProvider).fecharTicket(
             ticketId: ticket.id,
             valorCalculado: fare.valor,
             valorCobrado: isLivre ? 0.0 : fare.valor,
             formaPagamento: formaPagamento,
+            operadorSaidaId: user.id,
             tabelaPrecoId: _tarifaSelecionada!.id,
           );
 

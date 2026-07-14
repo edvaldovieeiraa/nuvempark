@@ -68,7 +68,14 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
             forma_pagamento: str(payload.forma_pagamento),
             motivo_isencao: str(payload.motivo_isencao),
             status: str(payload.status),
-            operador_id: str(payload.operador_id) ?? operador.sub,
+            // SEM fallback em `operador.sub`. O payload de fechamento não manda
+            // operador_id, então o fallback fazia o UPDATE sobrescrever o
+            // operador da ENTRADA pelo dono do JWT que drenou a fila — na virada
+            // de turno, gravava a pessoa errada. Agora, ausente = não mexe
+            // (compact tira a chave). O fallback vive só no INSERT, abaixo.
+            operador_id: str(payload.operador_id),
+            // Quem VALIDOU a saída. Só o fechamento manda.
+            operador_saida_id: str(payload.operador_saida_id),
             caixa_sessao_id: str(payload.caixa_sessao_id),
             tabela_preco_id: str(payload.tabela_preco_id),
             cliente_id: str(payload.cliente_id),
@@ -111,6 +118,9 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
                 entrada: agora,
                 placa: '—',
                 tipo_veiculo: 'carro',
+                // Só no INSERT: se o create não trouxe operador, assume o dono do
+                // JWT. No UPDATE isso seria destrutivo (ver comentário em `row`).
+                operador_id: operador.sub,
                 ...row,
               });
           if (res.error) throw res.error;

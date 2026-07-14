@@ -142,6 +142,9 @@ class TicketRepository {
     required double valorCalculado,
     required double valorCobrado,
     required String formaPagamento,
+    /// Quem VALIDOU a saída. Não é o mesmo do `operador_id` do ticket, que é de
+    /// quem registrou a entrada — muitas vezes de outro turno.
+    required String operadorSaidaId,
     String? motivoIsencao,
     String? tabelaPrecoId,
     // Campos de pagamento (Pix/cartão). Opcionais: o ramo manual omite nulos.
@@ -166,6 +169,7 @@ class TicketRepository {
       valorCalculado: valorCalculado,
       valorCobrado: valorCobrado,
       formaPagamento: formaPagamento,
+      operadorSaidaId: operadorSaidaId,
       motivoIsencao: motivoIsencao,
       tabelaPrecoId: tabelaPrecoId,
       atk: atk,
@@ -268,6 +272,7 @@ Map<String, dynamic> montarPayloadFechamentoTicket({
   required double valorCalculado,
   required double valorCobrado,
   required String formaPagamento,
+  required String operadorSaidaId,
   String? motivoIsencao,
   String? tabelaPrecoId,
   String? atk,
@@ -283,6 +288,9 @@ Map<String, dynamic> montarPayloadFechamentoTicket({
     'valor_calculado': valorCalculado,
     'valor_cobrado': valorCobrado,
     'forma_pagamento': formaPagamento,
+    // Quem validou a saída. O painel precisa disto para auditar isenção e
+    // mensalista, que não deixam rastro no caixa (não geram movimento).
+    'operador_saida_id': operadorSaidaId,
     'motivo_isencao': motivoIsencao,
     'tabela_preco_id': tabelaPrecoId,
     'status': 'fechado',
