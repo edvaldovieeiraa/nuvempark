@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ParkingSquare, ChevronsUpDown, Check } from "lucide-react";
+import { ParkingSquare, ChevronsUpDown, Check, RefreshCw } from "lucide-react";
 
 type Patio = { id: string; nome: string; codigo_acesso?: string | null };
 
@@ -13,8 +13,11 @@ type Patio = { id: string; nome: string; codigo_acesso?: string | null };
  */
 export function PatioSeletor({
   patios,
+  sincronizacoes = {},
 }: {
   patios: Patio[];
+  /** `patio_id → ISO` da última sincronização com o app. Vem do servidor. */
+  sincronizacoes?: Record<string, string>;
   /** @deprecated a URL (?patio) é a fonte da verdade. */
   patioIdAtivo?: string | null;
 }) {
@@ -78,6 +81,8 @@ export function PatioSeletor({
         <ChevronsUpDown className="w-4 h-4 text-white/40 shrink-0" />
       </button>
 
+      <UltimaSincronizacao iso={ativo ? sincronizacoes[ativo.id] : undefined} />
+
       <AnimatePresence>
         {aberto && (
           <motion.div
@@ -114,5 +119,44 @@ export function PatioSeletor({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/**
+ * Fuso FIXO de propósito. Sem `timeZone`, o servidor (UTC na VPS) e o navegador
+ * do gestor (Brasília) formatariam horas diferentes para o mesmo instante: o
+ * HTML divergiria na hidratação e o gestor veria 3h a mais. Fixando aqui, os
+ * dois lados produzem o mesmo texto — e é a hora que ele espera ver.
+ */
+const formatoData = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/**
+ * Data exata da última vez que o app deste pátio mandou dados para a nuvem.
+ * Discreta de propósito: é um sinal de saúde, não uma ação.
+ */
+function UltimaSincronizacao({ iso }: { iso?: string }) {
+  return (
+    <p
+      className="mt-1.5 px-1 flex items-center gap-1.5 text-[10px] leading-tight text-white/40"
+      title={
+        iso
+          ? "Última vez que o app deste pátio enviou dados para a nuvem"
+          : "Este pátio ainda não enviou nada pelo app"
+      }
+    >
+      <RefreshCw className="w-2.5 h-2.5 shrink-0" aria-hidden="true" />
+      <span className="truncate">
+        {iso
+          ? `Sincronizado ${formatoData.format(new Date(iso))}`
+          : "Nunca sincronizou"}
+      </span>
+    </p>
   );
 }

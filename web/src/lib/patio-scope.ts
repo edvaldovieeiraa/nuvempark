@@ -71,3 +71,26 @@ export async function ultimaSincronizacao(
   if (datas.length === 0) return null;
   return datas.sort().at(-1) ?? null;
 }
+
+/**
+ * Última sincronização de VÁRIOS pátios de uma vez → mapa `patio_id → ISO`.
+ * Pátio que nunca sincronizou fica fora do mapa.
+ *
+ * Usado pela sidebar, que é server component e NÃO recebe `searchParams` — ela
+ * não sabe qual pátio está ativo (isso é do seletor, no cliente). Então manda a
+ * data de todos e o seletor escolhe a do ativo.
+ *
+ * São 2 queries por pátio. O gestor típico tem poucos pátios; se um dia isso
+ * pesar, o caminho é uma view com `max(sincronizado_em)` agrupado por pátio.
+ */
+export async function ultimaSincronizacaoPorPatio(
+  patioIds: string[],
+): Promise<Record<string, string>> {
+  if (patioIds.length === 0) return {};
+  const pares = await Promise.all(
+    patioIds.map(async (id) => [id, await ultimaSincronizacao(id)] as const),
+  );
+  return Object.fromEntries(
+    pares.filter((p): p is [string, string] => p[1] !== null),
+  );
+}

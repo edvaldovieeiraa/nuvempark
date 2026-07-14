@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogOut, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { ultimaSincronizacaoPorPatio } from "@/lib/patio-scope";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { PatioSeletor } from "@/components/patio-seletor";
 import { TelaBloqueio } from "@/components/painel-bloqueio";
@@ -70,6 +71,11 @@ export default async function PainelLayout({
 
   const inicial = (user.email ?? "?").charAt(0).toUpperCase();
 
+  // Só depois do gate de assinatura: quem está bloqueado não vê sidebar.
+  const sincronizacoes = await ultimaSincronizacaoPorPatio(
+    (patios ?? []).map((p) => p.id),
+  );
+
   return (
     <div className="flex-1 flex">
       {/* Sidebar dark premium */}
@@ -94,9 +100,15 @@ export default async function PainelLayout({
           </div>
         </div>
 
-        {/* Seletor de pátio — cada pátio é um espaço nas telas por-pátio */}
+        {/* Seletor de pátio — cada pátio é um espaço nas telas por-pátio.
+            A data de sync vai de TODOS os pátios: a sidebar é server component
+            e não recebe searchParams, então quem escolhe a do ativo é o seletor. */}
         <Suspense fallback={<div className="mx-3 mb-2 h-14 rounded-xl bg-white/5" />}>
-          <PatioSeletor patios={patios ?? []} patioIdAtivo={null} />
+          <PatioSeletor
+            patios={patios ?? []}
+            sincronizacoes={sincronizacoes}
+            patioIdAtivo={null}
+          />
         </Suspense>
 
         <SidebarNav assinaturaAlerta={assinaturaAlerta} />
