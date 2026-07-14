@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nuvempark_core/nuvempark_core.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../patio/domain/patio_model.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
@@ -149,8 +151,18 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
         return;
       }
 
+      // Providers lidos AGORA, enquanto o widget está vivo: o que roda depois
+      // do pop (impressão, upload de foto, sync) não pode mais tocar em `ref`.
+      final avariaService = ref.read(avariaServiceProvider);
+      final syncEngine = ref.read(syncEngineProvider);
+      final printerFuture = ref.read(printerNotifierProvider.future);
+      final printerNotifier = ref.read(printerNotifierProvider.notifier);
+
       final livre = _reconhecimento?.liberaPassagem ?? false;
       final agora = DateTime.now();
+
+      // ── ÚNICO await do caminho crítico: a transação Drift (ticket + outbox).
+      // Nada de rede aqui — em modo avião isto termina em milissegundos.
       final ticketId = await ref.read(ticketRepositoryProvider).registrarEntrada(
             placa: placa,
             tipoVeiculo: _tipoVeiculo!,
@@ -163,53 +175,91 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
             fotoEntradaPath: _fotoEntradaPath,
           );
 
-      // Registra avaria (se preenchida) — sobe fotos e enfileira no sync.
-      if (_avariaCtrl.text.trim().isNotEmpty || _avariaFotos.isNotEmpty) {
-        await ref.read(avariaServiceProvider).registrar(
-              ticketId: ticketId,
-              patioId: patioId,
-              placa: placa,
-              descricao: _avariaCtrl.text.trim().isEmpty
-                  ? 'Avaria registrada (ver fotos)'
-                  : _avariaCtrl.text.trim(),
-              operadorId: user.id,
-              fotosPaths: _avariaFotos,
-            );
-      }
-
-      ref.invalidate(ticketsAbertosProvider);
-      Future.microtask(() => ref.read(syncEngineProvider).drain());
-
-      // Auto-print do cupom de entrada, se houver impressora.
-      final printer = await ref
-          .read(printerNotifierProvider.future)
-          .catchError((_) => const PrinterState());
-      if (printer.temImpressora) {
-        final bytes = PrintTemplates.ticketEntrada(
+      // Avaria (se preenchida): o REGISTRO entra na outbox agora (Drift); as
+      // FOTOS sobem em background — antes, o upload segurava a confirmação e,
+      // offline, ainda perdia as fotos.
+      final descricaoAvaria = _avariaCtrl.text.trim();
+      final fotosAvaria = List<String>.of(_avariaFotos);
+      if (descricaoAvaria.isNotEmpty || fotosAvaria.isNotEmpty) {
+        final avariaId = await avariaService.enfileirar(
           ticketId: ticketId,
           placa: placa,
-          tipoVeiculo: _tipoVeiculo!,
-          entrada: agora,
-          operacaoNome: patio.nome,
-          cols: printer.cols,
-          avancoFinal: printer.avancoFinal,
-          cabecalho: patio.ticketCabecalho,
-          rodape: patio.ticketRodape,
+          descricao: descricaoAvaria.isEmpty
+              ? 'Avaria registrada (ver fotos)'
+              : descricaoAvaria,
+          operadorId: user.id,
+          totalFotos: fotosAvaria.length,
         );
-        final ok = await ref.read(printerNotifierProvider.notifier).print(bytes);
-        if (mounted && !ok) {
-          AppToast.error(context, 'Falha ao imprimir o ticket.');
+        if (fotosAvaria.isNotEmpty) {
+          unawaited(avariaService.subirFotos(
+            avariaId: avariaId,
+            patioId: patioId,
+            fotosPaths: fotosAvaria,
+          ));
         }
       }
 
+      ref.invalidate(ticketsAbertosProvider);
+
+      // ── Confirmação IMEDIATA. Tudo daqui pra baixo é background.
       if (mounted) {
         AppToast.success(context, 'Entrada registrada!');
         context.pop();
       }
+
+      // Fire-and-forget: a fila sobe sozinha (e, offline, na próxima drenagem).
+      unawaited(syncEngine.drain());
+
+      // Cupom de entrada: impressão Bluetooth pode reconectar e demorar
+      // segundos — não é motivo para o operador esperar.
+      unawaited(_imprimirCupom(
+        printerFuture: printerFuture,
+        printerNotifier: printerNotifier,
+        ticketId: ticketId,
+        placa: placa,
+        tipoVeiculo: _tipoVeiculo!,
+        entrada: agora,
+        patio: patio,
+      ));
     } catch (e) {
       if (mounted) AppToast.error(context, 'Erro ao registrar entrada.');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  /// Imprime o cupom fora do caminho crítico. Não usa `ref` nem o `context` da
+  /// tela (ela já saiu): o aviso de falha vai pelo navigator raiz.
+  Future<void> _imprimirCupom({
+    required Future<PrinterState> printerFuture,
+    required PrinterNotifier printerNotifier,
+    required String ticketId,
+    required String placa,
+    required String tipoVeiculo,
+    required DateTime entrada,
+    required PatioModel patio,
+  }) async {
+    final printer =
+        await printerFuture.catchError((_) => const PrinterState());
+    if (!printer.temImpressora) return;
+
+    final bytes = PrintTemplates.ticketEntrada(
+      ticketId: ticketId,
+      placa: placa,
+      tipoVeiculo: tipoVeiculo,
+      entrada: entrada,
+      operacaoNome: patio.nome,
+      cols: printer.cols,
+      avancoFinal: printer.avancoFinal,
+      cabecalho: patio.ticketCabecalho,
+      rodape: patio.ticketRodape,
+    );
+    final ok = await printerNotifier.print(bytes);
+    if (ok) return;
+
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx != null && ctx.mounted) {
+      AppToast.error(ctx, 'Falha ao imprimir o ticket.');
     }
   }
 

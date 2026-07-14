@@ -34,12 +34,15 @@ abstract final class Routes {
   static String saidaDetalhe(String id) => '/saida/$id';
 }
 
-final _rootKey = GlobalKey<NavigatorState>();
+/// Navigator raiz. Público para que tarefas que continuam DEPOIS de a tela que
+/// as disparou já ter saído (ex.: impressão do cupom em background) ainda
+/// consigam um context vivo para avisar o operador.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _RouterNotifier(ref);
   return GoRouter(
-    navigatorKey: _rootKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: Routes.splash,
     refreshListenable: notifier,
     redirect: notifier.redirect,
