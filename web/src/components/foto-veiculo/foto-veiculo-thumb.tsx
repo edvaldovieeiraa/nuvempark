@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Car } from "lucide-react";
+
+import { Marca } from "@/components/marca";
 
 /**
  * Miniatura da foto de entrada. Sem foto — ou com a URL assinada quebrada
- * (arquivo ainda não subiu do app) — cai num placeholder neutro do mesmo
- * tamanho, para a tabela não "pular".
+ * (arquivo ainda não subiu do app) — cai na MARCA em tom esmeralda suave, do
+ * mesmo tamanho, para a tabela não "pular".
+ *
+ * O selo cheio (gradiente brand→teal, nuvem branca) pesaria demais repetido em
+ * dezenas de linhas e roubaria a atenção das fotos reais: aqui a marca entra
+ * invertida — nuvem esmeralda sobre fundo brand-50 — como marca d'água.
  *
  * A URL vem assinada em lote pela página (ver `assinarFotosEntrada`): o thumb
  * não fala com o Storage.
@@ -35,9 +40,9 @@ export function FotoVeiculoThumb({
     <span
       role="img"
       aria-label={`Sem foto de entrada do veículo ${placa}`}
-      className="w-10 h-10 rounded-lg border border-borda bg-fundo grid place-items-center"
+      className="w-10 h-10 rounded-lg border border-brand-200 bg-gradient-to-br from-brand-50 to-superficie grid place-items-center"
     >
-      <Car className="w-4 h-4 text-texto-3" aria-hidden="true" />
+      <Marca className="w-5 h-5 opacity-70" corNuvem="#059669" corP="#ECFDF5" />
     </span>
   );
 

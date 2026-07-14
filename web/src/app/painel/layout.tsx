@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { PatioSeletor } from "@/components/patio-seletor";
 import { TelaBloqueio } from "@/components/painel-bloqueio";
+import { Marca } from "@/components/marca";
 
 export default async function PainelLayout({
   children,
@@ -80,7 +81,7 @@ export default async function PainelLayout({
         <div className="relative p-5 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-acento-teal grid place-items-center shadow-[var(--shadow-brand)]">
-              <CloudP />
+              <Marca className="w-6 h-6" />
             </div>
             <div>
               <div className="font-extrabold text-white leading-tight tracking-tight">
@@ -134,20 +135,3 @@ export default async function PainelLayout({
   );
 }
 
-function CloudP() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
-      <path
-        d="M7 18a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.83-1.02A4.5 4.5 0 0 1 16.5 18H7Z"
-        fill="white"
-      />
-      <path
-        d="M10.6 15.5v-5h2.2a1.7 1.7 0 1 1 0 3.4h-2.2"
-        stroke="#059669"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { X, Camera, AlertTriangle, Loader2 } from "lucide-react";
+import { X, AlertTriangle, Loader2 } from "lucide-react";
 
+import { Marca } from "@/components/marca";
 import { detalheTicket, type DetalheTicket } from "./actions";
 
 /** O mínimo que o modal precisa saber do ticket. */
@@ -113,8 +114,12 @@ export function FotoVeiculoModal({
                   className="w-full rounded-xl border border-borda"
                 />
               ) : (
-                <div className="rounded-xl border border-dashed border-borda py-8 grid place-items-center text-sm text-texto-3">
-                  <Camera className="w-6 h-6 mb-1" />
+                // Mesma linguagem da miniatura: a marca em esmeralda suave, não
+                // um ícone cinza de sistema legado.
+                <div className="rounded-xl border border-dashed border-brand-200 bg-gradient-to-br from-brand-50 to-superficie py-10 grid place-items-center gap-2 text-sm text-texto-2">
+                  <span className="w-12 h-12 rounded-2xl bg-superficie border border-brand-200 grid place-items-center shadow-[var(--shadow-card)]">
+                    <Marca className="w-6 h-6" corNuvem="#059669" corP="#ECFDF5" />
+                  </span>
                   Sem foto de entrada
                 </div>
               )}

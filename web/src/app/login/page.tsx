@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
+import { Marca } from "@/components/marca";
 
 export default function LoginPage() {
   return (
@@ -68,7 +69,7 @@ function LoginConteudo() {
             transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.1 }}
             className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-acento-teal grid place-items-center shadow-[var(--shadow-brand)]"
           >
-            <CloudP />
+            <Marca className="w-9 h-9" />
           </motion.div>
           <h1 className="mt-4 text-3xl font-black tracking-tight">
             Nuvem<span className="texto-brand-gradiente">Park</span>
@@ -167,20 +168,3 @@ function LoginConteudo() {
   );
 }
 
-function CloudP() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-9 h-9" fill="none">
-      <path
-        d="M7 18a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.83-1.02A4.5 4.5 0 0 1 16.5 18H7Z"
-        fill="white"
-      />
-      <path
-        d="M10.6 15.5v-5h2.2a1.7 1.7 0 1 1 0 3.4h-2.2"
-        stroke="#059669"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
