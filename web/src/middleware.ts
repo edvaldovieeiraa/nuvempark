@@ -11,6 +11,11 @@ const PREFIXOS_APP = ["/painel", "/master", "/login", "/cadastro", "/auth"];
 const HOST_APP = process.env.NEXT_PUBLIC_APP_HOST || ""; // ex.: dashboard.nuvempark.com
 const HOST_SITE = process.env.NEXT_PUBLIC_SITE_HOST || ""; // ex.: nuvempark.com
 
+// Subdomínio dedicado do console master. Neste host o app serve SÓ /master:
+// qualquer outro caminho vai para o console, que por sua vez manda pro
+// /master/login se não houver sessão mestra. Inerte nos demais hosts.
+const HOST_MASTER = process.env.NEXT_PUBLIC_MASTER_HOST || "painel.nuvempark.com";
+
 function ehRotaApp(pathname: string) {
   return PREFIXOS_APP.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),
@@ -43,6 +48,17 @@ export async function middleware(request: NextRequest) {
   // 0) Separação de domínios (painel vs site) antes de tudo.
   const desvio = redirecionaPorHost(request);
   if (desvio) return desvio;
+
+  // 0.1) Host dedicado do master: painel.nuvempark.com abre só o console.
+  const host = request.headers.get("host")?.split(":")[0] ?? "";
+  if (
+    host === HOST_MASTER &&
+    !request.nextUrl.pathname.startsWith("/master")
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/master";
+    return NextResponse.redirect(url);
+  }
 
   // Rotas /master têm gate próprio (senha mestra) — não passam pelo auth do gestor.
   if (request.nextUrl.pathname.startsWith("/master")) {
