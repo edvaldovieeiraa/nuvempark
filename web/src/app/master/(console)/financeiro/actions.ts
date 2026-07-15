@@ -9,7 +9,7 @@ import {
   asaasConfigurado,
   garantirCliente,
   criarCobranca,
-  obterPixCopiaECola,
+  obterPix,
 } from "@/lib/asaas";
 
 export type Resultado =
@@ -269,7 +269,7 @@ export async function emitirCobrancaGateway(faturaId: string): Promise<Resultado
       referenciaExterna: fatura.id,
     });
 
-    const pix = await obterPixCopiaECola(cobranca.id);
+    const pix = await obterPix(cobranca.id);
 
     await sb
       .from("faturas")
@@ -277,7 +277,8 @@ export async function emitirCobrancaGateway(faturaId: string): Promise<Resultado
         gateway_cobranca_id: cobranca.id,
         gateway_link: cobranca.invoiceUrl,
         gateway_boleto_url: cobranca.bankSlipUrl ?? null,
-        gateway_pix_copia: pix,
+        gateway_pix_copia: pix.copiaCola,
+        gateway_pix_qrcode: pix.qrcodeBase64,
       })
       .eq("id", fatura.id);
 

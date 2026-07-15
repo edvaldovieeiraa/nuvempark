@@ -14,6 +14,7 @@ import {
   Sparkles,
   Loader2,
   Wallet,
+  QrCode,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { labelAssinaturaEstado } from "@/lib/status-labels";
@@ -427,6 +428,7 @@ function OpcoesPagamento({
   const temAlgum =
     Boolean(fatura.gateway_link) ||
     Boolean(fatura.gateway_pix_copia) ||
+    Boolean(fatura.gateway_pix_qrcode) ||
     Boolean(fatura.gateway_boleto_url);
 
   if (!temAlgum) {
@@ -448,41 +450,80 @@ function OpcoesPagamento({
   function copiarPix() {
     if (!fatura.gateway_pix_copia) return;
     navigator.clipboard.writeText(fatura.gateway_pix_copia);
-    toast.sucesso("Copiado!", "Pix copia-e-cola copiado para a área de transferência.");
+    toast.sucesso("Copiado!", "Código PIX copiado para a área de transferência.");
   }
 
+  const temPix = Boolean(fatura.gateway_pix_qrcode || fatura.gateway_pix_copia);
+
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {fatura.gateway_link && (
-        <a
-          href={fatura.gateway_link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 text-white text-xs font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
-        >
-          <CreditCard className="w-3.5 h-3.5" />
-          Pagar com cartão
-        </a>
+    <div className="mt-3 space-y-3">
+      {/* PIX — QR + copia-e-cola direto na tela */}
+      {temPix && (
+        <div className="rounded-xl border border-borda bg-fundo/50 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-6 h-6 rounded-md bg-brand-50 grid place-items-center">
+              <QrCode className="w-3.5 h-3.5 text-brand-600" />
+            </span>
+            <span className="text-sm font-bold">Pague com PIX</span>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+            {fatura.gateway_pix_qrcode && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`data:image/png;base64,${fatura.gateway_pix_qrcode}`}
+                alt="QR Code para pagamento via PIX"
+                className="w-44 h-44 rounded-lg bg-white p-2 border border-borda shrink-0"
+              />
+            )}
+            <div className="min-w-0 flex-1 w-full">
+              <p className="text-xs text-texto-3 mb-2">
+                Escaneie o QR no app do seu banco ou copie o código abaixo.
+              </p>
+              {fatura.gateway_pix_copia && (
+                <>
+                  <div className="text-[11px] font-mono break-all bg-superficie border border-borda rounded-lg p-2.5 max-h-24 overflow-y-auto text-texto-2 select-all">
+                    {fatura.gateway_pix_copia}
+                  </div>
+                  <button
+                    onClick={copiarPix}
+                    className="mt-2 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-brand-50 border border-brand-200 text-brand-700 text-xs font-bold hover:bg-brand-100 transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    Copiar código PIX
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
-      {fatura.gateway_pix_copia && (
-        <button
-          onClick={copiarPix}
-          className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-brand-50 border border-brand-200 text-brand-700 text-xs font-bold hover:bg-brand-100 transition-colors"
-        >
-          <Copy className="w-3.5 h-3.5" />
-          Copiar Pix copia-e-cola
-        </button>
-      )}
-      {fatura.gateway_boleto_url && (
-        <a
-          href={fatura.gateway_boleto_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-borda text-texto-2 text-xs font-bold hover:bg-fundo transition-colors"
-        >
-          <FileText className="w-3.5 h-3.5" />
-          Ver boleto
-        </a>
+
+      {/* Cartão / boleto — alternativas */}
+      {(fatura.gateway_link || fatura.gateway_boleto_url) && (
+        <div className="flex flex-wrap gap-2">
+          {fatura.gateway_link && (
+            <a
+              href={fatura.gateway_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 text-white text-xs font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              Pagar com cartão
+            </a>
+          )}
+          {fatura.gateway_boleto_url && (
+            <a
+              href={fatura.gateway_boleto_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-borda text-texto-2 text-xs font-bold hover:bg-fundo transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Ver boleto
+            </a>
+          )}
+        </div>
       )}
     </div>
   );

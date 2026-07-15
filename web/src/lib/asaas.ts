@@ -110,14 +110,25 @@ export async function criarCobranca(params: {
   });
 }
 
-/** Busca o PIX copia-e-cola de uma cobrança (endpoint separado no Asaas). */
-export async function obterPixCopiaECola(cobrancaId: string): Promise<string | null> {
+export type PixCobranca = {
+  copiaCola: string | null;
+  /** base64 do PNG do QR (sem o prefixo data:). */
+  qrcodeBase64: string | null;
+};
+
+/**
+ * Busca o PIX de uma cobrança (endpoint separado no Asaas): o copia-e-cola
+ * (`payload`) E a imagem do QR (`encodedImage`, base64 PNG). Assim a tela do
+ * cliente mostra o QR sem depender do link externo do gateway.
+ */
+export async function obterPix(cobrancaId: string): Promise<PixCobranca> {
   try {
-    const r = await req<{ payload?: string }>(`/payments/${cobrancaId}/pixQrCode`, {
-      method: "GET",
-    });
-    return r.payload ?? null;
+    const r = await req<{ payload?: string; encodedImage?: string }>(
+      `/payments/${cobrancaId}/pixQrCode`,
+      { method: "GET" },
+    );
+    return { copiaCola: r.payload ?? null, qrcodeBase64: r.encodedImage ?? null };
   } catch {
-    return null;
+    return { copiaCola: null, qrcodeBase64: null };
   }
 }

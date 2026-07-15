@@ -21,6 +21,7 @@ export type FaturaRow = {
   forma_pagamento: string | null;
   gateway_link: string | null;
   gateway_pix_copia: string | null;
+  gateway_pix_qrcode: string | null;
   gateway_boleto_url: string | null;
 };
 
@@ -47,7 +48,7 @@ export default async function AssinaturaPage() {
     supabase
       .from("faturas")
       .select(
-        "id, competencia, vencimento, valor, estado, pago_em, forma_pagamento, gateway_link, gateway_pix_copia, gateway_boleto_url",
+        "id, competencia, vencimento, valor, estado, pago_em, forma_pagamento, gateway_link, gateway_pix_copia, gateway_pix_qrcode, gateway_boleto_url",
       )
       .order("competencia", { ascending: false }),
   ]);
