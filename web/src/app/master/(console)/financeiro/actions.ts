@@ -238,12 +238,20 @@ export async function emitirCobrancaGateway(faturaId: string): Promise<Resultado
     .eq("tenant_id", fatura.tenant_id)
     .single();
 
+  // O Asaas exige CPF/CNPJ do cliente para emitir a cobrança.
+  const cpf = (assinatura?.cpf_cnpj ?? "").replace(/\D/g, "");
+  if (cpf.length !== 11 && cpf.length !== 14)
+    return {
+      ok: false,
+      msg: "Cadastre um CPF/CNPJ válido da rede em “Dados de cobrança” antes de emitir a cobrança.",
+    };
+
   try {
     const clienteId = await garantirCliente({
       clienteIdExistente: assinatura?.gateway_cliente_id,
       nome: fatura.tenants?.nome ?? "Cliente NuvemPark",
       email: assinatura?.email_cobranca,
-      cpfCnpj: assinatura?.cpf_cnpj,
+      cpfCnpj: cpf,
     });
 
     if (clienteId !== assinatura?.gateway_cliente_id) {

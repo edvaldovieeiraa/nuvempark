@@ -13,8 +13,26 @@ import {
 
 export type ResultadoPagamento =
   | { ok: true; msg: string }
-  | { ok: false; msg: string }
+  | { ok: false; msg: string; precisaCpf?: boolean }
   | null;
+
+/** Extrai a mensagem amigável de um erro do Asaas (errors[].description). */
+function mensagemAsaas(e: unknown): string {
+  const s = String(e);
+  const m = s.match(/\{[\s\S]*\}/);
+  if (m) {
+    try {
+      const j = JSON.parse(m[0]) as {
+        errors?: { description?: string }[];
+      };
+      const d = j.errors?.[0]?.description;
+      if (d) return d;
+    } catch {
+      /* cai no genérico */
+    }
+  }
+  return "Não foi possível gerar o pagamento agora. Tente de novo em instantes.";
+}
 
 type FaturaCobranca = {
   id: string;
@@ -36,6 +54,7 @@ type FaturaCobranca = {
  */
 export async function prepararPagamento(
   faturaId: string | null,
+  cpfCnpjInformado?: string | null,
 ): Promise<ResultadoPagamento> {
   const supa = await createClient();
   const {
@@ -94,6 +113,28 @@ export async function prepararPagamento(
     .eq("tenant_id", tenantId)
     .maybeSingle();
 
+  // O Asaas exige CPF/CNPJ para emitir a cobrança. Usa o informado agora ou o
+  // já salvo; se não houver, pede ao cliente (precisaCpf: true).
+  const cpf = (cpfCnpjInformado ?? assinatura?.cpf_cnpj ?? "").replace(/\D/g, "");
+  if (!cpf)
+    return {
+      ok: false,
+      precisaCpf: true,
+      msg: "Informe seu CPF ou CNPJ para gerar o pagamento.",
+    };
+  if (cpf.length !== 11 && cpf.length !== 14)
+    return {
+      ok: false,
+      precisaCpf: true,
+      msg: "CPF ou CNPJ inválido — confira os números e tente de novo.",
+    };
+
+  // Guarda o CPF/CNPJ na assinatura se veio novo (facilita as próximas).
+  const cpfSalvo = (assinatura?.cpf_cnpj ?? "").replace(/\D/g, "");
+  if (cpf !== cpfSalvo) {
+    await sb.from("assinaturas").update({ cpf_cnpj: cpf }).eq("tenant_id", tenantId);
+  }
+
   const { data: tenant } = await sb
     .from("tenants")
     .select("nome")
@@ -105,7 +146,7 @@ export async function prepararPagamento(
       clienteIdExistente: assinatura?.gateway_cliente_id,
       nome: (tenant as { nome?: string } | null)?.nome ?? "Cliente NuvemPark",
       email: assinatura?.email_cobranca,
-      cpfCnpj: assinatura?.cpf_cnpj,
+      cpfCnpj: cpf,
     });
 
     if (clienteId !== assinatura?.gateway_cliente_id) {
@@ -138,9 +179,6 @@ export async function prepararPagamento(
     revalidatePath("/painel/assinatura");
     return { ok: true, msg: "Pronto! Escolha como pagar: PIX, boleto ou cartão." };
   } catch (e) {
-    return {
-      ok: false,
-      msg: "Não foi possível gerar o pagamento agora. Tente de novo em instantes.",
-    };
+    return { ok: false, msg: mensagemAsaas(e) };
   }
 }

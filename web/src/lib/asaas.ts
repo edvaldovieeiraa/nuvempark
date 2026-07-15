@@ -40,20 +40,43 @@ async function req<T>(caminho: string, init: RequestInit): Promise<T> {
   return resp.json() as Promise<T>;
 }
 
-/** Garante um cliente no Asaas (cria se não houver id). Retorna o id. */
+/**
+ * Garante um cliente no Asaas e que ele tenha CPF/CNPJ.
+ *
+ * O Asaas EXIGE cpfCnpj para emitir cobrança. Um cliente criado antes (sem
+ * cpfCnpj) precisa ser ATUALIZADO — por isso, havendo id existente e cpfCnpj,
+ * fazemos um update no cliente antes de devolver o id. Retorna o id do cliente.
+ */
 export async function garantirCliente(params: {
   clienteIdExistente?: string | null;
   nome: string;
   email?: string | null;
   cpfCnpj?: string | null;
 }): Promise<string> {
-  if (params.clienteIdExistente) return params.clienteIdExistente;
+  const cpf = params.cpfCnpj ? params.cpfCnpj.replace(/\D/g, "") : undefined;
+
+  if (params.clienteIdExistente) {
+    // Sincroniza cpfCnpj/e-mail no cliente já existente (se veio cpfCnpj).
+    // Se o cpfCnpj for inválido, o Asaas devolve 400 e o erro sobe — melhor
+    // do que falhar depois, na criação da cobrança.
+    if (cpf) {
+      await req(`/customers/${params.clienteIdExistente}`, {
+        method: "POST",
+        body: JSON.stringify({
+          cpfCnpj: cpf,
+          email: params.email || undefined,
+        }),
+      });
+    }
+    return params.clienteIdExistente;
+  }
+
   const criado = await req<{ id: string }>("/customers", {
     method: "POST",
     body: JSON.stringify({
       name: params.nome,
       email: params.email || undefined,
-      cpfCnpj: params.cpfCnpj || undefined,
+      cpfCnpj: cpf,
     }),
   });
   return criado.id;

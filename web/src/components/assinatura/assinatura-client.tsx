@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import {
   CreditCard,
@@ -304,18 +304,62 @@ function BotaoGerarPagamento({
 }) {
   const toast = useToast();
   const [pendente, comecar] = useTransition();
+  const [pedirCpf, setPedirCpf] = useState(false);
+  const [cpf, setCpf] = useState("");
 
-  function gerar() {
+  function gerar(cpfArg?: string) {
     comecar(async () => {
-      const r = await prepararPagamento(faturaId);
-      if (r?.ok) toast.sucesso(r.msg);
-      else toast.erro(r?.msg ?? "Não foi possível gerar o pagamento.");
+      const r = await prepararPagamento(faturaId, cpfArg);
+      if (r?.ok) {
+        toast.sucesso(r.msg);
+        setPedirCpf(false);
+      } else if (r?.precisaCpf) {
+        // Pede o CPF/CNPJ e, se já tinha tentado com um valor, mostra o motivo.
+        setPedirCpf(true);
+        if (cpfArg) toast.erro(r.msg);
+      } else {
+        toast.erro(r?.msg ?? "Não foi possível gerar o pagamento.");
+      }
     });
+  }
+
+  const digitos = cpf.replace(/\D/g, "").length;
+
+  if (pedirCpf) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-semibold text-texto-2">
+          Informe o CPF ou CNPJ do responsável pela assinatura para gerar a
+          cobrança:
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            value={cpf}
+            onChange={(e) => setCpf(e.target.value)}
+            inputMode="numeric"
+            placeholder="CPF ou CNPJ"
+            className="h-9 px-3 rounded-lg border border-borda bg-superficie text-sm tabular-nums focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10 max-w-[220px]"
+          />
+          <button
+            onClick={() => gerar(cpf)}
+            disabled={pendente || (digitos !== 11 && digitos !== 14)}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 text-white text-xs font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all disabled:opacity-60"
+          >
+            {pendente ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Wallet className="w-3.5 h-3.5" />
+            )}
+            {pendente ? "Gerando…" : "Confirmar e gerar"}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <button
-      onClick={gerar}
+      onClick={() => gerar()}
       disabled={pendente}
       className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 text-white text-xs font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all disabled:opacity-60"
     >
