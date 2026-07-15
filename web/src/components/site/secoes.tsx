@@ -28,6 +28,10 @@ export const WHATSAPP =
 
 /* =========================================================
    FAIXA DE NÚMEROS (credibilidade)
+   Painel de instrumentos da torre de controle: prolonga a
+   noite do hero (sem corte escuro→claro na primeira dobra),
+   valores esmeralda tabulares e divisórias finas — a leitura
+   dos mostradores antes de acender as luzes do site claro.
    ========================================================= */
 export function Numeros() {
   const itens = [
@@ -37,14 +41,27 @@ export function Numeros() {
     { valor: "1 painel", rotulo: "para enxergar todos os seus pátios ao vivo" },
   ];
   return (
-    <section className="border-y border-borda bg-fundo">
-      <div className="mx-auto max-w-6xl px-5 py-10 grid grid-cols-2 lg:grid-cols-4 gap-6">
+    <section className="relative overflow-hidden bg-noite border-t border-white/8">
+      {/* mesma grade técnica do hero, bem sutil */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+        }}
+      />
+      <div className="relative mx-auto max-w-6xl px-5 py-12 grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
         {itens.map((n, i) => (
-          <Reveal key={n.rotulo} delay={i * 0.08} className="text-center">
-            <div className="text-3xl sm:text-4xl font-black text-brand-700 tabular-nums">
+          <Reveal
+            key={n.rotulo}
+            delay={i * 0.08}
+            className="text-center lg:px-4 lg:border-l lg:border-white/10 lg:first:border-l-0"
+          >
+            <div className="text-3xl sm:text-4xl font-black text-brand-400 tabular-nums">
               {n.valor}
             </div>
-            <div className="mt-1 text-xs sm:text-sm text-texto-2 font-medium">
+            <div className="mt-1.5 text-xs sm:text-sm text-white/65 font-medium">
               {n.rotulo}
             </div>
           </Reveal>
@@ -382,36 +399,47 @@ export function Precos() {
 
         <Reveal delay={0.1} className="mt-14 max-w-3xl mx-auto">
           <div className="relative rounded-3xl bg-white border border-borda shadow-[var(--shadow-card-hover)] overflow-hidden">
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-600 via-ceu to-violeta" />
             <div className="grid md:grid-cols-2">
-              {/* Preço */}
-              <div className="p-8 sm:p-10 flex flex-col justify-center">
-                <span className="inline-flex w-fit items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-brand-700 bg-brand-50 border border-brand-200 px-3 py-1 rounded-full">
-                  15 dias grátis, depois:
-                </span>
-                <div className="mt-5 flex items-end gap-2">
-                  <span className="text-5xl sm:text-6xl font-black tabular-nums text-texto">
-                    R$ 129<span className="text-3xl sm:text-4xl">,90</span>
+              {/* Preço — a janela acesa no escuro: mesma cena do hero,
+                  invertida (a noite entra no card claro e o valor é a luz) */}
+              <div className="relative overflow-hidden p-8 sm:p-10 flex flex-col justify-center bg-noite">
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-[0.05]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)",
+                    backgroundSize: "40px 40px",
+                  }}
+                />
+                <div className="pointer-events-none absolute -top-20 -right-16 w-72 h-72 rounded-full bg-brand-500/15 blur-3xl" />
+                <div className="relative">
+                  <span className="inline-flex w-fit items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-brand-300 bg-brand-500/10 border border-brand-400/25 px-3 py-1 rounded-full">
+                    15 dias grátis, depois:
                   </span>
+                  <div className="mt-5 flex items-end gap-2">
+                    <span className="text-5xl sm:text-6xl font-black tabular-nums text-white">
+                      R$ 129<span className="text-3xl sm:text-4xl">,90</span>
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm font-semibold text-white/60">
+                    por mês, por pátio — tudo incluso
+                  </p>
+                  <p className="mt-5 text-sm text-white/70 leading-relaxed">
+                    Menos do que um único cliente deixa no seu caixa por dia.
+                    Adicione ou remova pátios quando quiser — o valor acompanha.
+                  </p>
+                  <a
+                    href={urlApp("/cadastro")}
+                    className="mt-7 inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
+                  >
+                    Começar grátis agora
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                  <p className="mt-3 text-[11px] text-white/55">
+                    Sem cartão para testar. Só cobramos se você decidir continuar —
+                    e cancela quando quiser, sem multa.
+                  </p>
                 </div>
-                <p className="mt-1 text-sm font-semibold text-texto-3">
-                  por mês, por pátio — tudo incluso
-                </p>
-                <p className="mt-5 text-sm text-texto-2 leading-relaxed">
-                  Menos do que um único cliente deixa no seu caixa por dia.
-                  Adicione ou remova pátios quando quiser — o valor acompanha.
-                </p>
-                <a
-                  href={urlApp("/cadastro")}
-                  className="mt-7 inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
-                >
-                  Começar grátis agora
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-                <p className="mt-3 text-[11px] text-texto-3">
-                  Sem cartão para testar. Só cobramos se você decidir continuar —
-                  e cancela quando quiser, sem multa.
-                </p>
               </div>
 
               {/* Recursos */}
@@ -465,47 +493,65 @@ export function Garantias() {
 }
 
 /* =========================================================
-   CTA FINAL
+   CTA FINAL — a noite fecha a página como abriu (bookend do
+   hero): palco escuro, grade técnica, esmeralda como a luz
+   do dinheiro. O convite final acontece na torre de controle.
    ========================================================= */
 export function CtaFinal() {
   return (
     <section id="cta" className="py-24 bg-white">
       <div className="mx-auto max-w-5xl px-5">
         <Reveal>
-          <div className="relative overflow-hidden rounded-3xl border border-borda fundo-mesh p-10 sm:p-16 text-center shadow-[var(--shadow-card-hover)]">
-            <div className="pointer-events-none absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-600 via-ceu to-violeta" />
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-texto">
-              Quanto o seu pátio
-              <br className="hidden sm:block" />{" "}
-              <span className="texto-brand-gradiente">faturou hoje?</span>
-            </h2>
-            <p className="mt-4 text-texto-2 max-w-xl mx-auto leading-relaxed">
-              Se a resposta foi &ldquo;preciso perguntar ao operador&rdquo;, você
-              já tem um bom motivo para testar. Crie sua conta agora e comece a
-              enxergar o faturamento em tempo real{" "}
-              <b className="text-texto">hoje mesmo</b> — grátis por 15 dias, sem
-              cartão.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <a
-                href={urlApp("/cadastro")}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
-              >
-                Criar minha conta grátis
-                <ArrowRight className="w-4 h-4" />
-              </a>
-              <a
-                href={WHATSAPP}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center h-12 px-8 rounded-xl border border-borda bg-white text-texto font-bold hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50 transition-all"
-              >
-                Tirar dúvidas no WhatsApp
-              </a>
+          <div className="relative overflow-hidden rounded-3xl bg-noite p-10 sm:p-16 text-center shadow-[0_32px_80px_-24px_rgba(11,21,18,0.45)]">
+            {/* céu do pátio + grade técnica, iguais ao hero */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-noite via-noite-2 to-noite" />
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.05]"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)",
+                backgroundSize: "44px 44px",
+                maskImage:
+                  "radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 80%)",
+              }}
+            />
+            <div className="pointer-events-none absolute -top-24 -left-16 w-80 h-80 rounded-full bg-brand-500/12 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -right-16 w-72 h-72 rounded-full bg-acento/10 blur-3xl" />
+
+            <div className="relative">
+              <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
+                Quanto o seu pátio
+                <br className="hidden sm:block" />{" "}
+                <span className="text-brand-400">faturou hoje?</span>
+              </h2>
+              <p className="mt-4 text-white/70 max-w-xl mx-auto leading-relaxed">
+                Se a resposta foi &ldquo;preciso perguntar ao operador&rdquo;, você
+                já tem um bom motivo para testar. Crie sua conta agora e comece a
+                enxergar o faturamento em tempo real{" "}
+                <b className="text-white">hoje mesmo</b> — grátis por 15 dias, sem
+                cartão.
+              </p>
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <a
+                  href={urlApp("/cadastro")}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
+                >
+                  Criar minha conta grátis
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+                <a
+                  href={WHATSAPP}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto inline-flex items-center justify-center h-12 px-8 rounded-xl border border-white/15 bg-white/[0.03] text-white/85 font-bold hover:border-white/30 hover:text-white hover:bg-white/[0.07] transition-all"
+                >
+                  Tirar dúvidas no WhatsApp
+                </a>
+              </div>
+              <p className="mt-4 text-xs text-white/55">
+                Leva 1 minuto. Você mesmo cria a conta — sem espera, sem vendedor.
+              </p>
             </div>
-            <p className="mt-4 text-xs text-texto-3">
-              Leva 1 minuto. Você mesmo cria a conta — sem espera, sem vendedor.
-            </p>
           </div>
         </Reveal>
       </div>
