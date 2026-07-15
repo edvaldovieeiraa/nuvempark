@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Search, Inbox } from "lucide-react";
 import { SyncBadge } from "@/components/sync-badge";
 import { labelTicketStatus } from "@/lib/status-labels";
+import { formatarDataHora } from "@/lib/format-data";
 import { FotoVeiculoModal } from "@/components/foto-veiculo/foto-veiculo-modal";
 import { FotoVeiculoThumb } from "@/components/foto-veiculo/foto-veiculo-thumb";
 import { Operador } from "@/components/operador";
@@ -226,11 +227,11 @@ export function MovimentosClient({
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-texto-2 tabular-nums">
-                      {dataHora(t.entrada)}
+                    <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                      {formatarDataHora(t.entrada)}
                     </td>
-                    <td className="px-5 py-3 text-texto-2 tabular-nums">
-                      {t.saida ? dataHora(t.saida) : "—"}
+                    <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                      {formatarDataHora(t.saida)}
                     </td>
                     <td className="px-5 py-3 text-texto-2 tabular-nums">
                       {permanencia(t.entrada, t.saida)}
@@ -279,15 +280,6 @@ export function MovimentosClient({
       </AnimatePresence>
     </div>
   );
-}
-
-function dataHora(iso: string) {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function permanencia(entrada: string, saida: string | null) {

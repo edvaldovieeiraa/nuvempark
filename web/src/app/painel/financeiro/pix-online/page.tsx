@@ -4,21 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { resolverPatio } from "@/lib/patio-scope";
 import { SemPatio } from "@/components/sem-patio";
 import { Revelar } from "@/components/ui/revelar";
+import { formatarDataHora } from "@/lib/format-data";
 
 export const dynamic = "force-dynamic";
 
 const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
-});
-
-const dataHora = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: "America/Sao_Paulo",
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
 });
 
 type Pagamento = {
@@ -134,11 +126,11 @@ export default async function PixOnlinePage({
                             {placas[p.ticket_id] ?? "—"}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-texto-2 tabular-nums">
-                          {dataHora.format(new Date(p.criado_em))}
+                        <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                          {formatarDataHora(p.criado_em)}
                         </td>
-                        <td className="px-5 py-3 text-texto-2 tabular-nums">
-                          {p.pago_em ? dataHora.format(new Date(p.pago_em)) : "—"}
+                        <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                          {formatarDataHora(p.pago_em)}
                         </td>
                         <td className="px-5 py-3">
                           <span

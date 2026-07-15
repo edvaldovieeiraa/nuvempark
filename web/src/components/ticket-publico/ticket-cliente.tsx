@@ -14,6 +14,7 @@ import {
 
 import { Marca } from "@/components/marca";
 import { API_PUBLICA } from "@/lib/api-publica";
+import { formatarDataHora } from "@/lib/format-data";
 
 export type StatusPagamento = "nao_pago" | "pago" | "pago_diferenca_pendente";
 
@@ -40,13 +41,6 @@ interface Cobranca {
 const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
-});
-
-/** Fuso fixo: o servidor roda em UTC e o celular do cliente, em BRT. */
-const hora = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: "America/Sao_Paulo",
-  hour: "2-digit",
-  minute: "2-digit",
 });
 
 /**
@@ -153,8 +147,8 @@ export function TicketPublicoClient({
             <span className="font-black tracking-widest text-lg">
               {dados.placa_mascarada}
             </span>
-            <span className="text-xs text-texto-3">
-              entrada {hora.format(new Date(dados.entrada))}
+            <span className="text-xs text-texto-3 whitespace-nowrap">
+              entrada {formatarDataHora(dados.entrada)}
             </span>
           </div>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-texto-2">
@@ -388,10 +382,10 @@ function TicketDigital({
 
       <div className="rounded-xl bg-fundo border border-borda divide-y divide-borda">
         <Linha rotulo="Valor pago" valor={moeda.format(pago.valor)} />
-        <Linha rotulo="Pago às" valor={hora.format(new Date(pago.pago_em))} />
+        <Linha rotulo="Pago às" valor={formatarDataHora(pago.pago_em)} />
         <Linha
           rotulo="Válido para saída até"
-          valor={hora.format(new Date(pago.carencia_ate))}
+          valor={formatarDataHora(pago.carencia_ate)}
           destaque
         />
       </div>

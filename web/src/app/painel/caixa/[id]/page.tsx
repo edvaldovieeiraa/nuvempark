@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { labelCaixaStatus, labelCaixaTipo } from "@/lib/status-labels";
+import { formatarDataHora } from "@/lib/format-data";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Revelar } from "@/components/ui/revelar";
@@ -71,8 +72,8 @@ export default async function CaixaDetalhePage({
               Sessão de {sessao.operador_nome ?? "operador"}
             </h1>
             <p className="text-sm text-texto-2 tabular-nums">
-              Abertura {dataHora(sessao.abertura)}
-              {sessao.fechamento && ` · Fechamento ${dataHora(sessao.fechamento)}`}
+              Abertura {formatarDataHora(sessao.abertura)}
+              {sessao.fechamento && ` · Fechamento ${formatarDataHora(sessao.fechamento)}`}
             </p>
           </div>
           <span
@@ -175,7 +176,7 @@ export default async function CaixaDetalhePage({
                       {moeda.format(Number(m.valor) || 0)}
                     </p>
                     <p className="text-[11px] text-texto-3 tabular-nums">
-                      {dataHora(m.criado_em)}
+                      {formatarDataHora(m.criado_em)}
                     </p>
                   </div>
                 </li>
@@ -245,13 +246,4 @@ function IconeTipo({ tipo }: { tipo: string }) {
       <ArrowDownToLine className="w-4 h-4 text-brand-600" />
     </span>
   );
-}
-
-function dataHora(iso: string) {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }

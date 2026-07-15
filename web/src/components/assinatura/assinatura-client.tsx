@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { labelAssinaturaEstado } from "@/lib/status-labels";
+import { formatarData, formatarDataHora } from "@/lib/format-data";
 import type { FaturaRow } from "@/app/painel/assinatura/page";
 
 type Assinatura = {
@@ -49,9 +50,6 @@ function competenciaLabel(comp: string): string {
     month: "long",
     year: "numeric",
   });
-}
-function dataBR(iso: string): string {
-  return new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR");
 }
 
 export function AssinaturaClient({
@@ -151,7 +149,7 @@ export function AssinaturaClient({
                   {competenciaLabel(f.competencia)}
                 </p>
                 <p className="text-xs text-texto-3 mt-0.5">
-                  Vencimento {dataBR(f.vencimento)}
+                  Vencimento {formatarData(f.vencimento)}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -192,7 +190,7 @@ export function AssinaturaClient({
                   {competenciaLabel(f.competencia)}
                 </p>
                 <p className="text-xs text-texto-3 mt-0.5">
-                  {f.pago_em ? `Pago em ${dataBR(f.pago_em)}` : "Pago"}
+                  {f.pago_em ? `Pago em ${formatarDataHora(f.pago_em)}` : "Pago"}
                   {f.forma_pagamento
                     ? ` · ${FORMAS[f.forma_pagamento] ?? f.forma_pagamento}`
                     : ""}

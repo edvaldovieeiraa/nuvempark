@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, History, ChevronRight, Building2 } from "lucide-react";
+import { formatarDataHora } from "@/lib/format-data";
 
 export type AuditRow = {
   id: string;
@@ -47,15 +48,6 @@ function inicioDiaIso(dia: string): string {
 }
 function fimDiaIso(dia: string): string {
   return dia ? new Date(`${dia}T23:59:59.999`).toISOString() : "";
-}
-function dataHora(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 export function HistoricoClient({
@@ -263,8 +255,8 @@ export function HistoricoClient({
                     </div>
 
                     <div className="shrink-0 text-right">
-                      <div className="text-xs font-semibold text-texto-2 tabular-nums">
-                        {dataHora(l.criado_em)}
+                      <div className="text-xs font-semibold text-texto-2 tabular-nums whitespace-nowrap">
+                        {formatarDataHora(l.criado_em)}
                       </div>
                       <div className="text-[11px] text-texto-2 truncate max-w-[200px]">
                         {l.usuario_nome ?? l.usuario_email ?? "—"}

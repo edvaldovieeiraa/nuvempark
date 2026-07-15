@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { formatarDataHora } from "@/lib/format-data";
 import { labelTicketStatus } from "@/lib/status-labels";
 import { useToast } from "@/components/ui/toast";
 import { SyncBadge } from "@/components/sync-badge";
@@ -305,13 +306,8 @@ export function DashboardLive({ inicial }: { inicial: Inicial }) {
                       <td className="px-5 py-3 text-texto-2 capitalize">
                         {t.tipo_veiculo}
                       </td>
-                      <td className="px-5 py-3 text-texto-2 tabular-nums">
-                        {new Date(t.entrada).toLocaleString("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                      <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                        {formatarDataHora(t.entrada)}
                       </td>
                       <td className="px-5 py-3">
                         <StatusChip status={t.status} />

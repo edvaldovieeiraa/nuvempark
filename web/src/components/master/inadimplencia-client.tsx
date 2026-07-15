@@ -19,6 +19,7 @@ import {
 } from "@/app/master/(console)/financeiro/actions";
 import { useToast } from "@/components/ui/toast";
 import { moeda, diasEmAtraso, competenciaCurta } from "@/lib/financeiro";
+import { formatarData } from "@/lib/format-data";
 
 export type RedeVencida = {
   tenantId: string;
@@ -227,8 +228,8 @@ function CartaoRede({
                   <span className="font-semibold capitalize">
                     {competenciaCurta(f.competencia)}
                   </span>
-                  <span className="text-xs text-texto-3">
-                    vence {new Date(f.vencimento + "T00:00:00").toLocaleDateString("pt-BR")}
+                  <span className="text-xs text-texto-3 whitespace-nowrap">
+                    vence {formatarData(f.vencimento)}
                   </span>
                   <span className="ml-auto font-bold tabular-nums">
                     {moeda.format(f.valor)}

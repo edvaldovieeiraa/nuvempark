@@ -19,6 +19,7 @@ import {
 } from "@/app/painel/configuracoes/actions";
 import { soDigitos, formatarCnpj, cnpjValido } from "@/lib/cnpj";
 import { labelAssinaturaEstado } from "@/lib/status-labels";
+import { formatarData, formatarDataHora } from "@/lib/format-data";
 import { useToast } from "@/components/ui/toast";
 import { Confirmar } from "@/components/ui/confirmar";
 
@@ -188,9 +189,7 @@ export function ConfiguracoesClient({
               <dt className="text-texto-2">Próximo vencimento</dt>
               <dd className="font-bold tabular-nums">
                 {assinatura?.vencimento
-                  ? new Date(
-                      assinatura.vencimento + "T12:00:00",
-                    ).toLocaleDateString("pt-BR")
+                  ? formatarData(assinatura.vencimento)
                   : "—"}
               </dd>
             </div>
@@ -251,7 +250,7 @@ export function ConfiguracoesClient({
                   <p className="text-xs text-texto-3 font-mono truncate">
                     {d.device_uuid}
                     {d.ultimo_acesso &&
-                      ` · visto ${new Date(d.ultimo_acesso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`}
+                      ` · visto ${formatarDataHora(d.ultimo_acesso)}`}
                   </p>
                 </div>
                 <BotaoDispositivo dispositivo={d} />

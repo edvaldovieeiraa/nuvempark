@@ -40,6 +40,7 @@ import {
   diasAteVencimento,
   formatarVencimentoBR,
 } from "@/lib/vencimento";
+import { formatarDataHora } from "@/lib/format-data";
 import { useToast } from "@/components/ui/toast";
 import { Confirmar } from "@/components/ui/confirmar";
 
@@ -847,7 +848,7 @@ function PagamentoLinha({
       </div>
 
       <p className="text-[11px] text-texto-3 mt-1">
-        Pago em {new Date(pagamento.pago_em).toLocaleDateString("pt-BR")}
+        Pago em {formatarDataHora(pagamento.pago_em)}
         {pagamento.registrado_por_nome
           ? ` · por ${pagamento.registrado_por_nome}`
           : ""}

@@ -31,6 +31,7 @@ import {
   ESTADO_FATURA,
   type EstadoFatura,
 } from "@/lib/financeiro";
+import { formatarData } from "@/lib/format-data";
 
 export type FaturaRow = {
   id: string;
@@ -217,7 +218,7 @@ function LinhaFatura({
     });
   }
 
-  const venc = new Date(f.vencimento + "T00:00:00").toLocaleDateString("pt-BR");
+  const venc = formatarData(f.vencimento);
 
   return (
     <div

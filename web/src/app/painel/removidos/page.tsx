@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { formatarDataHora } from "@/lib/format-data";
 import { labelTicketStatus } from "@/lib/status-labels";
 import { resolverPatio } from "@/lib/patio-scope";
 import { Revelar } from "@/components/ui/revelar";
@@ -102,11 +103,11 @@ export default async function RemovidosPage({
                             {t.tipo_veiculo}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-texto-2 tabular-nums">
-                          {dataHora(t.entrada)}
+                        <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                          {formatarDataHora(t.entrada)}
                         </td>
-                        <td className="px-5 py-3 text-texto-2 tabular-nums">
-                          {t.removido_em ? dataHora(t.removido_em) : "—"}
+                        <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                          {formatarDataHora(t.removido_em)}
                         </td>
                         <td className="px-5 py-3 text-texto-2">
                           <span className="block">
@@ -149,14 +150,4 @@ export default async function RemovidosPage({
       </Revelar>
     </div>
   );
-}
-
-function dataHora(iso: string) {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }

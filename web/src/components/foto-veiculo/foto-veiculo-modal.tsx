@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { X, AlertTriangle, Loader2 } from "lucide-react";
 
 import { Marca } from "@/components/marca";
+import { formatarDataHora } from "@/lib/format-data";
 import { detalheTicket, type DetalheTicket } from "./actions";
 
 /** O mínimo que o modal precisa saber do ticket. */
@@ -83,7 +84,7 @@ export function FotoVeiculoModal({
               {ticket.placa}
             </h3>
             <p className="text-xs text-texto-2 capitalize">
-              {ticket.tipo_veiculo} · entrada {dataHora(ticket.entrada)}
+              {ticket.tipo_veiculo} · entrada {formatarDataHora(ticket.entrada)}
             </p>
           </div>
           <button
@@ -170,13 +171,4 @@ export function FotoVeiculoModal({
       </motion.div>
     </motion.div>
   );
-}
-
-function dataHora(iso: string) {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sessaoMasterAtiva } from "@/lib/master-auth";
 import { ReciboPrint } from "@/components/master/recibo-print";
 import { moeda, formatarCompetencia } from "@/lib/financeiro";
+import { formatarDataHora } from "@/lib/format-data";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +41,7 @@ export default async function ReciboPage({
   const f = data as unknown as RawFatura | null;
   if (!f) notFound();
 
-  const pagoEm = f.pago_em
-    ? new Date(f.pago_em).toLocaleDateString("pt-BR")
-    : null;
+  const pagoEm = f.pago_em ? formatarDataHora(f.pago_em) : null;
 
   return (
     <ReciboPrint

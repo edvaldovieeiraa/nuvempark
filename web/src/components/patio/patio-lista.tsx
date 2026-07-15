@@ -7,6 +7,7 @@ import { ParkingSquare } from "lucide-react";
 import { FotoVeiculoModal } from "@/components/foto-veiculo/foto-veiculo-modal";
 import { FotoVeiculoThumb } from "@/components/foto-veiculo/foto-veiculo-thumb";
 import { Operador } from "@/components/operador";
+import { formatarDataHora } from "@/lib/format-data";
 
 type Veiculo = {
   id: string;
@@ -94,8 +95,8 @@ export function PatioLista({
                   <td className="px-5 py-3 text-texto-2 capitalize">
                     {t.tipo_veiculo}
                   </td>
-                  <td className="px-5 py-3 text-texto-2 tabular-nums">
-                    {dataHora(t.entrada)}
+                  <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                    {formatarDataHora(t.entrada)}
                   </td>
                   <td className="px-5 py-3 text-texto-2">
                     <Operador nome={operadores[t.operador_id ?? ""]} />
@@ -121,15 +122,6 @@ export function PatioLista({
       </AnimatePresence>
     </>
   );
-}
-
-function dataHora(iso: string) {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function permanencia(entrada: string) {

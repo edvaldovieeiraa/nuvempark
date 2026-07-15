@@ -15,6 +15,7 @@ import {
   type OperadorLite,
 } from "@/app/painel/financeiro/prestacao/actions";
 import { gerarPdf, type RelatorioDados } from "./relatorio-pdf";
+import { formatarData, formatarDataHora } from "@/lib/format-data";
 
 const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -39,7 +40,7 @@ function ymd(d: Date) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 function fmtBr(dia: string) {
-  return dia ? new Date(`${dia}T12:00:00`).toLocaleDateString("pt-BR") : "";
+  return dia ? formatarData(dia) : "";
 }
 function inicioIso(dia: string) {
   return new Date(`${dia}T00:00:00`).toISOString();
@@ -130,7 +131,7 @@ export function PrestacaoClient({
         periodo: `${fmtBr(inicio)} a ${fmtBr(fim)}`,
         operador: opNome,
         geradoPor,
-        geradoEm: new Date().toLocaleString("pt-BR"),
+        geradoEm: formatarDataHora(new Date()),
       },
     };
 
@@ -399,7 +400,7 @@ function Relatorio({ dados }: { dados: RelatorioDados }) {
             <Tabela
               head={["Fechamento", "Operador", "Fundo", "Entradas", "Sangrias", "Esperado", "Contado", "Diverg."]}
               rows={dados.movimentos.sessoes.map((s) => [
-                s.fechamento ? new Date(s.fechamento).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—",
+                formatarDataHora(s.fechamento),
                 s.operador_nome ?? "—",
                 moeda.format(s.fundo),
                 moeda.format(s.entradas),
@@ -476,7 +477,7 @@ function Relatorio({ dados }: { dados: RelatorioDados }) {
             <Tabela
               head={["Quando", "Descrição", "Valor"]}
               rows={dados.despesas.itens.map((i) => [
-                i.quando ? new Date(i.quando).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—",
+                formatarDataHora(i.quando),
                 i.descricao,
                 moeda.format(i.valor),
               ])}
@@ -574,7 +575,7 @@ function Tabela({ head, rows }: { head: string[]; rows: string[][] }) {
               {r.map((c, ci) => (
                 <td
                   key={ci}
-                  className={`px-4 py-2 tabular-nums ${ci === 0 ? "font-semibold" : "text-right text-texto-2"}`}
+                  className={`px-4 py-2 tabular-nums ${ci === 0 ? "font-semibold whitespace-nowrap" : "text-right text-texto-2"}`}
                 >
                   {c}
                 </td>

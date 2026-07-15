@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { labelCaixaStatus } from "@/lib/status-labels";
+import { formatarDataHora } from "@/lib/format-data";
 import { createClient } from "@/lib/supabase/server";
 import { resolverPatio } from "@/lib/patio-scope";
 import { Revelar } from "@/components/ui/revelar";
@@ -85,11 +86,11 @@ export default async function CaixaPage({
                       <td className="px-5 py-3.5 font-bold">
                         {s.operador_nome ?? "—"}
                       </td>
-                      <td className="px-5 py-3.5 text-texto-2 tabular-nums">
-                        {dataHora(s.abertura)}
+                      <td className="px-5 py-3.5 text-texto-2 tabular-nums whitespace-nowrap">
+                        {formatarDataHora(s.abertura)}
                       </td>
-                      <td className="px-5 py-3.5 text-texto-2 tabular-nums">
-                        {s.fechamento ? dataHora(s.fechamento) : "—"}
+                      <td className="px-5 py-3.5 text-texto-2 tabular-nums whitespace-nowrap">
+                        {formatarDataHora(s.fechamento)}
                       </td>
                       <td className="px-5 py-3.5 text-right tabular-nums">
                         {moeda.format(Number(s.fundo_caixa) || 0)}
@@ -145,13 +146,4 @@ export default async function CaixaPage({
       )}
     </div>
   );
-}
-
-function dataHora(iso: string) {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }

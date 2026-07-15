@@ -1,5 +1,6 @@
 import "server-only";
 import { moeda, formatarCompetencia } from "./financeiro";
+import { formatarData } from "./format-data";
 
 // ============================================================================
 // Design system de e-mail (HTML compatível com Gmail/Outlook/Apple Mail).
@@ -167,7 +168,7 @@ export function emailCobranca(params: {
   pixCopiaECola?: string | null;
 }): { assunto: string; html: string } {
   const comp = formatarCompetencia(params.competencia);
-  const venc = new Date(params.vencimento + "T00:00:00").toLocaleDateString("pt-BR");
+  const venc = formatarData(params.vencimento);
   const assunto = `Fatura de ${comp} — ${moeda.format(params.valor)} · NuvemPark`;
 
   const botao = params.linkPagamento

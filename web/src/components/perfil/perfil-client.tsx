@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { UserRound, Building2, KeyRound, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { formatarDataHora } from "@/lib/format-data";
 import { useToast } from "@/components/ui/toast";
 import { Campo, Input } from "@/components/ui/campos";
 
@@ -81,8 +82,7 @@ export function PerfilClient({
             <p className="text-xs text-texto-3 flex items-center gap-1.5">
               <UserRound className="w-3.5 h-3.5" />
               Gestor da rede
-              {criadoEm &&
-                ` · conta criada em ${new Date(criadoEm).toLocaleDateString("pt-BR")}`}
+              {criadoEm && ` · conta criada em ${formatarDataHora(criadoEm)}`}
             </p>
           </div>
         </div>

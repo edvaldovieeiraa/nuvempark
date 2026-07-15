@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RefreshCw, CloudOff } from "lucide-react";
+import { formatarDataHora } from "@/lib/format-data";
 
 /**
  * Selo de "última sincronização com o pátio". Mostra o tempo relativo
@@ -39,7 +40,7 @@ export function SyncBadge({ iso }: { iso: string | null }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${cls}`}
-      title={`Última sincronização: ${data.toLocaleString("pt-BR")}`}
+      title={`Última sincronização: ${formatarDataHora(iso)}`}
     >
       <RefreshCw className="w-3.5 h-3.5" />
       Sincronizado {relativo(minutos)}

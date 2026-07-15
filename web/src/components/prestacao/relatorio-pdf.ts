@@ -7,6 +7,7 @@ import type {
   FormasResumo,
   TotalizadorResumo,
 } from "@/app/painel/financeiro/prestacao/actions";
+import { formatarDataHora } from "@/lib/format-data";
 
 const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -99,7 +100,7 @@ export async function gerarPdf(
       "1. Resumo dos movimentos",
       [["Fechamento", "Operador", "Fundo", "Entradas", "Sangrias", "Esperado", "Contado", "Diverg."]],
       m.sessoes.map((s) => [
-        s.fechamento ? new Date(s.fechamento).toLocaleString("pt-BR") : "—",
+        formatarDataHora(s.fechamento),
         s.operador_nome ?? "—",
         moeda.format(s.fundo),
         moeda.format(s.entradas),
@@ -163,7 +164,7 @@ export async function gerarPdf(
       "5. Despesas (sangrias)",
       [["Quando", "Descrição", "Valor"]],
       dd.itens.map((i) => [
-        i.quando ? new Date(i.quando).toLocaleString("pt-BR") : "—",
+        formatarDataHora(i.quando),
         i.descricao,
         moeda.format(i.valor),
       ]),

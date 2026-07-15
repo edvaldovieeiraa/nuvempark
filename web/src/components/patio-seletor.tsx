@@ -5,6 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ParkingSquare, ChevronsUpDown, Check, RefreshCw } from "lucide-react";
 
+import { formatarDataHora } from "@/lib/format-data";
+
 type Patio = { id: string; nome: string; codigo_acesso?: string | null };
 
 /**
@@ -123,21 +125,6 @@ export function PatioSeletor({
 }
 
 /**
- * Fuso FIXO de propósito. Sem `timeZone`, o servidor (UTC na VPS) e o navegador
- * do gestor (Brasília) formatariam horas diferentes para o mesmo instante: o
- * HTML divergiria na hidratação e o gestor veria 3h a mais. Fixando aqui, os
- * dois lados produzem o mesmo texto — e é a hora que ele espera ver.
- */
-const formatoData = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: "America/Sao_Paulo",
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-/**
  * Data exata da última vez que o app deste pátio mandou dados para a nuvem.
  * Discreta de propósito: é um sinal de saúde, não uma ação.
  */
@@ -154,7 +141,7 @@ function UltimaSincronizacao({ iso }: { iso?: string }) {
       <RefreshCw className="w-2.5 h-2.5 shrink-0" aria-hidden="true" />
       <span className="truncate">
         {iso
-          ? `Sincronizado ${formatoData.format(new Date(iso))}`
+          ? `Sincronizado ${formatarDataHora(iso)}`
           : "Nunca sincronizou"}
       </span>
     </p>
