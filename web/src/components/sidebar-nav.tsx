@@ -27,6 +27,7 @@ import {
   Layers,
   CarFront,
   SlidersHorizontal,
+  Settings2,
   Printer,
   History,
   Gauge,
@@ -97,6 +98,7 @@ const ITENS: Item[] = [
     porPatio: true,
     filhos: [
       { href: "/painel/configuracoes", label: "Geral", Icone: SlidersHorizontal },
+      { href: "/painel/parametrizacao", label: "Parametrização", Icone: Settings2 },
       { href: "/painel/patios", label: "Pátios", Icone: Building2 },
       { href: "/painel/impressao", label: "Impressão", Icone: Printer },
       { href: "/painel/historico", label: "Histórico de alterações", Icone: History },
