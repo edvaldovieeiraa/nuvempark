@@ -30,7 +30,9 @@ import {
  *  - Todo caminho de recusa devolve o MESMO 404 genérico. Ticket inexistente,
  *    já fechado, pátio inativo e tenant suspenso são indistinguíveis de fora —
  *    senão o 404-vs-403 vira um oráculo de "este ticket existe".
- *  - A placa nunca sai inteira (ABC**23): ter o link não prova ser o dono.
+ *  - A placa é exibida INTEIRA (decisão do produto): quem tem o link tem o
+ *    cupom físico do próprio carro e precisa confirmar que é o dele. A
+ *    descrição da cobrança Pix (extrato do banco) continua mascarada.
  *  - O id é validado como UUID ANTES de tocar o banco.
  *  - Rate limit no grupo (ver server.ts).
  */
@@ -73,7 +75,7 @@ export async function publicoRoutes(app: FastifyInstance): Promise<void> {
     if (!r) return naoEncontrado(reply);
 
     return reply.send({
-      placa_mascarada: mascararPlaca(r.ticket.placa),
+      placa: r.ticket.placa,
       entrada: r.ticket.entrada,
       agora: r.agora.toISOString(), // relógio do servidor: o do celular pode estar errado
       patio_nome: r.ticket.patio_nome,

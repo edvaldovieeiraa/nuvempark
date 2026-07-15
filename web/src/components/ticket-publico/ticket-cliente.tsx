@@ -19,7 +19,7 @@ import { formatarDataHora } from "@/lib/format-data";
 export type StatusPagamento = "nao_pago" | "pago" | "pago_diferenca_pendente";
 
 export interface TicketPublicoDados {
-  placa_mascarada: string;
+  placa: string;
   entrada: string;
   agora: string;
   patio_nome: string;
@@ -145,7 +145,7 @@ export function TicketPublicoClient({
         <section className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-5">
           <div className="flex items-baseline justify-between">
             <span className="font-black tracking-widest text-lg">
-              {dados.placa_mascarada}
+              {dados.placa}
             </span>
             <span className="text-xs text-texto-3 whitespace-nowrap">
               entrada {formatarDataHora(dados.entrada)}
@@ -173,8 +173,7 @@ export function TicketPublicoClient({
         )}
 
         <p className="text-center text-[11px] text-texto-3 pt-2">
-          Pagamento processado com segurança. A placa aparece parcialmente por
-          privacidade.
+          Pagamento processado com segurança.
         </p>
       </div>
     </main>
