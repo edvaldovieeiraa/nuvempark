@@ -38,6 +38,7 @@ class BootstrapRepository {
       'motivos_cancelamento': configJson['motivos_cancelamento'],
       'ticket_cabecalho': configJson['ticket_cabecalho'],
       'ticket_rodape': configJson['ticket_rodape'],
+      'foto_recibo_modo': configJson['foto_recibo_modo'],
     });
 
     await db.operacaoDao.upsertCache(OperacaoCacheCompanion(

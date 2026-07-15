@@ -54,6 +54,7 @@ class PatioNotifier extends AsyncNotifier<PatioModel?> {
       tarifas: tarifas,
       sincronizadoEm:
           DateTime.fromMillisecondsSinceEpoch(cache.sincronizadoEm),
+      fotoReciboModo: (config['foto_recibo_modo'] as String?) ?? 'desativada',
     );
   }
 

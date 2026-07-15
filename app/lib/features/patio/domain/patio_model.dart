@@ -15,6 +15,7 @@ class PatioModel {
     required this.ticketRodape,
     required this.tarifas,
     required this.sincronizadoEm,
+    this.fotoReciboModo = 'desativada',
   });
 
   final String id;
@@ -29,6 +30,16 @@ class PatioModel {
   final List<String> ticketRodape;
   final List<TarifaConfig> tarifas;
   final DateTime sincronizadoEm;
+
+  /// Impressão da foto do veículo no recibo (parametrização do painel, por
+  /// pátio): 'ativada' | 'operador' | 'desativada'.
+  final String fotoReciboModo;
+
+  /// Foto sai sempre no recibo, sem o operador decidir.
+  bool get fotoReciboSempre => fotoReciboModo == 'ativada';
+
+  /// O operador escolhe na entrada se imprime a foto.
+  bool get fotoReciboOperadorDecide => fotoReciboModo == 'operador';
 
   /// Uma tarifa com tipoVeiculo == 'ambos' atende qualquer tipo de veículo.
   static const tipoAmbos = 'ambos';

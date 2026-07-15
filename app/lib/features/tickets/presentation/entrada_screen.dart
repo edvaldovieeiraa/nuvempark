@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image/image.dart' as img;
 import 'package:go_router/go_router.dart';
 import 'package:nuvempark_core/nuvempark_core.dart';
 
@@ -39,6 +40,9 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
   bool _capturandoFoto = false;
   String? _fotoEntradaPath;
   ReconhecimentoCliente? _reconhecimento;
+  /// Checkbox "Imprimir foto no recibo" (só aparece no modo 'operador').
+  /// Default ligado: quem não mexer, imprime.
+  bool _imprimirFotoRecibo = true;
   final _fotoService = FotoEntradaService();
   final _ocrService = PlacaOcrService();
   bool _tipoDefaultAplicado = false;
@@ -256,6 +260,8 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
         tipoVeiculo: _tipoVeiculo!,
         entrada: agora,
         patio: patio,
+        fotoPath: _fotoEntradaPath,
+        operadorMarcouFoto: _imprimirFotoRecibo,
       ));
     } catch (e) {
       if (mounted) AppToast.error(context, 'Erro ao registrar entrada.');
@@ -274,10 +280,27 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
     required String tipoVeiculo,
     required DateTime entrada,
     required PatioModel patio,
+    String? fotoPath,
+    bool operadorMarcouFoto = false,
   }) async {
     final printer =
         await printerFuture.catchError((_) => const PrinterState());
     if (!printer.temImpressora) return;
+
+    // Modo da parametrização: sempre, o operador decidiu, ou nunca.
+    final deveImprimirFoto = patio.fotoReciboSempre ||
+        (patio.fotoReciboOperadorDecide && operadorMarcouFoto);
+    img.Image? fotoVeiculo;
+    if (deveImprimirFoto && fotoPath != null) {
+      try {
+        final decodificada = img.decodeImage(await File(fotoPath).readAsBytes());
+        if (decodificada != null) {
+          fotoVeiculo = img.bakeOrientation(decodificada);
+        }
+      } catch (_) {
+        // Foto ilegível não pode derrubar o cupom — imprime sem ela.
+      }
+    }
 
     final bytes = PrintTemplates.ticketEntrada(
       ticketId: ticketId,
@@ -289,6 +312,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
       avancoFinal: printer.avancoFinal,
       cabecalho: patio.ticketCabecalho,
       rodape: patio.ticketRodape,
+      fotoVeiculo: fotoVeiculo,
     );
     final ok = await printerNotifier.print(bytes);
     if (ok) return;
@@ -500,6 +524,33 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                           onSelected: (_) => setState(() => _tarifaId = t.id),
                         );
                       }).toList(),
+                    ),
+                  ],
+
+                  // Foto no recibo — só quando o gestor deixou o operador decidir.
+                  if (patio.fotoReciboOperadorDecide) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: CheckboxListTile(
+                        value: _imprimirFotoRecibo,
+                        onChanged: (v) =>
+                            setState(() => _imprimirFotoRecibo = v ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        dense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 8),
+                        title: const Text('Imprimir foto no recibo',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 14)),
+                        subtitle: const Text(
+                            'A foto do veículo sai no cupom de entrada.',
+                            style: TextStyle(fontSize: 12)),
+                      ),
                     ),
                   ],
 

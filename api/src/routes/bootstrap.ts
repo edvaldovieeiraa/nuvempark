@@ -26,7 +26,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
     // Pátio
     const { data: patio, error: patioErr } = await db
       .from('patios')
-      .select('id, nome, codigo, qtd_vagas, ativo')
+      .select('id, nome, codigo, qtd_vagas, ativo, foto_recibo_modo')
       .eq('id', patioId)
       .maybeSingle();
     if (patioErr || !patio) {
@@ -125,6 +125,10 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
         ticket_cabecalho: config?.ticket_cabecalho ?? [],
         ticket_rodape: config?.ticket_rodape ?? [],
         patio_ativo: config?.patio_ativo ?? false,
+        // Parametrização: impressão da foto do veículo no recibo (por pátio).
+        foto_recibo_modo:
+          (patio as { foto_recibo_modo?: string }).foto_recibo_modo ??
+          'desativada',
       },
       tarifas: tarifas ?? [],
       clientes: clientesOut,

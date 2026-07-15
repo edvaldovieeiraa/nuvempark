@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   SlidersHorizontal,
@@ -12,16 +12,18 @@ import {
   UserCheck,
   CircleSlash,
   Sparkles,
+  Loader2,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { salvarFotoReciboModo } from "@/app/painel/parametrizacao/actions";
 
 /* =========================================================
    PARAMETRIZAÇÃO
-   Habilitações da operação. A primeira: como a foto do
-   veículo se comporta na impressão do recibo de entrada.
-   Por ora é uma PRÉVIA — o valor vive em estado local e
-   ainda não persiste nem chega ao app.
+   Habilitações da operação, por pátio. A primeira: como a
+   foto do veículo se comporta na impressão do recibo de
+   entrada. Persiste no banco e é lida pelo app no bootstrap.
    ========================================================= */
 
 type ModoFoto = "ativada" | "operador" | "desativada";
@@ -56,17 +58,36 @@ const OPCOES: OpcaoModo[] = [
   },
 ];
 
-const PADRAO: ModoFoto = "operador";
-
-export function ParametrizacaoClient() {
+export function ParametrizacaoClient({
+  patioId,
+  patioNome,
+  modoInicial,
+}: {
+  patioId: string | null;
+  patioNome: string | null;
+  modoInicial: ModoFoto;
+}) {
   const toast = useToast();
-  const [modoFoto, setModoFoto] = useState<ModoFoto>(PADRAO);
+  const [salvando, iniciarSalvar] = useTransition();
+  const [inicial, setInicial] = useState<ModoFoto>(modoInicial);
+  const [modoFoto, setModoFoto] = useState<ModoFoto>(modoInicial);
 
-  const sujo = modoFoto !== PADRAO;
+  const sujo = modoFoto !== inicial;
 
   const salvar = () => {
-    // Ainda sem backend — deixamos claro para o gestor.
-    toast.info("A parametrização ainda não é salva — em breve.");
+    if (!patioId) {
+      toast.erro("Selecione um pátio para configurar.");
+      return;
+    }
+    iniciarSalvar(async () => {
+      const r = await salvarFotoReciboModo(patioId, modoFoto);
+      if (r.ok) {
+        setInicial(modoFoto);
+        toast.sucesso("Parametrização salva.");
+      } else {
+        toast.erro(r.erro ?? "Não foi possível salvar.");
+      }
+    });
   };
 
   return (
@@ -77,18 +98,22 @@ export function ParametrizacaoClient() {
           <SlidersHorizontal className="w-6 h-6" />
         </span>
         <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black tracking-tight text-texto">
-              Parametrização
-            </h1>
-            <span className="rounded-full bg-brand-50 border border-brand-200 px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-brand-700">
-              Prévia
-            </span>
-          </div>
+          <h1 className="text-2xl font-black tracking-tight text-texto">
+            Parametrização
+          </h1>
           <p className="mt-1 text-sm text-texto-2 leading-relaxed">
-            Ligue e desligue recursos da sua operação. As mudanças passam a valer
-            em todos os pátios da rede.
+            Habilitações da operação, por pátio.
           </p>
+          {patioNome ? (
+            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-fundo border border-borda px-3 py-1 text-xs font-bold text-texto-2">
+              <Building2 className="w-3.5 h-3.5 text-brand-600" />
+              {patioNome}
+            </span>
+          ) : (
+            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-aviso-bg border border-aviso/25 px-3 py-1 text-xs font-bold text-aviso">
+              Nenhum pátio selecionado
+            </span>
+          )}
         </div>
       </div>
 
@@ -195,18 +220,24 @@ export function ParametrizacaoClient() {
                 Você tem alterações não salvas.
               </p>
               <button
-                onClick={() => setModoFoto(PADRAO)}
-                className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl text-sm font-bold text-texto-2 hover:bg-fundo transition-colors"
+                onClick={() => setModoFoto(inicial)}
+                disabled={salvando}
+                className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl text-sm font-bold text-texto-2 hover:bg-fundo transition-colors disabled:opacity-50"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span className="hidden sm:inline">Descartar</span>
               </button>
               <button
                 onClick={salvar}
-                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white text-sm font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
+                disabled={salvando}
+                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white text-sm font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all disabled:opacity-60"
               >
-                <Save className="w-4 h-4" />
-                Salvar
+                {salvando ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                {salvando ? "Salvando…" : "Salvar"}
               </button>
             </div>
           </motion.div>

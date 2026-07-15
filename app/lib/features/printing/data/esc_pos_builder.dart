@@ -1,8 +1,45 @@
 import 'dart:convert';
 
+import 'package:image/image.dart' as img;
+
 /// Construtor de bytes ESC/POS para impressoras térmicas 58mm/80mm.
 class EscPosBuilder {
   final List<int> _bytes = [];
+
+  /// Imprime uma imagem como raster monocromático (ESC/POS `GS v 0`).
+  ///
+  /// Redimensiona para [maxLargura] pontos (58mm ≈ 384, 80mm ≈ 576), converte
+  /// para tons de cinza e binariza por limiar (Floyd–Steinberg deixaria melhor,
+  /// mas o custo/benefício numa placa de carro em térmica não compensa). Cada
+  /// bit ligado = ponto preto. Impressoras sem suporte ignoram o comando.
+  EscPosBuilder rasterImage(img.Image origem, {int maxLargura = 384}) {
+    final larguraAlvo = origem.width > maxLargura ? maxLargura : origem.width;
+    final redim = img.copyResize(origem, width: larguraAlvo);
+    final cinza = img.grayscale(redim);
+    final largura = cinza.width;
+    final altura = cinza.height;
+    final bytesPorLinha = (largura + 7) ~/ 8;
+    final dados = List<int>.filled(bytesPorLinha * altura, 0);
+
+    for (var y = 0; y < altura; y++) {
+      for (var x = 0; x < largura; x++) {
+        // Após grayscale, os canais são iguais — o R basta como luminância.
+        final lum = cinza.getPixel(x, y).r;
+        if (lum < 128) {
+          dados[y * bytesPorLinha + (x >> 3)] |= 0x80 >> (x & 7);
+        }
+      }
+    }
+
+    _bytes
+      ..addAll([
+        0x1D, 0x76, 0x30, 0x00,
+        bytesPorLinha & 0xFF, (bytesPorLinha >> 8) & 0xFF,
+        altura & 0xFF, (altura >> 8) & 0xFF,
+      ])
+      ..addAll(dados);
+    return this;
+  }
 
   EscPosBuilder reset() {
     _bytes

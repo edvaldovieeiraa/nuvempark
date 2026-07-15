@@ -1,3 +1,4 @@
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 
 import '../../../core/config/env.dart';
@@ -22,6 +23,7 @@ abstract final class PrintTemplates {
     int avancoFinal = 10,
     List<String> cabecalho = const [],
     List<String> rodape = const [],
+    img.Image? fotoVeiculo,
   }) {
     final shortId = ticketId.substring(0, 8).toUpperCase();
 
@@ -34,7 +36,18 @@ abstract final class PrintTemplates {
         .leftAlign()
         .line(_row('Placa   :', placa, cols))
         .line(_row('Tipo    :', _capitalize(tipoVeiculo), cols))
-        .line(_row('Entrada :', _fmt.format(entrada), cols))
+        .line(_row('Entrada :', _fmt.format(entrada), cols));
+
+    // Foto do veículo (parametrização): sai centralizada, antes do QR.
+    if (fotoVeiculo != null) {
+      b
+          .separator(width: cols)
+          .centerAlign()
+          .rasterImage(fotoVeiculo, maxLargura: cols >= cols80mm ? 576 : 384)
+          .feed();
+    }
+
+    b
         .separator(width: cols)
         .centerAlign()
         // QR = URL pública quando TICKET_PUBLIC_BASE_URL está definida; senão, o id
