@@ -305,14 +305,14 @@ function ModalEditarTarifa({
         exit={{ opacity: 0, scale: 0.94, y: 16 }}
         transition={{ type: "spring", stiffness: 380, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl rounded-2xl bg-superficie shadow-[var(--shadow-pop)] p-6 max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-2xl rounded-2xl bg-superficie shadow-[var(--shadow-pop)] p-6 max-h-[85dvh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-lg font-extrabold">Editar tarifa</h3>
           <button
             onClick={fechar}
             aria-label="Fechar"
-            className="text-texto-3 hover:text-texto"
+            className="toque-44 text-texto-3 hover:text-texto"
           >
             <X className="w-5 h-5" />
           </button>

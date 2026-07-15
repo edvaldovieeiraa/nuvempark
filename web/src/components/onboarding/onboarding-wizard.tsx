@@ -219,7 +219,7 @@ function Wizard({ aoAdiar }: { aoAdiar: () => void }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: "spring", stiffness: 340, damping: 30 }}
-        className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-superficie shadow-[var(--shadow-pop)]"
+        className="w-full max-w-lg max-h-[85dvh] overflow-y-auto rounded-3xl bg-superficie shadow-[var(--shadow-pop)]"
       >
         {/* progresso — some na boas-vindas e no sucesso */}
         {typeof tela === "number" && (
