@@ -67,9 +67,9 @@ export function AppShell({
 
       {/* Sidebar: drawer < lg, estática em lg+ (uma única instância) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[min(17rem,85vw)] shrink-0 flex flex-col relative overflow-hidden
+        className={`fixed inset-y-0 left-0 z-50 w-[min(17rem,85vw)] shrink-0 flex flex-col overflow-hidden
           transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
-          lg:static lg:z-auto lg:w-64 lg:translate-x-0 lg:transition-none
+          lg:relative lg:inset-auto lg:z-auto lg:w-64 lg:translate-x-0 lg:transition-none
           ${aberto ? "translate-x-0" : "-translate-x-full"} ${asideClassName}`}
       >
         {/* Fechar (só no drawer mobile) */}
