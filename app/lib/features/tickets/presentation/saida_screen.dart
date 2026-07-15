@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -43,6 +45,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
   /// Nos dois casos a saída segue o fluxo manual — a diferença aparece só na UI.
   PagamentoOnlineStatus? _pagoOnline;
   bool _consultandoPagamento = false;
+  bool _gerandoPix = false;
 
   @override
   void initState() {
@@ -63,6 +66,54 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       _pagoOnline = r;
       _consultandoPagamento = false;
     });
+  }
+
+  /// Pix dinâmico: gera a cobrança no servidor (mesma da página pública), mostra
+  /// o QR/copia-e-cola numa folha e faz polling. Confirmado o pagamento, a folha
+  /// fecha e a tela cai no fluxo "PAGO ONLINE VIA PIX" que já existe.
+  Future<void> _pixDinamico() async {
+    if (_ticket == null || _gerandoPix) return;
+    final ticketId = _ticket!.id;
+
+    setState(() => _gerandoPix = true);
+    CobrancaPixDinamico cobranca;
+    try {
+      cobranca =
+          await ref.read(pagamentoOnlineServiceProvider).gerarPix(ticketId);
+    } on PixIndisponivelException catch (e) {
+      if (mounted) AppToast.error(context, e.mensagem);
+      return;
+    } catch (_) {
+      if (mounted) AppToast.error(context, 'Não consegui gerar o Pix agora.');
+      return;
+    } finally {
+      if (mounted) setState(() => _gerandoPix = false);
+    }
+    if (!mounted) return;
+
+    final pago = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (_) => _PixDinamicoSheet(
+        cobranca: cobranca,
+        // Reusa a consulta que já existe — a MESMA verdade do servidor.
+        consultar: () async {
+          final r = await ref
+              .read(pagamentoOnlineServiceProvider)
+              .consultar(ticketId);
+          return r?.pago == true;
+        },
+      ),
+    );
+
+    if (pago == true && mounted) {
+      AppToast.success(context, 'Pix confirmado!');
+      // Puxa o estado pago → a tela mostra "PAGO ONLINE VIA PIX" e a saída
+      // fecha por lá (sem caixa, imprime recibo).
+      await _consultarPagamentoOnline();
+    }
   }
 
   Future<void> _carregarTicket() async {
@@ -617,15 +668,23 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
                     child: Text(_labelForma(forma)),
                   ),
                 )),
-            // Gancho Pix (Fase 4): botão desabilitado com aviso.
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: FilledButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.qr_code_2),
-                label: const Text('Pix dinâmico (em breve)'),
+            // Pix dinâmico: o operador gera o QR aqui e mostra pro cliente
+            // pagar na hora. Some quando não há valor a cobrar (tolerância).
+            if (valor > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: FilledButton.icon(
+                  onPressed: _gerandoPix ? null : _pixDinamico,
+                  icon: _gerandoPix
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2.2, color: Colors.white))
+                      : const Icon(Icons.qr_code_2),
+                  label: Text(_gerandoPix ? 'Gerando Pix…' : 'Pix dinâmico'),
+                ),
               ),
-            ),
           ],
         ],
       ),
@@ -659,5 +718,184 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     final m = d.inMinutes % 60;
     if (h > 0) return '${h}h ${m}min';
     return '${m}min';
+  }
+}
+
+/// Folha do Pix dinâmico: QR + copia-e-cola do Asaas e polling do pagamento.
+/// Fecha com `true` assim que o servidor confirma o pagamento.
+class _PixDinamicoSheet extends StatefulWidget {
+  const _PixDinamicoSheet({required this.cobranca, required this.consultar});
+
+  final CobrancaPixDinamico cobranca;
+
+  /// Devolve true quando o ticket consta como pago no servidor.
+  final Future<bool> Function() consultar;
+
+  @override
+  State<_PixDinamicoSheet> createState() => _PixDinamicoSheetState();
+}
+
+class _PixDinamicoSheetState extends State<_PixDinamicoSheet> {
+  static final _moeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+
+  Timer? _timer;
+  bool _verificando = false;
+  bool _copiado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // O webhook do Asaas confirma em segundos; consultamos a cada 4s.
+    _timer = Timer.periodic(const Duration(seconds: 4), (_) => _checar());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checar() async {
+    if (_verificando) return;
+    _verificando = true;
+    try {
+      final pago = await widget.consultar();
+      if (pago && mounted) {
+        _timer?.cancel();
+        Navigator.pop(context, true);
+      }
+    } catch (_) {
+      // Falha de rede numa consulta: ignora e tenta na próxima batida.
+    } finally {
+      _verificando = false;
+    }
+  }
+
+  Uint8List? get _qrBytes {
+    final b64 = widget.cobranca.pixQrcodeBase64;
+    if (b64 == null || b64.isEmpty) return null;
+    try {
+      return base64Decode(b64);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _copiar() async {
+    await Clipboard.setData(ClipboardData(text: widget.cobranca.pixCopiaCola));
+    if (!mounted) return;
+    setState(() => _copiado = true);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _copiado = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final qr = _qrBytes;
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.outlineVariant,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Pague com Pix',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 2),
+            Text(
+              _moeda.format(widget.cobranca.valor),
+              style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary),
+            ),
+            const SizedBox(height: 6),
+            const Text('Mostre o código para o cliente escanear',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 13, color: AppColors.onSurfaceVariant)),
+            const SizedBox(height: 16),
+            if (qr != null)
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Image.memory(qr, width: 220, height: 220),
+              ),
+            const SizedBox(height: 16),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('PIX COPIA E COLA',
+                  style: TextStyle(
+                      fontSize: 11,
+                      letterSpacing: 1,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.onSurfaceVariant)),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainer,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: SelectableText(
+                widget.cobranca.pixCopiaCola,
+                style: const TextStyle(
+                    fontSize: 11,
+                    height: 1.5,
+                    fontFamily: 'monospace',
+                    color: AppColors.onSurfaceVariant),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _copiar,
+                icon: Icon(_copiado ? Icons.check : Icons.copy, size: 18),
+                label: Text(_copiado ? 'Código copiado!' : 'Copiar código Pix'),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 10),
+                Text('Aguardando o pagamento…',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onSurfaceVariant)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Fechar'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

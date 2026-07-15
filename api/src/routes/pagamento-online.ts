@@ -1,9 +1,15 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
 import { requireAuth } from '../auth/middleware.js';
-import { lerTarifaDoTicket, lerTicketPublico } from '../pagamentos/repo.js';
+import { gerarOuReaproveitarPix } from '../pagamentos/cobranca.js';
+import {
+  lerTarifaDoTicket,
+  lerTicketPublico,
+  type TicketPublico,
+} from '../pagamentos/repo.js';
 import { derivarEstado } from '../pagamentos/ticket-publico.js';
+import type { OperadorTokenPayload } from '../auth/jwt.js';
 
 /**
  * Consulta de pagamento online para o APP DO OPERADOR (rota mobile, autenticada
@@ -18,32 +24,45 @@ import { derivarEstado } from '../pagamentos/ticket-publico.js';
 
 const ID = z.object({ id: z.string().uuid() });
 
+/**
+ * Resolve o ticket e checa o acesso do operador (mesmo tenant + pátio). Devolve
+ * o ticket, ou `null` DEPOIS de já ter respondido o erro (400/403/404). Sem
+ * isto, um operador de outro cliente tocaria tickets alheios só sabendo o UUID.
+ */
+async function resolverAutorizado(
+  id: unknown,
+  operador: OperadorTokenPayload,
+  reply: FastifyReply,
+): Promise<TicketPublico | null> {
+  const parsed = ID.safeParse({ id });
+  if (!parsed.success) {
+    await reply.code(400).send({ error: 'id inválido' });
+    return null;
+  }
+  const ticket = await lerTicketPublico(parsed.data.id);
+  if (!ticket) {
+    await reply.code(404).send({ error: 'Ticket não encontrado' });
+    return null;
+  }
+  if (
+    ticket.tenant_id !== operador.tenant_id ||
+    !operador.patio_ids.includes(ticket.patio_id)
+  ) {
+    await reply.code(403).send({ error: 'Sem acesso a este ticket' });
+    return null;
+  }
+  return ticket;
+}
+
 export async function pagamentoOnlineRoutes(app: FastifyInstance): Promise<void> {
+  // ── Consulta de pagamento (polling da saída) ────────────────────────────
   app.get(
     '/ticket/:id/pagamento-online',
     { preHandler: requireAuth },
     async (req, reply) => {
-      const operador = req.operador!;
-
-      const parsed = ID.safeParse(req.params);
-      if (!parsed.success) {
-        return reply.code(400).send({ error: 'id inválido' });
-      }
-
-      const ticket = await lerTicketPublico(parsed.data.id);
-      if (!ticket) {
-        return reply.code(404).send({ error: 'Ticket não encontrado' });
-      }
-
-      // Autorização: o operador precisa ser do MESMO tenant e ter acesso ao
-      // pátio do ticket. Sem isto, um operador de outro cliente consultaria
-      // pagamentos alheios só sabendo o UUID.
-      if (
-        ticket.tenant_id !== operador.tenant_id ||
-        !operador.patio_ids.includes(ticket.patio_id)
-      ) {
-        return reply.code(403).send({ error: 'Sem acesso a este ticket' });
-      }
+      const id = (req.params as { id?: unknown }).id;
+      const ticket = await resolverAutorizado(id, req.operador!, reply);
+      if (!ticket) return reply; // já respondeu o erro
 
       const tarifa = await lerTarifaDoTicket(ticket);
       const estado = derivarEstado({ ticket, tarifa, agora: new Date() });
@@ -59,6 +78,27 @@ export async function pagamentoOnlineRoutes(app: FastifyInstance): Promise<void>
         // > 0 só quando a carência estourou e a estadia passou do valor pago.
         diferenca: estado.diferenca,
       });
+    },
+  );
+
+  // ── Pix dinâmico: o operador gera a cobrança na saída ───────────────────
+  // MESMA geração da página pública (pagamentos/cobranca.ts) — as duas TÊM de
+  // produzir cobranças idênticas. Aqui só muda quem pede: operador autenticado
+  // em vez do cliente anônimo do QR.
+  app.post(
+    '/ticket/:id/pix',
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      const id = (req.params as { id?: unknown }).id;
+      const ticket = await resolverAutorizado(id, req.operador!, reply);
+      if (!ticket) return reply; // já respondeu o erro
+
+      const tarifa = await lerTarifaDoTicket(ticket);
+      const estado = derivarEstado({ ticket, tarifa, agora: new Date() });
+
+      const res = await gerarOuReaproveitarPix(ticket, estado);
+      if (!res.ok) return reply.code(res.code).send({ error: res.error });
+      return reply.send(res.cobranca);
     },
   );
 }

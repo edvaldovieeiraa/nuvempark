@@ -27,6 +27,32 @@ class PagamentoOnlineStatus {
   bool get temDiferenca => (diferenca ?? 0) > 0;
 }
 
+/// Cobrança Pix gerada pelo operador na saída (Pix dinâmico). Espelha a resposta
+/// de `POST /ticket/:id/pix` — a MESMA geração da página pública.
+class CobrancaPixDinamico {
+  const CobrancaPixDinamico({
+    required this.pagamentoId,
+    required this.valor,
+    required this.pixCopiaCola,
+    this.pixQrcodeBase64,
+    this.expiraEm,
+  });
+
+  final String pagamentoId;
+  final double valor;
+  final String pixCopiaCola;
+
+  /// PNG do QR em base64 (sem o prefixo data:). Pode faltar em algum PSP.
+  final String? pixQrcodeBase64;
+  final DateTime? expiraEm;
+}
+
+/// Erro amigável ao gerar o Pix — o Dio não vaza para a tela.
+class PixIndisponivelException implements Exception {
+  const PixIndisponivelException(this.mensagem);
+  final String mensagem;
+}
+
 /// Consulta se o ticket já foi pago pelo QR (Pix na página pública).
 ///
 /// EXIGE REDE, e isso é coerente: o Pix só existe online. Sem rede — ou com
@@ -66,6 +92,41 @@ class PagamentoOnlineService {
     } catch (_) {
       // Offline, timeout, 4xx, 5xx: tanto faz. Segue o fluxo manual.
       return null;
+    }
+  }
+
+  /// Gera (ou reaproveita) a cobrança Pix do ticket — o Pix dinâmico da saída.
+  /// EXIGE REDE (o Pix é online). Lança [PixIndisponivelException] com uma
+  /// mensagem pronta; o caller mostra e não trava a saída (há o fluxo manual).
+  Future<CobrancaPixDinamico> gerarPix(String ticketId) async {
+    try {
+      final resp = await dio.post<Map<String, dynamic>>(
+        '${Env.pagamentoOnlineUrl}/$ticketId/pix',
+      );
+      final d = resp.data;
+      if (d == null) {
+        throw const PixIndisponivelException('Resposta vazia do servidor.');
+      }
+      final valor = d['valor'];
+      final expira = d['expira_em'];
+      return CobrancaPixDinamico(
+        pagamentoId: d['pagamento_id'] as String,
+        valor: valor is num ? valor.toDouble() : 0.0,
+        pixCopiaCola: d['pix_copia_cola'] as String,
+        pixQrcodeBase64: d['pix_qrcode_base64'] as String?,
+        expiraEm: expira is String ? DateTime.tryParse(expira)?.toLocal() : null,
+      );
+    } on DioException catch (e) {
+      // 409 = "Estadia já paga" / "Nada a pagar": a API já explica; repassamos.
+      if (e.response?.statusCode == 409) {
+        final data = e.response?.data;
+        final msg = data is Map && data['error'] is String
+            ? data['error'] as String
+            : 'Nada a cobrar.';
+        throw PixIndisponivelException(msg);
+      }
+      throw const PixIndisponivelException(
+          'Sem conexão para gerar o Pix. Tente de novo.');
     }
   }
 }

@@ -2,21 +2,18 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
 import { adapterDoTenant } from '../pagamentos/index.js';
+import { gerarOuReaproveitarPix } from '../pagamentos/cobranca.js';
 import {
   assinaturaLibera,
-  criarPagamento,
   lerCobrancaPendente,
   lerTarifaDoTicket,
   lerTicketPublico,
   marcarPago,
-  salvarDadosCobranca,
   type TicketPublico,
 } from '../pagamentos/repo.js';
 import {
   CARENCIA_MINUTOS,
-  EXPIRACAO_COBRANCA_MINUTOS,
   derivarEstado,
-  mascararPlaca,
   ticketVisivel,
   type EstadoTicket,
 } from '../pagamentos/ticket-publico.js';
@@ -95,74 +92,10 @@ export async function publicoRoutes(app: FastifyInstance): Promise<void> {
     const r = await resolver(parsed.data.id);
     if (!r) return naoEncontrado(reply);
 
-    // Pago e dentro da carência: não há o que cobrar.
-    if (r.estado.statusPagamento === 'pago') {
-      return reply.code(409).send({ error: 'Estadia já paga' });
-    }
-
-    // Cobrança pendente e ainda válida: devolve ESSA. Recarregar a página ou
-    // tocar duas vezes no botão não pode gerar dois Pix no PSP.
-    const pendente = await lerCobrancaPendente(r.ticket.id);
-    if (pendente?.pix_copia_cola && pendente.expira_em) {
-      return reply.send({
-        pagamento_id: pendente.id,
-        valor: pendente.valor,
-        pix_copia_cola: pendente.pix_copia_cola,
-        pix_qrcode_base64: pendente.pix_qrcode_base64,
-        expira_em: pendente.expira_em,
-      });
-    }
-
-    // Quanto cobrar: a estadia toda, ou só a diferença de quem já pagou e ficou.
-    const valor =
-      r.estado.statusPagamento === 'pago_diferenca_pendente'
-        ? (r.estado.diferenca ?? 0)
-        : (r.estado.valorAtual ?? 0);
-
-    if (valor <= 0) {
-      // Tolerância, ou tarifa não encontrada. Não geramos Pix de R$ 0.
-      return reply.code(409).send({ error: 'Nada a pagar' });
-    }
-
-    const expiraEm = new Date(
-      Date.now() + EXPIRACAO_COBRANCA_MINUTOS * 60_000,
-    );
-
-    // A linha local nasce ANTES do PSP: o id dela é o externalReference que volta
-    // no webhook. Se o PSP falhar depois, sobra uma cobrança pendente sem Pix —
-    // que expira sozinha e não confunde ninguém (lerCobrancaPendente exige
-    // pix_copia_cola preenchido para reaproveitar).
-    const pagamentoId = await criarPagamento({
-      ticketId: r.ticket.id,
-      patioId: r.ticket.patio_id,
-      tenantId: r.ticket.tenant_id,
-      valor,
-      expiraEm,
-    });
-
-    const adapter = await adapterDoTenant(r.ticket.tenant_id);
-    const cobranca = await adapter.gerarCobrancaPix({
-      valor,
-      descricao: `Estadia ${mascararPlaca(r.ticket.placa)} — ${r.ticket.patio_nome}`,
-      referenciaExterna: pagamentoId,
-      expiracaoMinutos: EXPIRACAO_COBRANCA_MINUTOS,
-    });
-
-    await salvarDadosCobranca({
-      pagamentoId,
-      gatewayCobrancaId: cobranca.gatewayCobrancaId,
-      pixCopiaCola: cobranca.pixCopiaCola,
-      pixQrcodeBase64: cobranca.pixQrcodeBase64,
-      expiraEm: cobranca.expiraEm,
-    });
-
-    return reply.send({
-      pagamento_id: pagamentoId,
-      valor,
-      pix_copia_cola: cobranca.pixCopiaCola,
-      pix_qrcode_base64: cobranca.pixQrcodeBase64,
-      expira_em: cobranca.expiraEm.toISOString(),
-    });
+    // Mesma geração que o app do operador usa (ver pagamentos/cobranca.ts).
+    const res = await gerarOuReaproveitarPix(r.ticket, r.estado);
+    if (!res.ok) return reply.code(res.code).send({ error: res.error });
+    return reply.send(res.cobranca);
   });
 
   // ── GET /ticket/:id/pagamento (polling) ───────────────────────────────────
