@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -735,23 +735,38 @@ class _PixDinamicoSheet extends StatefulWidget {
   State<_PixDinamicoSheet> createState() => _PixDinamicoSheetState();
 }
 
-class _PixDinamicoSheetState extends State<_PixDinamicoSheet> {
+class _PixDinamicoSheetState extends State<_PixDinamicoSheet>
+    with SingleTickerProviderStateMixin {
   static final _moeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
   Timer? _timer;
   bool _verificando = false;
-  bool _copiado = false;
+
+  /// Barra de expiração do link: anima de cheia a vazia até o Pix expirar.
+  AnimationController? _expiracao;
 
   @override
   void initState() {
     super.initState();
     // O webhook do Asaas confirma em segundos; consultamos a cada 4s.
     _timer = Timer.periodic(const Duration(seconds: 4), (_) => _checar());
+
+    // O link vale até `expiraEm`. A barra parte de cheia e esvazia no tempo
+    // que resta — o operador (e o cliente) veem o prazo correndo.
+    final expira = widget.cobranca.expiraEm;
+    if (expira != null) {
+      final restante = expira.difference(DateTime.now());
+      if (restante > Duration.zero) {
+        _expiracao = AnimationController(vsync: this, duration: restante)
+          ..reverse(from: 1.0);
+      }
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _expiracao?.dispose();
     super.dispose();
   }
 
@@ -781,13 +796,16 @@ class _PixDinamicoSheetState extends State<_PixDinamicoSheet> {
     }
   }
 
-  Future<void> _copiar() async {
-    await Clipboard.setData(ClipboardData(text: widget.cobranca.pixCopiaCola));
-    if (!mounted) return;
-    setState(() => _copiado = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _copiado = false);
-    });
+  String _rotuloExpira() {
+    final expira = widget.cobranca.expiraEm;
+    if (expira == null) return '';
+    final restante = expira.difference(DateTime.now());
+    if (restante <= Duration.zero) {
+      return 'Link expirado — feche e gere de novo';
+    }
+    final min = restante.inMinutes;
+    if (min > 0) return 'Link válido por mais $min min';
+    return 'Link válido por mais ${restante.inSeconds}s';
   }
 
   @override
@@ -819,59 +837,56 @@ class _PixDinamicoSheetState extends State<_PixDinamicoSheet> {
                   color: AppColors.primary),
             ),
             const SizedBox(height: 6),
-            const Text('Mostre o código para o cliente escanear',
+            const Text('Mostre o QR para o cliente escanear com o banco',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 13, color: AppColors.onSurfaceVariant)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             if (qr != null)
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: Image.memory(qr, width: 220, height: 220),
+                child: Image.memory(qr, width: 240, height: 240),
               ),
-            const SizedBox(height: 16),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('PIX COPIA E COLA',
-                  style: TextStyle(
-                      fontSize: 11,
-                      letterSpacing: 1,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.onSurfaceVariant)),
-            ),
-            const SizedBox(height: 6),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainer,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+            const SizedBox(height: 20),
+
+            // Barra de expiração do link (anima até esvaziar).
+            if (_expiracao != null) ...[
+              AnimatedBuilder(
+                animation: _expiracao!,
+                builder: (context, _) {
+                  final v = _expiracao!.value;
+                  // Vira laranja no trecho final para avisar que está acabando.
+                  final cor = v > 0.25 ? AppColors.primary : AppColors.saida;
+                  return Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: v,
+                          minHeight: 6,
+                          backgroundColor: AppColors.surfaceContainer,
+                          valueColor: AlwaysStoppedAnimation(cor),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _rotuloExpira(),
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: cor),
+                      ),
+                    ],
+                  );
+                },
               ),
-              child: SelectableText(
-                widget.cobranca.pixCopiaCola,
-                style: const TextStyle(
-                    fontSize: 11,
-                    height: 1.5,
-                    fontFamily: 'monospace',
-                    color: AppColors.onSurfaceVariant),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _copiar,
-                icon: Icon(_copiado ? Icons.check : Icons.copy, size: 18),
-                label: Text(_copiado ? 'Código copiado!' : 'Copiar código Pix'),
-              ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
             const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
