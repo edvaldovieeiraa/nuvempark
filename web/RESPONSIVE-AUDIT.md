@@ -104,8 +104,23 @@ Wrapper `ResponsiveTable` (overflow-x + fades) aplicado a todas as tabelas abaix
 | Bloco | Escopo | Status |
 |---|---|---|
 | 0 | Auditoria | ✅ este arquivo |
-| 1 | Shell responsivo (sidebar drawer + header + container + viewport) | ⬜ |
-| 2 | Tabelas (wrapper + cards em movimentos/mensalistas) | ⬜ |
-| 3 | Grids, dashboard e gráficos | ⬜ |
-| 4 | Formulários, modais e telas públicas | ⬜ |
-| 5 | Varredura final 360/768 + build | ⬜ |
+| 1 | Shell responsivo (sidebar drawer + header + container + viewport) | ✅ commit `00108fb` |
+| 2 | Tabelas (wrapper + cards em movimentos/mensalistas) | ✅ commit `323c6ec` |
+| 3 | Grids, dashboard e gráficos | ✅ commit `16ee915` |
+| 4 | Formulários, modais e telas públicas | ✅ commit `d8aec83` |
+| 5 | Varredura final + build | ✅ este bloco |
+
+### Cobertura (todas as rotas)
+
+- **Categoria A (shell)** — resolvida para **TODAS** as rotas de `/painel/*` e `/master/*` de uma vez: `AppShell` transforma a sidebar em drawer < `lg`, com header/hambúrguer e `viewport` no root.
+- **Categoria B (tabelas)** — todas as tabelas embrulhadas em `ResponsiveTable`; movimentos com card layout < md; colunas secundárias ocultas (ver tabela acima).
+- **Categoria C (grids)** — grids de KPI/cards já colapsam (`grid-cols-2 lg:grid-cols-4`, `grid-cols-1 lg:grid-cols-2`); grids de formulário 2-3 colunas colapsados para 1 < sm.
+- **Categoria D (form/modal)** — modais com `w-full max-w-*` em overlay `p-4` + `max-h-[85dvh] overflow-y-auto`; alvos de toque `toque-44`; login/cadastro/ticket público já mobile-first.
+- **Categoria E (gráficos)** — Recharts já usavam `ResponsiveContainer width="100%"`.
+- **Categoria F (tipografia/espaço)** — `main` com padding fluido `p-4 md:p-6 lg:p-8`.
+
+### Verificação
+
+- `npm run build` limpo em todos os blocos; TS estrito preservado.
+- Sem scroll horizontal de página: larguras fixas são só `min-w-[180-200px]` em inputs de busca dentro de barras `flex-wrap` (quebram linha); tabelas rolam dentro do próprio wrapper; headers de página usam `flex-wrap`.
+- **Nota:** verificação visual automatizada em 360px não foi possível neste ambiente (o Chrome remoto ficou preso em viewport desktop — `resize_window`/`window.resizeTo` sem efeito). Cobertura garantida por análise estática + build. Recomendado um passe final no aparelho real (o caso de uso do gestor).
