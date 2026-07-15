@@ -45,16 +45,24 @@ function redirecionaPorHost(request: NextRequest): NextResponse | null {
 
 /** Renova a sessão do gestor e protege as rotas do painel. */
 export async function middleware(request: NextRequest) {
-  // 0) Separação de domínios (painel vs site) antes de tudo.
+  const host = request.headers.get("host")?.split(":")[0] ?? "";
+  const { pathname, search } = request.nextUrl;
+  const ehMaster = pathname === "/master" || pathname.startsWith("/master/");
+
+  // 0) Master é EXCLUSIVO do host painel.nuvempark.com: /master em qualquer
+  // outro host vai pra lá. Só em produção (separação de domínios ativa); em dev
+  // local, sem os hosts configurados, fica inerte e /master funciona normal.
+  if (HOST_APP && HOST_SITE && host !== HOST_MASTER && ehMaster) {
+    return NextResponse.redirect(`https://${HOST_MASTER}${pathname}${search}`);
+  }
+
+  // 0.1) Separação de domínios (painel vs site).
   const desvio = redirecionaPorHost(request);
   if (desvio) return desvio;
 
-  // 0.1) Host dedicado do master: painel.nuvempark.com abre só o console.
-  const host = request.headers.get("host")?.split(":")[0] ?? "";
-  if (
-    host === HOST_MASTER &&
-    !request.nextUrl.pathname.startsWith("/master")
-  ) {
+  // 0.2) No host do master, tudo que não é /master vai para o console (que
+  // manda pro /master/login se não houver sessão mestra).
+  if (host === HOST_MASTER && !ehMaster) {
     const url = request.nextUrl.clone();
     url.pathname = "/master";
     return NextResponse.redirect(url);
@@ -92,7 +100,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
   const isLogin = pathname.startsWith("/login");
   const isPainel = pathname === "/painel" || pathname.startsWith("/painel/");
   const isBloqueado = pathname === "/painel/bloqueado";
