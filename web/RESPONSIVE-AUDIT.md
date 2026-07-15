@@ -79,9 +79,25 @@ Tailwind 4. Estado: **nenhuma tela do painel funciona bem < `lg`** porque o shel
 | `/master/tenants` | A; tabela (**B**) | `master/tenants/page.tsx` | Média |
 | `/master/recibo/[id]` | Layout de impressão; validar em tela estreita | `master/recibo/[id]/page.tsx` | Baixa |
 
-## Colunas secundárias a ocultar < `md` (registrado no Bloco 2)
+## Colunas ocultadas < `md` por tabela (Bloco 2)
 
-_A preencher por tabela ao aplicar `hidden md:table-cell` — candidatas típicas: datas de criação, IDs, colunas de contexto (operador, código) — mantendo placa/nome/valor/ação sempre visíveis._
+Wrapper `ResponsiveTable` (overflow-x + fades) aplicado a todas as tabelas abaixo. Identificador principal, status/valor e ação ficam sempre visíveis.
+
+| Tabela | Arquivo | Ocultadas < md (`hidden md:table-cell`) |
+|---|---|---|
+| Movimentos | `movimentos/movimentos-client.tsx` | **card layout < md** (sem tabela no mobile); tabela completa md+ |
+| Mensalistas | `mensalistas/mensalistas-client.tsx` | já era lista/cards; ajuste de densidade mobile |
+| Últimos movimentos (dashboard) | `dashboard-live.tsx` | Tipo (Bloco 3) |
+| Sessões de caixa | `caixa/page.tsx` | Fechamento, Fundo |
+| Caixa detalhe | `caixa/[id]/page.tsx` | sem tabela (grid + `ul`) |
+| Veículos no pátio | `patio/patio-lista.tsx` | Entrada, Operador |
+| Tickets removidos | `removidos/page.tsx` | Entrada, Por (operador) |
+| Diff histórico | `historico/historico-client.tsx` | nenhuma (diff de 3 colunas) |
+| Pix Online | `financeiro/pix-online/page.tsx` | Gerado |
+| Prestação — movimentos | `prestacao/prestacao-client.tsx` | Operador, Fundo, Entradas, Sangrias, Esperado |
+| Faturas / Inadimplência | `master/faturas-client.tsx`, `inadimplencia-client.tsx` | já eram cards (sem tabela) |
+| Redes/tenants | `master/tenants-client.tsx` | Código, Pátios |
+| Operadores | `operadores/operadores-client.tsx` | Usuário |
 
 ## Status de resolução
 

@@ -7,6 +7,7 @@ import { Users, UserPlus, Power } from "lucide-react";
 import { alternarAtivo } from "@/app/painel/operadores/actions";
 import { useToast } from "@/components/ui/toast";
 import { Confirmar } from "@/components/ui/confirmar";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 type Operador = {
   id: string;
@@ -73,12 +74,12 @@ export function OperadoresClient({
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
                   <th className="px-5 py-3 font-bold">Nome</th>
-                  <th className="px-5 py-3 font-bold">Usuário</th>
+                  <th className="px-5 py-3 font-bold hidden md:table-cell">Usuário</th>
                   <th className="px-5 py-3 font-bold">Status</th>
                   <th className="px-5 py-3" />
                 </tr>
@@ -103,8 +104,8 @@ export function OperadoresClient({
                           <span className="font-bold">{o.nome}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5">
-                        <span className="font-mono text-xs font-bold bg-fundo border border-borda rounded-md px-2 py-1 tracking-wider">
+                      <td className="px-5 py-3.5 hidden md:table-cell">
+                        <span className="font-mono text-xs font-bold bg-fundo border border-borda rounded-md px-2 py-1 tracking-wider whitespace-nowrap">
                           {o.usuario}
                         </span>
                       </td>
@@ -130,7 +131,7 @@ export function OperadoresClient({
                 </AnimatePresence>
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         )}
       </motion.section>
     </div>

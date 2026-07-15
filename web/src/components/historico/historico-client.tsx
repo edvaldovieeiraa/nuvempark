@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, History, ChevronRight, Building2 } from "lucide-react";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { formatarDataHora } from "@/lib/format-data";
 
 export type AuditRow = {
@@ -340,7 +341,10 @@ function DadosView({ dados }: { dados: Record<string, unknown> }) {
       );
     }
     return (
-      <div className="rounded-xl border border-borda bg-fundo/50 overflow-hidden">
+      <ResponsiveTable
+        className="rounded-xl border border-borda bg-fundo/50"
+        corFade="from-fundo"
+      >
         <table className="w-full text-xs">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-wider text-texto-3">
@@ -361,7 +365,7 @@ function DadosView({ dados }: { dados: Record<string, unknown> }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </ResponsiveTable>
     );
   }
 

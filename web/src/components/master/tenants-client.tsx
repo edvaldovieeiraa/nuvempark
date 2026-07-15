@@ -25,6 +25,7 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { Botao } from "@/components/ui/botao";
 import { Campo, Input } from "@/components/ui/campos";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 export type TenantRow = {
   id: string;
@@ -113,13 +114,13 @@ export function TenantsClient({ tenants }: { tenants: TenantRow[] }) {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain">
+          <ResponsiveTable>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
                   <th className="px-5 py-3 font-bold">Rede</th>
-                  <th className="px-5 py-3 font-bold">Código</th>
-                  <th className="px-5 py-3 font-bold">Pátios</th>
+                  <th className="px-5 py-3 font-bold hidden md:table-cell">Código</th>
+                  <th className="px-5 py-3 font-bold hidden md:table-cell">Pátios</th>
                   <th className="px-5 py-3 font-bold text-right">Mensalidade</th>
                   <th className="px-5 py-3 font-bold">Assinatura</th>
                   <th className="px-5 py-3" />
@@ -131,7 +132,7 @@ export function TenantsClient({ tenants }: { tenants: TenantRow[] }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         )}
       </motion.section>
 
@@ -212,7 +213,7 @@ function LinhaTenant({ tenant }: { tenant: TenantRow }) {
           </div>
         </div>
       </td>
-      <td className="px-5 py-3.5">
+      <td className="px-5 py-3.5 hidden md:table-cell">
         <button
           onClick={copiar}
           title="Copiar código"
@@ -222,11 +223,11 @@ function LinhaTenant({ tenant }: { tenant: TenantRow }) {
           <Copy className="w-3 h-3" />
         </button>
       </td>
-      <td className="px-5 py-3.5 text-texto-2 tabular-nums">
+      <td className="px-5 py-3.5 text-texto-2 tabular-nums whitespace-nowrap hidden md:table-cell">
         {tenant.patiosAtivos}
         <span className="text-texto-3"> / {tenant.patiosTotal}</span>
       </td>
-      <td className="px-5 py-3.5 text-right font-bold tabular-nums">
+      <td className="px-5 py-3.5 text-right font-bold tabular-nums whitespace-nowrap">
         {moeda.format(tenant.mensalidade)}
         <div className="text-[11px] font-normal text-texto-3">
           {moeda.format(tenant.valorPorPatio)}/pátio

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { resolverPatio } from "@/lib/patio-scope";
 import { SemPatio } from "@/components/sem-patio";
 import { Revelar } from "@/components/ui/revelar";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { formatarDataHora } from "@/lib/format-data";
 
 export const dynamic = "force-dynamic";
@@ -105,13 +106,13 @@ export default async function PixOnlinePage({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <ResponsiveTable>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
                     <th className="px-5 py-3 font-bold">Placa</th>
-                    <th className="px-5 py-3 font-bold">Gerado</th>
-                    <th className="px-5 py-3 font-bold">Pago em</th>
+                    <th className="px-5 py-3 font-bold hidden md:table-cell">Gerado</th>
+                    <th className="px-5 py-3 font-bold whitespace-nowrap">Pago em</th>
                     <th className="px-5 py-3 font-bold">Status</th>
                     <th className="px-5 py-3 font-bold text-right">Valor</th>
                   </tr>
@@ -126,7 +127,7 @@ export default async function PixOnlinePage({
                             {placas[p.ticket_id] ?? "—"}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                        <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap hidden md:table-cell">
                           {formatarDataHora(p.criado_em)}
                         </td>
                         <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
@@ -139,7 +140,7 @@ export default async function PixOnlinePage({
                             {st.txt}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-right font-bold tabular-nums">
+                        <td className="px-5 py-3 text-right font-bold tabular-nums whitespace-nowrap">
                           {moeda.format(Number(p.valor))}
                         </td>
                       </tr>
@@ -147,7 +148,7 @@ export default async function PixOnlinePage({
                   })}
                 </tbody>
               </table>
-            </div>
+            </ResponsiveTable>
           )}
         </section>
       </Revelar>

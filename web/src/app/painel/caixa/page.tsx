@@ -4,6 +4,7 @@ import { formatarDataHora } from "@/lib/format-data";
 import { createClient } from "@/lib/supabase/server";
 import { resolverPatio } from "@/lib/patio-scope";
 import { Revelar } from "@/components/ui/revelar";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { SemPatio } from "@/components/sem-patio";
 import { Banknote, ChevronRight, Inbox } from "lucide-react";
 
@@ -64,14 +65,18 @@ export default async function CaixaPage({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <ResponsiveTable>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
                     <th className="px-5 py-3 font-bold">Operador</th>
                     <th className="px-5 py-3 font-bold">Abertura</th>
-                    <th className="px-5 py-3 font-bold">Fechamento</th>
-                    <th className="px-5 py-3 font-bold text-right">Fundo</th>
+                    <th className="px-5 py-3 font-bold hidden md:table-cell">
+                      Fechamento
+                    </th>
+                    <th className="px-5 py-3 font-bold text-right hidden md:table-cell">
+                      Fundo
+                    </th>
                     <th className="px-5 py-3 font-bold text-right">Total</th>
                     <th className="px-5 py-3 font-bold">Status</th>
                     <th className="px-5 py-3" />
@@ -89,10 +94,10 @@ export default async function CaixaPage({
                       <td className="px-5 py-3.5 text-texto-2 tabular-nums whitespace-nowrap">
                         {formatarDataHora(s.abertura)}
                       </td>
-                      <td className="px-5 py-3.5 text-texto-2 tabular-nums whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-texto-2 tabular-nums whitespace-nowrap hidden md:table-cell">
                         {formatarDataHora(s.fechamento)}
                       </td>
-                      <td className="px-5 py-3.5 text-right tabular-nums">
+                      <td className="px-5 py-3.5 text-right tabular-nums hidden md:table-cell">
                         {moeda.format(Number(s.fundo_caixa) || 0)}
                       </td>
                       <td className="px-5 py-3.5 text-right font-bold tabular-nums">
@@ -100,7 +105,7 @@ export default async function CaixaPage({
                           ? moeda.format(Number(s.total_fechamento))
                           : "—"}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${
                             s.status === "aberta"
@@ -131,7 +136,7 @@ export default async function CaixaPage({
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ResponsiveTable>
           )}
         </section>
       </Revelar>

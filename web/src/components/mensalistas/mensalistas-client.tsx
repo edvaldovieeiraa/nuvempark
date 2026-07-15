@@ -302,7 +302,7 @@ function LinhaCliente({
       exit={{ opacity: 0 }}
       className={cliente.bloqueado ? "bg-perigo-bg/40" : ""}
     >
-      <div className="px-5 py-3.5 flex items-center gap-3">
+      <div className="px-4 md:px-5 py-3.5 flex items-center gap-2.5 md:gap-3">
         <span className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-acento grid place-items-center text-white text-xs font-black shrink-0">
           {cliente.nome.charAt(0).toUpperCase()}
         </span>
@@ -332,10 +332,11 @@ function LinhaCliente({
           <button
             onClick={() => setPagamentoAberto(true)}
             title="Registrar pagamento"
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-brand-50 border border-brand-200 text-xs font-bold text-brand-700 hover:bg-brand-100 transition-colors"
+            aria-label="Registrar pagamento"
+            className="toque-44 shrink-0 inline-flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-brand-50 border border-brand-200 text-xs font-bold text-brand-700 hover:bg-brand-100 transition-colors"
           >
             <Banknote className="w-3.5 h-3.5" />
-            Pagamento
+            <span className="hidden sm:inline">Pagamento</span>
           </button>
         )}
 
@@ -375,7 +376,7 @@ function LinhaCliente({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-4 pl-[68px] space-y-4">
+            <div className="px-4 md:px-5 pb-4 pl-4 md:pl-[68px] space-y-4">
               {/* Veículos */}
               <div>
                 <p className="text-[11px] font-black uppercase tracking-wider text-texto-3 mb-2">

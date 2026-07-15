@@ -10,6 +10,7 @@ import { formatarDataHora } from "@/lib/format-data";
 import { FotoVeiculoModal } from "@/components/foto-veiculo/foto-veiculo-modal";
 import { FotoVeiculoThumb } from "@/components/foto-veiculo/foto-veiculo-thumb";
 import { Operador } from "@/components/operador";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 type Ticket = {
   id: string;
@@ -183,7 +184,59 @@ export function MovimentosClient({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Mobile (< md): cards empilhados — mesma fonte, mesmo clique */}
+          <ul className="md:hidden divide-y divide-borda">
+            {tickets.map((t) => (
+              <li
+                key={t.id}
+                onClick={() => setDetalhe(t)}
+                className="px-4 py-3 flex gap-3 hover:bg-brand-50/40 transition-colors cursor-pointer"
+              >
+                <FotoVeiculoThumb
+                  url={fotos[t.id]}
+                  placa={t.placa}
+                  aoClicar={() => setDetalhe(t)}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-black tracking-widest text-[13px] bg-fundo border border-borda rounded-md px-2 py-1">
+                      {t.placa}
+                    </span>
+                    <span className="font-bold tabular-nums text-sm shrink-0">
+                      {t.valor_cobrado != null
+                        ? moeda.format(Number(t.valor_cobrado))
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                    <StatusChip status={t.status} />
+                    {t.origem === "plano" && (
+                      <span className="text-[10px] font-bold text-info bg-info-bg rounded-full px-2 py-0.5">
+                        mensalista
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1.5 text-xs text-texto-2 tabular-nums">
+                    {formatarDataHora(t.entrada)}
+                    {t.saida && (
+                      <span className="text-texto-3">
+                        {" → "}
+                        {formatarDataHora(t.saida)}
+                      </span>
+                    )}
+                    <span className="text-texto-3">
+                      {" · "}
+                      {permanencia(t.entrada, t.saida)}
+                    </span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {/* md+: tabela completa com rolagem horizontal */}
+          <ResponsiveTable wrapperClassName="hidden md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
@@ -265,7 +318,8 @@ export function MovimentosClient({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
+          </>
         )}
       </motion.section>
 

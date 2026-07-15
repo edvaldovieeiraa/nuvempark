@@ -7,6 +7,7 @@ import { ParkingSquare } from "lucide-react";
 import { FotoVeiculoModal } from "@/components/foto-veiculo/foto-veiculo-modal";
 import { FotoVeiculoThumb } from "@/components/foto-veiculo/foto-veiculo-thumb";
 import { Operador } from "@/components/operador";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { formatarDataHora } from "@/lib/format-data";
 
 type Veiculo = {
@@ -54,7 +55,7 @@ export function PatioLista({
   return (
     <>
       <section className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden">
-        <div className="overflow-x-auto">
+        <ResponsiveTable>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
@@ -63,8 +64,12 @@ export function PatioLista({
                 </th>
                 <th className="px-5 py-3 font-bold">Placa</th>
                 <th className="px-5 py-3 font-bold">Tipo</th>
-                <th className="px-5 py-3 font-bold">Entrada</th>
-                <th className="px-5 py-3 font-bold">Operador</th>
+                <th className="px-5 py-3 font-bold hidden md:table-cell">
+                  Entrada
+                </th>
+                <th className="px-5 py-3 font-bold hidden md:table-cell">
+                  Operador
+                </th>
                 <th className="px-5 py-3 font-bold">Permanência</th>
               </tr>
             </thead>
@@ -95,10 +100,10 @@ export function PatioLista({
                   <td className="px-5 py-3 text-texto-2 capitalize">
                     {t.tipo_veiculo}
                   </td>
-                  <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                  <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap hidden md:table-cell">
                     {formatarDataHora(t.entrada)}
                   </td>
-                  <td className="px-5 py-3 text-texto-2">
+                  <td className="px-5 py-3 text-texto-2 hidden md:table-cell">
                     <Operador nome={operadores[t.operador_id ?? ""]} />
                   </td>
                   <td className="px-5 py-3 font-bold tabular-nums">
@@ -108,7 +113,7 @@ export function PatioLista({
               ))}
             </tbody>
           </table>
-        </div>
+        </ResponsiveTable>
       </section>
 
       <AnimatePresence>

@@ -3,6 +3,7 @@ import { formatarDataHora } from "@/lib/format-data";
 import { labelTicketStatus } from "@/lib/status-labels";
 import { resolverPatio } from "@/lib/patio-scope";
 import { Revelar } from "@/components/ui/revelar";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { SemPatio } from "@/components/sem-patio";
 import { RemovidosFiltros } from "@/components/removidos/removidos-filtros";
 import { Ban, BrushCleaning } from "lucide-react";
@@ -75,14 +76,18 @@ export default async function RemovidosPage({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <ResponsiveTable>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
                     <th className="px-5 py-3 font-bold">Placa</th>
-                    <th className="px-5 py-3 font-bold">Entrada</th>
+                    <th className="px-5 py-3 font-bold hidden md:table-cell">
+                      Entrada
+                    </th>
                     <th className="px-5 py-3 font-bold">Removido em</th>
-                    <th className="px-5 py-3 font-bold">Por</th>
+                    <th className="px-5 py-3 font-bold hidden md:table-cell">
+                      Por
+                    </th>
                     <th className="px-5 py-3 font-bold">Motivo</th>
                     <th className="px-5 py-3 font-bold">Origem</th>
                   </tr>
@@ -103,13 +108,13 @@ export default async function RemovidosPage({
                             {t.tipo_veiculo}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
+                        <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap hidden md:table-cell">
                           {formatarDataHora(t.entrada)}
                         </td>
                         <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
                           {formatarDataHora(t.removido_em)}
                         </td>
-                        <td className="px-5 py-3 text-texto-2">
+                        <td className="px-5 py-3 text-texto-2 hidden md:table-cell">
                           <span className="block">
                             {t.removido_por_nome ?? t.removido_por_email ?? "—"}
                           </span>
@@ -126,7 +131,7 @@ export default async function RemovidosPage({
                             "—"
                           )}
                         </td>
-                        <td className="px-5 py-3">
+                        <td className="px-5 py-3 whitespace-nowrap">
                           {viaLimpeza ? (
                             <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border bg-perigo-bg text-perigo border-perigo/20">
                               <BrushCleaning className="w-3.5 h-3.5" />
@@ -144,7 +149,7 @@ export default async function RemovidosPage({
                   })}
                 </tbody>
               </table>
-            </div>
+            </ResponsiveTable>
           )}
         </section>
       </Revelar>

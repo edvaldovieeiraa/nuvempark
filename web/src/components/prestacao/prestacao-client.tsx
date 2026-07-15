@@ -15,6 +15,7 @@ import {
   type OperadorLite,
 } from "@/app/painel/financeiro/prestacao/actions";
 import { gerarPdf, type RelatorioDados } from "./relatorio-pdf";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { formatarData, formatarDataHora } from "@/lib/format-data";
 
 const moeda = new Intl.NumberFormat("pt-BR", {
@@ -399,6 +400,7 @@ function Relatorio({ dados }: { dados: RelatorioDados }) {
           ) : (
             <Tabela
               head={["Fechamento", "Operador", "Fundo", "Entradas", "Sangrias", "Esperado", "Contado", "Diverg."]}
+              ocultarMd={[1, 2, 3, 4, 5]}
               rows={dados.movimentos.sessoes.map((s) => [
                 formatarDataHora(s.fechamento),
                 s.operador_nome ?? "—",
@@ -553,16 +555,26 @@ function Secao({
   );
 }
 
-function Tabela({ head, rows }: { head: string[]; rows: string[][] }) {
+function Tabela({
+  head,
+  rows,
+  ocultarMd = [],
+}: {
+  head: string[];
+  rows: string[][];
+  /** Índices de colunas secundárias a ocultar abaixo de `md`. */
+  ocultarMd?: number[];
+}) {
+  const oculta = (i: number) => (ocultarMd.includes(i) ? "hidden md:table-cell" : "");
   return (
-    <div className="overflow-x-auto">
+    <ResponsiveTable>
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
             {head.map((h, i) => (
               <th
                 key={i}
-                className={`px-4 py-2 font-bold ${i === 0 ? "" : "text-right"}`}
+                className={`px-4 py-2 font-bold whitespace-nowrap ${i === 0 ? "" : "text-right"} ${oculta(i)}`}
               >
                 {h}
               </th>
@@ -575,7 +587,7 @@ function Tabela({ head, rows }: { head: string[]; rows: string[][] }) {
               {r.map((c, ci) => (
                 <td
                   key={ci}
-                  className={`px-4 py-2 tabular-nums ${ci === 0 ? "font-semibold whitespace-nowrap" : "text-right text-texto-2"}`}
+                  className={`px-4 py-2 tabular-nums whitespace-nowrap ${ci === 0 ? "font-semibold" : "text-right text-texto-2"} ${oculta(ci)}`}
                 >
                   {c}
                 </td>
@@ -584,7 +596,7 @@ function Tabela({ head, rows }: { head: string[]; rows: string[][] }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ResponsiveTable>
   );
 }
 
