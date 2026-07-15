@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sessaoMasterAtiva } from "@/lib/master-auth";
+import { garantirFaturaTrial } from "@/lib/faturas-trial";
 
 export type Resultado =
   | { ok: true; msg: string; codigo?: string }
@@ -132,7 +133,9 @@ export async function estenderTrial(
     .update({ estado: "trial", trial_expira_em: nova.toISOString() })
     .eq("tenant_id", tenantId);
   if (error) return { ok: false, msg: "Não foi possível estender." };
+  await garantirFaturaTrial(sb, tenantId);
   revalidatePath("/master/tenants");
+  revalidatePath("/master/assinaturas");
   return { ok: true, msg: `Trial estendido por ${dias} dias.` };
 }
 

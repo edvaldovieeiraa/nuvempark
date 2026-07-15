@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enviarEmail, emailConfigurado } from "@/lib/email";
 import { emailConfirmacao } from "@/lib/email-templates";
+import { garantirFaturaTrial } from "@/lib/faturas-trial";
 
 export type ResultadoCadastro =
   | { ok: true; email: string }
@@ -133,6 +134,10 @@ export async function criarContaTrial(
     origem: "signup",
     email_cobranca: email,
   });
+
+  // Tenta já deixar a "próxima fatura" pronta (no-op enquanto não houver
+  // pátio ativo — nesse momento do signup normalmente ainda não há).
+  await garantirFaturaTrial(sb, tenant.id);
 
   return { ok: true, email };
 }

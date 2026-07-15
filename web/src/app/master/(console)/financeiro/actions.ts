@@ -128,15 +128,27 @@ export async function marcarPaga(
     return { ok: false, msg: "Sessão master expirada." };
 
   const sb = createAdminClient();
-  const { error } = await sb
+  const { data: fatura, error } = await sb
     .from("faturas")
     .update({
       estado: "paga",
       pago_em: new Date().toISOString(),
       forma_pagamento: forma,
     })
-    .eq("id", faturaId);
+    .eq("id", faturaId)
+    .select("tenant_id")
+    .maybeSingle();
   if (error) return { ok: false, msg: "Não foi possível baixar a fatura." };
+
+  // Baixou → ativa a assinatura se estava em teste/atraso/suspensa.
+  if (fatura?.tenant_id) {
+    await sb
+      .from("assinaturas")
+      .update({ estado: "ativa", trial_expira_em: null })
+      .eq("tenant_id", fatura.tenant_id)
+      .in("estado", ["trial", "atrasada", "suspensa"]);
+    revalidatePath("/master/tenants");
+  }
 
   revalida();
   return { ok: true, msg: "Fatura marcada como paga." };

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { garantirFaturaTrial } from "@/lib/faturas-trial";
 import { emailConfigurado } from "@/lib/email";
 import { asaasConfigurado } from "@/lib/asaas";
 import {
@@ -47,6 +48,8 @@ export default async function AssinaturaTenantPage({
   const sb = createAdminClient();
 
   await sb.rpc("fn_marcar_faturas_vencidas");
+  // Se a rede está em teste, garante a próxima fatura antes de ler.
+  await garantirFaturaTrial(sb, tenantId);
 
   const [{ data: assinaturaRaw }, { count: patiosAtivos }, { data: faturasRaw }] =
     await Promise.all([

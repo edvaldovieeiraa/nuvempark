@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { garantirFaturasTrials } from "@/lib/faturas-trial";
 import {
   AssinaturasListaClient,
   type LinhaAssinatura,
@@ -29,6 +30,8 @@ export default async function AssinaturasPage() {
   // Manutenção oportunista: mantém estados coerentes ao abrir a gestão.
   await sb.rpc("fn_expirar_trials");
   await sb.rpc("fn_marcar_faturas_vencidas");
+  // Garante a "próxima fatura" das assinaturas em teste (backfill idempotente).
+  await garantirFaturasTrials(sb);
 
   const [{ data: assinaturas }, { data: patios }, { data: faturas }] =
     await Promise.all([

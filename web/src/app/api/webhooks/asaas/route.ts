@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
   if (evento === "PAYMENT_RECEIVED" || evento === "PAYMENT_CONFIRMED") {
     const forma = mapearForma(pagamento?.billingType);
-    await sb
+    const { data: fatura } = await sb
       .from("faturas")
       .update({
         estado: "paga",
@@ -58,7 +58,19 @@ export async function POST(req: NextRequest) {
         forma_pagamento: forma,
       })
       .eq("id", faturaId)
-      .neq("estado", "cancelada");
+      .neq("estado", "cancelada")
+      .select("tenant_id")
+      .maybeSingle();
+
+    // Pagou → ativa a assinatura se estava em teste/atraso/suspensa.
+    // (converte o trial em assinatura paga automaticamente)
+    if (fatura?.tenant_id) {
+      await sb
+        .from("assinaturas")
+        .update({ estado: "ativa", trial_expira_em: null })
+        .eq("tenant_id", fatura.tenant_id)
+        .in("estado", ["trial", "atrasada", "suspensa"]);
+    }
   } else if (evento === "PAYMENT_OVERDUE") {
     await sb
       .from("faturas")
