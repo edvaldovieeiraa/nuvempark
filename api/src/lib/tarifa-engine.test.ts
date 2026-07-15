@@ -105,3 +105,70 @@ describe('TarifaEngine (port do Dart)', () => {
     expect(r.valor).toBeCloseTo(25.0, 3);
   });
 });
+
+/**
+ * PORT dos testes de borda de tolerância do Dart (o bug do Pix online: com
+ * tolerância comparada em minutos truncados, qualquer estadia < 1min saía
+ * grátis — o cliente só conseguia pagar depois de 1 minuto). A comparação
+ * passou a ser em SEGUNDOS. Mantido em paridade com o app.
+ */
+describe('TarifaEngine — tolerância em segundos', () => {
+  function tarifaCom(toleranciaMinutos: number): TarifaConfig {
+    return { ...tarifa, toleranciaMinutos };
+  }
+
+  /** 15/01/2024 10:00:SS local, para variar o segundo da saída. */
+  function seg(segundos: number): Date {
+    return new Date(2024, 0, 15, 10, 0, segundos);
+  }
+
+  it('tolerância 0 · 30s → cobra fração inicial (não é grátis)', () => {
+    const r = TarifaEngine.calcular({
+      entrada: seg(0),
+      saida: seg(30),
+      tarifa: tarifaCom(0),
+    });
+    expect(r.motivo).toBe('normal');
+    expect(r.valor).toBeCloseTo(5.0, 3);
+  });
+
+  it('tolerância 0 · 1s → cobra fração inicial', () => {
+    const r = TarifaEngine.calcular({
+      entrada: seg(0),
+      saida: seg(1),
+      tarifa: tarifaCom(0),
+    });
+    expect(r.motivo).toBe('normal');
+    expect(r.valor).toBeCloseTo(5.0, 3);
+  });
+
+  it('tolerância 0 · 0s (entrada = saída) → grátis (limite inclusivo)', () => {
+    const r = TarifaEngine.calcular({
+      entrada: seg(0),
+      saida: seg(0),
+      tarifa: tarifaCom(0),
+    });
+    expect(r.motivo).toBe('tolerancia');
+    expect(r.valor).toBeCloseTo(0.0, 3);
+  });
+
+  it('tolerância 10min · 600s (10min exatos) → grátis (limite inclusivo)', () => {
+    const r = TarifaEngine.calcular({
+      entrada: seg(0),
+      saida: new Date(2024, 0, 15, 10, 10, 0),
+      tarifa: tarifaCom(10),
+    });
+    expect(r.motivo).toBe('tolerancia');
+    expect(r.valor).toBeCloseTo(0.0, 3);
+  });
+
+  it('tolerância 10min · 601s (10min01s) → cobra (passou 1s do limite)', () => {
+    const r = TarifaEngine.calcular({
+      entrada: seg(0),
+      saida: new Date(2024, 0, 15, 10, 10, 1),
+      tarifa: tarifaCom(10),
+    });
+    expect(r.motivo).toBe('normal');
+    expect(r.valor).toBeCloseTo(5.0, 3);
+  });
+});

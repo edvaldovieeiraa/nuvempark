@@ -37,13 +37,14 @@ export function calcularTarifa(
   saida: Date,
   t: TarifaSim,
 ): ResultadoSim {
-  // Dart usa Duration.inMinutes (trunca) — floor mantém a paridade.
-  const duracaoMinutos = Math.floor(
-    (saida.getTime() - entrada.getTime()) / 60000,
-  );
+  const ms = saida.getTime() - entrada.getTime();
+  // Dart usa Duration.inSeconds/inMinutes (trunca) — floor mantém a paridade.
+  const duracaoSegundos = Math.floor(ms / 1000);
+  const duracaoMinutos = Math.floor(ms / 60000);
 
-  // 1. Tolerância
-  if (duracaoMinutos <= t.tolerancia_minutos) {
+  // 1. Tolerância — comparada em SEGUNDOS (fix 2026-07: estadia < 1min com
+  // tolerância 0 saía grátis pelo floor de minutos). Mantém o `<=` inclusivo.
+  if (duracaoSegundos <= t.tolerancia_minutos * 60) {
     return {
       valor: 0,
       duracaoMinutos,

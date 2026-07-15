@@ -44,6 +44,7 @@ export interface FareResult {
   motivo: FareMotivo;
 }
 
+const MS_POR_SEGUNDO = 1_000;
 const MS_POR_MINUTO = 60_000;
 const MS_POR_HORA = 3_600_000;
 const MS_POR_DIA = 86_400_000;
@@ -66,13 +67,17 @@ export function calcular(params: {
     throw new Error('fracaoAdicionalMinutos deve ser > 0');
   }
 
-  // Trunca, como o `Duration.inMinutes` do Dart.
-  const duracaoMinutos = Math.floor(
-    (saida.getTime() - entrada.getTime()) / MS_POR_MINUTO,
-  );
+  const ms = saida.getTime() - entrada.getTime();
+  // Trunca, como o `Duration.inSeconds`/`inMinutes` do Dart.
+  const duracaoSegundos = Math.floor(ms / MS_POR_SEGUNDO);
+  // Frações/pernoite/teto seguem em MINUTOS (regra original inalterada).
+  const duracaoMinutos = Math.floor(ms / MS_POR_MINUTO);
 
   // ── 1. Tolerância ─────────────────────────────────────────────────────────
-  if (duracaoMinutos <= tarifa.toleranciaMinutos) {
+  // Tolerância comparada em SEGUNDOS (fix 2026-07: estadia < 1min com tolerância
+  // 0 saía grátis pelo floor de minutos — o Pix liberava só após 1 min, sem bater
+  // com o app). Mantém o `<=` inclusivo. Espelha o Dart `tarifa_engine.dart`.
+  if (duracaoSegundos <= tarifa.toleranciaMinutos * 60) {
     return { valor: 0, duracaoMinutos, motivo: 'tolerancia' };
   }
 
