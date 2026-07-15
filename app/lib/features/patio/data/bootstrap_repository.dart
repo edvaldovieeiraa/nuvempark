@@ -39,6 +39,7 @@ class BootstrapRepository {
       'ticket_cabecalho': configJson['ticket_cabecalho'],
       'ticket_rodape': configJson['ticket_rodape'],
       'foto_recibo_modo': configJson['foto_recibo_modo'],
+      'modo_quiosque': configJson['modo_quiosque'],
     });
 
     await db.operacaoDao.upsertCache(OperacaoCacheCompanion(

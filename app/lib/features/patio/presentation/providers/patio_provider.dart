@@ -55,6 +55,7 @@ class PatioNotifier extends AsyncNotifier<PatioModel?> {
       sincronizadoEm:
           DateTime.fromMillisecondsSinceEpoch(cache.sincronizadoEm),
       fotoReciboModo: (config['foto_recibo_modo'] as String?) ?? 'desativada',
+      modoQuiosque: (config['modo_quiosque'] as bool?) ?? true,
     );
   }
 

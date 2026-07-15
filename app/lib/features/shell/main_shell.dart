@@ -5,7 +5,9 @@ import '../caixa/presentation/caixa_screen.dart';
 import '../home/presentation/home_screen.dart';
 import '../menu/presentation/menu_geral_screen.dart';
 import '../../core/platform/lock_task.dart';
+import '../patio/domain/patio_model.dart';
 import '../patio/presentation/patio_tab.dart';
+import '../patio/presentation/providers/patio_provider.dart';
 import '../printing/presentation/providers/printer_provider.dart';
 import '../sync/data/sync_loop.dart';
 import 'conexao_banner.dart';
@@ -35,9 +37,12 @@ class _MainShellState extends ConsumerState<MainShell> {
           ),
     );
 
-    // Fixa o app na tela (bloqueia barra de notificação/status e botões do
-    // sistema). Na 1ª vez o Android pede confirmação (sem device owner).
-    Future.microtask(LockTask.iniciar);
+    // Modo quiosque (Lock Task): fixa o app na tela, conforme a parametrização
+    // do pátio (default ligado). Na 1ª vez o Android pede confirmação.
+    Future.microtask(() async {
+      final patio = await ref.read(patioNotifierProvider.future);
+      await _aplicarQuiosque(patio);
+    });
 
     // Sincronização contínua (push + pull a cada 30s) enquanto o app está
     // aberto. O operador não clica em nada: cadastros da dashboard chegam
@@ -53,8 +58,21 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   void _irPara(int i) => setState(() => _aba = i);
 
+  /// Liga/desliga o quiosque conforme a config do pátio (default ligado).
+  Future<void> _aplicarQuiosque(PatioModel? patio) async {
+    if (patio?.modoQuiosque ?? true) {
+      await LockTask.iniciar();
+    } else {
+      await LockTask.parar();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Reage a mudanças da config (o gestor troca o modo → app re-sincroniza).
+    ref.listen(patioNotifierProvider, (_, next) {
+      _aplicarQuiosque(next.value);
+    });
     return Scaffold(
       body: Column(
         children: [

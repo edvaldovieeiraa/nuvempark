@@ -14,10 +14,11 @@ import {
   Sparkles,
   Loader2,
   Building2,
+  MonitorSmartphone,
   type LucideIcon,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
-import { salvarFotoReciboModo } from "@/app/painel/parametrizacao/actions";
+import { salvarParametrizacao } from "@/app/painel/parametrizacao/actions";
 
 /* =========================================================
    PARAMETRIZAÇÃO
@@ -62,17 +63,21 @@ export function ParametrizacaoClient({
   patioId,
   patioNome,
   modoInicial,
+  quiosqueInicial,
 }: {
   patioId: string | null;
   patioNome: string | null;
   modoInicial: ModoFoto;
+  quiosqueInicial: boolean;
 }) {
   const toast = useToast();
   const [salvando, iniciarSalvar] = useTransition();
   const [inicial, setInicial] = useState<ModoFoto>(modoInicial);
   const [modoFoto, setModoFoto] = useState<ModoFoto>(modoInicial);
+  const [quiosqueInic, setQuiosqueInic] = useState(quiosqueInicial);
+  const [quiosque, setQuiosque] = useState(quiosqueInicial);
 
-  const sujo = modoFoto !== inicial;
+  const sujo = modoFoto !== inicial || quiosque !== quiosqueInic;
 
   const salvar = () => {
     if (!patioId) {
@@ -80,9 +85,10 @@ export function ParametrizacaoClient({
       return;
     }
     iniciarSalvar(async () => {
-      const r = await salvarFotoReciboModo(patioId, modoFoto);
+      const r = await salvarParametrizacao(patioId, modoFoto, quiosque);
       if (r.ok) {
         setInicial(modoFoto);
+        setQuiosqueInic(quiosque);
         toast.sucesso("Parametrização salva.");
       } else {
         toast.erro(r.erro ?? "Não foi possível salvar.");
@@ -195,6 +201,54 @@ export function ParametrizacaoClient({
           </div>
         </section>
 
+        {/* Feature 2 — Modo quiosque do Android */}
+        <section className="mt-5 rounded-2xl border border-borda bg-superficie shadow-[var(--shadow-card)] overflow-hidden">
+          <header className="flex items-center gap-3 p-5 pb-4 border-b border-borda">
+            <span className="grid place-items-center w-10 h-10 rounded-xl bg-info-bg text-ceu shrink-0">
+              <MonitorSmartphone className="w-5 h-5" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="font-extrabold text-texto">Modo quiosque</h2>
+              <p className="text-xs text-texto-3 leading-relaxed">
+                Fixa o app na tela do aparelho: bloqueia a barra de status, as
+                notificações e os botões do Android.
+              </p>
+            </div>
+          </header>
+          <div className="p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="font-semibold text-texto text-[15px]">
+                  Manter o app fixo na tela
+                </p>
+                <p className="text-sm text-texto-2 leading-relaxed mt-0.5">
+                  Recomendado nos aparelhos do pátio: o operador não sai do app
+                  sem querer. Só sai pelo botão "Sair" do menu.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={quiosque}
+                aria-label="Modo quiosque"
+                onClick={() => setQuiosque((v) => !v)}
+                className={`relative shrink-0 w-12 h-7 rounded-full transition-colors duration-200 cursor-pointer mt-0.5 outline-none focus-visible:ring-2 focus-visible:ring-brand-400/50 ${
+                  quiosque
+                    ? "bg-gradient-to-r from-brand-600 to-brand-500"
+                    : "bg-borda"
+                }`}
+              >
+                <motion.span
+                  layout
+                  transition={{ type: "spring", stiffness: 520, damping: 34 }}
+                  className="absolute top-1 w-5 h-5 rounded-full bg-white shadow-[0_1px_3px_rgba(16,27,20,0.35)]"
+                  style={{ left: quiosque ? "calc(100% - 1.5rem)" : "0.25rem" }}
+                />
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* Espaço reservado para as próximas parametrizações */}
         <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-dashed border-borda py-6 text-texto-3">
           <Sparkles className="w-4 h-4" />
@@ -220,7 +274,10 @@ export function ParametrizacaoClient({
                 Você tem alterações não salvas.
               </p>
               <button
-                onClick={() => setModoFoto(inicial)}
+                onClick={() => {
+                  setModoFoto(inicial);
+                  setQuiosque(quiosqueInic);
+                }}
                 disabled={salvando}
                 className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl text-sm font-bold text-texto-2 hover:bg-fundo transition-colors disabled:opacity-50"
               >

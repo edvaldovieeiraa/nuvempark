@@ -26,7 +26,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
     // Pátio
     const { data: patio, error: patioErr } = await db
       .from('patios')
-      .select('id, nome, codigo, qtd_vagas, ativo, foto_recibo_modo')
+      .select('id, nome, codigo, qtd_vagas, ativo, foto_recibo_modo, modo_quiosque')
       .eq('id', patioId)
       .maybeSingle();
     if (patioErr || !patio) {
@@ -129,6 +129,8 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
         foto_recibo_modo:
           (patio as { foto_recibo_modo?: string }).foto_recibo_modo ??
           'desativada',
+        modo_quiosque:
+          (patio as { modo_quiosque?: boolean }).modo_quiosque ?? true,
       },
       tarifas: tarifas ?? [],
       clientes: clientesOut,

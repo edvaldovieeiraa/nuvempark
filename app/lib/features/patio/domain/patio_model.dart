@@ -16,6 +16,7 @@ class PatioModel {
     required this.tarifas,
     required this.sincronizadoEm,
     this.fotoReciboModo = 'desativada',
+    this.modoQuiosque = true,
   });
 
   final String id;
@@ -40,6 +41,9 @@ class PatioModel {
 
   /// O operador escolhe na entrada se imprime a foto.
   bool get fotoReciboOperadorDecide => fotoReciboModo == 'operador';
+
+  /// Modo quiosque (Lock Task) do Android ligado para este pátio.
+  final bool modoQuiosque;
 
   /// Uma tarifa com tipoVeiculo == 'ambos' atende qualquer tipo de veículo.
   static const tipoAmbos = 'ambos';
