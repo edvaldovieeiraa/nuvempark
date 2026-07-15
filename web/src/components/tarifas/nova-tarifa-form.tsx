@@ -78,7 +78,7 @@ export function NovaTarifaForm({
       <form
         ref={formRef}
         action={agir}
-        className="grid grid-cols-2 lg:grid-cols-3 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
       >
         <input type="hidden" name="patio_id" value={patioId} />
 

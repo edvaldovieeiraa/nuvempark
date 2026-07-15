@@ -43,7 +43,7 @@ export function NovoClienteForm({
       transition={{ duration: 0.45, delay: 0.08 }}
       className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-6 max-w-3xl"
     >
-      <form action={agir} className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <form action={agir} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <input type="hidden" name="patio_id" value={patioId} />
         <Campo label="Nome">
           <Input name="nome" required placeholder="Maria Souza" />

@@ -320,7 +320,7 @@ function ModalEditarTarifa({
         <p className="text-xs text-texto-2 mb-5">
           {patioNome} · a alteração vale já na próxima cobrança do app.
         </p>
-        <form action={agir} className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <form action={agir} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <input type="hidden" name="id" value={tarifa.id} />
           <Campo label="Nome">
             <Input name="nome" defaultValue={tarifa.nome} />

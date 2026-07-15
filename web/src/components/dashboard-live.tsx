@@ -17,6 +17,7 @@ import { formatarDataHora } from "@/lib/format-data";
 import { labelTicketStatus } from "@/lib/status-labels";
 import { useToast } from "@/components/ui/toast";
 import { SyncBadge } from "@/components/sync-badge";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 type Patio = {
   id: string;
@@ -117,7 +118,7 @@ export function DashboardLive({ inicial }: { inicial: Inicial }) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex items-center justify-between"
+        className="flex items-center justify-between flex-wrap gap-3"
       >
         <div>
           <h1 className="text-[26px] font-black tracking-tight">Dashboard</h1>
@@ -278,12 +279,12 @@ export function DashboardLive({ inicial }: { inicial: Inicial }) {
           {recentes.length === 0 ? (
             <Vazio texto="Nenhum ticket ainda. Os movimentos do app aparecem aqui em tempo real." />
           ) : (
-            <div className="overflow-x-auto">
+            <ResponsiveTable>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
                     <th className="px-5 py-3 font-bold">Placa</th>
-                    <th className="px-5 py-3 font-bold">Tipo</th>
+                    <th className="px-5 py-3 font-bold hidden md:table-cell">Tipo</th>
                     <th className="px-5 py-3 font-bold">Entrada</th>
                     <th className="px-5 py-3 font-bold">Status</th>
                     <th className="px-5 py-3 font-bold text-right">Valor</th>
@@ -303,7 +304,7 @@ export function DashboardLive({ inicial }: { inicial: Inicial }) {
                           {t.placa}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-texto-2 capitalize">
+                      <td className="px-5 py-3 text-texto-2 capitalize hidden md:table-cell">
                         {t.tipo_veiculo}
                       </td>
                       <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
@@ -321,7 +322,7 @@ export function DashboardLive({ inicial }: { inicial: Inicial }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ResponsiveTable>
           )}
         </motion.section>
       </div>
