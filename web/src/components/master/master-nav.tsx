@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Building2,
+  CreditCard,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import {
 const ITENS: { href: string; label: string; Icone: LucideIcon }[] = [
   { href: "/master", label: "Visão geral", Icone: LayoutDashboard },
   { href: "/master/tenants", label: "Redes (tenants)", Icone: Building2 },
+  { href: "/master/assinaturas", label: "Assinaturas", Icone: CreditCard },
   { href: "/master/financeiro", label: "Financeiro", Icone: Wallet },
 ];
 

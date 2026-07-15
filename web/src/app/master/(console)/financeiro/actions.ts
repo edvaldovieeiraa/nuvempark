@@ -21,6 +21,8 @@ function revalida() {
   revalidatePath("/master/financeiro");
   revalidatePath("/master/financeiro/faturas");
   revalidatePath("/master/financeiro/inadimplencia");
+  revalidatePath("/master/assinaturas");
+  revalidatePath("/master/assinaturas/[tenantId]", "page");
   revalidatePath("/master");
 }
 
@@ -43,6 +45,77 @@ export async function gerarFaturasDoMes(): Promise<Resultado> {
       n === 0
         ? "Nenhuma fatura nova — o mês já estava gerado."
         : `${n} ${n === 1 ? "fatura gerada" : "faturas geradas"} para este mês.`,
+  };
+}
+
+/**
+ * Gera (ou garante) a fatura do mês corrente para UMA rede — mesma regra do
+ * motor SQL `fn_gerar_faturas_mes`, porém escopada a um tenant. Idempotente:
+ * se a fatura da competência já existe, não duplica.
+ */
+export async function gerarFaturaTenant(tenantId: string): Promise<Resultado> {
+  if (!(await sessaoMasterAtiva()))
+    return { ok: false, msg: "Sessão master expirada." };
+
+  const sb = createAdminClient();
+
+  const { data: assinatura } = await sb
+    .from("assinaturas")
+    .select("estado, valor_por_patio, dia_vencimento")
+    .eq("tenant_id", tenantId)
+    .single();
+
+  if (!assinatura)
+    return { ok: false, msg: "Rede sem assinatura configurada." };
+  if (!["ativa", "atrasada"].includes(assinatura.estado))
+    return {
+      ok: false,
+      msg:
+        assinatura.estado === "trial"
+          ? "Rede em teste grátis — ainda não gera fatura."
+          : "Assinatura suspensa/cancelada — não gera fatura.",
+    };
+
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = agora.getMonth(); // 0-based
+  const competencia = `${ano}-${String(mes + 1).padStart(2, "0")}-01`;
+
+  // idempotência: unique (tenant_id, competencia)
+  const { data: existente } = await sb
+    .from("faturas")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("competencia", competencia)
+    .maybeSingle();
+  if (existente)
+    return { ok: false, msg: "A fatura deste mês já foi gerada." };
+
+  const { count: qtdPatios } = await sb
+    .from("patios")
+    .select("*", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("ativo", true);
+
+  const qtd = qtdPatios ?? 0;
+  const valorPorPatio = Number(assinatura.valor_por_patio) || 0;
+  const dia = Math.min(28, Math.max(1, assinatura.dia_vencimento || 10));
+  const vencimento = `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+
+  const { error } = await sb.from("faturas").insert({
+    tenant_id: tenantId,
+    competencia,
+    vencimento,
+    valor: valorPorPatio * qtd,
+    valor_por_patio: valorPorPatio,
+    qtd_patios: qtd,
+  });
+  if (error) return { ok: false, msg: "Não foi possível gerar a fatura." };
+
+  revalida();
+  return {
+    ok: true,
+    msg: `Fatura de ${competencia.slice(0, 7)} gerada (${qtd} ${qtd === 1 ? "pátio" : "pátios"}).`,
   };
 }
 
