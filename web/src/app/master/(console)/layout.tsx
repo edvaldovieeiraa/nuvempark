@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { sessaoMasterAtiva, fecharSessaoMaster } from "@/lib/master-auth";
 import { MasterNav } from "@/components/master/master-nav";
+import { AppShell } from "@/components/app-shell";
 import { LogOut, ShieldCheck } from "lucide-react";
 
 export default async function MasterLayout({
@@ -17,11 +18,14 @@ export default async function MasterLayout({
   }
 
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-64 shrink-0 bg-noite flex flex-col relative overflow-hidden h-screen sticky top-0">
-        <div className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full bg-brand-500/15 blur-3xl" />
+    <AppShell
+      asideClassName="bg-noite"
+      titulo="Console"
+      sidebar={
+        <>
+          <div className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full bg-brand-500/15 blur-3xl" />
 
-        <div className="relative p-5 pb-4">
+          <div className="relative p-5 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-acento grid place-items-center shadow-[var(--shadow-brand)]">
               <ShieldCheck className="w-5 h-5 text-white" />
@@ -47,9 +51,10 @@ export default async function MasterLayout({
             </button>
           </form>
         </div>
-      </aside>
-
-      <main className="flex-1 min-w-0 p-8 fundo-aurora">{children}</main>
-    </div>
+        </>
+      }
+    >
+      {children}
+    </AppShell>
   );
 }

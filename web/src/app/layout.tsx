@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
@@ -11,6 +11,12 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "NuvemPark — Painel do Gestor",
   description: "Gestão de estacionamento na nuvem",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

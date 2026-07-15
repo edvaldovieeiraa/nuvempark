@@ -8,6 +8,7 @@ import { SidebarNav } from "@/components/sidebar-nav";
 import { PatioSeletor } from "@/components/patio-seletor";
 import { TelaBloqueio } from "@/components/painel-bloqueio";
 import { Marca } from "@/components/marca";
+import { AppShell } from "@/components/app-shell";
 
 export default async function PainelLayout({
   children,
@@ -77,14 +78,16 @@ export default async function PainelLayout({
   );
 
   return (
-    <div className="flex-1 flex">
-      {/* Sidebar dark premium */}
-      <aside className="w-64 shrink-0 bg-gradient-to-b from-noite via-noite-2 to-noite flex flex-col relative overflow-hidden">
-        {/* brilho decorativo */}
-        <div className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full bg-brand-500/15 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 -left-20 w-52 h-52 rounded-full bg-acento/10 blur-3xl" />
+    <AppShell
+      asideClassName="bg-gradient-to-b from-noite via-noite-2 to-noite"
+      titulo="Painel"
+      sidebar={
+        <>
+          {/* brilho decorativo */}
+          <div className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full bg-brand-500/15 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 -left-20 w-52 h-52 rounded-full bg-acento/10 blur-3xl" />
 
-        <div className="relative p-5 pb-4">
+          <div className="relative p-5 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-acento-teal grid place-items-center shadow-[var(--shadow-brand)]">
               <Marca className="w-6 h-6" />
@@ -139,11 +142,11 @@ export default async function PainelLayout({
             </button>
           </form>
         </div>
-      </aside>
-
-      {/* Conteúdo */}
-      <main className="flex-1 min-w-0 p-8 fundo-aurora">{children}</main>
-    </div>
+        </>
+      }
+    >
+      {children}
+    </AppShell>
   );
 }
 
