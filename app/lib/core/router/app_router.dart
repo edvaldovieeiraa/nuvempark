@@ -12,8 +12,10 @@ import '../../features/shell/main_shell.dart';
 import '../../features/tickets/presentation/entrada_screen.dart';
 import '../../features/tickets/presentation/saida_screen.dart';
 import '../../features/tickets/presentation/movimentos_screen.dart';
+import '../../features/caixa/domain/caixa_model.dart';
 import '../../features/caixa/presentation/caixa_screen.dart';
 import '../../features/caixa/presentation/caixa_movimentos_screen.dart';
+import '../../features/caixa/presentation/caixa_detalhe_screen.dart';
 import '../../features/mensalistas/presentation/mensalistas_screen.dart';
 import '../../features/printing/presentation/printer_settings_screen.dart';
 import '../../features/menu/presentation/sobre_screen.dart';
@@ -30,6 +32,7 @@ abstract final class Routes {
   static const movimentos = '/movimentos';
   static const caixa = '/caixa';
   static const caixaMovimentos = '/caixa/movimentos';
+  static const caixaDetalhe = '/caixa/detalhe';
   static const mensalistas = '/mensalistas';
   static const impressora = '/impressora';
   // Destino do Menu. A antiga tela de Configurações foi dissolvida (sync vive
@@ -74,6 +77,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.caixaMovimentos,
         builder: (context, state) => const CaixaMovimentosScreen(),
+      ),
+      GoRoute(
+        path: Routes.caixaDetalhe,
+        builder: (context, state) {
+          // A sessão vem via `extra` (caixa aberto atual ou último fechamento).
+          final sessao = state.extra as CaixaModel?;
+          if (sessao == null) {
+            return const Scaffold(
+              body: Center(child: Text('Sessão de caixa não informada.')),
+            );
+          }
+          return CaixaDetalheScreen(sessao: sessao);
+        },
       ),
       GoRoute(
         path: Routes.mensalistas,

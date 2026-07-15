@@ -104,6 +104,7 @@ abstract final class PrintTemplates {
     required double totalContado,
     required double divergencia,
     List<MovimentoCupom> movimentos = const [],
+    List<ResumoFormaCupom> porForma = const [],
     int cols = cols58mm,
     int avancoFinal = 10,
   }) {
@@ -130,6 +131,19 @@ abstract final class PrintTemplates {
         .line(_row('Fundo    :', _moeda.format(fundoCaixa), cols))
         .line(_row('Entradas :', _moeda.format(totalEntradas), cols))
         .line(_row('Sangrias :', '-${_moeda.format(totalSangrias)}', cols));
+
+    // Resumo por forma de pagamento: quanto entrou na gaveta, por meio.
+    if (porForma.isNotEmpty) {
+      b
+          .feed()
+          .separator(width: cols)
+          .boldOn()
+          .line('POR FORMA DE PAGAMENTO')
+          .boldOff();
+      for (final f in porForma) {
+        b.line(_row(f.rotulo, _moeda.format(f.valor), cols));
+      }
+    }
 
     // Relatório de movimentos: cada validação de veículo e lançamento manual.
     if (movimentos.isNotEmpty) {
@@ -255,4 +269,13 @@ class MovimentoCupom {
   final String hora;
   final String descricao;
   final String valor;
+}
+
+/// Linha do resumo por forma de pagamento no cupom de fechamento.
+/// [rotulo] já vem formatado (ex.: "Dinheiro"); [valor] é o total daquela forma.
+class ResumoFormaCupom {
+  const ResumoFormaCupom({required this.rotulo, required this.valor});
+
+  final String rotulo;
+  final double valor;
 }

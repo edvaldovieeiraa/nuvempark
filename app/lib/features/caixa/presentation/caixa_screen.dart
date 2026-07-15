@@ -11,6 +11,7 @@ import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/data/print_templates.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../domain/caixa_model.dart';
+import '../domain/resumo_fechamento.dart';
 import 'providers/caixa_provider.dart';
 
 /// Caixa: abre sessão (fundo), mostra saldo e permite fechar (conferência).
@@ -69,6 +70,11 @@ class CaixaScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               TextButton.icon(
+                onPressed: () => _verDetalheUltimo(context, ref),
+                icon: const Icon(Icons.summarize_outlined, size: 18),
+                label: const Text('Detalhamento do último fechamento'),
+              ),
+              TextButton.icon(
                 onPressed: () => _reimprimirUltimoFechamento(context, ref),
                 icon: const Icon(Icons.print_outlined, size: 18),
                 label: const Text('Reimprimir último fechamento'),
@@ -107,26 +113,15 @@ class CaixaScreen extends ConsumerWidget {
           _linha('Entradas', _moeda.format(s.totalEntradas)),
           _linha('Sangrias', _moeda.format(s.totalSangrias)),
           const SizedBox(height: 12),
-          InkWell(
+          _atalho(
+            icone: Icons.receipt_long_outlined,
+            rotulo: 'Ver movimentos do caixa',
             onTap: () => context.push(Routes.caixaMovimentos),
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              child: Row(
-                children: [
-                  const Icon(Icons.receipt_long_outlined,
-                      size: 20, color: AppColors.primary),
-                  const SizedBox(width: 10),
-                  const Text('Ver movimentos do caixa',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary)),
-                  const Spacer(),
-                  const Icon(Icons.chevron_right,
-                      color: AppColors.onSurfaceVariant),
-                ],
-              ),
-            ),
+          ),
+          _atalho(
+            icone: Icons.summarize_outlined,
+            rotulo: 'Ver detalhamento do fechamento',
+            onTap: () => context.push(Routes.caixaDetalhe, extra: s),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -151,6 +146,31 @@ class CaixaScreen extends ConsumerWidget {
             Text(k, style: const TextStyle(color: AppColors.onSurfaceVariant)),
             Text(v, style: const TextStyle(fontWeight: FontWeight.w600)),
           ],
+        ),
+      );
+
+  Widget _atalho({
+    required IconData icone,
+    required String rotulo,
+    required VoidCallback onTap,
+  }) =>
+      InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          child: Row(
+            children: [
+              Icon(icone, size: 20, color: AppColors.primary),
+              const SizedBox(width: 10),
+              Text(rotulo,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, color: AppColors.primary)),
+              const Spacer(),
+              const Icon(Icons.chevron_right,
+                  color: AppColors.onSurfaceVariant),
+            ],
+          ),
         ),
       );
 
@@ -412,6 +432,12 @@ class CaixaScreen extends ConsumerWidget {
     final patioNome = ref.read(patioNotifierProvider).value?.nome ?? 'Patio';
     final hora = DateFormat('HH:mm');
     final movs = await ref.read(caixaRepositoryProvider).getMovimentos(s.id);
+    final porForma = resumoPorForma(movs)
+        .map((r) => ResumoFormaCupom(
+              rotulo: rotuloFormaPagamento(r.forma),
+              valor: r.total,
+            ))
+        .toList();
     final bytes = PrintTemplates.fechamentoCaixa(
       operadorNome: s.operadorNome,
       operacaoNome: patioNome,
@@ -431,10 +457,23 @@ class CaixaScreen extends ConsumerWidget {
                     '${m.tipo == 'sangria' ? '-' : '+'}${_moeda.format(m.valor)}',
               ))
           .toList(),
+      porForma: porForma,
       cols: printer.cols,
       avancoFinal: printer.avancoFinal,
     );
     return ref.read(printerNotifierProvider.notifier).print(bytes);
+  }
+
+  /// Abre o detalhamento do último fechamento (o mesmo do cupom, na tela).
+  Future<void> _verDetalheUltimo(BuildContext context, WidgetRef ref) async {
+    final s =
+        await ref.read(caixaSessaoNotifierProvider.notifier).ultimoFechamento();
+    if (!context.mounted) return;
+    if (s == null) {
+      AppToast.error(context, 'Nenhum fechamento recente para detalhar.');
+      return;
+    }
+    context.push(Routes.caixaDetalhe, extra: s);
   }
 
   /// Reimprime o último fechamento — cobre impressora sem papel/desligada na
