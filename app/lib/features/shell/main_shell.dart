@@ -98,7 +98,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           NavigationDestination(
             icon: Icon(Icons.apps_outlined),
             selectedIcon: Icon(Icons.apps),
-            label: 'Menu Geral',
+            label: 'Menu',
           ),
         ],
       ),

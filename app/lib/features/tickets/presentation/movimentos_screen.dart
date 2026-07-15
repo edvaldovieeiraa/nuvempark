@@ -37,7 +37,7 @@ class _MovimentosTicketsScreenState
     final async = ref.watch(ticketsMovimentosProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Movimentos')),
+      appBar: AppBar(title: const Text('Movimentos do pátio')),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) =>

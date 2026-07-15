@@ -16,9 +16,7 @@ import '../../features/caixa/presentation/caixa_screen.dart';
 import '../../features/caixa/presentation/caixa_movimentos_screen.dart';
 import '../../features/mensalistas/presentation/mensalistas_screen.dart';
 import '../../features/printing/presentation/printer_settings_screen.dart';
-import '../../features/ajustes/presentation/ajustes_screen.dart';
-import '../../features/menu/presentation/sobre_patio_screen.dart';
-import '../../features/menu/presentation/sobre_app_screen.dart';
+import '../../features/menu/presentation/sobre_screen.dart';
 
 abstract final class Routes {
   static const splash = '/splash';
@@ -34,11 +32,10 @@ abstract final class Routes {
   static const caixaMovimentos = '/caixa/movimentos';
   static const mensalistas = '/mensalistas';
   static const impressora = '/impressora';
-  // Telas alcançadas pelo Menu Geral. `ajustes` ganhou rota própria: a tela de
-  // Configurações continua a mesma, só deixou de ser aba e virou destino.
-  static const ajustes = '/ajustes';
-  static const sobrePatio = '/sobre-patio';
-  static const sobreApp = '/sobre-app';
+  // Destino do Menu. A antiga tela de Configurações foi dissolvida (sync vive
+  // no Menu, "Conexão" virou seção do Sobre, Sair subiu pro Menu) e os dois
+  // "Sobre" viraram uma tela só.
+  static const sobre = '/sobre';
   static String saidaDetalhe(String id) => '/saida/$id';
 }
 
@@ -83,9 +80,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const MensalistasScreen(),
       ),
       GoRoute(path: Routes.impressora, builder: (context, state) => const PrinterSettingsScreen()),
-      GoRoute(path: Routes.ajustes, builder: (context, state) => const AjustesScreen()),
-      GoRoute(path: Routes.sobrePatio, builder: (context, state) => const SobrePatioScreen()),
-      GoRoute(path: Routes.sobreApp, builder: (context, state) => const SobreAppScreen()),
+      GoRoute(path: Routes.sobre, builder: (context, state) => const SobreScreen()),
     ],
   );
 });
