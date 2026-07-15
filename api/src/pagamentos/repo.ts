@@ -18,8 +18,9 @@ import { env } from '../env.js';
  * As proteções que substituem a RLS aqui:
  *  1. Este cliente vive SÓ neste arquivo. Nenhuma outra rota o importa.
  *  2. As funções abaixo são de ESCOPO ESTREITO: tocam apenas `pagamentos_online`,
- *     `tenant_gateways` (leitura) e TRÊS campos do ticket. Não existe um
- *     `query(sql)` genérico exposto.
+ *     `tenant_gateways` (leitura), TRÊS campos do ticket e — para a baixa de
+ *     assinatura vinda do mesmo webhook — `faturas` e o `estado` de
+ *     `assinaturas`. Não existe um `query(sql)` genérico exposto.
  *  3. Cada função busca pelo id da PRÓPRIA cobrança e usa o `tenant_id` que já
  *     está gravado nela — nunca um tenant vindo da requisição.
  *  4. O webhook valida o token do Asaas antes de chegar aqui.
@@ -346,5 +347,69 @@ export async function marcarPago(params: {
     .eq('id', params.ticketId);
 
   if (erroTicket) throw erroTicket;
+  return true;
+}
+
+// ── Faturas de assinatura (mesmo webhook, cobrança da conta plataforma) ──────
+
+export interface LinhaFaturaAssinatura {
+  id: string;
+  tenant_id: string;
+  estado: string;
+}
+
+/**
+ * Fatura de ASSINATURA pela referência que o PSP devolve (o `externalReference`
+ * da cobrança é o id da fatura no nosso banco). Usado quando a cobrança não é de
+ * ticket — é a mensalidade do tenant, criada na conta plataforma.
+ */
+export async function acharFatura(
+  externalReference: string | null,
+): Promise<LinhaFaturaAssinatura | null> {
+  if (!externalReference) return null;
+  const { data, error } = await servico
+    .from('faturas')
+    .select('id, tenant_id, estado')
+    .eq('id', externalReference)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as LinhaFaturaAssinatura) ?? null;
+}
+
+/**
+ * Baixa a fatura de assinatura e, se estava em teste/atraso/suspensão, ATIVA a
+ * assinatura (converte o trial em assinatura paga).
+ *
+ * IDEMPOTENTE: o update exige estado != 'paga' (e != 'cancelada'), então um
+ * webhook repetido do Asaas vira no-op e devolve `false`.
+ */
+export async function marcarFaturaPaga(params: {
+  faturaId: string;
+  tenantId: string;
+  forma: string;
+  pagoEm: Date;
+}): Promise<boolean> {
+  const { data, error } = await servico
+    .from('faturas')
+    .update({
+      estado: 'paga',
+      pago_em: params.pagoEm.toISOString(),
+      forma_pagamento: params.forma,
+    })
+    .eq('id', params.faturaId)
+    .neq('estado', 'paga')
+    .neq('estado', 'cancelada')
+    .select('id');
+
+  if (error) throw error;
+  if (!data || data.length === 0) return false; // já paga/cancelada: no-op
+
+  const { error: erroAssin } = await servico
+    .from('assinaturas')
+    .update({ estado: 'ativa', trial_expira_em: null })
+    .eq('tenant_id', params.tenantId)
+    .in('estado', ['trial', 'atrasada', 'suspensa']);
+  if (erroAssin) throw erroAssin;
+
   return true;
 }

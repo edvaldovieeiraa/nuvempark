@@ -2,7 +2,12 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { env } from '../env.js';
-import { acharPagamento, marcarPago } from '../pagamentos/repo.js';
+import {
+  acharPagamento,
+  marcarPago,
+  acharFatura,
+  marcarFaturaPaga,
+} from '../pagamentos/repo.js';
 
 /**
  * Webhook do Asaas — confirma o pagamento online do ticket.
@@ -24,9 +29,23 @@ const EventoAsaas = z.object({
       id: z.string().optional(),
       externalReference: z.string().nullish(),
       value: z.number().optional(),
+      billingType: z.string().nullish(),
     })
     .optional(),
 });
+
+/** billingType do Asaas → forma_pagamento das nossas faturas. */
+function mapearForma(billingType?: string | null): string {
+  switch (billingType) {
+    case 'BOLETO':
+      return 'boleto';
+    case 'CREDIT_CARD':
+      return 'cartao';
+    case 'PIX':
+    default:
+      return 'pix';
+  }
+}
 
 /** Eventos que significam "o dinheiro entrou". */
 const EVENTOS_PAGO = new Set(['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED']);
@@ -66,6 +85,26 @@ export async function webhookAsaasRoutes(app: FastifyInstance): Promise<void> {
     });
 
     if (!pagamento) {
+      // Não é ticket. Pode ser a MENSALIDADE do tenant (fatura de assinatura,
+      // cobrança criada na conta plataforma): o mesmo webhook baixa a fatura e
+      // ativa a assinatura. Idempotente — retry vira no-op.
+      const fatura = await acharFatura(payment?.externalReference ?? null);
+      if (fatura) {
+        const mudou = await marcarFaturaPaga({
+          faturaId: fatura.id,
+          tenantId: fatura.tenant_id,
+          forma: mapearForma(payment?.billingType),
+          pagoEm: new Date(),
+        });
+        if (mudou) {
+          req.log.info(
+            { faturaId: fatura.id, tenantId: fatura.tenant_id },
+            'fatura de assinatura confirmada (trial/atraso → ativa)',
+          );
+        }
+        return reply.send({ ok: true, pago: true, tipo: 'fatura', jaProcessado: !mudou });
+      }
+
       // Cobrança de outro sistema na mesma conta Asaas, ou já apagada. 200: não
       // é erro do Asaas, e re-tentar não vai fazer a linha aparecer.
       req.log.warn(
