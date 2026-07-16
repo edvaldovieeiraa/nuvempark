@@ -61,10 +61,16 @@ class HeartbeatService with WidgetsBindingObserver {
     if (_emTick || !_rodando) return;
     _emTick = true;
     try {
+      // O patio_id só é necessário no PRIMEIRO heartbeat de um aparelho novo,
+      // quando o servidor o cadastra (ver rota /heartbeat). Depois disso ele é
+      // ignorado — mas mandar sempre é mais barato que rastrear "já registrei".
+      final patioId = await _ref.read(tokenStorageProvider).readPatioId();
+
       // Os interceptors do Dio já injetam Bearer + X-Device-Id (e renovam o
       // token quando expira) — o serviço não conhece token nem device.
       await _ref.read(dioProvider).post<void>(
             Env.heartbeatUrl,
+            data: patioId == null ? null : {'patio_id': patioId},
             options: Options(
               sendTimeout: Env.heartbeatTimeout,
               receiveTimeout: Env.heartbeatTimeout,
