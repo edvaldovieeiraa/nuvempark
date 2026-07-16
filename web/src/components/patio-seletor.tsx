@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ParkingSquare, ChevronsUpDown, Check, RefreshCw } from "lucide-react";
+import { ParkingSquare, ChevronsUpDown, Check } from "lucide-react";
 
-import { formatarDataHora } from "@/lib/format-data";
+import { UltimaAtividade, useUltimaAtividade } from "@/components/ultima-atividade";
 
 type Patio = { id: string; nome: string; codigo_acesso?: string | null };
 
@@ -18,11 +18,16 @@ export function PatioSeletor({
   sincronizacoes = {},
 }: {
   patios: Patio[];
-  /** `patio_id → ISO` da última sincronização com o app. Vem do servidor. */
+  /**
+   * `patio_id → ISO` da última sincronização com o app. Vem do servidor e é só
+   * a PRIMEIRA pintura: daí em diante quem manda é o Realtime (ver
+   * useUltimaAtividade), então a data avança sem F5.
+   */
   sincronizacoes?: Record<string, string>;
   /** @deprecated a URL (?patio) é a fonte da verdade. */
   patioIdAtivo?: string | null;
 }) {
+  const atividade = useUltimaAtividade(sincronizacoes);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -83,7 +88,7 @@ export function PatioSeletor({
         <ChevronsUpDown className="w-4 h-4 text-white/40 shrink-0" />
       </button>
 
-      <UltimaSincronizacao iso={ativo ? sincronizacoes[ativo.id] : undefined} />
+      <UltimaAtividade iso={ativo ? atividade[ativo.id] : undefined} />
 
       <AnimatePresence>
         {aberto && (
@@ -121,29 +126,5 @@ export function PatioSeletor({
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-/**
- * Data exata da última vez que o app deste pátio mandou dados para a nuvem.
- * Discreta de propósito: é um sinal de saúde, não uma ação.
- */
-function UltimaSincronizacao({ iso }: { iso?: string }) {
-  return (
-    <p
-      className="mt-1.5 px-1 flex items-center gap-1.5 text-[10px] leading-tight text-white/40"
-      title={
-        iso
-          ? "Última vez que o app deste pátio enviou dados para a nuvem"
-          : "Este pátio ainda não enviou nada pelo app"
-      }
-    >
-      <RefreshCw className="w-2.5 h-2.5 shrink-0" aria-hidden="true" />
-      <span className="truncate">
-        {iso
-          ? `Sincronizado ${formatarDataHora(iso)}`
-          : "Nunca sincronizou"}
-      </span>
-    </p>
   );
 }
