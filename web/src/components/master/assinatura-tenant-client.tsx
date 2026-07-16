@@ -440,6 +440,21 @@ function LinhaFatura({
         </button>
       )}
 
+      {/* Ação rápida: recibo. Ocupa o mesmo slot do "Pago" — os dois estados são
+          mutuamente exclusivos, e pegar o comprovante é a coisa mais comum de se
+          fazer com uma fatura paga. Estava só dentro do menu "⋮". */}
+      {f.estado === "paga" && (
+        <Link
+          href={`/master/recibo/${f.id}`}
+          target="_blank"
+          title="Abrir o recibo para imprimir ou salvar em PDF"
+          className="shrink-0 h-9 px-3 rounded-lg border border-borda text-texto-2 font-bold text-xs inline-flex items-center gap-1.5 hover:bg-fundo hover:text-texto transition-colors"
+        >
+          <FileText className="w-4 h-4" />
+          <span className="hidden sm:inline">Recibo</span>
+        </Link>
+      )}
+
       {/* Menu */}
       <div className="relative shrink-0">
         <button
@@ -484,22 +499,12 @@ function LinhaFatura({
                     Abrir link de pagamento
                   </a>
                 )}
+                {/* Recibo saiu daqui: virou botão visível na própria linha. */}
                 {f.estado === "paga" && (
-                  <>
-                    <Link
-                      href={`/master/recibo/${f.id}`}
-                      target="_blank"
-                      onClick={() => setMenu(false)}
-                      className="w-full px-3 py-2 rounded-lg flex items-center gap-2.5 text-sm font-semibold text-texto-2 hover:bg-fundo hover:text-texto transition-colors"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Recibo (imprimir/PDF)
-                    </Link>
-                    <Item onClick={() => chamar(() => reabrirFatura(f.id))}>
-                      <RotateCcw className="w-4 h-4" />
-                      Reabrir (estornar baixa)
-                    </Item>
-                  </>
+                  <Item onClick={() => chamar(() => reabrirFatura(f.id))}>
+                    <RotateCcw className="w-4 h-4" />
+                    Reabrir (estornar baixa)
+                  </Item>
                 )}
                 {f.estado !== "cancelada" && f.estado !== "paga" && (
                   <>
