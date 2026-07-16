@@ -9,6 +9,17 @@
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
 
+    <!-- Operação em segundo plano: heartbeat (60s) + sync continuam com a tela
+         apagada. Ver OperacaoService — sem o foreground service o Android 12+
+         congela o processo e os timers Dart param. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <!-- Android 13+: a notificação obrigatória do FGS só aparece com esta. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Isenção do Doze em aparelho a bateria. Device Owner já é isento por
+         padrão; esta permissão cobre o aparelho que NÃO foi provisionado. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+
     <application
         android:label="NuvemPark"
         android:name="${applicationName}"
@@ -36,6 +47,18 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- Mantém heartbeat + sync vivos com a tela apagada. Tipo specialUse
+             (NÃO dataSync): no Android 15+ dataSync é capado em 6h/dia e o
+             sistema derruba o serviço — um pátio abre mais que isso. -->
+        <service
+            android:name=".OperacaoService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Mantém a sincronização do pátio e o sinal de status online do terminal de estacionamento enquanto o aparelho opera com a tela apagada." />
+        </service>
 
         <!-- Device Admin Receiver: habilita registrar o app como Device Owner
              (trava total de maquininha). Ver PROVISIONAR-DEVICE-OWNER.md. -->

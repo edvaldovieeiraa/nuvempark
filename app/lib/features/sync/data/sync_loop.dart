@@ -9,13 +9,16 @@ import '../../patio/presentation/providers/patio_provider.dart';
 
 /// Loop de sincronização contínua e bidirecional.
 ///
-/// Enquanto o app está em PRIMEIRO PLANO, a cada [Env.syncInterval] (30s) faz:
+/// A cada [Env.syncInterval] (30s) faz:
 ///   • PUSH — drena a outbox local (entradas, saídas, caixa) pro servidor
 ///   • PULL — baixa os cadastros da dashboard (tarifas, tipos, config, cupom)
 ///
 /// O operador não precisa clicar em nada: o que muda na dashboard aparece
-/// sozinho, e o que ele registra sobe sozinho. Em SEGUNDO PLANO o loop pausa
-/// (economiza bateria/dados); ao voltar, sincroniza na hora e retoma o ciclo.
+/// sozinho, e o que ele registra sobe sozinho — inclusive com o app fora da
+/// tela (ver didChangeAppLifecycleState e OperacaoService).
+///
+/// Este é o AGENDADOR. A mecânica de sync (outbox, estratégias, backoff,
+/// idempotência) mora no SyncEngine e não é da conta deste arquivo.
 ///
 /// É resiliente a offline: cada tick é best-effort — se a rede cai, o cache
 /// atual continua servindo e o próximo tick tenta de novo (sem travar a UI).
@@ -67,17 +70,19 @@ class SyncLoop with WidgetsBindingObserver {
     }
   }
 
-  /// Pausa em background, retoma (com sync imediato) em foreground.
+  /// SEGUE SINCRONIZANDO em background: a fila local precisa subir mesmo com o
+  /// tablet de tela apagada, senão uma entrada registrada no fim do expediente
+  /// só apareceria no painel no dia seguinte. Quem sustenta o timer fora da
+  /// tela é o OperacaoService (foreground service) — sem ele o Android 12+
+  /// congela o processo e este timer para sozinho.
+  ///
+  /// No resume ainda sincronizamos na hora: é quando a rede costuma voltar.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!_rodando) return;
     if (state == AppLifecycleState.resumed) {
-      _tick(); // sincroniza na hora que voltou
+      _tick();
       _agendar();
-    } else if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      _timer?.cancel();
-      _timer = null;
     }
   }
 }

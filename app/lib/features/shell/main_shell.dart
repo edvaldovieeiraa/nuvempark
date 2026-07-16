@@ -6,6 +6,7 @@ import '../home/presentation/home_screen.dart';
 import '../menu/presentation/menu_geral_screen.dart';
 import '../../core/heartbeat/heartbeat_service.dart';
 import '../../core/platform/lock_task.dart';
+import '../../core/platform/operacao_background.dart';
 import '../patio/domain/patio_model.dart';
 import '../patio/presentation/patio_tab.dart';
 import '../patio/presentation/providers/patio_provider.dart';
@@ -53,13 +54,29 @@ class _MainShellState extends ConsumerState<MainShell> {
     // Heartbeat (60s): diz ao painel do gestor que este app está vivo mesmo
     // sem movimentação. Mecanismo à parte do sync — ver HeartbeatService.
     Future.microtask(() => ref.read(heartbeatServiceProvider).iniciar());
+
+    // Operação em segundo plano: sem isto, os dois timers acima param assim
+    // que a tela apaga (o Android congela o processo). Duas camadas — ver
+    // OperacaoBackground.
+    Future.microtask(_manterVivoEmBackground);
   }
 
   @override
   void dispose() {
     ref.read(syncLoopProvider).parar();
     ref.read(heartbeatServiceProvider).parar();
+    OperacaoBackground.parar();
     super.dispose();
+  }
+
+  /// Camada 1 (tablet na tomada): tela nunca dorme — só em Device Owner.
+  /// Camada 2 (aparelho que dorme): foreground service segura o processo.
+  ///
+  /// As duas juntas de propósito: a 1ª não vale em aparelho não provisionado e
+  /// a 2ª não vale se o Doze bloquear a rede. Cada uma cobre o furo da outra.
+  Future<void> _manterVivoEmBackground() async {
+    await OperacaoBackground.iniciar();
+    await OperacaoBackground.manterTelaLigada(true);
   }
 
   void _irPara(int i) => setState(() => _aba = i);

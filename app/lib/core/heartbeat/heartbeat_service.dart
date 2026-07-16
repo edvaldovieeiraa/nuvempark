@@ -19,8 +19,8 @@ import '../di/providers.dart';
 /// nem idempotência com ele, e não toca em nenhum arquivo do sync engine. Se o
 /// heartbeat falhar, nada no sync muda; se o sync falhar, o heartbeat segue.
 ///
-/// Roda só em PRIMEIRO PLANO e logado (o [MainShell] só existe pós-login).
-/// Em background pausa (bateria/dados); ao voltar, bate na hora e retoma.
+/// Roda enquanto houver sessão (o [MainShell] só existe pós-login), INCLUSIVE
+/// com o app fora da tela — ver didChangeAppLifecycleState.
 ///
 /// FAIL-SILENT por contrato: rede caída, timeout ou 4xx são engolidos sem log
 /// nem retry. O heartbeat é um sinal descartável — perder um tick só significa
@@ -77,17 +77,19 @@ class HeartbeatService with WidgetsBindingObserver {
     }
   }
 
-  /// Pausa em background, retoma (com batida imediata) em foreground.
+  /// SEGUE BATENDO em background — é justamente aí que o gestor precisa saber
+  /// se o tablet está vivo (pátio parado, tela apagada). Quem sustenta isso é
+  /// o OperacaoService: sem o foreground service o Android congelaria o
+  /// processo e este timer pararia sozinho, sem nada aqui pedir.
+  ///
+  /// No resume ainda batemos na hora: a rede pode ter mudado (wifi caiu e
+  /// voltou), e o painel fica verde imediatamente em vez de esperar até 60s.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!_rodando) return;
     if (state == AppLifecycleState.resumed) {
-      _bater(); // o painel volta a ficar verde na hora, sem esperar 60s
+      _bater();
       _agendar();
-    } else if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      _timer?.cancel();
-      _timer = null;
     }
   }
 }
