@@ -8,6 +8,8 @@ import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../../caixa/presentation/providers/caixa_provider.dart';
+import '../../patio/presentation/providers/patio_provider.dart';
 import '../../sync/presentation/sync_info_provider.dart';
 
 /// Aba "Menu": porta única para o que não mora na barra inferior, em três
@@ -30,54 +32,196 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Brisa: sem AppBar — o perfil abre a tela no lugar do título "Menu".
     return Scaffold(
-      appBar: AppBar(title: const Text('Menu')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          children: [
+            _cardPerfil(),
+
+            _secao('Operação'),
+            _grupo([
+              _item(
+                icone: Icons.badge_outlined,
+                titulo: 'Mensalistas',
+                subtitulo: 'clientes e recebimento de mensalidades',
+                onTap: () => context.push(Routes.mensalistas),
+              ),
+              _item(
+                icone: Icons.receipt_long_outlined,
+                titulo: 'Movimentos do pátio',
+                subtitulo: 'histórico de entradas e saídas',
+                onTap: () => context.push(Routes.movimentos),
+              ),
+            ]),
+
+            _secao('Aparelho'),
+            _grupo([
+              _item(
+                icone: Icons.print_outlined,
+                titulo: 'Impressora Bluetooth',
+                subtitulo: 'parear, testar e configurar o cupom',
+                onTap: () => context.push(Routes.impressora),
+              ),
+              _itemSync(),
+            ]),
+
+            _secao('Informações'),
+            _grupo([
+              _item(
+                icone: Icons.info_outline,
+                titulo: 'Sobre o pátio e o app',
+                subtitulo: 'pátio, cadastros, versão e servidor',
+                neutro: true,
+                onTap: () => context.push(Routes.sobre),
+              ),
+              _item(
+                icone: Icons.logout,
+                titulo: 'Sair do app',
+                subtitulo: 'encerra a sessão deste operador',
+                cor: AppColors.danger,
+                semChevron: true,
+                onTap: _confirmarLogout,
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Card de perfil do Brisa — abre a tela no lugar do título.
+  ///
+  /// A pílula de turno usa a ABERTURA DO CAIXA, não um campo de turno: o app
+  /// não tem esse conceito, e o operador de pátio abre o caixa ao começar o
+  /// expediente. Some quando não há caixa aberto — inventar um horário aqui
+  /// seria pior que não mostrar nada.
+  Widget _cardPerfil() {
+    final auth = ref.watch(authControllerProvider);
+    final nome = auth is AuthLoggedIn ? auth.user.nome : '';
+    final patio = ref.watch(patioNotifierProvider).value;
+    final caixa = ref.watch(caixaSessaoNotifierProvider).value;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+              color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Row(
         children: [
-          _secao('Operação'),
-          _item(
-            icone: Icons.badge_outlined,
-            titulo: 'Mensalistas',
-            subtitulo: 'Clientes e recebimento de mensalidades',
-            onTap: () => context.push(Routes.mensalistas),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              color: AppColors.primaryFill,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              _iniciais(nome),
+              style: const TextStyle(
+                  fontSize: 16,
+                  height: 1,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white),
+            ),
           ),
-          _item(
-            icone: Icons.receipt_long_outlined,
-            titulo: 'Movimentos do pátio',
-            subtitulo: 'Histórico de entradas e saídas',
-            onTap: () => context.push(Routes.movimentos),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  nome.isEmpty ? 'Operador' : nome,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 16,
+                      height: 1.25,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.onSurface),
+                ),
+                Text(
+                  'operador${patio?.nome != null ? ' · ${patio!.nome}' : ''}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.onSurfaceVariant),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
-
-          _secao('Aparelho'),
-          _item(
-            icone: Icons.print_outlined,
-            titulo: 'Impressora Bluetooth',
-            subtitulo: 'Parear, testar e configurar o cupom',
-            onTap: () => context.push(Routes.impressora),
-          ),
-          _itemSync(),
-          const SizedBox(height: 14),
-
-          _secao('Informações'),
-          _item(
-            icone: Icons.info_outline,
-            titulo: 'Sobre o pátio e o app',
-            subtitulo: 'Pátio, cadastros, versão e servidor',
-            onTap: () => context.push(Routes.sobre),
-          ),
-          _item(
-            icone: Icons.logout,
-            titulo: 'Sair do app',
-            subtitulo: 'Encerra a sessão deste operador',
-            cor: AppColors.danger,
-            semChevron: true,
-            onTap: _confirmarLogout,
-          ),
+          if (caixa != null) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                'turno ${_hora.format(caixa.abertura)}',
+                style: const TextStyle(
+                    fontSize: 11,
+                    height: 1,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary),
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  /// Agrupa itens num ÚNICO card com divisórias — no Brisa a seção é o card,
+  /// não cada linha. Antes era um card por item, o que picotava a tela.
+  Widget _grupo(List<Widget> itens) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+              color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < itens.length; i++) ...[
+            itens[i],
+            if (i < itens.length - 1)
+              const Divider(
+                  height: 1, thickness: 1, color: AppColors.surfaceContainer),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static String _iniciais(String nome) {
+    final partes = nome
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty && !RegExp(r'^\d+$').hasMatch(p))
+        .toList();
+    if (partes.isEmpty) return '?';
+    if (partes.length == 1) {
+      return partes.first.characters.take(2).toString().toUpperCase();
+    }
+    return (partes.first.characters.first + partes.last.characters.first)
+        .toUpperCase();
   }
 
   // ── Sincronização: item VIVO (status + ação, sem fingir navegação) ──────
@@ -109,71 +253,84 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
       subtitulo = 'Tudo em dia · ${_fmtUltimo(info.ultimoSync)}';
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: InkWell(
-          onTap: _sincronizando ? null : _sincronizarAgora,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.entradaBg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.sync,
-                      size: 21, color: AppColors.entrada),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: _sincronizando ? null : _sincronizarAgora,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.sync, size: 20, color: AppColors.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          const Text('Sincronização',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w700, fontSize: 15)),
-                          const SizedBox(width: 7),
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                                color: cor, shape: BoxShape.circle),
-                          ),
-                        ],
+                      const Text('Sincronização',
+                          style: TextStyle(
+                              fontSize: 14,
+                              height: 1.3,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.onSurface)),
+                      const SizedBox(width: 7),
+                      Container(
+                        width: 9,
+                        height: 9,
+                        decoration:
+                            BoxDecoration(color: cor, shape: BoxShape.circle),
                       ),
-                      Text(subtitulo,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.onSurfaceVariant)),
                     ],
                   ),
-                ),
-                if (_sincronizando)
-                  const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2.2),
-                  )
-                else
-                  const Icon(Icons.play_arrow_rounded,
-                      color: AppColors.onSurfaceVariant),
-              ],
+                  Text(subtitulo,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          height: 1.3,
+                          fontWeight: FontWeight.w500,
+                          // O estado "tudo em dia" fala em verde; os demais
+                          // ficam neutros para o verde significar só uma coisa.
+                          color: cor == AppColors.success
+                              ? AppColors.primary
+                              : AppColors.onSurfaceVariant)),
+                ],
+              ),
             ),
-          ),
+            if (_sincronizando)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: AppColors.primaryFill,
+                  backgroundColor: AppColors.surfaceContainerHigh,
+                ),
+              )
+            else
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text('agora',
+                    style: TextStyle(
+                        fontSize: 11,
+                        height: 1,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary)),
+              ),
+          ],
         ),
       ),
     );
@@ -246,15 +403,18 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
   // ── Auxiliares de layout ────────────────────────────────────────────────
 
   Widget _secao(String t) => Padding(
-        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        padding: const EdgeInsets.fromLTRB(6, 14, 6, 7),
         child: Text(t.toUpperCase(),
             style: const TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1,
-                color: AppColors.onSurfaceVariant)),
+                height: 1,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.88,
+                color: AppColors.outline)),
       );
 
+  /// Linha de menu do Brisa. Vive DENTRO de um [_grupo] — por isso não tem
+  /// card, sombra nem margem própria: quem desenha a superfície é o grupo.
   Widget _item({
     required IconData icone,
     required String titulo,
@@ -262,59 +422,55 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
     required VoidCallback onTap,
     Color? cor,
     bool semChevron = false,
+    bool neutro = false,
+    Widget? trailing,
   }) {
-    final corIcone = cor ?? AppColors.entrada;
-    final corFundo =
-        cor != null ? cor.withValues(alpha: 0.1) : AppColors.entradaBg;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: corFundo,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icone, size: 21, color: corIcone),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(titulo,
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                              color: cor)),
-                      Text(subtitulo,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.onSurfaceVariant)),
-                    ],
-                  ),
-                ),
-                if (!semChevron)
-                  const Icon(Icons.chevron_right,
-                      color: AppColors.onSurfaceVariant),
-              ],
+    final corIcone = cor ?? (neutro ? AppColors.onSurfaceVariant : AppColors.primary);
+    final corFundo = cor != null
+        ? cor.withValues(alpha: 0.1)
+        : (neutro ? AppColors.surfaceContainer : AppColors.primaryContainer);
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: corFundo,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icone, size: 20, color: corIcone),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(titulo,
+                      style: TextStyle(
+                          fontSize: 14,
+                          height: 1.3,
+                          fontWeight: FontWeight.w700,
+                          color: cor ?? AppColors.onSurface)),
+                  Text(subtitulo,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 11.5,
+                          height: 1.3,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            if (trailing != null)
+              trailing
+            else if (!semChevron)
+              const Icon(Icons.chevron_right, size: 20, color: AppColors.outline),
+          ],
         ),
       ),
     );
