@@ -45,104 +45,206 @@ class _PatioTabState extends ConsumerState<PatioTab> {
             .where((t) => t.placa.contains(_busca.toUpperCase()))
             .toList();
 
+    // Brisa: sem AppBar — o título é conteúdo e rola com a lista.
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Text('Pátio'),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.entradaBg,
-                borderRadius: BorderRadius.circular(999),
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: () async => ref.invalidate(ticketsAbertosProvider),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text('Pátio',
+                        style: TextStyle(
+                            fontSize: 24,
+                            height: 1.15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.onSurface)),
+                  ),
+                  _pilulaBotao(
+                    texto: 'Movimentos',
+                    icone: Icons.history,
+                    onTap: () => context.push(Routes.movimentos),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '${abertos.length}${patio != null && patio.qtdVagas > 0 ? '/${patio.qtdVagas}' : ''}',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          height: 1,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary),
+                    ),
+                  ),
+                ],
               ),
-              child: Text(
-                '${abertos.length}${patio != null && patio.qtdVagas > 0 ? '/${patio.qtdVagas}' : ''}',
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.entrada),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: () => context.push(Routes.movimentos),
-            icon: const Icon(Icons.history, size: 18),
-            label: const Text('Movimentos'),
+              const SizedBox(height: 12),
+              _busca_(),
+              const SizedBox(height: 12),
+              if (abertos.isEmpty)
+                _vazio()
+              else if (filtrados.isEmpty)
+                _vazio(busca: true)
+              else
+                ...filtrados.map(_tileVeiculo),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Busca do Brisa: pílula branca de 48px com sombra — não é um TextField
+  /// com moldura, é uma superfície.
+  Widget _busca_() {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: const [
+          BoxShadow(
+              color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 2)),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(ticketsAbertosProvider),
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextField(
+      child: Row(
+        children: [
+          const Icon(Icons.search, size: 20, color: AppColors.onSurfaceVariant),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
               controller: _buscaCtrl,
               textCapitalization: TextCapitalization.characters,
-              decoration: InputDecoration(
-                hintText: 'Buscar placa…',
-                prefixIcon: const Icon(Icons.search, size: 20),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.84,
+                color: AppColors.onSurface,
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Buscar placa',
+                hintStyle: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                  color: AppColors.onSurfaceVariant,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
                 isDense: true,
-                suffixIcon: _busca.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.close, size: 18),
-                        onPressed: () {
-                          _buscaCtrl.clear();
-                          setState(() => _busca = '');
-                        },
-                      ),
+                contentPadding: EdgeInsets.zero,
               ),
               onChanged: (v) => setState(() => _busca = v),
             ),
-            const SizedBox(height: 12),
-            if (abertos.isEmpty)
-              _vazio()
-            else if (filtrados.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text('Nenhuma placa encontrada.',
-                      style: TextStyle(color: AppColors.onSurfaceVariant)),
-                ),
-              )
-            else
-              ...filtrados.map(_tileVeiculo),
-            const SizedBox(height: 24),
+          ),
+          if (_busca.isNotEmpty)
+            InkWell(
+              onTap: () {
+                _buscaCtrl.clear();
+                setState(() => _busca = '');
+              },
+              borderRadius: BorderRadius.circular(999),
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.close, size: 18, color: AppColors.outline),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Pílula-botão branca do cabeçalho do Brisa.
+  Widget _pilulaBotao({
+    required String texto,
+    required IconData icone,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: const [
+            BoxShadow(
+                color: AppColors.shadow, blurRadius: 8, offset: Offset(0, 2)),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icone, size: 16, color: AppColors.onSurface),
+            const SizedBox(width: 5),
+            Text(texto,
+                style: const TextStyle(
+                    fontSize: 12,
+                    height: 1,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onSurface)),
           ],
         ),
       ),
     );
   }
 
+  /// Card de veículo do Brisa. O botão de reimprimir SAIU daqui de propósito —
+  /// não sumiu: mudou para o sheet de detalhe (um toque no card), que é onde o
+  /// protótipo o coloca. Numa lista longa, uma impressora por linha é um
+  /// disparo acidental esperando acontecer.
   Widget _tileVeiculo(TicketModel t) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
+    final (durBg, durCor) = _faixaPermanencia(t.entrada);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
-        // Antes ia direto para a saída. Agora abre o detalhe (com a foto de
-        // entrada), e a saída fica a um toque do botão de lá.
-        onTap: () => mostrarDetalheVeiculo(context, t),
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
+        onTap: () => mostrarDetalheVeiculo(
+          context,
+          t,
+          onReimprimir: () => _reimprimir(t),
+        ),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                  color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 2)),
+            ],
+          ),
           child: Row(
             children: [
-              Icon(
-                t.tipoVeiculo == 'moto'
-                    ? Icons.two_wheeler_outlined
-                    : Icons.directions_car_outlined,
-                size: 22,
-                color: AppColors.onSurfaceVariant,
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  t.tipoVeiculo == 'moto'
+                      ? Icons.two_wheeler
+                      : Icons.directions_car,
+                  size: 22,
+                  color: AppColors.onSurface,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -151,38 +253,39 @@ class _PatioTabState extends ConsumerState<PatioTab> {
                   children: [
                     Text(t.placa,
                         style: const TextStyle(
+                            fontSize: 15.5,
+                            height: 1.3,
                             fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            letterSpacing: 1.5)),
+                            letterSpacing: 0.78,
+                            color: AppColors.onSurface)),
                     Text(
                       '${t.tipoVeiculo} · entrou ${_hora.format(t.entrada)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          fontSize: 12, color: AppColors.onSurfaceVariant),
+                          fontSize: 12,
+                          height: 1.3,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.onSurfaceVariant),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceContainer,
-                  borderRadius: BorderRadius.circular(8),
+                  color: durBg,
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(_permanencia(t.entrada),
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.onSurface)),
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                        color: durCor)),
               ),
-              IconButton(
-                tooltip: 'Reimprimir ticket',
-                icon: const Icon(Icons.print_outlined,
-                    size: 20, color: AppColors.onSurfaceVariant),
-                onPressed: () => _reimprimir(t),
-              ),
-              const Icon(Icons.chevron_right,
-                  color: AppColors.onSurfaceVariant),
             ],
           ),
         ),
@@ -190,12 +293,28 @@ class _PatioTabState extends ConsumerState<PatioTab> {
     );
   }
 
-  Widget _vazio() => Container(
-        padding: const EdgeInsets.symmetric(vertical: 40),
+  /// Cor da pílula por faixa de permanência — o semáforo do Brisa:
+  /// até 1h verde · até 2h âmbar · acima disso laranja. É o que faz o operador
+  /// bater o olho na lista e achar o carro esquecido.
+  static (Color, Color) _faixaPermanencia(DateTime entrada) {
+    final min = DateTime.now().difference(entrada).inMinutes;
+    if (min < 60) return (AppColors.primaryContainer, AppColors.primary);
+    if (min < 120) return (AppColors.warningBg, AppColors.warning);
+    return (AppColors.saidaBg, AppColors.saida);
+  }
+
+  /// Estado vazio do Brisa. Serve aos dois casos: pátio realmente vazio e
+  /// busca sem resultado — antes o segundo era um texto solto, sem a moldura
+  /// do card, e parecia um erro.
+  Widget _vazio({bool busca = false}) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [
+            BoxShadow(
+                color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 2)),
+          ],
         ),
         child: Column(
           children: [
@@ -203,19 +322,31 @@ class _PatioTabState extends ConsumerState<PatioTab> {
               width: 56,
               height: 56,
               decoration: const BoxDecoration(
-                color: AppColors.entradaBg,
+                color: AppColors.primaryContainer,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.local_parking,
-                  size: 28, color: AppColors.entrada),
+              child: Icon(busca ? Icons.search_off : Icons.local_parking,
+                  size: 26, color: AppColors.primary),
             ),
-            const SizedBox(height: 12),
-            const Text('Pátio vazio',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-            const SizedBox(height: 4),
-            const Text('Os veículos aparecem aqui assim que entram.',
-                style: TextStyle(
-                    fontSize: 13, color: AppColors.onSurfaceVariant)),
+            const SizedBox(height: 10),
+            Text(busca ? 'Nenhuma placa encontrada' : 'Pátio vazio',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.3,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.onSurface)),
+            const SizedBox(height: 3),
+            Text(
+                busca
+                    ? 'confira a busca ou registre uma entrada'
+                    : 'os veículos aparecem aqui assim que entram',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.onSurfaceVariant)),
           ],
         ),
       );

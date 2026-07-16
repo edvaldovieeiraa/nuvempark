@@ -14,19 +14,28 @@ import '../../tickets/domain/ticket_model.dart';
 /// tem download. Então uma entrada feita em OUTRO aparelho tem o caminho no
 /// banco mas não tem o arquivo aqui: é o estado "não disponível neste
 /// dispositivo", não um erro.
-Future<void> mostrarDetalheVeiculo(BuildContext context, TicketModel t) {
+/// [onReimprimir] — 2ª via do cupom de entrada. Vive aqui (e não em cada linha
+/// da lista do pátio) por decisão do Brisa: numa lista longa, uma impressora
+/// por linha é disparo acidental esperando acontecer. Opcional: quem abre o
+/// detalhe de outro lugar não precisa oferecer a ação.
+Future<void> mostrarDetalheVeiculo(
+  BuildContext context,
+  TicketModel t, {
+  VoidCallback? onReimprimir,
+}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => _DetalheVeiculo(ticket: t),
+    builder: (_) => _DetalheVeiculo(ticket: t, onReimprimir: onReimprimir),
   );
 }
 
 class _DetalheVeiculo extends StatelessWidget {
-  const _DetalheVeiculo({required this.ticket});
+  const _DetalheVeiculo({required this.ticket, this.onReimprimir});
 
   final TicketModel ticket;
+  final VoidCallback? onReimprimir;
 
   static final _dataHora = DateFormat("dd/MM 'às' HH:mm");
 
@@ -102,17 +111,48 @@ class _DetalheVeiculo extends StatelessWidget {
             ],
 
             const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                context.push(Routes.saidaDetalhe(ticket.id));
-              },
-              icon: const Icon(Icons.logout, size: 20),
-              label: const Text('Registrar saída'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.saida,
-                minimumSize: const Size.fromHeight(52),
-              ),
+            // Brisa: reimprimir como botão redondo discreto + saída como CTA
+            // laranja. A hierarquia é intencional — 2ª via é exceção, saída é
+            // o que o operador veio fazer aqui.
+            Row(
+              children: [
+                if (onReimprimir != null) ...[
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(context);
+                      onReimprimir!();
+                    },
+                    borderRadius: BorderRadius.circular(999),
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: AppColors.outlineVariant, width: 2),
+                      ),
+                      child: const Icon(Icons.print_outlined,
+                          size: 22, color: AppColors.onSurface),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      context.push(Routes.saidaDetalhe(ticket.id));
+                    },
+                    icon: const Icon(Icons.logout, size: 20),
+                    label: const Text('Registrar saída'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.saida,
+                      minimumSize: const Size.fromHeight(56),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
