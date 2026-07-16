@@ -11,6 +11,7 @@ import 'package:nuvempark_core/nuvempark_core.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/brisa.dart';
 import '../../patio/domain/patio_model.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/data/print_templates.dart';
@@ -138,6 +139,10 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
 
   Future<void> _checarPlaca(String placa) async {
     final norm = placa.trim().toUpperCase();
+    // Rebuild a cada tecla: a borda do campo acende conforme a placa completa.
+    // Sem isto, apagar de 7 p/ 6 caracteres sem reconhecimento ativo não
+    // dispararia setState em caminho nenhum e a borda ficaria verde mentindo.
+    setState(() {});
     if (norm.length < 7) {
       if (_reconhecimento != null) setState(() => _reconhecimento = null);
       return;
@@ -328,7 +333,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
     final patioAsync = ref.watch(patioNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nova entrada')),
+      appBar: appBarBrisa(context, 'Nova entrada'),
       body: patioAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorState(
@@ -379,97 +384,36 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Foto + OCR — a ação principal da tela
-                  InkWell(
-                    onTap: _capturandoFoto ? null : _capturarFoto,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      height: 84,
-                      decoration: BoxDecoration(
-                        gradient: _fotoEntradaPath == null
-                            ? const LinearGradient(colors: AppColors.gradient)
-                            : null,
-                        color: _fotoEntradaPath == null
-                            ? null
-                            : AppColors.entradaBg,
-                        borderRadius: BorderRadius.circular(16),
-                        border: _fotoEntradaPath == null
-                            ? null
-                            : Border.all(
-                                color: AppColors.entrada.withValues(alpha: 0.35)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (_capturandoFoto)
-                            const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2.5, color: Colors.white),
-                            )
-                          else
-                            Icon(
-                              _fotoEntradaPath == null
-                                  ? Icons.photo_camera_outlined
-                                  : Icons.check_circle_outline,
-                              size: 26,
-                              color: _fotoEntradaPath == null
-                                  ? Colors.white
-                                  : AppColors.entrada,
-                            ),
-                          const SizedBox(width: 12),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _fotoEntradaPath == null
-                                    ? 'Fotografar placa'
-                                    : 'Foto capturada',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: _fotoEntradaPath == null
-                                      ? Colors.white
-                                      : AppColors.entrada,
-                                ),
-                              ),
-                              Text(
-                                _fotoEntradaPath == null
-                                    ? 'a câmera lê a placa pra você'
-                                    : 'toque para refazer',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: _fotoEntradaPath == null
-                                      ? Colors.white70
-                                      : AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // Foto + OCR — a ação principal da tela. Card verde cheio do
+                  // Brisa: é o único elemento com sombra colorida aqui, e é o
+                  // que o operador toca 9 em cada 10 vezes.
+                  _cardFoto(),
                   const SizedBox(height: 14),
                   const Row(
                     children: [
-                      Expanded(child: Divider()),
+                      Expanded(
+                          child: Divider(
+                              color: AppColors.surfaceContainerHighest,
+                              thickness: 1)),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 12),
                         child: Text('ou digite',
                             style: TextStyle(
                                 fontSize: 12,
+                                fontWeight: FontWeight.w600,
                                 color: AppColors.onSurfaceVariant)),
                       ),
-                      Expanded(child: Divider()),
+                      Expanded(
+                          child: Divider(
+                              color: AppColors.surfaceContainerHighest,
+                              thickness: 1)),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
-                  const Text('Placa', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.onSurfaceVariant)),
-                  const SizedBox(height: 6),
+                  // Campo de placa: superfície branca de borda grossa, não um
+                  // input com moldura. A borda acende em verde quando a placa
+                  // fica completa — feedback antes de o operador procurar erro.
                   TextFormField(
                     controller: _placaCtrl,
                     textCapitalization: TextCapitalization.characters,
@@ -478,9 +422,48 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                       LengthLimitingTextInputFormatter(7),
                       const PlacaFormatter(),
                     ],
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: 3),
+                    style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 3,
+                        color: AppColors.onSurface),
                     textAlign: TextAlign.center,
-                    decoration: const InputDecoration(hintText: 'ABC1D23'),
+                    decoration: InputDecoration(
+                      hintText: 'ABC1D23',
+                      hintStyle: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 3,
+                          color: AppColors.outline),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 14),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          width: 2,
+                          color: _placaCtrl.text.trim().length == 7
+                              ? AppColors.primaryFill
+                              : AppColors.outlineVariant,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: const BorderSide(
+                            width: 2, color: AppColors.primaryFill),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide:
+                            const BorderSide(width: 2, color: AppColors.error),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide:
+                            const BorderSide(width: 2, color: AppColors.error),
+                      ),
+                    ),
                     onChanged: _checarPlaca,
                     validator: (v) => (v == null || v.trim().length != 7) ? 'Placa incompleta' : null,
                   ),
@@ -558,18 +541,119 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                   // ── Avaria (opcional) ──
                   _secaoAvaria(),
 
-                  const SizedBox(height: 28),
-                  FilledButton(
-                    onPressed: _loading ? null : () => _registrar(patio),
-                    child: _loading
-                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                        : const Text('Registrar entrada'),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 58,
+                    child: FilledButton(
+                      onPressed: _loading ? null : () => _registrar(patio),
+                      child: _loading
+                          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                          : const Text('Registrar entrada'),
+                    ),
+                  ),
+                  const SizedBox(height: 9),
+                  // Diz o que vai acontecer depois do toque. O auto-print já
+                  // era o comportamento; o operador é que não sabia.
+                  const Text(
+                    'o cupom imprime sozinho',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.outline),
                   ),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// CTA da câmera. Verde cheio quando ainda não há foto; quando já capturou,
+  /// vira card claro confirmando — o verde forte é para o que falta fazer.
+  Widget _cardFoto() {
+    final temFoto = _fotoEntradaPath != null;
+    return InkWell(
+      onTap: _capturandoFoto ? null : _capturarFoto,
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: temFoto ? AppColors.primaryContainer : AppColors.primaryFill,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: temFoto
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppColors.primaryFill.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: temFoto
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: _capturandoFoto
+                  ? const Padding(
+                      padding: EdgeInsets.all(15),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.5, color: Colors.white),
+                    )
+                  : Icon(
+                      temFoto ? Icons.check_circle : Icons.photo_camera,
+                      size: 26,
+                      color: temFoto ? AppColors.primary : Colors.white,
+                    ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    temFoto ? 'Foto capturada' : 'Fotografar placa',
+                    style: TextStyle(
+                      fontSize: 17,
+                      height: 1.25,
+                      fontWeight: FontWeight.w800,
+                      color: temFoto ? AppColors.onSurface : Colors.white,
+                    ),
+                  ),
+                  Text(
+                    temFoto
+                        ? 'toque para refazer'
+                        : 'a câmera lê e preenche pra você',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      fontWeight: FontWeight.w500,
+                      color: temFoto
+                          ? AppColors.onSurfaceVariant
+                          : Colors.white.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right,
+                size: 24,
+                color: temFoto
+                    ? AppColors.outline
+                    : Colors.white.withValues(alpha: 0.7)),
+          ],
+        ),
       ),
     );
   }
