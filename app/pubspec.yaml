@@ -72,6 +72,26 @@ flutter:
     - assets/images/
     - assets/icon/
 
+  # Plus Jakarta Sans — a fonte do Brisa. EMBUTIDA de propósito, não via
+  # `google_fonts`: aquele pacote baixa a fonte em runtime, e este app roda o
+  # dia inteiro sem rede num tablet de pátio — cairia no fallback e o redesign
+  # simplesmente não apareceria. TTFs estáticos (não o variable font): o Flutter
+  # só dirige o eixo `wght` via `fontVariations`, então com variable font todo
+  # `fontWeight:` do app viraria fake bold. Licença em assets/fonts/OFL.txt.
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
+
 # Branding NuvemPark — verde
 flutter_launcher_icons:
   android: true
