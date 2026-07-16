@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../caixa/presentation/providers/caixa_provider.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
+import '../../printing/presentation/providers/printer_provider.dart';
 import '../../sync/presentation/sync_info_provider.dart';
 
 /// Aba "Menu": porta única para o que não mora na barra inferior, em três
@@ -46,7 +47,7 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
               _item(
                 icone: Icons.badge_outlined,
                 titulo: 'Mensalistas',
-                subtitulo: 'clientes e recebimento de mensalidades',
+                subtitulo: 'clientes e mensalidades',
                 onTap: () => context.push(Routes.mensalistas),
               ),
               _item(
@@ -59,28 +60,24 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
 
             _secao('Aparelho'),
             _grupo([
-              _item(
-                icone: Icons.print_outlined,
-                titulo: 'Impressora Bluetooth',
-                subtitulo: 'parear, testar e configurar o cupom',
-                onTap: () => context.push(Routes.impressora),
-              ),
+              _itemImpressora(),
               _itemSync(),
             ]),
 
+            // Aqui os itens NÃO têm subtítulo — é assim no protótipo, e faz
+            // sentido: "Sobre" e "Sair" se explicam sozinhos, e a legenda só
+            // adicionaria ruído ao pé da tela.
             _secao('Informações'),
             _grupo([
               _item(
                 icone: Icons.info_outline,
                 titulo: 'Sobre o pátio e o app',
-                subtitulo: 'pátio, cadastros, versão e servidor',
                 neutro: true,
                 onTap: () => context.push(Routes.sobre),
               ),
               _item(
                 icone: Icons.logout,
                 titulo: 'Sair do app',
-                subtitulo: 'encerra a sessão deste operador',
                 cor: AppColors.danger,
                 semChevron: true,
                 onTap: _confirmarLogout,
@@ -224,6 +221,39 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
         .toUpperCase();
   }
 
+  /// Impressora como item VIVO: o subtítulo diz o estado real e a bolinha o
+  /// repete em cor — no protótipo ela substitui o chevron. Antes o subtítulo
+  /// era estático ("parear, testar…"), o que obrigava a entrar na tela só
+  /// para descobrir se a impressora estava de pé.
+  Widget _itemImpressora() {
+    final printer = ref.watch(printerNotifierProvider).value;
+
+    final Color cor;
+    final String sub;
+    if (printer == null || printer.connectedMac == null) {
+      cor = AppColors.outline;
+      sub = 'nenhuma configurada';
+    } else if (printer.isConnected) {
+      cor = AppColors.primaryFill;
+      sub = 'conectada${printer.connectedName != null ? ' · ${printer.connectedName}' : ''}';
+    } else {
+      cor = AppColors.danger;
+      sub = 'desconectada · toque para reconectar';
+    }
+
+    return _item(
+      icone: Icons.print_outlined,
+      titulo: 'Impressora Bluetooth',
+      subtitulo: sub,
+      onTap: () => context.push(Routes.impressora),
+      trailing: Container(
+        width: 9,
+        height: 9,
+        decoration: BoxDecoration(color: cor, shape: BoxShape.circle),
+      ),
+    );
+  }
+
   // ── Sincronização: item VIVO (status + ação, sem fingir navegação) ──────
 
   /// Bolinha de status + última sincronização no subtítulo; o toque dispara a
@@ -323,7 +353,7 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
                   color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Text('agora',
+                child: const Text('sincronizar',
                     style: TextStyle(
                         fontSize: 11,
                         height: 1,
@@ -418,8 +448,8 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
   Widget _item({
     required IconData icone,
     required String titulo,
-    required String subtitulo,
     required VoidCallback onTap,
+    String? subtitulo,
     Color? cor,
     bool semChevron = false,
     bool neutro = false,
@@ -455,14 +485,15 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
                           height: 1.3,
                           fontWeight: FontWeight.w700,
                           color: cor ?? AppColors.onSurface)),
-                  Text(subtitulo,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 11.5,
-                          height: 1.3,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.onSurfaceVariant)),
+                  if (subtitulo != null)
+                    Text(subtitulo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 11.5,
+                            height: 1.3,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.onSurfaceVariant)),
                 ],
               ),
             ),

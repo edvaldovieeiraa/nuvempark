@@ -7,6 +7,7 @@ import '../menu/presentation/menu_geral_screen.dart';
 import '../../core/heartbeat/heartbeat_service.dart';
 import '../../core/platform/lock_task.dart';
 import '../../core/platform/operacao_background.dart';
+import '../../core/theme/app_colors.dart';
 import '../patio/domain/patio_model.dart';
 import '../patio/presentation/patio_tab.dart';
 import '../patio/presentation/providers/patio_provider.dart';
@@ -97,50 +98,103 @@ class _MainShellState extends ConsumerState<MainShell> {
       _aplicarQuiosque(next.value);
     });
     return Scaffold(
-      body: Column(
+      // A nav do Brisa FLUTUA sobre o conteúdo — por isso Stack, e não
+      // bottomNavigationBar: aquele reserva altura e empurraria as telas.
+      // O padding de baixo das telas (24) + os 78 daqui é o que impede a
+      // última linha de lista de ficar debaixo da pílula.
+      body: Stack(
         children: [
-          Expanded(
-            child: IndexedStack(
-              index: _aba,
-              children: [
-                HomeScreen(
-                  onVerPatio: () => _irPara(1),
-                  onVerCaixa: () => _irPara(2),
+          Column(
+            children: [
+              Expanded(
+                child: IndexedStack(
+                  index: _aba,
+                  children: [
+                    HomeScreen(
+                      onVerPatio: () => _irPara(1),
+                      onVerCaixa: () => _irPara(2),
+                    ),
+                    const PatioTab(),
+                    const CaixaScreen(),
+                    const MenuGeralScreen(),
+                  ],
                 ),
-                const PatioTab(),
-                const CaixaScreen(),
-                const MenuGeralScreen(),
-              ],
-            ),
+              ),
+              // Alerta global: offline / impressora desconectada (retrátil)
+              const ConexaoBanner(),
+              // Reserva o espaço da pílula flutuante.
+              const SizedBox(height: 78),
+            ],
           ),
-          // Alerta global: offline / impressora desconectada (retrátil)
-          const ConexaoBanner(),
+          Positioned(left: 20, right: 20, bottom: 16, child: _navBrisa()),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _aba,
-        onDestinationSelected: _irPara,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Início',
+    );
+  }
+
+  /// Barra inferior do Brisa: pílula escura flutuante. O item ativo vira uma
+  /// pílula verde COM rótulo; os inativos são só ícone — o rótulo aparece
+  /// onde você está, não onde você poderia ir.
+  Widget _navBrisa() {
+    const itens = [
+      (Icons.home, 'Início'),
+      (Icons.directions_car, 'Pátio'),
+      (Icons.account_balance_wallet, 'Caixa'),
+      (Icons.menu, 'Menu'),
+    ];
+    return Container(
+      height: 62,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceInverse,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.surfaceInverse.withValues(alpha: 0.35),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.directions_car_outlined),
-            selectedIcon: Icon(Icons.directions_car),
-            label: 'Pátio',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.point_of_sale_outlined),
-            selectedIcon: Icon(Icons.point_of_sale),
-            label: 'Caixa',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.apps_outlined),
-            selectedIcon: Icon(Icons.apps),
-            label: 'Menu',
-          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < itens.length; i++)
+            Expanded(
+              child: InkWell(
+                onTap: () => _irPara(i),
+                borderRadius: BorderRadius.circular(999),
+                child: Center(
+                  child: _aba == i
+                      ? AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryFill,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(itens[i].$1, size: 20, color: Colors.white),
+                              const SizedBox(width: 7),
+                              Text(
+                                itens[i].$2,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  height: 1,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Icon(itens[i].$1,
+                          size: 22, color: AppColors.secondaryFixed),
+                ),
+              ),
+            ),
         ],
       ),
     );
