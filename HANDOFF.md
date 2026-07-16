@@ -1,17 +1,17 @@
 # NuvemPark — Handoff (estado ao retomar)
 
-> Última atualização: 2026-07-09 (sessão autônoma). Todo o app compila
-> (`flutter analyze` limpo), passa nos testes (20 verdes) e o **APK debug BUILDA
-> com sucesso** (`app-debug.apk`, 207MB). Ainda não INSTALADO/rodado em device.
+> Última atualização: 2026-07-16. Web + API **em produção**; heartbeat validado
+> end-to-end no Moto G05 (Android 15) contra `api.nuvempark.com`. APK de release
+> instalado no aparelho. `flutter analyze` limpo, api typecheck limpo.
 >
 > **Restauração de sessão** (splash) e **ícone NuvemPark** (verde+P) já feitos.
 > **Impressão BT + QR scan** integrados. Fluxo operacional 100%.
 >
 > **RELEASE:** keystore criado e assinatura configurada (ver memória
-> parkflow-release-signing). Deploy do backend documentado em api/DEPLOY.md.
-> ⚠️ **BLOQUEIO:** marca/domínio — "parkflow" indisponível, usuário repensando o
-> nome (dir. estacionamento/vaga; VagaFlow recomendado). A URL do backend fica
-> embutida no APK, então o release final depende disso. Troca de marca é mecânica.
+> parkflow-release-signing). Deploy: `DEPLOY-PRODUCAO.md` + skill `nuvempark-deploy`.
+> ~~BLOQUEIO de marca/domínio~~ ✅ RESOLVIDO: **nuvempark.com** no ar (site),
+> **dashboard.nuvempark.com** (painel), **api.nuvempark.com** (backend).
+> O APK de release aponta pra `https://api.nuvempark.com` via `--dart-define`.
 >
 > ⚠️ **Fix de build:** `sqlite3` pinado em `3.3.2` via `dependency_overrides`
 > (a 3.3.4 tem bug de hash nos native-assets nesta toolchain). Não remover o
@@ -27,7 +27,7 @@
 | 2. App Flutter `nuvempark-app` | ✅ **COMPLETO nesta sessão** (blocos 1-6) |
 | 3. (era núcleo — feito dentro da Fase 2) | ✅ |
 | 4. Pix dinâmico via PSP (Asaas) | ⏳ NÃO feito — há gancho na tela de saída |
-| 5. Painel do gestor + dashboard (web) | ⏳ não iniciado |
+| 5. Painel do gestor + dashboard (web) | ✅ **em produção** (dashboard.nuvempark.com) |
 | 6. Super-admin + billing | ⏳ não iniciado (tenant criado via SQL manual) |
 
 ## O que o app Flutter tem agora (C:\VibeCoding\NuvemPark\app)
@@ -48,6 +48,38 @@
     fechamento caixa, teste), provider (conexão blindada + reconexão), tela de config
     (permissões BT, pareados, 58/80mm, avanço, teste). **Auto-print integrado na
     entrada e na saída**. Acesso: ícone de impressora na home. Config em /impressora.
+
+## Heartbeat + status online no painel (2026-07-16)
+
+O app bate `POST /heartbeat` a cada 60s carimbando `dispositivos.ultimo_acesso`;
+a sidebar do painel escuta `dispositivos` e `tickets` via Supabase Realtime e
+mostra a data + indicador verde/cinza (verde = visto há < 3 min), sem F5.
+Migration: `db/24-heartbeat-realtime.sql` (dispositivos na publication).
+
+**Validado em produção** com o Moto G05 (Android 15): heartbeat 204, chegando a
+cada 61–92s **com a tela apagada, na bateria, sem Device Owner** — o pior caso.
+
+### ⚠️ Duas armadilhas que só apareceram em produção
+
+1. **`dispositivos` nunca era populada.** Nada no produto inseria nessa tabela —
+   o painel só ativa/revoga, e a tela de cadastro do E-Park (código curto por
+   aparelho) jamais foi portada. O heartbeat devolvia **404 silencioso** (o
+   fail-silent do app engolia) e o indicador nunca acenderia. Hoje a rota
+   registra o aparelho na 1ª batida (trust on first use), usando o `patio_id`
+   que o app manda. **O registro nunca ressuscita um revogado** — a ordem é
+   UPDATE → checar existência → `INSERT ON CONFLICT DO NOTHING`. Um upsert que
+   resetasse `status` desfaria a revogação de um aparelho perdido a cada 60s.
+   Efeito colateral bom: a tela "Dispositivos" do painel deixa de ficar vazia.
+
+2. **Background no Android exige foreground service.** O Cached Apps Freezer
+   (12+) congela o processo com a tela apagada e os `Timer.periodic` param —
+   nem heartbeat nem sync rodam. `OperacaoService.kt` mantém o processo vivo;
+   ele NÃO executa Dart (a lógica segue no isolate principal, com o Drift/Dio
+   que já existem). **Tipo `specialUse`, NUNCA `dataSync`:** com `targetSdk 36`,
+   `dataSync` é capado em **6h/dia** no Android 15+ e o sistema derruba o
+   serviço — um pátio abre mais que isso. `WorkManager` não serve (piso de
+   15 min). Camada extra p/ tablet fixo: Device Owner + `STAY_ON_WHILE_PLUGGED_IN`
+   (tela não dorme na tomada → nem chega a ir pra background).
 
 ## ⚠️ Pontos de atenção / correções feitas (importantes)
 
@@ -101,6 +133,10 @@ C:\src\flutter\bin\flutter.bat test    # 20 testes (7 tarifa + 13 OCR)
 
 ## Próximo passo sugerido
 
-Rodar o app num device/emulador e fazer o **fluxo completo end-to-end**
-(login → bootstrap → entrada → saída → caixa) contra a API local, ajustando o
-que aparecer. Depois: Fase 4 (Pix) ou Fase 5 (painel do gestor).
+Fluxo operacional completo (entrada → saída → caixa) **contra produção**, no
+aparelho, conferindo o reflexo no painel. Depois: Fase 4 (Pix) ou Fase 6
+(super-admin + billing).
+
+⚠️ **Pendência conhecida:** `dispositivos` só ganha linha quando um app bate o
+heartbeat. Aparelhos que rodaram versões antigas do app não aparecem no painel
+até abrirem o app novo pelo menos uma vez.
