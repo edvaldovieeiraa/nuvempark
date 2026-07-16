@@ -19,6 +19,7 @@ class CaixaScreen extends ConsumerWidget {
   const CaixaScreen({super.key});
 
   static final _moeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  static final _hora = DateFormat('HH:mm');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,124 +28,346 @@ class CaixaScreen extends ConsumerWidget {
     final temCaixaAberto = sessaoAsync.value != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Caixa'),
-        actions: [
-          if (temCaixaAberto)
-            IconButton(
-              tooltip: 'Movimentos',
-              icon: const Icon(Icons.receipt_long_outlined),
-              onPressed: () => context.push(Routes.caixaMovimentos),
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Caixa',
+                      style: TextStyle(
+                          fontSize: 24,
+                          height: 1.15,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.onSurface)),
+                ),
+                if (temCaixaAberto)
+                  _chipBotao(
+                    icone: Icons.receipt_long_outlined,
+                    tooltip: 'Movimentos do caixa',
+                    onTap: () => context.push(Routes.caixaMovimentos),
+                  ),
+              ],
             ),
-        ],
-      ),
-      body: sessaoAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => const ErrorState(mensagem: 'Erro ao carregar o caixa.'),
-        data: (sessao) => sessao == null
-            ? _semCaixa(context, ref)
-            : _comCaixa(context, ref, sessao),
+            sessaoAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.only(top: 60),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) => const Padding(
+                padding: EdgeInsets.only(top: 40),
+                child: ErrorState(mensagem: 'Erro ao carregar o caixa.'),
+              ),
+              data: (sessao) => sessao == null
+                  ? _semCaixa(context, ref)
+                  : _comCaixa(context, ref, sessao),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _semCaixa(BuildContext context, WidgetRef ref) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.point_of_sale_outlined, size: 56, color: AppColors.outline),
-              const SizedBox(height: 16),
-              const Text('Nenhum caixa aberto',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 6),
-              const Text('Abra o caixa informando o fundo inicial.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.onSurfaceVariant)),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () => _dialogAbrir(context, ref),
-                icon: const Icon(Icons.lock_open_outlined),
-                label: const Text('Abrir caixa'),
-              ),
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: () => _verDetalheUltimo(context, ref),
-                icon: const Icon(Icons.summarize_outlined, size: 18),
-                label: const Text('Detalhamento do último fechamento'),
-              ),
-              TextButton.icon(
-                onPressed: () => _reimprimirUltimoFechamento(context, ref),
-                icon: const Icon(Icons.print_outlined, size: 18),
-                label: const Text('Reimprimir último fechamento'),
-              ),
+  /// Chip 40×40 do cabeçalho (mesmo do Início).
+  Widget _chipBotao({
+    required IconData icone,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: const [
+              BoxShadow(
+                  color: AppColors.shadow, blurRadius: 8, offset: Offset(0, 2)),
             ],
           ),
+          child: Icon(icone, size: 20, color: AppColors.primaryFill),
+        ),
+      ),
+    );
+  }
+
+  Widget _semCaixa(BuildContext context, WidgetRef ref) => Container(
+        margin: const EdgeInsets.only(top: 14),
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const [
+            BoxShadow(
+                color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: AppColors.surfaceContainer,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.point_of_sale_outlined,
+                  size: 30, color: AppColors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            const Text('Nenhum caixa aberto',
+                style: TextStyle(
+                    fontSize: 17,
+                    height: 1.3,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.onSurface)),
+            const SizedBox(height: 4),
+            const Text('abra o caixa informando o fundo inicial',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.onSurfaceVariant)),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => _dialogAbrir(context, ref),
+                icon: const Icon(Icons.lock_open_outlined, size: 20),
+                label: const Text('Abrir caixa'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Os dois atalhos do fechamento anterior viram links de texto: são
+            // exceção (conferir/reimprimir o turno passado), não a ação da tela.
+            TextButton(
+              onPressed: () => _verDetalheUltimo(context, ref),
+              child: const Text('detalhamento do último fechamento',
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary)),
+            ),
+            TextButton(
+              onPressed: () => _reimprimirUltimoFechamento(context, ref),
+              child: const Text('reimprimir último fechamento',
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary)),
+            ),
+          ],
         ),
       );
 
-  Widget _comCaixa(BuildContext context, WidgetRef ref, CaixaModel s) =>
-      ListView(
-        padding: const EdgeInsets.all(20),
+  Widget _comCaixa(BuildContext context, WidgetRef ref, CaixaModel s) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Hero ESCURO: o saldo é o único número grande da tela. Primeiro uso
+          // do surfaceInverse do Brisa — o contraste com os cards brancos é o
+          // que faz o valor pesar sem precisar de gradiente.
           Container(
+            margin: const EdgeInsets.only(top: 14),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: AppColors.gradient),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.surfaceInverse,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.surfaceInverse.withValues(alpha: 0.3),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Saldo esperado',
-                    style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1)),
-                const SizedBox(height: 4),
-                Text(_moeda.format(s.saldoCalculado),
-                    style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800)),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text('Saldo esperado',
+                          style: TextStyle(
+                              fontSize: 12,
+                              height: 1,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.secondaryFixed)),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryFill,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text('aberto',
+                          style: TextStyle(
+                              fontSize: 11,
+                              height: 1,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white)),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 8),
-                Text('Operador: ${s.operadorNome}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(_moeda.format(s.saldoCalculado),
+                      style: const TextStyle(
+                          fontSize: 38,
+                          height: 1,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white)),
+                ),
+                const SizedBox(height: 10),
+                Text('aberto às ${_hora.format(s.abertura)} por ${s.operadorNome}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.3,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.secondaryFixed)),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          _linha('Fundo inicial', _moeda.format(s.fundoCaixa)),
-          _linha('Entradas', _moeda.format(s.totalEntradas)),
-          _linha('Sangrias', _moeda.format(s.totalSangrias)),
           const SizedBox(height: 12),
-          _atalho(
-            icone: Icons.receipt_long_outlined,
-            rotulo: 'Ver movimentos do caixa',
-            onTap: () => context.push(Routes.caixaMovimentos),
-          ),
-          _atalho(
-            icone: Icons.summarize_outlined,
-            rotulo: 'Ver detalhamento do fechamento',
-            onTap: () => context.push(Routes.caixaDetalhe, extra: s),
+          // Composição do saldo. Sinal e cor dizem a direção do dinheiro antes
+          // de o operador ler o rótulo.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: const [
+                BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 10,
+                    offset: Offset(0, 2)),
+              ],
+            ),
+            child: Column(
+              children: [
+                _linha(
+                  icone: Icons.account_balance_wallet_outlined,
+                  chipBg: AppColors.surfaceContainer,
+                  chipFg: AppColors.onSurfaceVariant,
+                  rotulo: 'Fundo inicial',
+                  valor: _moeda.format(s.fundoCaixa),
+                  valorCor: AppColors.onSurface,
+                ),
+                const Divider(
+                    height: 1, thickness: 1, color: AppColors.surfaceContainer),
+                _linha(
+                  icone: Icons.arrow_downward,
+                  chipBg: AppColors.primaryContainer,
+                  chipFg: AppColors.primary,
+                  rotulo: 'Entradas',
+                  valor: '+ ${_moeda.format(s.totalEntradas)}',
+                  valorCor: AppColors.primary,
+                ),
+                const Divider(
+                    height: 1, thickness: 1, color: AppColors.surfaceContainer),
+                _linha(
+                  icone: Icons.arrow_upward,
+                  chipBg: AppColors.saidaBg,
+                  chipFg: AppColors.saida,
+                  rotulo: 'Sangrias',
+                  valor: '− ${_moeda.format(s.totalSangrias)}',
+                  valorCor: AppColors.saida,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => _dialogLancamento(context, ref),
-            icon: const Icon(Icons.swap_vert_rounded),
-            label: const Text('Lançar receita ou despesa'),
+          Row(
+            children: [
+              Expanded(
+                child: _atalho(
+                  icone: Icons.receipt_long_outlined,
+                  rotulo: 'Movimentos',
+                  onTap: () => context.push(Routes.caixaMovimentos),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _atalho(
+                  icone: Icons.swap_vert_rounded,
+                  rotulo: 'Lançar',
+                  onTap: () => _dialogLancamento(context, ref),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _atalho(
+                  icone: Icons.lock_outline,
+                  rotulo: 'Fechar',
+                  cor: AppColors.saida,
+                  bg: AppColors.saidaBg,
+                  onTap: () => _dialogFechar(context, ref, s),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          FilledButton.icon(
-            onPressed: () => _dialogFechar(context, ref, s),
-            icon: const Icon(Icons.lock_outline),
-            label: const Text('Fechar caixa'),
+          const SizedBox(height: 12),
+          // Detalhamento continua acessível — só deixou de ser botão de peso
+          // igual ao de fechar o caixa, que é irreversível.
+          TextButton(
+            onPressed: () => context.push(Routes.caixaDetalhe, extra: s),
+            child: const Text('ver detalhamento do fechamento',
+                style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
           ),
         ],
       );
 
-  Widget _linha(String k, String v) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+  Widget _linha({
+    required IconData icone,
+    required Color chipBg,
+    required Color chipFg,
+    required String rotulo,
+    required String valor,
+    required Color valorCor,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(k, style: const TextStyle(color: AppColors.onSurfaceVariant)),
-            Text(v, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: chipBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icone, size: 17, color: chipFg),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(rotulo,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurfaceVariant)),
+            ),
+            Text(valor,
+                style: TextStyle(
+                    fontSize: 14,
+                    height: 1.3,
+                    fontWeight: FontWeight.w700,
+                    color: valorCor)),
           ],
         ),
       );
@@ -153,22 +376,41 @@ class CaixaScreen extends ConsumerWidget {
     required IconData icone,
     required String rotulo,
     required VoidCallback onTap,
+    Color? cor,
+    Color? bg,
   }) =>
       InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          child: Row(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          height: 76,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                  color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 2)),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icone, size: 20, color: AppColors.primary),
-              const SizedBox(width: 10),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: bg ?? AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icone, size: 16, color: cor ?? AppColors.primary),
+              ),
+              const SizedBox(height: 6),
               Text(rotulo,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, color: AppColors.primary)),
-              const Spacer(),
-              const Icon(Icons.chevron_right,
-                  color: AppColors.onSurfaceVariant),
+                  style: TextStyle(
+                      fontSize: 12,
+                      height: 1,
+                      fontWeight: FontWeight.w700,
+                      color: cor ?? AppColors.onSurface)),
             ],
           ),
         ),
