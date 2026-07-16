@@ -5,7 +5,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 // dashboard.nuvempark.com = painel (app)  ·  nuvempark.com = site institucional.
 // Um único app Next serve os dois; o roteamento acontece aqui pelo Host.
 // Prefixos que pertencem ao APP (só no host dashboard):
-const PREFIXOS_APP = ["/painel", "/master", "/login", "/cadastro", "/auth"];
+// `/recibo` mora aqui (e não sob /painel) por dois motivos: fora do layout do
+// painel ele imprime sem a sidebar, e fora do gate de assinatura um cliente
+// suspenso ainda consegue baixar o comprovante do que já pagou — que é
+// exatamente quando ele precisa dele.
+const PREFIXOS_APP = ["/painel", "/master", "/login", "/cadastro", "/auth", "/recibo"];
 // Config vem de env: só ativa a separação quando AMBOS os hosts existem.
 // Enquanto o DNS/nginx do dashboard não estão prontos, fica passivo (não quebra).
 const HOST_APP = process.env.NEXT_PUBLIC_APP_HOST || ""; // ex.: dashboard.nuvempark.com

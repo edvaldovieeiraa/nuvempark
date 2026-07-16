@@ -15,7 +15,11 @@ export function ReciboPrint(props: {
   estado: string;
   pagoEm: string | null;
   formaPagamento: string | null;
+  /** Para onde o "Voltar" leva. O recibo é servido em dois lugares: o console
+   *  do master (lista de faturas) e o painel do próprio cliente. */
+  voltarHref?: string;
 }) {
+  const voltarHref = props.voltarHref ?? "/master/financeiro/faturas";
   // dispara o diálogo de impressão automaticamente ao abrir
   useEffect(() => {
     const t = setTimeout(() => window.print(), 400);
@@ -29,7 +33,7 @@ export function ReciboPrint(props: {
       {/* Barra de ações — some na impressão */}
       <div className="max-w-[600px] mx-auto mb-4 flex items-center justify-between print:hidden">
         <Link
-          href="/master/financeiro/faturas"
+          href={voltarHref}
           className="inline-flex items-center gap-2 text-sm font-bold text-texto-2 hover:text-texto"
         >
           <ArrowLeft className="w-4 h-4" />

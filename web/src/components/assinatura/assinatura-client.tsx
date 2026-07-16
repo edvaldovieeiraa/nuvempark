@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
+import QRCode from "qrcode";
 import {
   CreditCard,
   Copy,
@@ -15,6 +17,7 @@ import {
   Loader2,
   Wallet,
   QrCode,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { labelAssinaturaEstado } from "@/lib/status-labels";
@@ -231,9 +234,19 @@ export function AssinaturaClient({
                 </p>
               </div>
             </div>
-            <span className="font-black tabular-nums">
-              {moeda.format(Number(f.valor) || 0)}
-            </span>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="font-black tabular-nums">
+                {moeda.format(Number(f.valor) || 0)}
+              </span>
+              <Link
+                href={`/recibo/${f.id}`}
+                title="Abrir o recibo para imprimir ou salvar em PDF"
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-borda text-texto-2 text-xs font-bold hover:bg-fundo hover:text-texto transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Recibo
+              </Link>
+            </div>
           </div>
         ))}
       </Secao>
@@ -417,6 +430,55 @@ function ProjecaoCard({
 }
 
 /** Botões de pagamento de uma fatura, a partir dos links do gateway já gravados. */
+/**
+ * QR do PIX. Prefere a imagem do gateway; se ela não vier, DESENHA o QR a
+ * partir do copia-e-cola.
+ *
+ * Isso não é um remendo: o copia-e-cola **é** o conteúdo do QR — o app do banco
+ * lê exatamente essa string. Ter os dois vindos do Asaas era um acoplamento
+ * desnecessário, e ele falha de dois jeitos reais: faturas emitidas antes da
+ * coluna `gateway_pix_qrcode` existir (db/23) ficaram com o copia-e-cola
+ * preenchido e o QR nulo PARA SEMPRE — e não há como reemitir, porque o botão
+ * "Gerar pagamento" some assim que a fatura tem qualquer dado de gateway.
+ * Desenhando localmente, toda fatura que tem copia-e-cola passa a ter QR.
+ */
+function QrPix({
+  base64,
+  copiaCola,
+}: {
+  base64: string | null;
+  copiaCola: string | null;
+}) {
+  const [gerado, setGerado] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (base64 || !copiaCola) return;
+    let vivo = true;
+    QRCode.toDataURL(copiaCola, { width: 480, margin: 1 })
+      .then((url) => {
+        if (vivo) setGerado(url);
+      })
+      .catch(() => {
+        if (vivo) setGerado(null);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [base64, copiaCola]);
+
+  const src = base64 ? `data:image/png;base64,${base64}` : gerado;
+  if (!src) return null;
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt="QR Code para pagamento via PIX"
+      className="w-44 h-44 rounded-lg bg-white p-2 border border-borda shrink-0"
+    />
+  );
+}
+
 function OpcoesPagamento({
   fatura,
   gatewayAtivo,
@@ -467,14 +529,10 @@ function OpcoesPagamento({
             <span className="text-sm font-bold">Pague com PIX</span>
           </div>
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-            {fatura.gateway_pix_qrcode && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={`data:image/png;base64,${fatura.gateway_pix_qrcode}`}
-                alt="QR Code para pagamento via PIX"
-                className="w-44 h-44 rounded-lg bg-white p-2 border border-borda shrink-0"
-              />
-            )}
+            <QrPix
+              base64={fatura.gateway_pix_qrcode}
+              copiaCola={fatura.gateway_pix_copia}
+            />
             <div className="min-w-0 flex-1 w-full">
               <p className="text-xs text-texto-3 mb-2">
                 Escaneie o QR no app do seu banco ou copie o código abaixo.
