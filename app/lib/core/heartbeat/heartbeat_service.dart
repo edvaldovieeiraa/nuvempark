@@ -1,0 +1,100 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../config/env.dart';
+import '../di/providers.dart';
+
+/// Heartbeat: avisa o painel do gestor que este app está vivo.
+///
+/// POR QUE EXISTE: o sync engine só fala com o servidor quando há dado novo.
+/// Num pátio parado (nenhuma entrada/saída por horas) nada sobe, e o gestor não
+/// conseguia distinguir "app aberto e ocioso" de "app fechado / tablet mudo".
+/// Este serviço bate um POST /heartbeat a cada [Env.heartbeatInterval] (60s),
+/// que carimba `dispositivos.ultimo_acesso` — e o painel enxerga isso ao vivo.
+///
+/// É um mecanismo SEPARADO do sync de propósito: não compartilha fila, backoff,
+/// nem idempotência com ele, e não toca em nenhum arquivo do sync engine. Se o
+/// heartbeat falhar, nada no sync muda; se o sync falhar, o heartbeat segue.
+///
+/// Roda só em PRIMEIRO PLANO e logado (o [MainShell] só existe pós-login).
+/// Em background pausa (bateria/dados); ao voltar, bate na hora e retoma.
+///
+/// FAIL-SILENT por contrato: rede caída, timeout ou 4xx são engolidos sem log
+/// nem retry. O heartbeat é um sinal descartável — perder um tick só significa
+/// que o painel mostra o carimbo anterior por mais um minuto.
+class HeartbeatService with WidgetsBindingObserver {
+  HeartbeatService(this._ref);
+
+  final Ref _ref;
+  Timer? _timer;
+  bool _rodando = false;
+  bool _emTick = false;
+
+  /// Liga o heartbeat: bate uma vez agora e agenda o ciclo.
+  void iniciar() {
+    if (_rodando) return;
+    _rodando = true;
+    WidgetsBinding.instance.addObserver(this);
+    _bater();
+    _agendar();
+  }
+
+  /// Desliga (logout / dispose).
+  void parar() {
+    _rodando = false;
+    _timer?.cancel();
+    _timer = null;
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  void _agendar() {
+    _timer?.cancel();
+    _timer = Timer.periodic(Env.heartbeatInterval, (_) => _bater());
+  }
+
+  /// Um tick. Reentrância-safe: se o anterior ainda está no ar (rede lenta),
+  /// este é descartado em vez de empilhar requisições.
+  Future<void> _bater() async {
+    if (_emTick || !_rodando) return;
+    _emTick = true;
+    try {
+      // Os interceptors do Dio já injetam Bearer + X-Device-Id (e renovam o
+      // token quando expira) — o serviço não conhece token nem device.
+      await _ref.read(dioProvider).post<void>(
+            Env.heartbeatUrl,
+            options: Options(
+              sendTimeout: Env.heartbeatTimeout,
+              receiveTimeout: Env.heartbeatTimeout,
+            ),
+          );
+    } catch (_) {
+      // Fail-silent: ver doc da classe.
+    } finally {
+      _emTick = false;
+    }
+  }
+
+  /// Pausa em background, retoma (com batida imediata) em foreground.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_rodando) return;
+    if (state == AppLifecycleState.resumed) {
+      _bater(); // o painel volta a ficar verde na hora, sem esperar 60s
+      _agendar();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+}
+
+/// Provider do heartbeat. Mantido vivo pela árvore (como o syncLoopProvider).
+final heartbeatServiceProvider = Provider<HeartbeatService>((ref) {
+  final servico = HeartbeatService(ref);
+  ref.onDispose(servico.parar);
+  return servico;
+});

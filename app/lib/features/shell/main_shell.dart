@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../caixa/presentation/caixa_screen.dart';
 import '../home/presentation/home_screen.dart';
 import '../menu/presentation/menu_geral_screen.dart';
+import '../../core/heartbeat/heartbeat_service.dart';
 import '../../core/platform/lock_task.dart';
 import '../patio/domain/patio_model.dart';
 import '../patio/presentation/patio_tab.dart';
@@ -48,11 +49,16 @@ class _MainShellState extends ConsumerState<MainShell> {
     // aberto. O operador não clica em nada: cadastros da dashboard chegam
     // sozinhos e a fila local sobe sozinha. Pausa em background.
     Future.microtask(() => ref.read(syncLoopProvider).iniciar());
+
+    // Heartbeat (60s): diz ao painel do gestor que este app está vivo mesmo
+    // sem movimentação. Mecanismo à parte do sync — ver HeartbeatService.
+    Future.microtask(() => ref.read(heartbeatServiceProvider).iniciar());
   }
 
   @override
   void dispose() {
     ref.read(syncLoopProvider).parar();
+    ref.read(heartbeatServiceProvider).parar();
     super.dispose();
   }
 

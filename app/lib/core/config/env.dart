@@ -28,6 +28,7 @@ abstract final class Env {
   static String get fotoUrl => '$_prefix/foto';
   static String get fotoAvariaUrl => '$_prefix/foto-avaria';
   static String get dispositivoUrl => '$_prefix/dispositivo';
+  static String get heartbeatUrl => '$_prefix/heartbeat';
   static String get refreshUrl => '$_prefix/auth/refresh';
   static String get appConfigUrl => '$_prefix/app-config';
   /// Consulta de pagamento online do ticket (rota mobile autenticada).
@@ -54,6 +55,15 @@ abstract final class Env {
   /// da dashboard chegam sozinhos e a fila local sobe sozinha.
   static const Duration syncInterval = Duration(seconds: 30);
   static const int syncMaxTentativas = 10;
+
+  /// Intervalo do heartbeat: "este app está vivo" para o painel do gestor.
+  /// Independente do sync — num pátio parado nada sobe, e sem isto o gestor
+  /// não distingue app ocioso de app fechado.
+  static const Duration heartbeatInterval = Duration(seconds: 60);
+
+  /// Timeout curto do heartbeat: é um sinal descartável. Se não foi em 5s, o
+  /// próximo tick tenta de novo — não vale segurar conexão nem bateria por ele.
+  static const Duration heartbeatTimeout = Duration(seconds: 5);
 
   static String get versionDisplay {
     var v = 'v$appVersion';
