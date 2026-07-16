@@ -41,6 +41,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Timer? _refreshTimer;
 
+  /// Só o sync PEDIDO pelo operador acende o spinner do cabeçalho. O refresh
+  /// automático (timer de 2min / volta do background) roda calado — um ícone
+  /// girando sozinho a cada 2 minutos vira ruído, não informação.
+  bool _sincronizando = false;
+
   @override
   void initState() {
     super.initState();
@@ -69,7 +74,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _refresh() {
     if (!mounted) return;
-    ref.read(patioNotifierProvider.notifier).bootstrap();
+    unawaited(_puxarDoServidor());
+  }
+
+  /// Baixa a config do pátio e revalida tickets/caixa. Best-effort: um erro de
+  /// rede não pode derrubar a tela nem o spinner.
+  Future<void> _puxarDoServidor() async {
+    try {
+      await ref.read(patioNotifierProvider.notifier).bootstrap();
+    } catch (_) {
+      // offline: o cache do Drift segue servindo.
+    }
+    if (!mounted) return;
     ref.invalidate(ticketsAbertosProvider);
     ref.invalidate(caixaSessaoNotifierProvider);
   }
@@ -84,78 +100,205 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final caixa = ref.watch(caixaSessaoNotifierProvider).value;
     final printer = ref.watch(printerNotifierProvider).value;
 
+    // O Brisa não tem AppBar: o cabeçalho é conteúdo, rola junto com a lista.
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(patio?.nome ?? 'NuvemPark',
-                style: const TextStyle(fontSize: 17)),
-            if (operadorNome.isNotEmpty)
-              Text(operadorNome,
-                  style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.onSurfaceVariant)),
-          ],
-        ),
-        actions: [_iconeImpressora(printer)],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await ref.read(patioNotifierProvider.notifier).bootstrap();
-          ref.invalidate(ticketsAbertosProvider);
-          ref.invalidate(caixaSessaoNotifierProvider);
-        },
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(20),
-          children: [
-            if (assinatura != 'ativa') _bannerAssinatura(assinatura),
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: _sincronizar,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            children: [
+              _header(operadorNome, patio?.nome, printer),
+              const SizedBox(height: 16),
 
-            // Ocupação em destaque (toca → aba Pátio)
-            InkWell(
-              onTap: widget.onVerPatio,
-              borderRadius: BorderRadius.circular(16),
-              child: _cardOcupacao(abertos.length, patio?.qtdVagas ?? 0),
-            ),
-            const SizedBox(height: 10),
-            _cardCaixa(caixa),
-            const SizedBox(height: 16),
+              if (assinatura != 'ativa') _bannerAssinatura(assinatura),
 
-            // Ações principais
-            Row(
-              children: [
-                Expanded(
-                  child: _acao(
-                    'ENTRADA',
-                    Icons.add_circle_outline,
-                    destaque: true,
-                    onTap: () => context.push(Routes.entrada),
+              // Ocupação em destaque (toca → aba Pátio)
+              _cardOcupacao(abertos.length, patio?.qtdVagas ?? 0),
+              const SizedBox(height: 12),
+              _cardCaixa(caixa),
+              const SizedBox(height: 16),
+
+              // Ações principais
+              Row(
+                children: [
+                  Expanded(
+                    child: _acao(
+                      titulo: 'Entrada',
+                      sub: 'fotografe a placa',
+                      icone: Icons.add,
+                      destaque: true,
+                      onTap: () => context.push(Routes.entrada),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _acao(
-                    'SAÍDA',
-                    Icons.qr_code_scanner,
-                    cor: AppColors.saida,
-                    bg: AppColors.saidaBg,
-                    onTap: () => _abrirSaida(abertos.isEmpty),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _acao(
+                      titulo: 'Saída',
+                      sub: 'QR, foto ou placa',
+                      icone: Icons.qr_code_scanner,
+                      onTap: () => _abrirSaida(abertos.isEmpty),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  /// O mesmo que o "puxar para atualizar" faz — o Brisa põe isso também num
+  /// botão no cabeçalho, porque num tablet fixo ninguém pensa em puxar a lista.
+  Future<void> _sincronizar() async {
+    if (_sincronizando) return;
+    setState(() => _sincronizando = true);
+    try {
+      await _puxarDoServidor();
+    } finally {
+      if (mounted) setState(() => _sincronizando = false);
+    }
+  }
+
+  /// Cabeçalho Brisa: avatar + saudação, e as duas ações de aparelho à direita.
+  Widget _header(String operadorNome, String? patioNome, PrinterState? printer) {
+    final agora = DateTime.now().hour;
+    final saudacao = agora < 12
+        ? 'Bom dia'
+        : agora < 18
+            ? 'Boa tarde'
+            : 'Boa noite';
+    final primeiro = operadorNome.trim().split(' ').first;
+
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: const BoxDecoration(
+            color: AppColors.primaryFill,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            _iniciais(operadorNome),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                primeiro.isEmpty ? saudacao : '$saudacao, $primeiro',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 19,
+                  height: 1.2,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.onSurface,
+                ),
+              ),
+              Text(
+                patioNome ?? 'NuvemPark',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.3,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _botaoAparelho(
+          onTap: _sincronizando ? null : _sincronizar,
+          tooltip: 'Sincronizar agora',
+          child: _sincronizando
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppColors.primaryFill,
+                    backgroundColor: AppColors.surfaceContainerHigh,
+                  ),
+                )
+              : const Icon(Icons.sync, size: 20, color: AppColors.primaryFill),
+        ),
+        const SizedBox(width: 8),
+        _iconeImpressora(printer),
+      ],
+    );
+  }
+
+  /// Botão-chip 40×40 do cabeçalho: card branco, raio 14, sombra do Brisa.
+  Widget _botaoAparelho({
+    required Widget child,
+    required VoidCallback? onTap,
+    required String tooltip,
+    Widget? badge,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [child, ?badge],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Iniciais do avatar. Ignora pedaços só-numéricos: operador aqui costuma se
+  /// chamar "Operador 01", e o ingênuo primeira+última letra daria "O0" — um
+  /// "O" e um zero, que no avatar viram rabisco.
+  static String _iniciais(String nome) {
+    final partes = nome
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty && !RegExp(r'^\d+$').hasMatch(p))
+        .toList();
+    if (partes.isEmpty) return '?';
+    if (partes.length == 1) {
+      return partes.first.characters.take(2).toString().toUpperCase();
+    }
+    return (partes.first.characters.first + partes.last.characters.first)
+        .toUpperCase();
+  }
+
   // ---------- widgets ----------
 
-  /// Ícone da impressora no AppBar com badge de status:
+  /// Chip da impressora com badge de status:
   /// verde = conectada · vermelho = configurada mas caiu · cinza = nenhuma.
   Widget _iconeImpressora(PrinterState? printer) {
     final Color cor;
@@ -170,24 +313,115 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       cor = AppColors.danger;
       tip = 'Impressora desconectada';
     }
-    return IconButton(
+    return _botaoAparelho(
       tooltip: tip,
-      onPressed: () => context.push(Routes.impressora),
-      icon: Stack(
-        clipBehavior: Clip.none,
+      onTap: () => context.push(Routes.impressora),
+      child: const Icon(Icons.print_outlined,
+          size: 20, color: AppColors.primaryFill),
+      badge: Positioned(
+        right: 6,
+        top: 6,
+        child: Container(
+          width: 11,
+          height: 11,
+          decoration: BoxDecoration(
+            color: cor,
+            shape: BoxShape.circle,
+            // Borda na cor do FUNDO da tela (não do card): é o recorte do
+            // Brisa, que faz o badge "furar" a superfície.
+            border: Border.all(color: AppColors.background, width: 2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Ocupação do Brisa: card branco com uma ROSCA à esquerda.
+  ///
+  /// A rosca é um `CircularProgressIndicator` de traço 12 num quadrado de 96 —
+  /// que é exatamente a geometria do `conic-gradient` 96/72 do protótipo (96
+  /// externo, miolo de 72 ⇒ anel de 12). Sem CustomPainter para isso.
+  Widget _cardOcupacao(int ocupadas, int vagas) {
+    final pct = vagas > 0 ? (ocupadas / vagas).clamp(0.0, 1.0) : 0.0;
+    final pctLabel = (pct * 100).round();
+    final livres = (vagas - ocupadas).clamp(0, vagas);
+    final cheio = pct >= 0.9;
+
+    return _cardBrisa(
+      onTap: widget.onVerPatio,
+      padding: const EdgeInsets.all(18),
+      radius: 24,
+      child: Row(
         children: [
-          const Icon(Icons.print_outlined),
-          Positioned(
-            right: -1,
-            bottom: -1,
-            child: Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(
-                color: cor,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.surface, width: 1.5),
-              ),
+          SizedBox(
+            width: 96,
+            height: 96,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox.expand(
+                  child: CircularProgressIndicator(
+                    value: vagas > 0 ? pct : 0,
+                    strokeWidth: 12,
+                    strokeCap: StrokeCap.butt,
+                    backgroundColor: AppColors.surfaceContainerHigh,
+                    valueColor: AlwaysStoppedAnimation(
+                        cheio ? AppColors.saida : AppColors.primaryFill),
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('$ocupadas',
+                        style: const TextStyle(
+                            fontSize: 24,
+                            height: 1,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.onSurface)),
+                    if (vagas > 0)
+                      Text('de $vagas',
+                          style: const TextStyle(
+                              fontSize: 10,
+                              height: 1.4,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.onSurfaceVariant)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  vagas > 0 ? 'Pátio a $pctLabel%' : 'Pátio',
+                  style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.3,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.onSurface),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  vagas > 0
+                      ? '$livres ${livres == 1 ? 'vaga livre agora' : 'vagas livres agora'}'
+                      : '$ocupadas no pátio agora',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.onSurfaceVariant),
+                ),
+                const SizedBox(height: 8),
+                _pilula(
+                  texto: 'ver pátio',
+                  bg: AppColors.primaryContainer,
+                  fg: AppColors.primary,
+                  icone: Icons.arrow_forward,
+                ),
+              ],
             ),
           ),
         ],
@@ -195,236 +429,209 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _cardOcupacao(int ocupadas, int vagas) {
-    final pct = vagas > 0 ? (ocupadas / vagas).clamp(0.0, 1.0) : 0.0;
-    final cheio = pct >= 0.9;
-    return Container(
-      padding: const EdgeInsets.all(18),
+  /// Card branco do Brisa: raio grande + a sombra suave `rgba(18,59,42,.06)`.
+  Widget _cardBrisa({
+    required Widget child,
+    VoidCallback? onTap,
+    EdgeInsets padding = const EdgeInsets.all(18),
+    double radius = 24,
+  }) {
+    final corpo = Container(
+      padding: padding,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: AppColors.gradient),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Text('OCUPAÇÃO',
-                  style: TextStyle(
-                      fontSize: 11,
-                      letterSpacing: 1,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white70)),
-              const Spacer(),
-              Text('$ocupadas',
-                  style: const TextStyle(
-                      fontSize: 32,
-                      height: 1,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white)),
-              if (vagas > 0)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
-                  child: Text(' / $vagas',
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white70)),
-                ),
-            ],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 16,
+            offset: Offset(0, 4),
           ),
-          if (vagas > 0) ...[
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: pct,
-                minHeight: 8,
-                backgroundColor: Colors.white24,
-                valueColor: AlwaysStoppedAnimation(
-                    cheio ? const Color(0xFFFFD180) : Colors.white),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '${vagas - ocupadas} ${vagas - ocupadas == 1 ? 'vaga livre' : 'vagas livres'} · toque para ver o pátio',
-              style: const TextStyle(
+        ],
+      ),
+      child: child,
+    );
+    if (onTap == null) return corpo;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(radius),
+      child: corpo,
+    );
+  }
+
+  /// Pílula de status do Brisa (os tripletes bg/fg da paleta).
+  Widget _pilula({
+    required String texto,
+    required Color bg,
+    required Color fg,
+    IconData? icone,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(texto,
+              style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white70),
-            ),
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                  color: fg)),
+          if (icone != null) ...[
+            const SizedBox(width: 5),
+            Icon(icone, size: 14, color: fg),
           ],
         ],
       ),
     );
   }
 
-  /// Card de destaque do caixa — mesma geometria do card de ocupação (padding
-  /// 18, raio 16) e o valor na mesma escala do número da ocupação (32px). Não
-  /// repete o gradiente de propósito: dois gradientes lado a lado brigariam
-  /// pela atenção; o peso vem do tamanho do número e do bloco de cor.
+  /// Caixa no Brisa: linha compacta — chip de ícone, rótulo + saldo, pílula de
+  /// estado. Deixou de competir com a ocupação: o número grande agora é só o
+  /// da rosca, e o caixa vira um atalho de status.
   ///
-  /// Zero lógica nova: o saldo continua vindo de `caixa.saldoCalculado` e o
-  /// "abrir caixa" continua sendo a tela de Caixa que já existe.
+  /// Zero lógica nova: o saldo continua vindo de `caixa.saldoCalculado` e
+  /// "abrir" continua levando à tela de Caixa que já existe.
   Widget _cardCaixa(CaixaModel? caixa) {
     final aberto = caixa != null;
-    final cor = aberto ? AppColors.entrada : AppColors.onSurfaceVariant;
     final abrirCaixa = widget.onVerCaixa ?? () => context.push(Routes.caixa);
 
-    return InkWell(
+    return _cardBrisa(
       onTap: abrirCaixa,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: aberto ? AppColors.entradaBg : AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: aberto
-                ? AppColors.entrada.withValues(alpha: 0.35)
-                : AppColors.border,
+      radius: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.primaryContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.account_balance_wallet,
+                size: 21, color: AppColors.primary),
           ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  aberto
+                      ? 'Caixa · aberto às ${_hora.format(caixa.abertura)}'
+                      : 'Caixa',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.2,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurfaceVariant),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    aberto ? _moeda.format(caixa.saldoCalculado) : 'Fechado',
+                    style: const TextStyle(
+                        fontSize: 19,
+                        height: 1.25,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.onSurface),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _pilula(
+            texto: aberto ? 'aberto' : 'abrir',
+            bg: aberto ? AppColors.primaryContainer : AppColors.dangerBg,
+            fg: aberto ? AppColors.primary : AppColors.danger,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Cards de ação do Brisa (116px): chip de ícone em cima, título + legenda
+  /// embaixo. Entrada é o CTA preenchido; Saída é contorno laranja — a
+  /// hierarquia é intencional, entrada é a ação repetida do dia.
+  Widget _acao({
+    required String titulo,
+    required String sub,
+    required IconData icone,
+    required VoidCallback onTap,
+    bool destaque = false,
+  }) {
+    final fg = destaque ? Colors.white : AppColors.saida;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        height: 116,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: destaque ? AppColors.primaryFill : AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: destaque
+              ? null
+              : Border.all(color: const Color(0xFFFCE1D2), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: destaque
+                  ? AppColors.primaryFill.withValues(alpha: 0.3)
+                  : AppColors.saida.withValues(alpha: 0.1),
+              blurRadius: destaque ? 20 : 16,
+              offset: Offset(0, destaque ? 8 : 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: destaque
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : AppColors.saidaBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icone, size: 20, color: fg),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text('CAIXA',
+                Text(titulo,
                     style: TextStyle(
-                        fontSize: 11,
-                        letterSpacing: 1,
-                        fontWeight: FontWeight.w700,
-                        color: cor)),
-                const SizedBox(width: 8),
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: aberto ? AppColors.success : AppColors.outline,
-                    shape: BoxShape.circle,
+                        fontSize: 17,
+                        height: 1.2,
+                        fontWeight: FontWeight.w800,
+                        color: fg)),
+                Text(
+                  sub,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
+                    color: destaque
+                        ? Colors.white.withValues(alpha: 0.75)
+                        : const Color(0xFFB98A6E),
                   ),
                 ),
-                const Spacer(),
-                Icon(Icons.chevron_right, size: 20, color: cor),
               ],
             ),
-            const SizedBox(height: 8),
-            if (aberto) ...[
-              // O valor é o elemento dominante. FittedBox: um saldo de seis
-              // dígitos não pode estourar a largura num aparelho de 360dp.
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _moeda.format(caixa.saldoCalculado),
-                  style: const TextStyle(
-                      fontSize: 32,
-                      height: 1,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.entrada),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Saldo esperado · aberto por ${caixa.operadorNome} às ${_hora.format(caixa.abertura)}',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.onSurfaceVariant),
-              ),
-            ] else ...[
-              const FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text('Caixa fechado',
-                    style: TextStyle(
-                        fontSize: 32,
-                        height: 1,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.onSurface)),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: abrirCaixa,
-                  icon: const Icon(Icons.lock_open, size: 18),
-                  label: const Text('Abrir caixa'),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _acao(
-    String label,
-    IconData icon, {
-    bool destaque = false,
-    Color? cor,
-    Color? bg,
-    required VoidCallback onTap,
-  }) {
-    if (destaque) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          height: 96,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: AppColors.gradient),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: 28),
-              const SizedBox(height: 8),
-              Text(label,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                      letterSpacing: 0.5)),
-            ],
-          ),
-        ),
-      );
-    }
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 96,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cor!.withValues(alpha: 0.35), width: 1.5),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: cor, size: 28),
-            const SizedBox(height: 8),
-            Text(label,
-                style: TextStyle(
-                    color: cor,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    letterSpacing: 0.5)),
           ],
         ),
       ),
