@@ -7,6 +7,7 @@ import { authRoutes } from './auth/routes.js';
 import { bootstrapRoutes } from './routes/bootstrap.js';
 import { syncRoutes } from './routes/sync.js';
 import { dispositivoRoutes } from './routes/dispositivo.js';
+import { heartbeatRoutes } from './routes/heartbeat.js';
 import { appConfigRoutes } from './routes/app-config.js';
 import { fotoRoutes } from './routes/foto.js';
 import { webhookAsaasRoutes } from './routes/webhook-asaas.js';
@@ -36,6 +37,7 @@ await app.register(
     await bootstrapRoutes(scope);
     await syncRoutes(scope);
     await dispositivoRoutes(scope);
+    await heartbeatRoutes(scope);
     await appConfigRoutes(scope);
     await fotoRoutes(scope);
     await pagamentoOnlineRoutes(scope);
