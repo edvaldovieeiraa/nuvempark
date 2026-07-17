@@ -8,6 +8,7 @@ import {
   Building2,
   CreditCard,
   Wallet,
+  Landmark,
   type LucideIcon,
 } from "lucide-react";
 
@@ -15,6 +16,7 @@ const ITENS: { href: string; label: string; Icone: LucideIcon }[] = [
   { href: "/master", label: "Visão geral", Icone: LayoutDashboard },
   { href: "/master/tenants", label: "Redes (tenants)", Icone: Building2 },
   { href: "/master/assinaturas", label: "Assinaturas", Icone: CreditCard },
+  { href: "/master/pagamentos", label: "Pagamentos (gateway)", Icone: Landmark },
   { href: "/master/financeiro", label: "Financeiro", Icone: Wallet },
 ];
 

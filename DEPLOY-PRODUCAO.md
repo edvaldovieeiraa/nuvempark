@@ -50,6 +50,11 @@ Regras aprendidas na prática. Violar qualquer uma quebra o deploy:
 
 7. **`next start` lê `.env.local` em runtime** (do cwd). Não precisa injetar env no pm2; basta o arquivo estar em `/root/nuvempark-web/.env.local`. Ao reiniciar, usar `--update-env` por garantia.
 
+8. **Env NOVA não chega pelo scp.** O deploy manda só `src/`. Quando uma feature adiciona variável de ambiente, ela tem de ser inserida **à mão** no `/root/nuvempark-web/.env.local` da VPS **antes** do restart. Esquecer isso quebra a feature em produção sem erro de build.
+   - **Tela `/master/pagamentos` (gateway por tenant)** exige, no `.env.local` do web:
+     - `NUVEMPARK_CRYPTO_KEY` — **o MESMO valor** de `/root/nuvempark-api/.env`. É o que permite a API decifrar a chave que a tela cifra. Valor divergente = Pix do tenant não gera.
+     - `ASAAS_BASE_URL` — igual ao da API (sandbox × produção), usado para testar a chave ao salvar.
+
 ---
 
 ## 3. O fluxo de deploy (web) — passo a passo
