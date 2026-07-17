@@ -61,6 +61,27 @@ export async function lerGatewayDoTenant(
   return data as LinhaGatewayTenant;
 }
 
+/**
+ * Guarda o cliente genérico que o PSP acabou de criar. Sem isto, `tenant_gateways`
+ * segue com `customer_padrao_id` nulo e TODA cobrança cria um cliente novo no
+ * Asaas — o oposto do "criado uma vez e reutilizado" que o desenho pede.
+ *
+ * `unique (tenant_id, gateway)` garante que isto atinge uma linha só.
+ */
+export async function salvarCustomerPadrao(params: {
+  tenantId: string;
+  gateway: string;
+  customerId: string;
+}): Promise<void> {
+  const { error } = await servico
+    .from('tenant_gateways')
+    .update({ customer_padrao_id: params.customerId })
+    .eq('tenant_id', params.tenantId)
+    .eq('gateway', params.gateway);
+
+  if (error) throw error;
+}
+
 // ── Leituras da página pública ──────────────────────────────────────────────
 
 export interface TicketPublico {

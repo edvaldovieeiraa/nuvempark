@@ -1,7 +1,7 @@
 import { AsaasAdapter } from './asaas.js';
 import { decrypt } from './crypto.js';
 import type { GatewayTenant, PagamentoAdapter } from './adapter.js';
-import { lerGatewayDoTenant } from './repo.js';
+import { lerGatewayDoTenant, salvarCustomerPadrao } from './repo.js';
 
 export type {
   CobrancaPix,
@@ -37,7 +37,12 @@ export async function adapterDoTenant(
 
   switch (cfg.gateway) {
     case 'asaas':
-      return new AsaasAdapter(cfg);
+      // O adapter não conhece o banco. Aqui a factory fecha o ciclo: o cliente
+      // padrão que ele criar volta para `tenant_gateways` e é reusado no próximo
+      // Pix, em vez de nascer um por cobrança.
+      return new AsaasAdapter(cfg, (customerId) =>
+        salvarCustomerPadrao({ tenantId, gateway: cfg.gateway, customerId }),
+      );
     default:
       throw new Error(`Gateway não suportado: ${cfg.gateway}`);
   }

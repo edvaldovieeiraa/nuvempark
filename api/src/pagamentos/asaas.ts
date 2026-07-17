@@ -14,7 +14,8 @@ import type {
  * 1. `customer` é OBRIGATÓRIO em POST /payments, mas quem paga o ticket é
  *    anônimo (não vamos pedir CPF a quem só quer sair do estacionamento). Usamos
  *    um cliente genérico por tenant ("Pagamento avulso"), criado uma vez e
- *    reutilizado — guardado em `tenant_gateways.customer_padrao_id`.
+ *    reutilizado — guardado em `tenant_gateways.customer_padrao_id` pelo
+ *    callback que a factory injeta (ver [PersistirCustomerPadrao]).
  * 2. `dueDate` tem granularidade de DIA e o QR do Asaas vale meses. Não dá para
  *    expirar a cobrança em N minutos NO PSP. A janela curta é regra NOSSA
  *    (`pagamentos_online.expira_em`); o Asaas só recebe a data de hoje.
@@ -39,8 +40,18 @@ interface RespostaCliente {
   id: string;
 }
 
+/**
+ * Chamado quando um cliente padrão é criado no PSP, para que o id sobreviva ao
+ * processo. O adapter não fala com o banco (é PSP-only); quem sabe persistir é a
+ * factory, que injeta isto.
+ */
+export type PersistirCustomerPadrao = (customerId: string) => Promise<void>;
+
 export class AsaasAdapter implements PagamentoAdapter {
-  constructor(private readonly cfg: GatewayTenant) {}
+  constructor(
+    private readonly cfg: GatewayTenant,
+    private readonly persistirCustomerPadrao?: PersistirCustomerPadrao,
+  ) {}
 
   private async chamar<T>(
     caminho: string,
@@ -71,8 +82,11 @@ export class AsaasAdapter implements PagamentoAdapter {
   /**
    * Cliente genérico da subconta. O Asaas exige um `customer` na cobrança, e o
    * pagador do ticket não tem cadastro — então um só, reutilizado, resolve.
-   * O chamador deve persistir o id em `tenant_gateways.customer_padrao_id` para
-   * não recriar a cada cobrança.
+   *
+   * O id é persistido via [persistirCustomerPadrao] assim que nasce. Sem isso,
+   * `customer_padrao_id` fica nulo para sempre e cada Pix cria um cliente novo
+   * no PSP — lixo na conta do tenant e uma chamada de rede a mais no caminho de
+   * quem está com o cliente na frente.
    */
   async garantirClientePadrao(): Promise<string> {
     if (this.cfg.customerPadraoId) return this.cfg.customerPadraoId;
@@ -87,6 +101,25 @@ export class AsaasAdapter implements PagamentoAdapter {
         notificationDisabled: true,
       },
     });
+
+    // Vale para o resto da vida deste adapter, mesmo se o banco recusar abaixo.
+    this.cfg.customerPadraoId = criado.id;
+
+    try {
+      await this.persistirCustomerPadrao?.(criado.id);
+    } catch (erro) {
+      // O cliente JÁ existe no PSP e a cobrança pode seguir com ele. Derrubar o
+      // Pix aqui seria trocar um desperdício por um carro preso na cancela — o
+      // pior lado do trade-off. Sem persistir, o próximo Pix recria: o
+      // comportamento de antes desta correção, não uma regressão.
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[asaas] cliente padrão ${criado.id} criado mas não persistido: ${
+          erro instanceof Error ? erro.message : String(erro)
+        }`,
+      );
+    }
+
     return criado.id;
   }
 
