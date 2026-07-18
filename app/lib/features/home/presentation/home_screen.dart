@@ -16,6 +16,7 @@ import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tickets/data/foto_entrada_service.dart';
 import '../../tickets/data/placa_ocr_service.dart';
+import '../../tickets/presentation/camera_placa_screen.dart';
 import '../../tickets/presentation/providers/ticket_provider.dart';
 import '../../tickets/domain/ticket_qr.dart';
 import '../../tickets/presentation/placa_formatter.dart';
@@ -774,33 +775,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     context.push(Routes.saidaDetalhe(ticket.id));
   }
 
-  /// Saída por foto: câmera → OCR da placa → acha o ticket aberto dessa placa.
+  /// Saída por foto: abre a câmera própria (moldura-guia + OCR ao vivo, IGUAL à
+  /// entrada) → placa → acha o ticket aberto dessa placa. Se a câmera própria
+  /// não estiver disponível (permissão/hardware/init), cai no image_picker do
+  /// sistema — a mesma rede de segurança da entrada.
   Future<void> _saidaPorFoto(ScaffoldMessengerState messenger) async {
-    final fotoService = FotoEntradaService();
     final ocrService = PlacaOcrService();
+    final fotoService = FotoEntradaService();
+    try {
+      final captura = await Navigator.of(context).push<CapturaSaida>(
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => CameraPlacaScreen(
+            ocrService: ocrService,
+            fotoService: fotoService,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      switch (captura) {
+        case CapturaOk(:final placa):
+          await _resolverSaidaPorPlaca(messenger, placa);
+        case CapturaIndisponivel():
+          // Câmera própria fora do ar: fluxo antigo (câmera do sistema).
+          await _saidaPorFotoSistema(messenger, ocrService, fotoService);
+        case CapturaCancelada() || null:
+          break;
+      }
+    } finally {
+      ocrService.dispose();
+    }
+  }
+
+  /// Fallback da saída por foto: câmera do sistema (image_picker) → OCR.
+  Future<void> _saidaPorFotoSistema(
+    ScaffoldMessengerState messenger,
+    PlacaOcrService ocrService,
+    FotoEntradaService fotoService,
+  ) async {
     try {
       final path = await fotoService.capturar();
       if (path == null || !mounted) return;
       final placa = await ocrService.lerPlaca(File(path));
       if (!mounted) return;
-      if (placa == null) {
-        messenger.showSnackBar(const SnackBar(
-            content:
-                Text('Não consegui ler a placa. Tente o QR ou a aba Pátio.')));
-        return;
-      }
-      final patioId = await ref.read(tokenStorageProvider).readPatioId();
-      if (patioId == null || !mounted) return;
-      final ticket = await ref
-          .read(ticketRepositoryProvider)
-          .ticketAbertoPorPlaca(patioId, placa);
-      if (!mounted) return;
-      if (ticket == null) {
-        messenger.showSnackBar(SnackBar(
-            content: Text('Nenhum veículo aberto com a placa $placa.')));
-        return;
-      }
-      context.push(Routes.saidaDetalhe(ticket.id));
+      await _resolverSaidaPorPlaca(messenger, placa);
     } on FotoPermissaoNegadaException {
       if (mounted) {
         messenger.showSnackBar(const SnackBar(
@@ -811,9 +829,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         messenger.showSnackBar(const SnackBar(
             content: Text('Erro ao ler a placa. Tente novamente.')));
       }
-    } finally {
-      ocrService.dispose();
     }
+  }
+
+  /// Dada a placa lida (por qualquer câmera), acha o ticket aberto e vai para a
+  /// tela de saída. Placa nula = OCR não reconheceu → orienta o operador.
+  Future<void> _resolverSaidaPorPlaca(
+    ScaffoldMessengerState messenger,
+    String? placa,
+  ) async {
+    if (placa == null) {
+      messenger.showSnackBar(const SnackBar(
+          content:
+              Text('Não consegui ler a placa. Tente o QR ou digite a placa.')));
+      return;
+    }
+    final patioId = await ref.read(tokenStorageProvider).readPatioId();
+    if (patioId == null || !mounted) return;
+    final ticket = await ref
+        .read(ticketRepositoryProvider)
+        .ticketAbertoPorPlaca(patioId, placa);
+    if (!mounted) return;
+    if (ticket == null) {
+      messenger.showSnackBar(SnackBar(
+          content: Text('Nenhum veículo aberto com a placa $placa.')));
+      return;
+    }
+    context.push(Routes.saidaDetalhe(ticket.id));
   }
 }
 

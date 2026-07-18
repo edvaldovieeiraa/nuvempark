@@ -382,6 +382,16 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     // Caixa: só quando o dinheiro passa pela gaveta AGORA.
     final movimentaCaixa = !isLivre && valorCobrado > 0 && !semCaixa;
 
+    // Providers lidos AGORA, com o widget vivo. O núcleo (fecho + caixa) e o
+    // trabalho de fundo (sync, impressão) não podem mais tocar em `ref` se o
+    // operador sair da tela no meio de um await — usar `ref` após o dispose
+    // lança. Espelha o padrão do entrada_screen.
+    final ticketRepo = ref.read(ticketRepositoryProvider);
+    final tokenStorage = ref.read(tokenStorageProvider);
+    final syncEngine = ref.read(syncEngineProvider);
+    final printerFuture = ref.read(printerNotifierProvider.future);
+    final printerNotifier = ref.read(printerNotifierProvider.notifier);
+
     try {
       // Barreira: cobrança > 0 exige caixa aberto (senão entra sem registro).
       String? caixaSessaoId;
@@ -399,7 +409,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
 
       // Quem está VALIDANDO a saída agora — não confundir com o operador da
       // entrada, que pode ser de outro turno. É o que o painel audita.
-      final user = await ref.read(tokenStorageProvider).readUser();
+      final user = await tokenStorage.readUser();
       if (user == null) {
         if (mounted) {
           AppToast.error(context, 'Sessão inválida. Entre novamente.');
@@ -410,7 +420,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       // Fecho do ticket + receita no caixa numa ÚNICA transação atômica. Pago
       // online / livre passagem passam caixaSessaoId nulo e não movimentam a
       // gaveta — ver o comentário de [semCaixa].
-      await ref.read(ticketRepositoryProvider).registrarSaida(
+      await ticketRepo.registrarSaida(
             ticketId: ticket.id,
             valorCalculado: fare.valor,
             valorCobrado: valorCobrado,
@@ -421,14 +431,15 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
             placa: ticket.placa,
           );
 
-      if (movimentaCaixa) ref.invalidate(caixaSessaoNotifierProvider);
-      ref.invalidate(ticketsAbertosProvider);
-      Future.microtask(() => ref.read(syncEngineProvider).drain());
+      if (mounted) {
+        if (movimentaCaixa) ref.invalidate(caixaSessaoNotifierProvider);
+        ref.invalidate(ticketsAbertosProvider);
+      }
+      unawaited(syncEngine.drain());
 
       // Auto-print do recibo de saída, se houver impressora.
-      final printer = await ref
-          .read(printerNotifierProvider.future)
-          .catchError((_) => const PrinterState());
+      final printer =
+          await printerFuture.catchError((_) => const PrinterState());
       if (printer.temImpressora) {
         final bytes = PrintTemplates.reciboSaida(
           placa: ticket.placa,
@@ -444,7 +455,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
           cabecalho: patio.ticketCabecalho,
           rodape: patio.ticketRodape,
         );
-        final ok = await ref.read(printerNotifierProvider.notifier).print(bytes);
+        final ok = await printerNotifier.print(bytes);
         if (mounted && !ok) {
           AppToast.error(context, 'Falha ao imprimir o recibo.');
         }
@@ -457,8 +468,8 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     } on TicketJaFechadoException {
       // Duplo-toque / retry: a saída já foi efetivada por outra chamada. Não é
       // erro — nada foi cobrado a mais (o fecho é atômico). Só sai da tela.
-      ref.invalidate(ticketsAbertosProvider);
       if (mounted) {
+        ref.invalidate(ticketsAbertosProvider);
         AppToast.success(context, 'Saída já registrada.');
         context.pop();
       }
