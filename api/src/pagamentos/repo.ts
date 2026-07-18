@@ -249,6 +249,8 @@ export async function criarPagamento(params: {
   tenantId: string;
   valor: number;
   expiraEm: Date;
+  /** 'app' = Pix dinâmico do operador (vai pro caixa); 'publico' = link do QR. */
+  origem?: 'publico' | 'app';
 }): Promise<string> {
   const { data, error } = await servico
     .from('pagamentos_online')
@@ -259,6 +261,7 @@ export async function criarPagamento(params: {
       valor: params.valor,
       status: 'pendente',
       gateway: 'asaas',
+      origem: params.origem ?? 'publico',
       expira_em: params.expiraEm.toISOString(),
     })
     .select('id')
@@ -266,6 +269,23 @@ export async function criarPagamento(params: {
 
   if (error) throw error;
   return data.id as string;
+}
+
+/**
+ * Marca a origem de uma cobrança. Usado quando o operador gera o Pix dinâmico
+ * sobre uma cobrança que já existia (ex.: o cliente tinha aberto a página
+ * pública antes). Quem fecha a saída assume a cobrança: ela passa a ser 'app'
+ * e vai pro caixa, saindo da listagem de Pix online.
+ */
+export async function atualizarOrigem(
+  pagamentoId: string,
+  origem: 'publico' | 'app',
+): Promise<void> {
+  const { error } = await servico
+    .from('pagamentos_online')
+    .update({ origem })
+    .eq('id', pagamentoId);
+  if (error) throw error;
 }
 
 /** Guarda o que o PSP devolveu (copia-e-cola, QR, id da cobrança). */

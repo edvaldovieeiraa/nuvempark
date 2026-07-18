@@ -93,7 +93,9 @@ export async function publicoRoutes(app: FastifyInstance): Promise<void> {
     if (!r) return naoEncontrado(reply);
 
     // Mesma geração que o app do operador usa (ver pagamentos/cobranca.ts).
-    const res = await gerarOuReaproveitarPix(r.ticket, r.estado);
+    // origem 'publico' (default): cliente pelo QR → aparece na listagem de Pix
+    // online do painel e NÃO entra no caixa de nenhum operador.
+    const res = await gerarOuReaproveitarPix(r.ticket, r.estado, 'publico');
     if (!res.ok) return reply.code(res.code).send({ error: res.error });
     return reply.send(res.cobranca);
   });

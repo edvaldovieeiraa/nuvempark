@@ -96,7 +96,9 @@ export async function pagamentoOnlineRoutes(app: FastifyInstance): Promise<void>
       const tarifa = await lerTarifaDoTicket(ticket);
       const estado = derivarEstado({ ticket, tarifa, agora: new Date() });
 
-      const res = await gerarOuReaproveitarPix(ticket, estado);
+      // origem 'app': Pix dinâmico do operador → entra no caixa dele e fica fora
+      // da listagem de Pix online do painel (ver migração 25).
+      const res = await gerarOuReaproveitarPix(ticket, estado, 'app');
       if (!res.ok) return reply.code(res.code).send({ error: res.error });
       return reply.send(res.cobranca);
     },

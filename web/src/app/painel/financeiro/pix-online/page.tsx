@@ -43,10 +43,15 @@ export default async function PixOnlinePage({
 
   // RLS de pagamentos_online já limita ao tenant do gestor (só SELECT). Filtro
   // por pátio aqui; os 200 mais recentes bastam para a consulta financeira.
+  //
+  // origem != 'app': o Pix DINÂMICO (operador gerou na saída) foi contabilizado
+  // no caixa dele — mostrá-lo aqui também contaria o mesmo pagamento duas vezes.
+  // Esta lista é só o Pix que o CLIENTE pagou sozinho pelo QR do cupom.
   const { data } = await supabase
     .from("pagamentos_online")
     .select("id, valor, status, pago_em, criado_em, ticket_id")
     .eq("patio_id", patioId)
+    .neq("origem", "app")
     .order("criado_em", { ascending: false })
     .limit(200);
 

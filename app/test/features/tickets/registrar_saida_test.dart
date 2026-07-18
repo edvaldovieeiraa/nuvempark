@@ -142,6 +142,32 @@ void main() {
     await db.close();
   });
 
+  test('pix dinâmico entra no CAIXA como forma "pix" (não é semCaixa)',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    await seedTicket(db, id: ticketId, patio: patio);
+    await seedCaixaAberto(db, id: sessaoId, patio: patio);
+
+    // É assim que a tela fecha o Pix dinâmico: forma 'pix' + caixa (sem semCaixa).
+    final r = await TicketRepository(db: db).registrarSaida(
+      ticketId: ticketId,
+      valorCalculado: valor,
+      valorCobrado: valor,
+      formaPagamento: 'pix',
+      operadorSaidaId: 'op-saida',
+      caixaSessaoId: sessaoId,
+      placa: 'ABC1D23',
+    );
+
+    expect(r.caixaMovimentoId, isNotNull);
+    final movs = await db.caixaDao.getMovimentosBySessao(sessaoId);
+    expect(movs.length, 1, reason: 'receita do pix dinâmico entra na gaveta');
+    expect(movs.first.formaPagamento, 'pix');
+    expect(movs.first.valor, valor);
+
+    await db.close();
+  });
+
   test('saída sem caixa (pix online): fecha o ticket e NÃO cria movimento',
       () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());

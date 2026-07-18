@@ -1,5 +1,6 @@
 import { adapterDoTenant } from './index.js';
 import {
+  atualizarOrigem,
   criarPagamento,
   lerCobrancaPendente,
   salvarDadosCobranca,
@@ -37,6 +38,11 @@ export type ResultadoCobranca =
 export async function gerarOuReaproveitarPix(
   ticket: TicketPublico,
   estado: EstadoTicket,
+  /**
+   * Quem está gerando: 'app' = Pix dinâmico do operador na saída (vai pro caixa
+   * e sai da listagem de Pix online); 'publico' = cliente pela página do QR.
+   */
+  origem: 'publico' | 'app' = 'publico',
 ): Promise<ResultadoCobranca> {
   // Pago e dentro da carência: não há o que cobrar.
   if (estado.statusPagamento === 'pago') {
@@ -47,6 +53,12 @@ export async function gerarOuReaproveitarPix(
   // duas vezes no botão ou o operador gerar de novo não pode criar dois Pix.
   const pendente = await lerCobrancaPendente(ticket.id);
   if (pendente?.pix_copia_cola && pendente.expira_em) {
+    // O operador gerando o Pix dinâmico ASSUME uma cobrança pré-existente (ex.:
+    // o cliente abriu a página pública antes e não pagou): ela passa a ser
+    // 'app' — vai pro caixa e some da listagem de Pix online.
+    if (origem === 'app') {
+      await atualizarOrigem(pendente.id, 'app');
+    }
     return {
       ok: true,
       cobranca: {
@@ -82,6 +94,7 @@ export async function gerarOuReaproveitarPix(
     tenantId: ticket.tenant_id,
     valor,
     expiraEm,
+    origem,
   });
 
   const adapter = await adapterDoTenant(ticket.tenant_id);

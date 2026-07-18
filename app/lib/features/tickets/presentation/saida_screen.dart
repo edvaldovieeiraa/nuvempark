@@ -70,9 +70,14 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
   }
 
   /// Pix dinâmico: gera a cobrança no servidor (mesma da página pública), mostra
-  /// o QR/copia-e-cola numa folha e faz polling. Confirmado o pagamento, a folha
-  /// fecha e a tela cai no fluxo "PAGO ONLINE VIA PIX" que já existe.
-  Future<void> _pixDinamico() async {
+  /// o QR/copia-e-cola numa folha e faz polling. Confirmado o pagamento, a saída
+  /// é fechada AGORA com a receita entrando no CAIXA do operador (forma 'pix').
+  ///
+  /// É o que distingue o Pix DINÂMICO do Pix online (link do cupom): o dinâmico
+  /// passou pela mão do operador na saída, então é receita do caixa dele. O Pix
+  /// online (fluxo "PAGO ONLINE VIA PIX") continua fora do caixa — cai na conta
+  /// do tenant e o servidor o marca com origem 'app' vs 'publico' (migração 25).
+  Future<void> _pixDinamico(PatioModel patio, FareResult fare) async {
     if (_ticket == null || _gerandoPix) return;
     final ticketId = _ticket!.id;
 
@@ -111,9 +116,10 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
 
     if (pago == true && mounted) {
       AppToast.success(context, 'Pix confirmado!');
-      // Puxa o estado pago → a tela mostra "PAGO ONLINE VIA PIX" e a saída
-      // fecha por lá (sem caixa, imprime recibo).
-      await _consultarPagamentoOnline();
+      // Pix dinâmico = receita coletada pelo operador → fecha a saída lançando no
+      // CAIXA (forma 'pix'), NÃO pelo fluxo "pago online" (esse é só do link
+      // público). O valor cobrado é o da cobrança gerada.
+      await _confirmar(patio, fare, 'pix', valorCobradoOverride: cobranca.valor);
     }
   }
 
@@ -690,7 +696,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: FilledButton.icon(
-                  onPressed: _gerandoPix ? null : _pixDinamico,
+                  onPressed: _gerandoPix ? null : () => _pixDinamico(patio, fare),
                   icon: _gerandoPix
                       ? const SizedBox(
                           width: 18,
