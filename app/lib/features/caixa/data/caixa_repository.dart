@@ -22,11 +22,6 @@ class CaixaRepository {
     required String operadorNome,
     required double fundoCaixa,
   }) async {
-    // Blindagem: nunca abrir uma 2ª sessão se já há uma aberta (duplo-toque /
-    // reabertura). Retorna a existente em vez de duplicar.
-    final existente = await db.caixaDao.getSessaoAberta(patioId, operadorId);
-    if (existente != null) return existente.id;
-
     final id = const Uuid().v4();
     final agora = DateTime.now().millisecondsSinceEpoch;
 
@@ -39,7 +34,13 @@ class CaixaRepository {
       'abertura': agora,
     });
 
-    await db.transaction(() async {
+    // Blindagem: nunca abrir uma 2ª sessão se já há uma aberta (duplo-toque /
+    // reabertura). A checagem e a inserção correm na MESMA transação, que o
+    // SQLite serializa — duas aberturas simultâneas devolvem a mesma sessão.
+    return db.transaction(() async {
+      final existente = await db.caixaDao.getSessaoAberta(patioId, operadorId);
+      if (existente != null) return existente.id;
+
       await db.caixaDao.abrirSessao(CaixaSessoesCompanion(
         id: Value(id),
         operacaoId: Value(patioId),
@@ -57,9 +58,8 @@ class CaixaRepository {
         payload: Value(payload),
         criadoEm: Value(agora),
       ));
+      return id;
     });
-
-    return id;
   }
 
   Future<CaixaModel?> getSessaoAberta(String patioId, String operadorId) async {
@@ -136,62 +136,6 @@ class CaixaRepository {
     });
   }
 
-  /// Registra a receita de um ticket como movimento tipo 'entrada'.
-  Future<void> registrarEntradaTicket({
-    required String caixaSessaoId,
-    required String ticketId,
-    required double valor,
-    required String formaPagamento,
-    required String placa,
-  }) async {
-    final id = const Uuid().v4();
-    final agora = DateTime.now().millisecondsSinceEpoch;
-
-    final payload = jsonEncode({
-      'id': id,
-      'caixa_sessao_id': caixaSessaoId,
-      'tipo': 'entrada',
-      'valor': valor,
-      'descricao': 'Ticket $placa',
-      'ticket_id': ticketId,
-      'forma_pagamento': formaPagamento,
-      'criado_em': agora,
-    });
-
-    await db.transaction(() async {
-      await db.caixaDao.inserirMovimento(CaixaMovimentosCompanion(
-        id: Value(id),
-        caixaSessaoId: Value(caixaSessaoId),
-        tipo: const Value('entrada'),
-        valor: Value(valor),
-        descricao: Value('Ticket $placa'),
-        ticketId: Value(ticketId),
-        formaPagamento: Value(formaPagamento),
-        criadoEm: Value(agora),
-        syncStatus: const Value('pendente'),
-      ));
-
-      final row = await db.caixaDao.getSessaoById(caixaSessaoId);
-      if (row != null) {
-        await db.caixaDao.atualizarSessao(
-          caixaSessaoId,
-          CaixaSessoesCompanion(
-            totalEntradas: Value(row.totalEntradas + valor),
-            syncStatus: const Value('pendente'),
-          ),
-        );
-      }
-
-      await db.syncDao.enqueue(SyncLogCompanion(
-        entidade: const Value('caixa_movimento'),
-        entidadeId: Value(id),
-        operacao: const Value('create'),
-        payload: Value(payload),
-        criadoEm: Value(agora),
-      ));
-    });
-  }
-
   Future<FechamentoResult> fecharCaixa({
     required String caixaSessaoId,
     required double totalContado,
@@ -212,6 +156,20 @@ class CaixaRepository {
         .fold<double>(0, (t, m) => t + m.valor);
 
     final totalCalculado = row.fundoCaixa + entradas - sangrias;
+
+    // Idempotência: sessão já fechada → no-op. Devolve o resultado a partir do
+    // que foi gravado, sem reescrever nem reenfileirar sync (duplo-toque/retry
+    // não geram fechamento duplicado).
+    if (row.status != 'aberta') {
+      final contado = row.totalFechamento ?? totalCalculado;
+      return FechamentoResult(
+        totalCalculado: totalCalculado,
+        totalContado: contado,
+        divergencia: contado - totalCalculado,
+        jaEstavaFechada: true,
+      );
+    }
+
     final divergencia = totalContado - totalCalculado;
     final agora = DateTime.now().millisecondsSinceEpoch;
 
@@ -222,8 +180,11 @@ class CaixaRepository {
       'observacao_fechamento': observacao,
     });
 
+    var fechouAgora = false;
     await db.transaction(() async {
-      await db.caixaDao.atualizarSessao(
+      // Fecho condicional: se outra chamada fechou entre a leitura e aqui, muda
+      // 0 linhas e não reenfileira o sync — evita duplicidade na corrida.
+      final n = await db.caixaDao.fecharSeAberta(
         caixaSessaoId,
         CaixaSessoesCompanion(
           status: const Value('fechada'),
@@ -233,6 +194,8 @@ class CaixaRepository {
           syncStatus: const Value('pendente'),
         ),
       );
+      if (n == 0) return;
+      fechouAgora = true;
       await db.syncDao.enqueue(SyncLogCompanion(
         entidade: const Value('caixa_sessao'),
         entidadeId: Value(caixaSessaoId),
@@ -241,6 +204,19 @@ class CaixaRepository {
         criadoEm: Value(agora),
       ));
     });
+
+    // Perdedor da corrida (outra chamada fechou primeiro): no-op idempotente,
+    // devolve o que ficou gravado em vez de mentir que este fechou.
+    if (!fechouAgora) {
+      final atual = await db.caixaDao.getSessaoById(caixaSessaoId);
+      final contado = atual?.totalFechamento ?? totalCalculado;
+      return FechamentoResult(
+        totalCalculado: totalCalculado,
+        totalContado: contado,
+        divergencia: contado - totalCalculado,
+        jaEstavaFechada: true,
+      );
+    }
 
     return FechamentoResult(
       totalCalculado: totalCalculado,

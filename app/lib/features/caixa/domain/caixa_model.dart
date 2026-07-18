@@ -65,11 +65,16 @@ class FechamentoResult {
     required this.totalCalculado,
     required this.totalContado,
     required this.divergencia,
+    this.jaEstavaFechada = false,
   });
 
   final double totalCalculado;
   final double totalContado;
   final double divergencia; // totalContado - totalCalculado (positivo = excesso)
+
+  /// true quando a sessão já estava fechada e este fechamento foi um no-op
+  /// idempotente (duplo-toque/retry): nada foi reescrito nem reenfileirado.
+  final bool jaEstavaFechada;
 
   bool get temDivergencia => divergencia.abs() > 0.01;
   bool get emExcesso => divergencia > 0.01;

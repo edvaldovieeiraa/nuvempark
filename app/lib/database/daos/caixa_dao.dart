@@ -46,6 +46,15 @@ class CaixaDao extends DatabaseAccessor<AppDatabase> with _$CaixaDaoMixin {
   Future<void> atualizarSessao(String id, CaixaSessoesCompanion c) =>
       (update(caixaSessoes)..where((s) => s.id.equals(id))).write(c);
 
+  /// Fecho CONDICIONAL e atômico da sessão: aplica [c] só se ainda 'aberta'.
+  /// Retorna linhas alteradas — 1 = este chamador fechou; 0 = já fechada (ou
+  /// inexistente). Blinda o fechamento contra duplo-toque/retry, que senão
+  /// reescreveria o total e reenfileiraria o sync.
+  Future<int> fecharSeAberta(String id, CaixaSessoesCompanion c) =>
+      (update(caixaSessoes)
+            ..where((s) => s.id.equals(id) & s.status.equals('aberta')))
+          .write(c);
+
   Future<void> inserirMovimento(CaixaMovimentosCompanion m) =>
       into(caixaMovimentos).insert(m);
 

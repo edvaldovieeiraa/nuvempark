@@ -20,6 +20,7 @@ import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tarifa/domain/fare_result.dart';
 import '../../tarifa/domain/tarifa_engine.dart';
 import '../data/pagamento_online_service.dart';
+import '../data/ticket_repository.dart';
 import '../domain/ticket_model.dart';
 import 'providers/ticket_provider.dart';
 
@@ -366,6 +367,12 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     bool semCaixa = false,
   }) async {
     if (_fechando || _ticket == null || _tarifaSelecionada == null) return;
+    // Trava o botão SINCRONAMENTE, antes de qualquer await. Sem isto, um
+    // duplo-toque rápido passa pela guarda acima duas vezes antes do primeiro
+    // await — a trava real contra pagamento duplo mora no repositório (fecho
+    // condicional), mas esta trava de UI evita o retrabalho e o toast dobrado.
+    setState(() => _fechando = true);
+
     final ticket = _ticket!;
     final isLivre = formaPagamento == 'livre_passagem';
     final saida = DateTime.now();
@@ -375,56 +382,46 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     // Caixa: só quando o dinheiro passa pela gaveta AGORA.
     final movimentaCaixa = !isLivre && valorCobrado > 0 && !semCaixa;
 
-    // Barreira final: cobrança > 0 exige caixa aberto (evita corrida).
-    if (movimentaCaixa) {
-      final sessaoAtual = await ref.read(caixaSessaoNotifierProvider.future);
-      if (sessaoAtual == null) {
-        if (mounted) {
-          AppToast.error(context,
-              'Caixa fechado. Abra o caixa para registrar esta saída.');
-        }
-        return;
-      }
-    }
-
-    setState(() => _fechando = true);
     try {
+      // Barreira: cobrança > 0 exige caixa aberto (senão entra sem registro).
+      String? caixaSessaoId;
+      if (movimentaCaixa) {
+        final sessao = await ref.read(caixaSessaoNotifierProvider.future);
+        if (sessao == null) {
+          if (mounted) {
+            AppToast.error(context,
+                'Caixa fechado. Abra o caixa para registrar esta saída.');
+          }
+          return;
+        }
+        caixaSessaoId = sessao.id;
+      }
+
       // Quem está VALIDANDO a saída agora — não confundir com o operador da
       // entrada, que pode ser de outro turno. É o que o painel audita.
       final user = await ref.read(tokenStorageProvider).readUser();
       if (user == null) {
         if (mounted) {
           AppToast.error(context, 'Sessão inválida. Entre novamente.');
-          setState(() => _fechando = false);
         }
         return;
       }
 
-      await ref.read(ticketRepositoryProvider).fecharTicket(
+      // Fecho do ticket + receita no caixa numa ÚNICA transação atômica. Pago
+      // online / livre passagem passam caixaSessaoId nulo e não movimentam a
+      // gaveta — ver o comentário de [semCaixa].
+      await ref.read(ticketRepositoryProvider).registrarSaida(
             ticketId: ticket.id,
             valorCalculado: fare.valor,
             valorCobrado: valorCobrado,
             formaPagamento: formaPagamento,
             operadorSaidaId: user.id,
             tabelaPrecoId: _tarifaSelecionada!.id,
+            caixaSessaoId: caixaSessaoId,
+            placa: ticket.placa,
           );
 
-      // Lança a receita no caixa aberto (garantido aberto pela barreira acima).
-      // Pago online não entra aqui — ver o comentário de [semCaixa].
-      if (movimentaCaixa) {
-        final sessao = await ref.read(caixaSessaoNotifierProvider.future);
-        if (sessao != null) {
-          await ref.read(caixaRepositoryProvider).registrarEntradaTicket(
-                caixaSessaoId: sessao.id,
-                ticketId: ticket.id,
-                valor: valorCobrado,
-                formaPagamento: formaPagamento,
-                placa: ticket.placa,
-              );
-          ref.invalidate(caixaSessaoNotifierProvider);
-        }
-      }
-
+      if (movimentaCaixa) ref.invalidate(caixaSessaoNotifierProvider);
       ref.invalidate(ticketsAbertosProvider);
       Future.microtask(() => ref.read(syncEngineProvider).drain());
 
@@ -455,6 +452,14 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
 
       if (mounted) {
         AppToast.success(context, 'Saída registrada!');
+        context.pop();
+      }
+    } on TicketJaFechadoException {
+      // Duplo-toque / retry: a saída já foi efetivada por outra chamada. Não é
+      // erro — nada foi cobrado a mais (o fecho é atômico). Só sai da tela.
+      ref.invalidate(ticketsAbertosProvider);
+      if (mounted) {
+        AppToast.success(context, 'Saída já registrada.');
         context.pop();
       }
     } catch (e) {

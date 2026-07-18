@@ -43,6 +43,16 @@ class TicketsDao extends DatabaseAccessor<AppDatabase> with _$TicketsDaoMixin {
   Future<void> atualizar(String id, TicketsCompanion c) =>
       (update(tickets)..where((t) => t.id.equals(id))).write(c);
 
+  /// Fecho CONDICIONAL e atômico: aplica [c] só se o ticket ainda estiver
+  /// 'aberto'. Retorna quantas linhas mudaram — 1 = este chamador efetuou a
+  /// saída; 0 = já estava fechado (ou não existe). É a barreira que impede
+  /// saída/pagamento em duplicidade sob duplo-toque ou concorrência: o SQLite
+  /// serializa a escrita, então só um chamador vê a linha 'aberto'.
+  Future<int> fecharSeAberto(String id, TicketsCompanion c) =>
+      (update(tickets)
+            ..where((t) => t.id.equals(id) & t.status.equals('aberto')))
+          .write(c);
+
   /// Quantos veículos do cliente estão no pátio agora (tickets abertos).
   Future<int> contarAbertosPorCliente(
     String operacaoId,

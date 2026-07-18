@@ -7,13 +7,24 @@ import '../../../database/app_database.dart';
 import '../domain/ticket_model.dart';
 import '../domain/reconhecimento_cliente.dart';
 
-/// Ticket alvo de fecharTicket() já estava fechado (status != 'aberto').
+/// Ticket alvo de registrarSaida() já estava fechado (status != 'aberto').
 /// Tipo dedicado para o caller distinguir "já foi registrado antes" de erros
-/// reais de escrita (importante no retry de pagamento).
+/// reais de escrita (importante no retry de pagamento e no duplo-toque).
 class TicketJaFechadoException implements Exception {
   const TicketJaFechadoException();
   @override
   String toString() => 'Ticket já foi fechado';
+}
+
+/// Resultado de uma saída efetivada por ESTE chamador. Se a saída não
+/// aconteceu (ticket inexistente ou já fechado), registrarSaida lança em vez de
+/// devolver — logo, receber um SaidaResult significa "eu fechei agora".
+class SaidaResult {
+  const SaidaResult({required this.caixaMovimentoId});
+
+  /// id do movimento de caixa criado, ou null quando a saída não passou pela
+  /// gaveta (pix online, livre passagem, isenção ou valor cobrado 0).
+  final String? caixaMovimentoId;
 }
 
 /// Repositório de tickets. NOTA de porte NuvemPark: os payloads de sync NÃO
@@ -137,16 +148,35 @@ class TicketRepository {
     return id;
   }
 
-  Future<void> fecharTicket({
+  /// Efetiva a SAÍDA de um veículo: fecha o ticket e — quando o dinheiro passa
+  /// pela gaveta AGORA — registra a receita no caixa, TUDO numa única transação
+  /// atômica.
+  ///
+  /// Blindagem contra pagamento duplo (duplo-toque / concorrência): o fecho é
+  /// CONDICIONAL a `status = 'aberto'` (fecharSeAberto). Só quem encontra o
+  /// ticket ainda aberto efetiva a saída e cria o movimento de caixa; os demais
+  /// veem 0 linhas e recebem [TicketJaFechadoException] — a gaveta nunca é
+  /// creditada duas vezes pelo mesmo carro. Como fecho e caixa vivem na MESMA
+  /// transação, também não há janela em que o ticket fica fechado sem a receita
+  /// correspondente (nem o contrário).
+  ///
+  /// [operadorSaidaId] é quem VALIDOU a saída — não o `operador_id` do ticket,
+  /// que é de quem registrou a entrada (muitas vezes de outro turno).
+  ///
+  /// A receita entra no caixa só quando [caixaSessaoId] != null e
+  /// [valorCobrado] > 0. Pix online / livre passagem / isenção passam
+  /// `caixaSessaoId` nulo e não movimentam a gaveta.
+  Future<SaidaResult> registrarSaida({
     required String ticketId,
     required double valorCalculado,
     required double valorCobrado,
     required String formaPagamento,
-    /// Quem VALIDOU a saída. Não é o mesmo do `operador_id` do ticket, que é de
-    /// quem registrou a entrada — muitas vezes de outro turno.
     required String operadorSaidaId,
     String? motivoIsencao,
     String? tabelaPrecoId,
+    // Receita no caixa (só quando o dinheiro passa pela gaveta agora).
+    String? caixaSessaoId,
+    String? placa,
     // Campos de pagamento (Pix/cartão). Opcionais: o ramo manual omite nulos.
     String? atk,
     String? itk,
@@ -156,15 +186,9 @@ class TicketRepository {
     int? installments,
     String? paymentProcessor,
   }) async {
-    final existing = await db.ticketsDao.getById(ticketId);
-    if (existing == null) throw Exception('Ticket não encontrado');
-    if (existing.status != 'aberto') {
-      throw const TicketJaFechadoException();
-    }
-
     final agora = DateTime.now().millisecondsSinceEpoch;
 
-    final payload = montarPayloadFechamentoTicket(
+    final ticketPayload = montarPayloadFechamentoTicket(
       agora: agora,
       valorCalculado: valorCalculado,
       valorCobrado: valorCobrado,
@@ -181,8 +205,9 @@ class TicketRepository {
       paymentProcessor: paymentProcessor,
     );
 
-    await db.transaction(() async {
-      await db.ticketsDao.atualizar(
+    return db.transaction(() async {
+      // Fecho ATÔMICO: 1 linha = eu fechei; 0 = já estava fechado ou não existe.
+      final fechados = await db.ticketsDao.fecharSeAberto(
         ticketId,
         TicketsCompanion(
           saidaEpoch: Value(agora),
@@ -203,13 +228,72 @@ class TicketRepository {
           atualizadoEm: Value(agora),
         ),
       );
+
+      if (fechados == 0) {
+        // Distingue "não existe" de "já fechado" — o caller trata diferente.
+        final existing = await db.ticketsDao.getById(ticketId);
+        if (existing == null) throw Exception('Ticket não encontrado');
+        throw const TicketJaFechadoException();
+      }
+
       await db.syncDao.enqueue(SyncLogCompanion(
         entidade: const Value('ticket'),
         entidadeId: Value(ticketId),
         operacao: const Value('update'),
-        payload: Value(jsonEncode(payload)),
+        payload: Value(jsonEncode(ticketPayload)),
         criadoEm: Value(agora),
       ));
+
+      // Receita no caixa — amarrada ao fecho na mesma transação. Só é alcançada
+      // porque o fecho acima teve sucesso, então nunca roda em duplicidade.
+      String? movimentoId;
+      if (caixaSessaoId != null && valorCobrado > 0) {
+        movimentoId = const Uuid().v4();
+        final descricao = 'Ticket ${placa ?? ''}'.trim();
+        final movimentoPayload = jsonEncode({
+          'id': movimentoId,
+          'caixa_sessao_id': caixaSessaoId,
+          'tipo': 'entrada',
+          'valor': valorCobrado,
+          'descricao': descricao,
+          'ticket_id': ticketId,
+          'forma_pagamento': formaPagamento,
+          'criado_em': agora,
+        });
+
+        await db.caixaDao.inserirMovimento(CaixaMovimentosCompanion(
+          id: Value(movimentoId),
+          caixaSessaoId: Value(caixaSessaoId),
+          tipo: const Value('entrada'),
+          valor: Value(valorCobrado),
+          descricao: Value(descricao),
+          ticketId: Value(ticketId),
+          formaPagamento: Value(formaPagamento),
+          criadoEm: Value(agora),
+          syncStatus: const Value('pendente'),
+        ));
+
+        final sessao = await db.caixaDao.getSessaoById(caixaSessaoId);
+        if (sessao != null) {
+          await db.caixaDao.atualizarSessao(
+            caixaSessaoId,
+            CaixaSessoesCompanion(
+              totalEntradas: Value(sessao.totalEntradas + valorCobrado),
+              syncStatus: const Value('pendente'),
+            ),
+          );
+        }
+
+        await db.syncDao.enqueue(SyncLogCompanion(
+          entidade: const Value('caixa_movimento'),
+          entidadeId: Value(movimentoId),
+          operacao: const Value('create'),
+          payload: Value(movimentoPayload),
+          criadoEm: Value(agora),
+        ));
+      }
+
+      return SaidaResult(caixaMovimentoId: movimentoId);
     });
   }
 
