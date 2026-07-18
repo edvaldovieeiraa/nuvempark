@@ -50,12 +50,17 @@ export async function heartbeatRoutes(app: FastifyInstance): Promise<void> {
     const syntheticUuid = `${deviceUuid.replace(/-/g, '').substring(0, 8).toLowerCase()}-0000-4000-8000-000000000000`;
     const uuids = [deviceUuid, syntheticUuid];
 
+    // Carimbo do SERVIDOR: é ele que volta pro app e alimenta a "última
+    // sincronização". App e painel passam a exibir ESTE mesmo instante — o
+    // relógio do servidor, não o do aparelho — então nunca divergem.
+    const agora = new Date().toISOString();
+
     // 1) Caminho feliz (99,9% das batidas): o aparelho já existe e está ativo.
     // Um único UPDATE cobre os dois formatos de uuid; o select('status') é o
     // RETURNING do próprio update, não uma query extra.
     const { data: atualizados, error: erroUpdate } = await db
       .from('dispositivos')
-      .update({ ultimo_acesso: new Date().toISOString() })
+      .update({ ultimo_acesso: agora })
       .in('device_uuid', uuids)
       .neq('status', 'revogado')
       .select('status');
@@ -64,7 +69,9 @@ export async function heartbeatRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(500).send({ error: 'Falha ao registrar heartbeat' });
     }
     if (atualizados && atualizados.length > 0) {
-      return reply.code(204).send();
+      // Devolve o carimbo (antes era 204 vazio): o app grava isto como
+      // "última sincronização", alinhado ao que o painel lê de ultimo_acesso.
+      return reply.code(200).send({ sincronizado_em: agora });
     }
 
     // 2) Nada atualizado: ou não existe, ou está revogado. Só aqui (raro) vale
@@ -101,7 +108,7 @@ export async function heartbeatRoutes(app: FastifyInstance): Promise<void> {
         patio_id: patioId,
         device_uuid: deviceUuid,
         status: 'ativo',
-        ultimo_acesso: new Date().toISOString(),
+        ultimo_acesso: agora,
       },
       { onConflict: 'device_uuid', ignoreDuplicates: true },
     );
@@ -110,6 +117,6 @@ export async function heartbeatRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(500).send({ error: 'Falha ao registrar dispositivo' });
     }
 
-    return reply.code(204).send();
+    return reply.code(200).send({ sincronizado_em: agora });
   });
 }

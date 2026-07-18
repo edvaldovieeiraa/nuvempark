@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/sync/presentation/sync_info_provider.dart';
 import '../config/env.dart';
 import '../di/providers.dart';
 
@@ -68,7 +69,7 @@ class HeartbeatService with WidgetsBindingObserver {
 
       // Os interceptors do Dio já injetam Bearer + X-Device-Id (e renovam o
       // token quando expira) — o serviço não conhece token nem device.
-      await _ref.read(dioProvider).post<void>(
+      final resp = await _ref.read(dioProvider).post<dynamic>(
             Env.heartbeatUrl,
             data: patioId == null ? null : {'patio_id': patioId},
             options: Options(
@@ -76,6 +77,23 @@ class HeartbeatService with WidgetsBindingObserver {
               receiveTimeout: Env.heartbeatTimeout,
             ),
           );
+
+      // "Última sincronização" = último CONTATO com o servidor. O heartbeat bate
+      // a cada 60s independente de haver dado a subir, então esse carimbo avança
+      // sozinho num pátio parado — e é o MESMO instante (relógio do servidor) que
+      // o painel lê de dispositivos.ultimo_acesso, então as duas telas batem.
+      // Robusto com a API antiga: sem corpo (204) simplesmente não atualiza.
+      final body = resp.data;
+      if (body is Map) {
+        final iso = body['sincronizado_em'];
+        if (iso is String) {
+          final quando = DateTime.tryParse(iso)?.toLocal();
+          if (quando != null) {
+            await _ref.read(tokenStorageProvider).saveUltimoSync(quando);
+            _ref.invalidate(syncInfoProvider);
+          }
+        }
+      }
     } catch (_) {
       // Fail-silent: ver doc da classe.
     } finally {

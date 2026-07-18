@@ -59,22 +59,45 @@ export async function ultimaSincronizacao(
 ): Promise<string | null> {
   const supabase = await createClient();
 
-  const consultas = await Promise.all(
-    TABELAS_SINCRONIZADAS.map((tabela) =>
-      supabase
-        .from(tabela)
-        .select("sincronizado_em")
-        .eq("patio_id", patioId)
-        .not("sincronizado_em", "is", null)
-        .order("sincronizado_em", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ),
+  const consultasDados = TABELAS_SINCRONIZADAS.map((tabela) =>
+    supabase
+      .from(tabela)
+      .select("sincronizado_em")
+      .eq("patio_id", patioId)
+      .not("sincronizado_em", "is", null)
+      .order("sincronizado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   );
+
+  // Contato vivo do(s) aparelho(s) do pátio: o app bate um heartbeat a cada 60s
+  // e carimba `ultimo_acesso`, MESMO com o pátio parado. Sem entrar aqui, a
+  // "última sincronização" só avançava quando dado subia — o painel mostrava o
+  // app "atrasado" enquanto ele estava conectado e em dia. É o mesmo carimbo
+  // que o app agora exibe (o servidor devolve no /heartbeat), então batem.
+  const consultaDispositivo = supabase
+    .from("dispositivos")
+    .select("ultimo_acesso")
+    .eq("patio_id", patioId)
+    .neq("status", "revogado")
+    .not("ultimo_acesso", "is", null)
+    .order("ultimo_acesso", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const consultas = await Promise.all([
+    ...consultasDados,
+    consultaDispositivo,
+  ]);
 
   // Uma tabela que falhe (ex.: RLS) não pode zerar o resultado das outras.
   const datas = consultas
-    .map((r) => r.data?.sincronizado_em)
+    .map((r) => {
+      const d = r.data as
+        | { sincronizado_em?: string; ultimo_acesso?: string }
+        | null;
+      return d?.sincronizado_em ?? d?.ultimo_acesso;
+    })
     .filter((d): d is string => typeof d === "string");
 
   if (datas.length === 0) return null;
