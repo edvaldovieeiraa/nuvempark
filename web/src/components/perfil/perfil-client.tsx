@@ -54,7 +54,7 @@ export function PerfilClient({
   const inicial = email.charAt(0).toUpperCase();
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       <motion.header
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

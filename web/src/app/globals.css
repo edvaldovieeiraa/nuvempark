@@ -80,6 +80,11 @@
   0% { transform: scale(1); opacity: 0.7; }
   70%, 100% { transform: scale(2.4); opacity: 0; }
 }
+/* Traço do sparkline do hero (Dashboard/Financeiro) — desenha da esquerda. */
+@keyframes draw {
+  from { stroke-dashoffset: 1400; }
+  to { stroke-dashoffset: 0; }
+}
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-12px); }
@@ -189,23 +194,25 @@ input, select, textarea {
 .pshell {
   height: 100dvh;
   overflow: hidden;
-  /* Fundo LIMPO do painel. O frost do menu agora é assado no próprio menu
-     (.gnav.liquid), então não precisamos mais de faixa de cor/brilhos atrás
-     dele — que só vazavam pro lado e deixavam o fundo estranho. Cinza-claro
-     neutro (do design), com um leve gradiente pra não ficar chapado. */
-  background: linear-gradient(160deg, #F3F5F7, #E9EDF1);
+  /* Fundo do protótipo: base cinza-claro com dois brilhos radiais VERDES
+     (topo-esquerda + baixo-direita). O menu flutua translúcido por cima, e
+     os brilhos aparecem nas margens ao redor do card — exatamente como no
+     Claude Design. */
+  background:
+    radial-gradient(360px 360px at -40px -60px, rgba(22, 163, 74, 0.30), transparent 68%),
+    radial-gradient(400px 400px at calc(100% - 80px) calc(100% + 80px), rgba(34, 197, 94, 0.20), transparent 68%),
+    #F3F5F7;
 }
 .pshell .pmain { padding-left: 264px; transition: padding-left .28s cubic-bezier(.4, 0, .2, 1); }
-.pshell.pcollapsed .pmain { padding-left: 110px; }
+.pshell.pcollapsed .pmain { padding-left: 128px; }
 /* Conteúdo do painel ocupa 100% da largura disponível: neutraliza os caps
    max-w-* das páginas (o usuário quer tela cheia). Especificidade > utilitário. */
 .pshell .pmain > * { max-width: none; }
-/* Tipografia do design em TODAS as telas do painel: corpo IBM Plex Sans,
-   títulos Libre Franklin, placas/códigos IBM Plex Mono. Alinha as internas
-   ao redesign sem tocar em cada página. */
-.pshell .pmain { font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+/* Tipografia do protótipo em TODAS as telas do painel: Poppins no corpo e nos
+   títulos (peso/letter-spacing do design), IBM Plex Mono em placas/códigos. */
+.pshell .pmain { font-family: "Poppins", -apple-system, "Segoe UI", Roboto, sans-serif; color: #1F2937; }
 .pshell .pmain h1, .pshell .pmain h2, .pshell .pmain h3 {
-  font-family: "Libre Franklin", sans-serif; letter-spacing: -0.01em;
+  font-family: "Poppins", sans-serif; font-weight: 700; letter-spacing: -0.02em;
 }
 .pshell .pmain .mono, .pshell .pmain .font-mono {
   font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -226,24 +233,26 @@ input, select, textarea {
 .gnav .navscroll .lbl { font-size: 12.5px; white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
 .gnav .pitem, .gnav .gitem, .gnav .subitem { position: relative; z-index: 1; }
 .gnav .hoverslider { position: absolute; left: 0; right: 0; top: 0; height: 40px; border-radius: 13px;
-  background: linear-gradient(120deg, rgba(45,212,191,.24), rgba(20,184,166,.12));
-  border: 1px solid rgba(94,234,212,.4);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 6px 18px -8px rgba(20,184,166,.5);
+  background: linear-gradient(120deg, rgba(34,197,94,.24), rgba(22,163,74,.12));
+  border: 1px solid rgba(74,222,128,.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 6px 18px -8px rgba(22,163,74,.5);
   opacity: 0; transform: translateY(0);
   transition: transform .32s cubic-bezier(.34,1.08,.36,1), height .32s cubic-bezier(.34,1.08,.36,1), opacity .2s ease;
   pointer-events: none; z-index: 0; }
 .gnav .pitem { border: 1px solid transparent; }
-.gnav .pitem[data-active="true"] { color: #5EEAD4; font-weight: 700; }
+.gnav .pitem[data-active="true"] { color: #4ADE80; font-weight: 700; }
 .gnav .gitem { border: 1px solid transparent; }
-.gnav .gitem[data-active="true"] { color: #5EEAD4; }
+.gnav .gitem[data-active="true"] { color: #4ADE80; }
+.gnav [data-sel]:hover { background: rgba(255,255,255,.06); }
+.gnav [data-sel="true"] { background: rgba(34,197,94,.12); }
 .gnav .chev { transition: transform .22s cubic-bezier(.4,0,.2,1); }
 .gnav .chev[data-open="true"] { transform: rotate(180deg); }
 .gnav .subwrap { display: flex; flex-direction: column; gap: 2px; margin: 2px 0 4px; overflow: hidden; }
 .gnav .subitem { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 34px; border-radius: 11px;
   color: rgba(255,255,255,.6); font-weight: 600; font-size: 12.5px; cursor: pointer; border: 1px solid transparent; }
 .gnav .subitem svg { color: rgba(255,255,255,.4); }
-.gnav .subitem[data-active="true"] { color: #5EEAD4; font-weight: 700; }
-.gnav .subitem[data-active="true"] svg { color: #5EEAD4; }
+.gnav .subitem[data-active="true"] { color: #4ADE80; font-weight: 700; }
+.gnav .subitem[data-active="true"] svg { color: #4ADE80; }
 .gnav .cbtn { cursor: pointer; border: none; background: transparent; }
 .gnav .cbtn svg { transition: transform .28s cubic-bezier(.4,0,.2,1); }
 .gnav.collapsed .cbtn svg { transform: rotate(180deg); }
@@ -277,14 +286,14 @@ input, select, textarea {
      O backdrop-filter fica como bônus pra quem o aplica de fato. */
   background:
     /* grão FINO e uniforme (frost) — sutil, sem manchas */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"),
-    /* leve brilho teal só no topo, centrado (uniforme mesmo recolhido) */
-    radial-gradient(150% 20% at 50% 0%, rgba(45, 212, 191, 0.14), transparent 70%),
-    /* base escura UNIFORME com leve profundidade top→baixo */
-    linear-gradient(180deg, #1b2732 0%, #141d27 55%, #10161e 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
+    /* leve brilho VERDE só no topo, centrado (uniforme mesmo recolhido) */
+    radial-gradient(150% 20% at 50% 0%, rgba(34, 197, 94, 0.15), transparent 70%),
+    /* base navy do protótipo (160deg #111A2C → #080D16), assada opaca */
+    linear-gradient(160deg, #121b31 0%, #0c1322 55%, #080d16 100%);
   /* bônus pra navegadores que DE FATO aplicam backdrop-filter (não quebra nada sem ele) */
-  backdrop-filter: blur(30px) saturate(175%) brightness(1.06);
-  -webkit-backdrop-filter: blur(30px) saturate(175%) brightness(1.06);
+  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow:
     /* rim light no topo (vidro pegando luz) */

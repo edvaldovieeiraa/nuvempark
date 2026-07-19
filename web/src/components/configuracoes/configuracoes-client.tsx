@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -54,12 +54,73 @@ const moeda = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
-// Só as cores por estado — o texto vem de labelAssinaturaEstado (util central).
-const ESTADO_CLS: Record<string, string> = {
-  ativa: "bg-brand-50 text-brand-700 border-brand-200",
-  atrasada: "bg-aviso-bg text-aviso border-aviso/25",
-  suspensa: "bg-perigo-bg text-perigo border-perigo/20",
+/* ---------- Tokens (fiéis ao protótipo) ---------- */
+
+const cardStyle: CSSProperties = {
+  background: "#fff",
+  border: "1px solid #E4E8EC",
+  borderRadius: 16,
+  boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+  overflow: "hidden",
 };
+const cardHeadStyle: CSSProperties = {
+  padding: "14px 18px",
+  borderBottom: "1px solid #E4E8EC",
+  display: "flex",
+  alignItems: "center",
+  gap: 9,
+};
+const cardTitleStyle: CSSProperties = { margin: 0, fontSize: 13, fontWeight: 700 };
+const iconGreen: CSSProperties = { width: 15, height: 15, color: "#16A34A" };
+
+// Pílula de estado (mapeia estado real → cores do protótipo).
+const PILL_CLS: Record<string, CSSProperties> = {
+  ativa: { background: "#DCFCE7", color: "#16A34A", border: "1px solid #BBF7D0" },
+  atrasada: { background: "#FEF3C7", color: "#B45309", border: "1px solid #FDE68A" },
+  suspensa: { background: "#FEF1F1", color: "#E11D48", border: "1px solid #FBD0D0" },
+};
+const pillBase: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  fontSize: 11,
+  fontWeight: 700,
+  borderRadius: 999,
+  padding: "4px 11px",
+};
+
+function ReadRow({
+  label,
+  value,
+  mono,
+  last,
+}: {
+  label: string;
+  value: ReactNode;
+  mono?: boolean;
+  last?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        padding: "11px 0",
+        borderBottom: last ? "none" : "1px solid #EEF1F3",
+      }}
+    >
+      <span style={{ fontSize: 13, color: "#6B7280" }}>{label}</span>
+      <span
+        className={mono ? "mono" : undefined}
+        style={{ fontSize: 13, fontWeight: 600, textAlign: "right" }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
 
 export function ConfiguracoesClient({
   tenant,
@@ -78,10 +139,12 @@ export function ConfiguracoesClient({
   const nomePatio = (id: string) =>
     patios.find((p) => p.id === id)?.nome ?? "—";
 
-  const estadoCls = ESTADO_CLS[assinatura?.estado ?? "ativa"] ?? ESTADO_CLS.ativa;
-  const estadoRotulo = labelAssinaturaEstado(assinatura?.estado ?? "ativa");
+  const estadoKey = assinatura?.estado ?? "ativa";
+  const estadoPill = PILL_CLS[estadoKey] ?? PILL_CLS.ativa;
+  const estadoRotulo = labelAssinaturaEstado(estadoKey);
   const mensalidade =
     (Number(assinatura?.valor_por_patio) || 0) * qtdPatiosAtivos;
+  const patiosAtivos = patios.filter((p) => p.ativo !== false);
 
   function copiarCodigoPatio(p: Patio) {
     if (!p.codigoAcesso) return;
@@ -90,173 +153,289 @@ export function ConfiguracoesClient({
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <motion.header
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <h1 className="text-[26px] font-black tracking-tight">Configurações</h1>
-        <p className="text-sm text-texto-2">
-          Dados da rede, assinatura e dispositivos autorizados.
-        </p>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 23,
+            fontWeight: 700,
+            letterSpacing: "-.02em",
+          }}
+        >
+          Configurações
+        </h1>
+        <div style={{ marginTop: 3, fontSize: 13, color: "#6B7280" }}>
+          Preferências da rede{" "}
+          <b style={{ color: "#1F2937" }}>{tenant?.nome ?? "—"}</b>
+        </div>
       </motion.header>
 
-      <div className="grid lg:grid-cols-2 gap-4">
-        {/* Rede */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 14,
+          alignItems: "start",
+        }}
+      >
+        {/* Dados da rede (editável — mantém atualizarRede) */}
         <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.06 }}
-          className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-5"
+          style={cardStyle}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <span className="w-8 h-8 rounded-lg bg-brand-50 grid place-items-center">
-              <Building2 className="w-4 h-4 text-brand-600" />
-            </span>
-            <h2 className="font-bold">Sua rede</h2>
+          <div style={cardHeadStyle}>
+            <Building2 style={iconGreen} />
+            <h3 style={cardTitleStyle}>Dados da rede</h3>
           </div>
+          <div style={{ padding: "8px 18px 16px" }}>
+            <FormRede tenant={tenant} />
 
-          <FormRede tenant={tenant} />
-
-          <dl className="mt-4 pt-4 border-t border-borda text-sm">
-            <div className="flex justify-between">
-              <dt className="text-texto-2">Pátios ativos</dt>
-              <dd className="font-bold tabular-nums">{qtdPatiosAtivos}</dd>
-            </div>
-          </dl>
-
-          <p className="mt-5 mb-2 text-xs font-black uppercase tracking-wider text-texto-3">
-            Códigos de acesso do app (por pátio)
-          </p>
-          <div className="space-y-2">
-            {patios
-              .filter((p) => p.ativo !== false)
-              .map((p) => (
-                <div key={p.id} className="flex items-center justify-between">
-                  <span className="text-sm text-texto-2 truncate">{p.nome}</span>
+            <div style={{ marginTop: 6 }}>
+              <ReadRow
+                label="Pátios ativos"
+                value={qtdPatiosAtivos}
+                mono
+                last={patiosAtivos.length === 0}
+              />
+              {patiosAtivos.map((p, i) => (
+                <div
+                  key={p.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "11px 0",
+                    borderBottom:
+                      i === patiosAtivos.length - 1
+                        ? "none"
+                        : "1px solid #EEF1F3",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: "#6B7280",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {p.nome}
+                  </span>
                   <button
                     onClick={() => copiarCodigoPatio(p)}
-                    title="Copiar código"
-                    className="inline-flex items-center gap-1.5 font-mono font-black tracking-[0.25em] text-xs text-brand-700 bg-brand-50 border border-brand-200 rounded-lg px-2.5 py-1 hover:bg-brand-100 transition-colors"
+                    title="Copiar código de acesso"
+                    className="mono"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      letterSpacing: ".14em",
+                      color: "#16A34A",
+                      background: "#DCFCE7",
+                      border: "1px solid #BBF7D0",
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                      cursor: "pointer",
+                    }}
                   >
                     {p.codigoAcesso ?? "????"}
-                    <Copy className="w-3 h-3" />
+                    <Copy style={{ width: 12, height: 12 }} />
                   </button>
                 </div>
               ))}
+            </div>
+            <p
+              style={{
+                marginTop: 12,
+                marginBottom: 0,
+                fontSize: 12,
+                color: "#8695A0",
+                lineHeight: 1.5,
+              }}
+            >
+              O operador entra no app com o código do pátio dele + usuário +
+              senha — e já cai direto na unidade.
+            </p>
           </div>
-          <p className="mt-4 text-xs text-texto-3 leading-relaxed">
-            O operador entra no app com o código do pátio dele + usuário +
-            senha — e já cai direto na unidade.
-          </p>
         </motion.section>
 
-        {/* Assinatura */}
+        {/* Assinatura (leitura + pílula de estado) */}
         <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.1 }}
-          className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-5"
+          style={cardStyle}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-brand-50 grid place-items-center">
-                <CreditCard className="w-4 h-4 text-brand-600" />
-              </span>
-              <h2 className="font-bold">Assinatura</h2>
+          <div style={{ ...cardHeadStyle, justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+              <CreditCard style={iconGreen} />
+              <h3 style={cardTitleStyle}>Assinatura</h3>
             </div>
-            <span
-              className={`text-xs font-bold px-3 py-1 rounded-full border ${estadoCls}`}
-            >
-              {estadoRotulo}
-            </span>
+            <span style={{ ...pillBase, ...estadoPill }}>{estadoRotulo}</span>
           </div>
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-texto-2">Valor por pátio</dt>
-              <dd className="font-bold tabular-nums">
-                {moeda.format(Number(assinatura?.valor_por_patio) || 0)}
-              </dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-texto-2">Mensalidade ({qtdPatiosAtivos} pátios)</dt>
-              <dd className="font-black tabular-nums text-brand-700">
-                {moeda.format(mensalidade)}
-              </dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-texto-2">Próximo vencimento</dt>
-              <dd className="font-bold tabular-nums">
-                {assinatura?.vencimento
+          <div style={{ padding: "8px 18px 16px" }}>
+            <ReadRow
+              label="Valor por pátio"
+              value={moeda.format(Number(assinatura?.valor_por_patio) || 0)}
+              mono
+            />
+            <ReadRow
+              label={`Mensalidade (${qtdPatiosAtivos} pátios)`}
+              value={
+                <span className="mono" style={{ color: "#16A34A", fontWeight: 700 }}>
+                  {moeda.format(mensalidade)}
+                </span>
+              }
+            />
+            <ReadRow
+              label="Próximo vencimento"
+              value={
+                assinatura?.vencimento
                   ? formatarData(assinatura.vencimento)
-                  : "—"}
-              </dd>
-            </div>
-          </dl>
-          {assinatura?.estado !== "ativa" && (
-            <p className="mt-4 text-xs font-semibold text-aviso bg-aviso-bg border border-aviso/25 rounded-lg px-3 py-2">
-              Regularize a assinatura para manter o painel e o app liberados.
-            </p>
-          )}
+                  : "—"
+              }
+              mono
+              last
+            />
+            {estadoKey !== "ativa" && (
+              <p
+                style={{
+                  marginTop: 12,
+                  marginBottom: 0,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#B45309",
+                  background: "#FEF3C7",
+                  border: "1px solid #FDE68A",
+                  borderRadius: 10,
+                  padding: "9px 12px",
+                }}
+              >
+                Regularize a assinatura para manter o painel e o app liberados.
+              </p>
+            )}
+          </div>
         </motion.section>
       </div>
 
-      {/* Dispositivos */}
+      {/* Dispositivos (faixa full-width no estilo do protótipo) */}
       <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.15 }}
-        className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden"
+        style={cardStyle}
       >
-        <div className="px-5 py-4 border-b border-borda flex items-center gap-2">
-          <Smartphone className="w-4 h-4 text-brand-600" />
-          <h2 className="font-bold text-sm">
-            Dispositivos ({dispositivos.length})
-          </h2>
+        <div style={cardHeadStyle}>
+          <Smartphone style={iconGreen} />
+          <h3 style={cardTitleStyle}>Dispositivos ({dispositivos.length})</h3>
         </div>
         {dispositivos.length === 0 ? (
-          <p className="px-5 py-10 text-center text-sm text-texto-3">
+          <p
+            style={{
+              padding: "40px 18px",
+              textAlign: "center",
+              fontSize: 13,
+              color: "#8695A0",
+            }}
+          >
             Nenhum dispositivo registrado ainda. Cada celular/maquininha que
             fizer login aparece aqui.
           </p>
         ) : (
-          <ul className="divide-y divide-borda">
-            {dispositivos.map((d) => (
-              <li
-                key={d.id}
-                className={`px-5 py-3.5 flex items-center gap-3 ${
-                  d.status === "revogado" ? "opacity-55" : ""
-                }`}
-              >
-                <span
-                  className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 ${
-                    d.status === "ativo" ? "bg-brand-50" : "bg-perigo-bg"
-                  }`}
+          <div>
+            {dispositivos.map((d, i) => {
+              const ativo = d.status === "ativo";
+              return (
+                <div
+                  key={d.id}
+                  style={{
+                    padding: "16px 18px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 13,
+                    borderTop: i === 0 ? "none" : "1px solid #EEF1F3",
+                    opacity: d.status === "revogado" ? 0.55 : 1,
+                  }}
                 >
-                  {d.status === "ativo" ? (
-                    <ShieldCheck className="w-4 h-4 text-brand-600" />
-                  ) : (
-                    <ShieldX className="w-4 h-4 text-perigo" />
-                  )}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">
-                    {d.nome || "Dispositivo sem nome"}
-                    <span className="ml-2 text-[11px] font-semibold text-texto-3">
-                      {nomePatio(d.patio_id)}
-                    </span>
-                  </p>
-                  <p className="text-xs text-texto-3 font-mono truncate">
-                    {d.device_uuid}
-                    {d.ultimo_acesso &&
-                      ` · visto ${formatarDataHora(d.ultimo_acesso)}`}
-                  </p>
+                  <span
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 11,
+                      display: "grid",
+                      placeItems: "center",
+                      flexShrink: 0,
+                      background: ativo ? "#DCFCE7" : "#FEF1F1",
+                      color: ativo ? "#16A34A" : "#E11D48",
+                    }}
+                  >
+                    {ativo ? (
+                      <ShieldCheck style={{ width: 19, height: 19 }} />
+                    ) : (
+                      <ShieldX style={{ width: 19, height: 19 }} />
+                    )}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {d.nome || "Dispositivo sem nome"}
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "#8695A0",
+                        }}
+                      >
+                        {nomePatio(d.patio_id)}
+                      </span>
+                    </div>
+                    <div
+                      className="mono"
+                      style={{
+                        fontSize: 12,
+                        color: "#8695A0",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {d.device_uuid}
+                      {d.ultimo_acesso &&
+                        ` · visto ${formatarDataHora(d.ultimo_acesso)}`}
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      ...pillBase,
+                      ...(ativo ? PILL_CLS.ativa : PILL_CLS.suspensa),
+                    }}
+                  >
+                    {ativo ? "online" : "revogado"}
+                  </span>
+                  <BotaoDispositivo dispositivo={d} />
                 </div>
-                <BotaoDispositivo dispositivo={d} />
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         )}
       </motion.section>
     </div>
@@ -296,50 +475,70 @@ function FormRede({ tenant }: { tenant: Tenant | null }) {
     } else toast.erro("Não deu certo", r?.msg ?? "Erro inesperado.");
   }
 
-  const inputCls =
-    "w-full h-11 px-3.5 rounded-xl border border-borda bg-superficie text-sm focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15";
+  const labelStyle: CSSProperties = {
+    display: "block",
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#6B7280",
+    marginBottom: 6,
+  };
+  const inputBase: CSSProperties = {
+    width: "100%",
+    height: 44,
+    padding: "0 14px",
+    borderRadius: 12,
+    border: "1px solid #E4E8EC",
+    background: "#fff",
+    fontSize: 13,
+    fontFamily: "inherit",
+    outline: "none",
+  };
+  const inputErro: CSSProperties = { border: "1px solid rgba(225,29,72,.5)" };
 
   return (
-    <div className="space-y-3">
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div>
-        <label className="block text-xs font-bold text-texto-2 mb-1.5">
-          Nome da rede
-        </label>
+        <label style={labelStyle}>Nome da rede</label>
         <input
           value={nome}
           onChange={(e) => setNome(e.target.value)}
           placeholder="Ex.: Rede Estacionar"
-          className={inputCls}
+          style={inputBase}
         />
       </div>
       <div>
-        <label className="block text-xs font-bold text-texto-2 mb-1.5">
-          Razão social (opcional)
-        </label>
+        <label style={labelStyle}>Razão social (opcional)</label>
         <input
           value={razao}
           onChange={(e) => setRazao(e.target.value)}
           placeholder="Ex.: Estacionar Serviços Ltda"
-          className={inputCls}
+          style={inputBase}
         />
       </div>
       <div>
-        <label className="block text-xs font-bold text-texto-2 mb-1.5">
-          CNPJ (opcional)
-        </label>
+        <label style={labelStyle}>CNPJ (opcional)</label>
         <input
           value={cnpj}
           onChange={(e) => setCnpj(formatarCnpj(e.target.value))}
           inputMode="numeric"
           placeholder="00.000.000/0000-00"
-          className={`${inputCls} tabular-nums ${
+          className="mono"
+          style={
             cnpjInvalido || cnpjIncompleto
-              ? "border-perigo/50 focus:border-perigo focus:ring-perigo/15"
-              : ""
-          }`}
+              ? { ...inputBase, ...inputErro }
+              : inputBase
+          }
         />
         {(cnpjInvalido || cnpjIncompleto) && (
-          <p className="mt-1 text-xs font-semibold text-perigo">
+          <p
+            style={{
+              marginTop: 6,
+              marginBottom: 0,
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#E11D48",
+            }}
+          >
             {cnpjIncompleto
               ? "CNPJ incompleto (14 dígitos)."
               : "CNPJ inválido — confira os dígitos."}
@@ -349,12 +548,29 @@ function FormRede({ tenant }: { tenant: Tenant | null }) {
       <button
         onClick={salvar}
         disabled={!podeSalvar}
-        className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white text-sm font-bold shadow-[var(--shadow-brand)] hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          alignSelf: "flex-start",
+          height: 40,
+          padding: "0 18px",
+          borderRadius: 11,
+          border: "none",
+          background: "linear-gradient(90deg,#16A34A,#22C55E)",
+          boxShadow: "0 8px 22px -8px rgba(22,163,74,.5)",
+          color: "#fff",
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: podeSalvar ? "pointer" : "not-allowed",
+          opacity: podeSalvar ? 1 : 0.6,
+        }}
       >
         {salvando ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 style={{ width: 15, height: 15 }} className="animate-spin" />
         ) : (
-          <Save className="w-4 h-4" />
+          <Save style={{ width: 15, height: 15 }} />
         )}
         Salvar dados da rede
       </button>
@@ -372,6 +588,15 @@ function BotaoDispositivo({ dispositivo }: { dispositivo: Dispositivo }) {
     else toast.erro(r?.msg ?? "Erro inesperado.");
   }
 
+  const btnBase: CSSProperties = {
+    height: 36,
+    padding: "0 14px",
+    borderRadius: 10,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+  };
+
   if (dispositivo.status === "ativo") {
     return (
       <Confirmar
@@ -383,7 +608,12 @@ function BotaoDispositivo({ dispositivo }: { dispositivo: Dispositivo }) {
         {(abrir) => (
           <button
             onClick={abrir}
-            className="text-xs font-bold text-perigo bg-perigo-bg border border-perigo/20 rounded-lg px-3 py-1.5 hover:brightness-95 transition-all"
+            style={{
+              ...btnBase,
+              border: "1px solid #FBD0D0",
+              background: "#FEF1F1",
+              color: "#E11D48",
+            }}
           >
             revogar
           </button>
@@ -395,7 +625,18 @@ function BotaoDispositivo({ dispositivo }: { dispositivo: Dispositivo }) {
     <button
       onClick={() => comecar(executar)}
       disabled={pendente}
-      className="text-xs font-bold text-brand-700 bg-brand-50 border border-brand-200 rounded-lg px-3 py-1.5 hover:bg-brand-100 transition-colors disabled:opacity-60"
+      style={{
+        height: 36,
+        padding: "0 14px",
+        borderRadius: 10,
+        fontSize: 13,
+        fontWeight: 700,
+        border: "1px solid #BBF7D0",
+        background: "#DCFCE7",
+        color: "#16A34A",
+        cursor: pendente ? "not-allowed" : "pointer",
+        opacity: pendente ? 0.6 : 1,
+      }}
     >
       reativar
     </button>

@@ -8,7 +8,14 @@ import { SyncBadge } from "@/components/sync-badge";
 import { ultimaSincronizacao } from "@/lib/patio-scope";
 import { LimpezaPatio } from "@/components/patio/limpeza-patio";
 import { PatioLista } from "@/components/patio/patio-lista";
-import { Inbox } from "lucide-react";
+import { History } from "lucide-react";
+
+const CARD: React.CSSProperties = {
+  background: "#fff",
+  border: "1px solid #E4E8EC",
+  borderRadius: 16,
+  boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -49,17 +56,27 @@ export default async function PatioAgoraPage({
   ]);
 
   return (
-    <div className="space-y-5 max-w-5xl">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <Revelar>
-        <div className="flex items-end justify-between flex-wrap gap-3">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
           <div>
-            <h1 className="text-[26px] font-black tracking-tight">Pátio</h1>
-            <p className="text-sm text-texto-2">
-              <b className="text-texto">{patioNome}</b> · veículos dentro do
+            <h1 style={{ margin: 0, fontSize: 23, fontWeight: 700, letterSpacing: "-.02em" }}>
+              Pátio
+            </h1>
+            <div style={{ marginTop: 3, fontSize: 13, color: "#6B7280" }}>
+              <b style={{ color: "#1F2937" }}>{patioNome}</b> · veículos dentro do
               pátio agora
-            </p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <LimpezaPatio patioId={patioId} patioNome={patioNome ?? "este pátio"} />
             <SyncBadge iso={sincronizadoEm} />
           </div>
@@ -68,24 +85,44 @@ export default async function PatioAgoraPage({
 
       {/* Ocupação */}
       <Revelar atraso={0.06}>
-        <div className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-5">
-          <div className="flex items-baseline justify-between mb-2">
-            <span className="text-sm font-bold">Ocupação</span>
-            <span className="text-2xl font-black tabular-nums">
+        <div style={{ ...CARD, padding: "18px 20px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              marginBottom: 10,
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 700 }}>Ocupação</span>
+            <span
+              className="tabular-nums"
+              style={{ fontSize: 24, fontWeight: 700 }}
+            >
               {veiculos.length}
               {vagas > 0 && (
-                <span className="text-base text-texto-3 font-bold"> / {vagas}</span>
+                <span style={{ fontSize: 16, color: "#8695A0" }}> / {vagas}</span>
               )}
             </span>
           </div>
-          <div className="h-2.5 rounded-full bg-fundo overflow-hidden">
+          <div
+            style={{
+              height: 10,
+              borderRadius: 999,
+              background: "#F1F4F6",
+              overflow: "hidden",
+            }}
+          >
             <div
-              className={`h-full rounded-full ${
-                pct >= 90
-                  ? "bg-gradient-to-r from-saida to-perigo"
-                  : "bg-gradient-to-r from-brand-500 to-acento-teal"
-              }`}
-              style={{ width: `${pct}%` }}
+              style={{
+                width: `${pct}%`,
+                height: "100%",
+                borderRadius: 999,
+                background:
+                  pct >= 90
+                    ? "linear-gradient(90deg,#F59E0B,#EF4444)"
+                    : "linear-gradient(90deg,#16A34A,#22C55E)",
+              }}
             />
           </div>
         </div>
@@ -102,8 +139,16 @@ export default async function PatioAgoraPage({
 
       {veiculos.length > 0 && (
         <Revelar atraso={0.15}>
-          <div className="flex items-center gap-2 text-xs text-texto-3">
-            <Inbox className="w-4 h-4" />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              fontSize: 12,
+              color: "#8695A0",
+            }}
+          >
+            <History className="w-[15px] h-[15px]" />
             Atualize a página para recalcular as permanências.
           </div>
         </Revelar>

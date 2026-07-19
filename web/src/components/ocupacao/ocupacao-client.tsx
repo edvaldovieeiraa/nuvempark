@@ -7,8 +7,8 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -32,9 +32,10 @@ export type TicketRaw = {
   motivo_isencao: string | null;
 };
 
-const BRAND = "#059669";
-const AZUL = "#2563eb";
-const VERMELHO = "#e11d48";
+const VERDE = "#16A34A";
+const AZUL = "#2563EB";
+const VERMELHO = "#E11D48";
+const POPPINS = "'Poppins', sans-serif";
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -103,53 +104,83 @@ export function OcupacaoClient({
 
   const diDia = ymd(new Date(Date.parse(di)));
   const dfDia = ymd(new Date(Date.parse(df)));
+  const dias = Math.round((Date.parse(df) - Date.parse(di)) / 86_400_000);
+  const permTipoMax = m.permTipo.length
+    ? Math.max(...m.permTipo.map((p) => p.min))
+    : 1;
+
+  const chip = (ativo: boolean): React.CSSProperties => ({
+    fontSize: 12,
+    fontWeight: 700,
+    padding: "7px 12px",
+    borderRadius: 11,
+    border: "none",
+    cursor: "pointer",
+    background: ativo ? "#1F2937" : "#F1F4F6",
+    color: ativo ? "#fff" : "#6B7280",
+  });
+  const dateInput: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 600,
+    padding: "7px 11px",
+    borderRadius: 11,
+    border: "1px solid #E4E8EC",
+    color: "#1F2937",
+    background: "#fff",
+  };
 
   return (
-    <div className="space-y-5 max-w-6xl">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, color: "#1F2937" }}>
       <div>
-        <h1 className="text-[26px] font-black tracking-tight">
+        <h2 style={{ margin: 0, fontSize: 23, fontFamily: POPPINS, fontWeight: 700, letterSpacing: "-.02em" }}>
           Ocupação &amp; permanência
-        </h1>
-        <p className="text-sm text-texto-2">
-          <b className="text-texto">{patioNome}</b> · análise do período
-        </p>
+        </h2>
+        <div style={{ marginTop: 3, fontSize: 13, color: "#6B7280" }}>
+          <b style={{ color: "#1F2937" }}>{patioNome}</b> · análise do período
+        </div>
       </div>
 
       {/* Filtros */}
-      <div className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-3 flex flex-wrap items-center gap-2">
-        {[
-          [7, "7 dias"],
-          [15, "15 dias"],
-          [30, "30 dias"],
-        ].map(([d, l]) => (
-          <button
-            key={d}
-            onClick={() => preset(d as number)}
-            className="h-9 px-3 rounded-xl border border-borda bg-fundo text-xs font-bold text-texto-2 hover:border-brand-300 hover:text-brand-700 transition-colors"
-          >
+      <div
+        style={{
+          borderRadius: 16,
+          background: "#fff",
+          border: "1px solid #E4E8EC",
+          boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+          padding: 12,
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        {([[7, "7 dias"], [15, "15 dias"], [30, "30 dias"]] as const).map(([d, l]) => (
+          <button key={d} onClick={() => preset(d)} style={chip(dias === d)}>
             {l}
           </button>
         ))}
-        <div className="w-px h-6 bg-borda mx-1" />
+        <span style={{ width: 1, height: 22, background: "#E4E8EC", margin: "0 4px" }} />
         <input
           type="date"
+          className="mono"
           value={diDia}
           max={dfDia}
           onChange={(e) => aplicar(isoDia(e.target.value, false), df)}
-          className="h-9 px-2.5 rounded-xl border border-borda bg-fundo text-sm font-semibold"
+          style={dateInput}
         />
-        <span className="text-texto-3 text-sm">até</span>
+        <span style={{ fontSize: 12, color: "#8695A0" }}>até</span>
         <input
           type="date"
+          className="mono"
           value={dfDia}
           min={diDia}
           onChange={(e) => aplicar(di, isoDia(e.target.value, true))}
-          className="h-9 px-2.5 rounded-xl border border-borda bg-fundo text-sm font-semibold"
+          style={dateInput}
         />
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
         <Kpi titulo="Permanência média" valor={fmtDur(m.permMedia)} />
         <Kpi titulo="Ticket médio" valor={moeda.format(m.ticketMedio)} />
         <Kpi
@@ -169,94 +200,185 @@ export function OcupacaoClient({
       </div>
 
       {qtdVagas === 0 && (
-        <div className="flex items-center gap-2 text-xs text-aviso bg-aviso-bg border border-aviso/25 rounded-xl px-3 py-2">
-          <AlertTriangle className="w-4 h-4" />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 12,
+            color: "#B45309",
+            background: "#FEF9EE",
+            border: "1px solid #F5D9A8",
+            borderRadius: 12,
+            padding: "8px 12px",
+          }}
+        >
+          <AlertTriangle style={{ width: 16, height: 16 }} />
           Capacidade não configurada (qtd. de vagas = 0) — a ocupação é mostrada
           em contagem absoluta.
         </div>
       )}
 
       {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <Card titulo={qtdVagas > 0 ? "Ocupação média por hora (%)" : "Ocupação média por hora"}>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={m.ocupacaoHora}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-              <XAxis dataKey="hora" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} width={34} />
-              <Tooltip />
-              <Bar dataKey={qtdVagas > 0 ? "pct" : "media"} fill={BRAND} radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ padding: "16px 16px 10px" }}>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={m.ocupacaoHora}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F3" vertical={false} />
+                <XAxis dataKey="hora" tick={{ fontSize: 10, fill: "#8695A0" }} interval={2} tickLine={false} axisLine={{ stroke: "#E4E8EC" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#8695A0" }} width={34} tickLine={false} axisLine={false} />
+                <Tooltip />
+                <Bar dataKey={qtdVagas > 0 ? "pct" : "media"} fill={VERDE} radius={[2.5, 2.5, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
 
-        <Card titulo="Entradas × saídas por hora">
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={m.fluxoHora}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-              <XAxis dataKey="hora" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} width={30} />
-              <Tooltip />
-              <Bar dataKey="entradas" fill={BRAND} radius={[3, 3, 0, 0]} />
-              <Bar dataKey="saidas" fill={AZUL} radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <Card
+          titulo="Entradas × saídas por hora"
+          right={
+            <span style={{ display: "flex", gap: 12, fontSize: 11, fontWeight: 400, color: "#6B7280" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <span style={{ width: 9, height: 9, borderRadius: 2, background: VERDE }} />
+                entradas
+              </span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <span style={{ width: 9, height: 9, borderRadius: 2, background: AZUL }} />
+                saídas
+              </span>
+            </span>
+          }
+        >
+          <div style={{ padding: "16px 16px 10px" }}>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={m.fluxoHora}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F3" vertical={false} />
+                <XAxis dataKey="hora" tick={{ fontSize: 10, fill: "#8695A0" }} interval={2} tickLine={false} axisLine={{ stroke: "#E4E8EC" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#8695A0" }} width={30} tickLine={false} axisLine={false} />
+                <Tooltip />
+                <Bar dataKey="entradas" fill={VERDE} radius={[2, 2, 0, 0]} />
+                <Bar dataKey="saidas" fill={AZUL} radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
 
         <Card titulo="Faturamento por dia">
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={m.faturamentoDia}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-              <XAxis dataKey="dia" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} width={44} />
-              <Tooltip formatter={(v) => moeda.format(Number(v))} />
-              <Line type="monotone" dataKey="valor" stroke={BRAND} strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div style={{ padding: "16px 16px 10px" }}>
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={m.faturamentoDia}>
+                <defs>
+                  <linearGradient id="fatFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stopColor={VERDE} stopOpacity={0.22} />
+                    <stop offset="1" stopColor={VERDE} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F3" vertical={false} />
+                <XAxis dataKey="dia" tick={{ fontSize: 10, fill: "#8695A0" }} tickLine={false} axisLine={{ stroke: "#E4E8EC" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#8695A0" }} width={44} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v) => moeda.format(Number(v))} />
+                <Area type="monotone" dataKey="valor" stroke={VERDE} strokeWidth={2.5} fill="url(#fatFill)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
 
-        <Card titulo="Permanência média por tipo de veículo">
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={m.permTipo} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-              <XAxis type="number" tick={{ fontSize: 11 }} />
-              <YAxis type="category" dataKey="tipo" tick={{ fontSize: 11 }} width={70} />
-              <Tooltip formatter={(v) => fmtDur(Number(v))} />
-              <Bar dataKey="min" fill={AZUL} radius={[0, 3, 3, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <Card titulo="Permanência média por tipo">
+          {m.permTipo.length === 0 ? (
+            <p style={{ padding: "24px 18px", fontSize: 13, color: "#8695A0", textAlign: "center" }}>
+              Sem tickets fechados no período.
+            </p>
+          ) : (
+            <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
+              {m.permTipo.map((p) => (
+                <div key={p.tipo}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, textTransform: "capitalize" }}>{p.tipo}</span>
+                    <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: "#6B7280" }}>{fmtDur(p.min)}</span>
+                  </div>
+                  <div style={{ height: 10, borderRadius: 999, background: "#F1F4F6", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        width: `${Math.max(4, Math.round((p.min / permTipoMax) * 100))}%`,
+                        height: "100%",
+                        borderRadius: 999,
+                        background: "linear-gradient(90deg,#2563EB,#60A5FA)",
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
 
-      {/* Permanência mediana + isenções */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Permanência (fechados) + Atividade por operador */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: 14, alignItems: "start" }}>
         <Card titulo="Permanência (fechados)">
-          <div className="flex gap-8 px-4 py-4">
+          <div style={{ padding: 18, display: "flex", gap: 28 }}>
             <div>
-              <p className="text-[11px] uppercase tracking-wider text-texto-3 font-bold">
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#8695A0" }}>
                 Média
-              </p>
-              <p className="text-2xl font-black">{fmtDur(m.permMedia)}</p>
+              </div>
+              <div style={{ marginTop: 5, fontSize: 22, fontFamily: POPPINS, fontWeight: 700 }}>{fmtDur(m.permMedia)}</div>
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-wider text-texto-3 font-bold">
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#8695A0" }}>
                 Mediana
-              </p>
-              <p className="text-2xl font-black">{fmtDur(m.permMediana)}</p>
+              </div>
+              <div style={{ marginTop: 5, fontSize: 22, fontFamily: POPPINS, fontWeight: 700 }}>{fmtDur(m.permMediana)}</div>
             </div>
           </div>
         </Card>
 
-        <Card titulo={`Isenções — ${m.pctIsencao.toFixed(1)}% dos tickets`}>
-          {m.isencoes.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-texto-3 text-center">
-              Nenhuma isenção no período.
+        <Card titulo="Atividade por operador">
+          {m.operadores.length === 0 ? (
+            <p style={{ padding: "24px 18px", fontSize: 13, color: "#8695A0", textAlign: "center" }}>
+              Sem atividade no período.
             </p>
           ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ textAlign: "left", background: "#FAFBFC" }}>
+                    <th style={th()}>Operador</th>
+                    <th style={th(true)}>Entradas</th>
+                    <th style={th(true)}>Saídas</th>
+                    <th style={{ ...th(true), padding: "10px 18px" }}>Valor cobrado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {m.operadores.map((o) => (
+                    <tr key={o.nome} style={{ borderTop: "1px solid #EEF1F3" }}>
+                      <td style={{ padding: "11px 18px", fontWeight: 600 }}>{o.nome}</td>
+                      <td className="mono" style={{ padding: "11px 12px", textAlign: "right", color: "#6B7280" }}>{o.entradas}</td>
+                      <td className="mono" style={{ padding: "11px 12px", textAlign: "right", color: "#6B7280" }}>{o.saidas}</td>
+                      <td className="mono" style={{ padding: "11px 18px", textAlign: "right", fontWeight: 800 }}>
+                        {moeda.format(o.valor)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Isenções */}
+      <Card titulo={`Isenções — ${m.pctIsencao.toFixed(1)}% dos tickets`}>
+        {m.isencoes.length === 0 ? (
+          <p style={{ padding: "24px 18px", fontSize: 13, color: "#8695A0", textAlign: "center" }}>
+            Nenhuma isenção no período.
+          </p>
+        ) : (
+          <div style={{ padding: "16px 16px 10px" }}>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={m.isencoes} layout="vertical">
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="motivo" tick={{ fontSize: 11 }} width={110} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "#8695A0" }} tickLine={false} axisLine={{ stroke: "#E4E8EC" }} />
+                <YAxis type="category" dataKey="motivo" tick={{ fontSize: 10, fill: "#8695A0" }} width={110} tickLine={false} axisLine={false} />
                 <Tooltip />
                 <Bar dataKey="qtd" radius={[0, 3, 3, 0]}>
                   {m.isencoes.map((_, i) => (
@@ -265,45 +387,23 @@ export function OcupacaoClient({
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          )}
-        </Card>
-      </div>
-
-      {/* Atividade por operador */}
-      <Card titulo="Atividade por operador">
-        {m.operadores.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-texto-3 text-center">
-            Sem atividade no período.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
-                  <th className="px-4 py-2 font-bold">Operador</th>
-                  <th className="px-4 py-2 font-bold text-right">Entradas</th>
-                  <th className="px-4 py-2 font-bold text-right">Saídas</th>
-                  <th className="px-4 py-2 font-bold text-right">Valor cobrado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {m.operadores.map((o) => (
-                  <tr key={o.nome} className="border-t border-borda">
-                    <td className="px-4 py-2 font-semibold">{o.nome}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{o.entradas}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{o.saidas}</td>
-                    <td className="px-4 py-2 text-right tabular-nums font-bold">
-                      {moeda.format(o.valor)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         )}
       </Card>
     </div>
   );
+}
+
+function th(numeric = false): React.CSSProperties {
+  return {
+    padding: "10px 12px",
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: ".06em",
+    textTransform: "uppercase",
+    color: "#8695A0",
+    textAlign: numeric ? "right" : "left",
+  };
 }
 
 function Kpi({
@@ -319,30 +419,59 @@ function Kpi({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-superficie border border-borda rounded-2xl p-4 shadow-[var(--shadow-card)]"
+      style={{
+        borderRadius: 14,
+        padding: "15px 16px",
+        background: "#fff",
+        border: "1px solid #E4E8EC",
+        boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+      }}
     >
-      <p className="text-xs font-bold uppercase tracking-wider text-texto-3">
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#8695A0" }}>
         {titulo}
-      </p>
-      <p className="text-2xl font-black tabular-nums mt-1">{valor}</p>
-      {nota && <p className="text-[11px] text-texto-3 mt-0.5">{nota}</p>}
+      </div>
+      <div style={{ marginTop: 7, fontSize: 22, fontFamily: POPPINS, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+        {valor}
+      </div>
+      {nota && <div style={{ fontSize: 11, color: "#8695A0", marginTop: 1 }}>{nota}</div>}
     </motion.div>
   );
 }
 
 function Card({
   titulo,
+  right,
   children,
 }: {
   titulo: string;
+  right?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden">
-      <div className="px-4 py-3 border-b border-borda">
-        <h3 className="font-bold text-sm">{titulo}</h3>
+    <section
+      style={{
+        borderRadius: 16,
+        background: "#fff",
+        border: "1px solid #E4E8EC",
+        boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          padding: "13px 18px",
+          borderBottom: "1px solid #E4E8EC",
+          fontSize: 13,
+          fontWeight: 700,
+          display: right ? "flex" : undefined,
+          alignItems: right ? "center" : undefined,
+          justifyContent: right ? "space-between" : undefined,
+        }}
+      >
+        <span>{titulo}</span>
+        {right}
       </div>
-      <div className="p-2">{children}</div>
+      {children}
     </section>
   );
 }

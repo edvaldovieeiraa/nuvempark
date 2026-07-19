@@ -61,61 +61,115 @@ export function RemovidosFiltros({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busca]);
 
+  const pill: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 600,
+    padding: "9px 11px",
+    borderRadius: 11,
+    border: "1px solid #E4E8EC",
+    color: "#1F2937",
+    background: "#fff",
+    outline: "none",
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.05 }}
-      className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-3 flex flex-wrap items-center gap-2"
+      style={{
+        borderRadius: 16,
+        background: "#fff",
+        border: "1px solid #E4E8EC",
+        boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+        padding: 12,
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: 8,
+      }}
     >
-      <div className="relative flex-1 min-w-[180px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-texto-3" />
+      {/* Busca por placa */}
+      <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+        <Search
+          style={{
+            position: "absolute",
+            left: 13,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: 15,
+            height: 15,
+            color: "#8695A0",
+          }}
+        />
         <input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar placa…"
-          className="w-full h-10 pl-9 pr-3 rounded-xl border border-borda bg-fundo text-sm font-semibold tracking-wider uppercase placeholder:normal-case placeholder:tracking-normal placeholder:font-normal placeholder:text-texto-3 focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15"
+          className="uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal placeholder:text-[#8695A0]"
+          style={{
+            width: "100%",
+            height: 38,
+            padding: "0 13px 0 34px",
+            borderRadius: 11,
+            border: "1px solid #E4E8EC",
+            background: "#fff",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#1F2937",
+            outline: "none",
+          }}
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="date"
-          value={inicio}
-          max={fim || undefined}
-          onChange={(e) => {
-            setInicio(e.target.value);
-            aplicar({ inicio: e.target.value });
+      {/* Intervalo (removido_em) */}
+      <input
+        type="date"
+        value={inicio}
+        max={fim || undefined}
+        onChange={(e) => {
+          setInicio(e.target.value);
+          aplicar({ inicio: e.target.value });
+        }}
+        aria-label="Removido de"
+        className="mono"
+        style={pill}
+      />
+      <span style={{ fontSize: 12, color: "#8695A0" }}>até</span>
+      <input
+        type="date"
+        value={fim}
+        min={inicio || undefined}
+        onChange={(e) => {
+          setFim(e.target.value);
+          aplicar({ fim: e.target.value });
+        }}
+        aria-label="Removido até"
+        className="mono"
+        style={pill}
+      />
+      {(busca || inicio || fim) && (
+        <button
+          onClick={() => {
+            setBusca("");
+            setInicio("");
+            setFim("");
+            router.replace(`${pathname}?patio=${patioId}`);
           }}
-          aria-label="Removido de"
-          className="h-10 px-3 rounded-xl border border-borda bg-fundo text-sm font-semibold focus:outline-none focus:border-brand-400"
-        />
-        <span className="text-texto-3 text-sm">até</span>
-        <input
-          type="date"
-          value={fim}
-          min={inicio || undefined}
-          onChange={(e) => {
-            setFim(e.target.value);
-            aplicar({ fim: e.target.value });
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            padding: "9px 11px",
+            borderRadius: 11,
+            border: "1px solid #E4E8EC",
+            background: "#fff",
+            color: "#6B7280",
+            cursor: "pointer",
           }}
-          aria-label="Removido até"
-          className="h-10 px-3 rounded-xl border border-borda bg-fundo text-sm font-semibold focus:outline-none focus:border-brand-400"
-        />
-        {(busca || inicio || fim) && (
-          <button
-            onClick={() => {
-              setBusca("");
-              setInicio("");
-              setFim("");
-              router.replace(`${pathname}?patio=${patioId}`);
-            }}
-            className="h-10 px-3 rounded-xl border border-borda bg-fundo text-sm font-semibold text-texto-2 hover:text-texto hover:border-brand-300 transition-colors"
-          >
-            Limpar
-          </button>
-        )}
-      </div>
+        >
+          Limpar
+        </button>
+      )}
     </motion.div>
   );
 }

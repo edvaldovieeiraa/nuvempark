@@ -75,6 +75,7 @@ const NAV: Item[] = [
     filhos: [
       { href: "/painel/mensalistas", label: "Clientes", Icone: Users },
       { href: "/painel/mensalistas/planos", label: "Planos", Icone: Layers },
+      { href: "/painel/mensalistas/credenciados", label: "Credenciados", Icone: BadgeCheck },
     ],
   },
   {
@@ -83,6 +84,7 @@ const NAV: Item[] = [
     filhos: [
       { href: "/painel/tarifas", label: "Tarifas", Icone: CircleDollarSign },
       { href: "/painel/tipos-veiculo", label: "Tipos de veículo", Icone: CarFront },
+      { href: "/painel/pagamentos", label: "Formas de pagamento", Icone: CreditCard },
       { href: "/painel/operadores", label: "Operadores", Icone: Users },
     ],
   },
@@ -126,7 +128,7 @@ function Logo({ size = 20 }: { size?: number }) {
       />
       <path
         d="M10.6 15.5v-5h2.2a1.7 1.7 0 1 1 0 3.4h-2.2"
-        stroke="#0E7C74"
+        stroke="#166534"
         strokeWidth="1.4"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -231,19 +233,19 @@ export function PainelShell({
           gap: 6,
           zIndex: 5,
           color: "#fff",
-          fontFamily: "'IBM Plex Sans', sans-serif",
+          fontFamily: "'Poppins', sans-serif",
         }}
       >
         {/* Marca + recolher */}
-        <div className="navitem" style={{ gap: 10, padding: "2px 6px 12px" }}>
+        <div className="navitem" style={{ gap: 10, padding: "2px 4px 10px" }}>
           <div
             className="grid place-items-center shrink-0"
             style={{
               width: 36,
               height: 36,
               borderRadius: 11,
-              background: "linear-gradient(135deg,#0E7C74,#2DD4BF)",
-              boxShadow: "0 8px 20px -8px rgba(14,124,116,.45)",
+              background: "linear-gradient(135deg,#166534,#22C55E)",
+              boxShadow: "0 8px 20px -8px rgba(22,101,52,.55)",
             }}
           >
             <Logo />
@@ -251,14 +253,14 @@ export function PainelShell({
           <span
             className="lbl brand"
             style={{
-              fontFamily: "'Libre Franklin', sans-serif",
-              fontWeight: 700,
-              fontSize: 16,
+              fontFamily: "'Poppins', sans-serif",
+              fontSize: 17,
               color: "#fff",
               letterSpacing: "-.01em",
             }}
           >
-            NuvemPark
+            <span style={{ fontWeight: 300 }}>Nuvem</span>
+            <span style={{ fontWeight: 800, color: "#22C55E" }}>Park</span>
           </span>
           <button
             className="cbtn hidec"
@@ -296,7 +298,7 @@ export function PainelShell({
             >
               <span
                 className="grid place-items-center shrink-0"
-                style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(45,212,191,.16)", color: "#5EEAD4" }}
+                style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(34,197,94,.16)", color: "#4ADE80" }}
               >
                 <Building2 className="w-4 h-4" />
               </span>
@@ -329,7 +331,7 @@ export function PainelShell({
                     zIndex: 40,
                     borderRadius: 14,
                     padding: 6,
-                    background: "linear-gradient(160deg,#26333F,#1A2530)",
+                    background: "linear-gradient(160deg,#14203A,#0B1220)",
                     border: "1px solid rgba(255,255,255,.14)",
                     boxShadow: "0 24px 50px -14px rgba(0,0,0,.7)",
                   }}
@@ -347,10 +349,10 @@ export function PainelShell({
                           padding: "9px 10px",
                           borderRadius: 10,
                           cursor: "pointer",
-                          background: sel ? "rgba(94,234,212,.1)" : "transparent",
+                          background: sel ? "rgba(34,197,94,.12)" : "transparent",
                         }}
                       >
-                        <span style={{ width: 8, height: 8, borderRadius: 999, flexShrink: 0, background: "#2DD4BF", opacity: 0.9 }} />
+                        <span style={{ width: 8, height: 8, borderRadius: 999, flexShrink: 0, background: "#22C55E", opacity: 0.9 }} />
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{ fontSize: 12.5, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {p.nome}
@@ -359,7 +361,7 @@ export function PainelShell({
                             {p.codigo ? `#${p.codigo} · ` : ""}{p.vagas} vagas
                           </div>
                         </div>
-                        {sel && <Check className="w-[15px] h-[15px] shrink-0" style={{ color: "#5EEAD4" }} />}
+                        {sel && <Check className="w-[15px] h-[15px] shrink-0" style={{ color: "#4ADE80" }} />}
                       </div>
                     );
                   })}
@@ -394,11 +396,11 @@ export function PainelShell({
                   data-slidertarget={act}
                   onMouseEnter={(e) => posEm(e.currentTarget)}
                   style={{
-                    gap: 12,
-                    padding: "11px 12px",
+                    gap: 11,
+                    padding: "10px 12px",
                     borderRadius: 13,
                     color: act ? "#fff" : "rgba(255,255,255,.72)",
-                    fontWeight: act ? 700 : 500,
+                    fontWeight: act ? 700 : 600,
                     fontSize: 13,
                   }}
                 >
@@ -435,12 +437,12 @@ export function PainelShell({
                     }))
                   }
                   style={{
-                    gap: 12,
-                    padding: "11px 12px",
+                    gap: 11,
+                    padding: "10px 12px",
                     borderRadius: 13,
                     cursor: "pointer",
                     color: gAtivo ? "#fff" : "rgba(255,255,255,.72)",
-                    fontWeight: gAtivo ? 700 : 500,
+                    fontWeight: gAtivo ? 700 : 600,
                     fontSize: 13,
                   }}
                 >
@@ -480,63 +482,65 @@ export function PainelShell({
         </div>
 
         {/* Card de status do app (última sincronização) */}
-        <div
-          className="hidec"
-          style={{
-            marginTop: 4,
-            display: "flex",
-            alignItems: "center",
-            gap: 11,
-            padding: "12px 14px",
-            borderRadius: 14,
-            background: online ? "rgba(45,212,191,.12)" : "rgba(239,68,68,.12)",
-            border: `1px solid ${online ? "rgba(45,212,191,.28)" : "rgba(239,68,68,.28)"}`,
-          }}
-        >
-          <span className="relative flex shrink-0" style={{ width: 9, height: 9 }}>
-            {online && (
+        <div className="navitem" style={{ marginTop: "auto", padding: "6px 2px 8px" }}>
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 11px",
+              borderRadius: 13,
+              background: online ? "rgba(34,197,94,.1)" : "rgba(248,113,113,.1)",
+              border: `1px solid ${online ? "rgba(34,197,94,.28)" : "rgba(248,113,113,.28)"}`,
+            }}
+          >
+            <span className="relative flex shrink-0" style={{ width: 9, height: 9 }}>
+              {online && (
+                <span
+                  className="absolute animate-ping-slow"
+                  style={{ width: "100%", height: "100%", borderRadius: 999, background: "#22C55E" }}
+                />
+              )}
               <span
-                className="absolute animate-ping-slow"
-                style={{ width: "100%", height: "100%", borderRadius: 999, background: "#2DD4BF" }}
+                className="relative"
+                style={{
+                  width: 9,
+                  height: 9,
+                  borderRadius: 999,
+                  background: online ? "#22C55E" : "#F87171",
+                  boxShadow: online ? "0 0 0 3px rgba(34,197,94,.18)" : "0 0 0 3px rgba(248,113,113,.18)",
+                }}
               />
-            )}
-            <span
-              className="relative"
-              style={{
-                width: 9,
-                height: 9,
-                borderRadius: 999,
-                background: online ? "#2DD4BF" : "#EF4444",
-              }}
-            />
-          </span>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>
-              {online ? "App conectado" : "App offline"}
-            </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,.5)" }}>
-              {ultimaSync ? `Atualizado ${dataHora.format(new Date(ultimaSync))}` : "Nunca sincronizou"}
+            </span>
+            <div className="lbl hidec" style={{ minWidth: 0, lineHeight: 1.25 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: online ? "#fff" : "#FCA5A5", whiteSpace: "nowrap" }}>
+                {online ? "App conectado" : "App offline"}
+              </div>
+              <div className="mono" style={{ fontSize: 10, color: "rgba(255,255,255,.5)", whiteSpace: "nowrap" }}>
+                {ultimaSync ? `Atualizado ${dataHora.format(new Date(ultimaSync))}` : "Nunca sincronizou"}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Conta */}
-        <div style={{ paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+        <div style={{ padding: "12px 6px 2px", borderTop: "1px solid rgba(255,255,255,.12)" }}>
           <Link
             href="/painel/perfil"
             className="navitem"
-            style={{ gap: 11, padding: "6px 6px", borderRadius: 12 }}
+            style={{ gap: 10, padding: 0, borderRadius: 12 }}
           >
             <span
               className="grid place-items-center shrink-0"
               style={{
-                width: 38,
-                height: 38,
+                width: 34,
+                height: 34,
                 borderRadius: 999,
-                background: "linear-gradient(135deg,#14B8A6,#0EA5E9)",
+                background: "linear-gradient(135deg,#22C55E,#0EA5E9)",
                 color: "#fff",
                 fontWeight: 700,
-                fontSize: 14,
+                fontSize: 13,
               }}
             >
               {inicial}
@@ -545,7 +549,7 @@ export function PainelShell({
               <span
                 style={{
                   display: "block",
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 700,
                   color: "#fff",
                   overflow: "hidden",
@@ -558,7 +562,7 @@ export function PainelShell({
               <span
                 style={{
                   display: "block",
-                  fontSize: 11,
+                  fontSize: 10,
                   color: "rgba(255,255,255,.5)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -640,10 +644,10 @@ export function PainelShell({
                 height: 52,
                 borderRadius: 18,
                 border: "none",
-                background: "linear-gradient(135deg,#0E7C74,#14B8A6)",
+                background: "linear-gradient(135deg,#166534,#22C55E)",
                 color: "#fff",
                 cursor: "pointer",
-                boxShadow: "0 12px 26px -8px rgba(14,124,116,.6)",
+                boxShadow: "0 12px 26px -8px rgba(22,101,52,.6)",
                 transform: "translateY(-8px)",
               }}
             >
@@ -691,7 +695,7 @@ export function PainelShell({
               overflow: "hidden",
               boxShadow: "0 -20px 60px -20px rgba(20,29,40,.5)",
               animation: "psheetup .34s cubic-bezier(.22,1,.36,1) both",
-              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontFamily: "'Poppins', sans-serif",
             }}
           >
             <div
@@ -705,13 +709,13 @@ export function PainelShell({
                     width: 34,
                     height: 34,
                     borderRadius: 11,
-                    background: "linear-gradient(135deg,#0E7C74,#2DD4BF)",
-                    boxShadow: "0 8px 20px -8px rgba(14,124,116,.45)",
+                    background: "linear-gradient(135deg,#166534,#22C55E)",
+                    boxShadow: "0 8px 20px -8px rgba(22,101,52,.55)",
                   }}
                 >
                   <Logo />
                 </div>
-                <span style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 700, fontSize: 17 }}>
+                <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 17 }}>
                   Menu
                 </span>
               </div>
@@ -744,8 +748,8 @@ export function PainelShell({
                       style={{
                         padding: 13,
                         borderRadius: 14,
-                        background: act ? "rgba(14,124,116,.12)" : "transparent",
-                        color: act ? "#0E7C74" : "#1F2A33",
+                        background: act ? "rgba(22,163,74,.12)" : "transparent",
+                        color: act ? "#16A34A" : "#1F2A33",
                         fontSize: 14,
                         fontWeight: 700,
                       }}
@@ -774,8 +778,8 @@ export function PainelShell({
                         padding: 13,
                         borderRadius: 14,
                         cursor: "pointer",
-                        background: gAtivo && !aberto ? "rgba(14,124,116,.1)" : "transparent",
-                        color: gAtivo ? "#0E7C74" : "#1F2A33",
+                        background: gAtivo && !aberto ? "rgba(22,163,74,.1)" : "transparent",
+                        color: gAtivo ? "#16A34A" : "#1F2A33",
                       }}
                     >
                       <item.Icone className="w-[19px] h-[19px] shrink-0" />
@@ -801,13 +805,13 @@ export function PainelShell({
                               style={{
                                 padding: "10px 12px 10px 16px",
                                 borderRadius: 11,
-                                color: act ? "#0E7C74" : "#46545E",
-                                background: act ? "#E6F4F2" : "transparent",
+                                color: act ? "#16A34A" : "#46545E",
+                                background: act ? "#DCFCE7" : "transparent",
                               }}
                             >
                               <f.Icone
                                 className="w-4 h-4 shrink-0"
-                                style={{ color: act ? "#0E7C74" : "#8695A0" }}
+                                style={{ color: act ? "#16A34A" : "#8695A0" }}
                               />
                               <span style={{ fontSize: 13, fontWeight: 600 }}>{f.label}</span>
                             </Link>
@@ -835,7 +839,7 @@ export function PainelShell({
                     width: 40,
                     height: 40,
                     borderRadius: 999,
-                    background: "linear-gradient(135deg,#14B8A6,#0EA5E9)",
+                    background: "linear-gradient(135deg,#22C55E,#0EA5E9)",
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: 14,

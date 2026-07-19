@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Printer, Download, Loader2, Play } from "lucide-react";
+import {
+  FileText,
+  Printer,
+  Download,
+  Loader2,
+  Play,
+  ChevronDown,
+  Check,
+} from "lucide-react";
 import {
   gerarMovimentos,
   gerarPagamentosTickets,
@@ -58,6 +66,51 @@ function slug(s: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+type PresetTipo = "hoje" | "ontem" | "7d" | "mes";
+
+function rangeFor(tipo: PresetTipo): { inicio: string; fim: string } {
+  const now = new Date();
+  if (tipo === "hoje") {
+    return { inicio: ymd(now), fim: ymd(now) };
+  }
+  if (tipo === "ontem") {
+    const d = new Date(now.getTime() - 86_400_000);
+    return { inicio: ymd(d), fim: ymd(d) };
+  }
+  if (tipo === "7d") {
+    return { inicio: ymd(new Date(now.getTime() - 6 * 86_400_000)), fim: ymd(now) };
+  }
+  return {
+    inicio: ymd(new Date(now.getFullYear(), now.getMonth(), 1)),
+    fim: ymd(now),
+  };
+}
+
+const PRESETS: [PresetTipo, string][] = [
+  ["hoje", "Hoje"],
+  ["ontem", "Ontem"],
+  ["7d", "7 dias"],
+  ["mes", "Mês atual"],
+];
+
+const CAMPO_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  color: "#6B7280",
+  marginBottom: 6,
+};
+
+const CAMPO_INPUT: React.CSSProperties = {
+  height: 40,
+  borderRadius: 11,
+  border: "1px solid #E4E8EC",
+  background: "#FAFBFC",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#1F2937",
+  padding: "0 12px",
+};
+
 export function PrestacaoClient({
   patioId,
   patioNome,
@@ -81,23 +134,17 @@ export function PrestacaoClient({
   const [atual, setAtual] = useState("");
   const [dados, setDados] = useState<RelatorioDados | null>(null);
 
-  function preset(tipo: "hoje" | "ontem" | "7d" | "mes") {
-    const now = new Date();
-    if (tipo === "hoje") {
-      setInicio(ymd(now));
-      setFim(ymd(now));
-    } else if (tipo === "ontem") {
-      const d = new Date(now.getTime() - 86_400_000);
-      setInicio(ymd(d));
-      setFim(ymd(d));
-    } else if (tipo === "7d") {
-      setInicio(ymd(new Date(now.getTime() - 6 * 86_400_000)));
-      setFim(ymd(now));
-    } else {
-      setInicio(ymd(new Date(now.getFullYear(), now.getMonth(), 1)));
-      setFim(ymd(now));
-    }
+  function preset(tipo: PresetTipo) {
+    const r = rangeFor(tipo);
+    setInicio(r.inicio);
+    setFim(r.fim);
   }
+
+  const presetAtivo: PresetTipo | null =
+    PRESETS.find(([k]) => {
+      const r = rangeFor(k);
+      return r.inicio === inicio && r.fim === fim;
+    })?.[0] ?? null;
 
   function toggle(k: SecaoKey) {
     setSecoes((s) => {
@@ -178,14 +225,22 @@ export function PrestacaoClient({
   }
 
   return (
-    <div className="space-y-5 max-w-5xl">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div className="print:hidden">
-        <h1 className="text-[26px] font-black tracking-tight">
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 23,
+            fontWeight: 700,
+            letterSpacing: "-.02em",
+          }}
+        >
           Prestação de contas
-        </h1>
-        <p className="text-sm text-texto-2">
-          <b className="text-texto">{patioNome}</b> · gere um relatório do período
-        </p>
+        </h2>
+        <div style={{ marginTop: 3, fontSize: 13, color: "#6B7280" }}>
+          <b style={{ color: "#1F2937" }}>{patioNome}</b> · gere um relatório do
+          período
+        </div>
       </div>
 
       {/* Configuração */}
@@ -193,89 +248,176 @@ export function PrestacaoClient({
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-5 space-y-4 print:hidden"
+          className="print:hidden"
+          style={{
+            borderRadius: 16,
+            background: "#fff",
+            border: "1px solid #E4E8EC",
+            boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+            padding: 20,
+            display: "flex",
+            flexDirection: "column",
+            gap: 18,
+          }}
         >
-          <div className="flex flex-wrap items-end gap-3">
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "flex-end",
+              gap: 12,
+            }}
+          >
             <div>
-              <label className="block text-xs font-bold text-texto-2 mb-1.5">
-                De
-              </label>
+              <div style={CAMPO_LABEL}>De</div>
               <input
                 type="date"
                 value={inicio}
                 max={fim || undefined}
                 onChange={(e) => setInicio(e.target.value)}
-                className="h-10 px-3 rounded-xl border border-borda bg-fundo text-sm font-semibold"
+                className="mono"
+                style={CAMPO_INPUT}
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-texto-2 mb-1.5">
-                Até
-              </label>
+              <div style={CAMPO_LABEL}>Até</div>
               <input
                 type="date"
                 value={fim}
                 min={inicio || undefined}
                 onChange={(e) => setFim(e.target.value)}
-                className="h-10 px-3 rounded-xl border border-borda bg-fundo text-sm font-semibold"
+                className="mono"
+                style={CAMPO_INPUT}
               />
             </div>
-            <div className="flex gap-1.5">
-              {(
-                [
-                  ["hoje", "Hoje"],
-                  ["ontem", "Ontem"],
-                  ["7d", "7 dias"],
-                  ["mes", "Mês atual"],
-                ] as const
-              ).map(([k, l]) => (
-                <button
-                  key={k}
-                  onClick={() => preset(k)}
-                  className="h-10 px-3 rounded-xl border border-borda bg-fundo text-xs font-bold text-texto-2 hover:border-brand-300 hover:text-brand-700 transition-colors"
-                >
-                  {l}
-                </button>
-              ))}
+            <div style={{ display: "flex", gap: 6 }}>
+              {PRESETS.map(([k, l]) => {
+                const ativo = presetAtivo === k;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => preset(k)}
+                    style={{
+                      height: 40,
+                      padding: "0 13px",
+                      borderRadius: 11,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      background: ativo ? "#DCFCE7" : "#FAFBFC",
+                      border: `1px solid ${ativo ? "#BBF7D0" : "#E4E8EC"}`,
+                      color: ativo ? "#16A34A" : "#6B7280",
+                    }}
+                  >
+                    {l}
+                  </button>
+                );
+              })}
             </div>
-            <div className="min-w-[180px]">
-              <label className="block text-xs font-bold text-texto-2 mb-1.5">
-                Operador
-              </label>
-              <select
-                value={operadorId}
-                onChange={(e) => setOperadorId(e.target.value)}
-                className="h-10 px-3 rounded-xl border border-borda bg-fundo text-sm font-semibold w-full"
-              >
-                <option value="">Todos</option>
-                {operadores.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.nome}
-                  </option>
-                ))}
-              </select>
+            <div style={{ minWidth: 180, flex: 1 }}>
+              <div style={CAMPO_LABEL}>Operador</div>
+              <div style={{ position: "relative" }}>
+                <select
+                  value={operadorId}
+                  onChange={(e) => setOperadorId(e.target.value)}
+                  style={{
+                    ...CAMPO_INPUT,
+                    width: "100%",
+                    paddingRight: 34,
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">Todos</option>
+                  {operadores.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.nome}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={15}
+                  style={{
+                    position: "absolute",
+                    right: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#8695A0",
+                    pointerEvents: "none",
+                  }}
+                />
+              </div>
             </div>
           </div>
 
           <div>
-            <p className="text-xs font-bold text-texto-2 mb-2">
+            <div style={{ ...CAMPO_LABEL, marginBottom: 9 }}>
               Seções do relatório
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {SECOES.map((s) => (
-                <label
-                  key={s.key}
-                  className="flex items-center gap-2 rounded-xl border border-borda bg-fundo/50 px-3 py-2 cursor-pointer hover:border-brand-200"
-                >
-                  <input
-                    type="checkbox"
-                    checked={secoes.has(s.key)}
-                    onChange={() => toggle(s.key)}
-                    className="w-4 h-4 accent-brand-600"
-                  />
-                  <span className="text-sm font-semibold">{s.label}</span>
-                </label>
-              ))}
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3,1fr)",
+                gap: 9,
+              }}
+            >
+              {SECOES.map((s) => {
+                const marcada = secoes.has(s.key);
+                return (
+                  <label
+                    key={s.key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 9,
+                      borderRadius: 11,
+                      border: "1px solid #E4E8EC",
+                      background: "#FAFBFC",
+                      padding: "10px 12px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={marcada}
+                      onChange={() => toggle(s.key)}
+                      style={{
+                        position: "absolute",
+                        width: 1,
+                        height: 1,
+                        padding: 0,
+                        margin: -1,
+                        overflow: "hidden",
+                        clip: "rect(0 0 0 0)",
+                        whiteSpace: "nowrap",
+                        border: 0,
+                      }}
+                    />
+                    <span
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: 5,
+                        flexShrink: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        background: marcada ? "#16A34A" : "#fff",
+                        border: marcada ? "none" : "1px solid #CBD5E1",
+                      }}
+                    >
+                      {marcada && (
+                        <Check size={12} strokeWidth={3} color="#fff" />
+                      )}
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>
+                      {s.label}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
 
@@ -287,11 +429,33 @@ export function PrestacaoClient({
             />
           ) : (
             <button
+              type="button"
               onClick={gerar}
               disabled={!intervaloOk || selecionadas.length === 0}
-              className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-sm shadow-[var(--shadow-brand)] hover:brightness-110 disabled:opacity-50 disabled:pointer-events-none transition-all"
+              style={{
+                alignSelf: "flex-start",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                height: 44,
+                padding: "0 20px",
+                borderRadius: 12,
+                border: "none",
+                background: "linear-gradient(90deg,#16A34A,#22C55E)",
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#fff",
+                boxShadow: "0 8px 22px -8px rgba(22,163,74,.5)",
+                cursor:
+                  !intervaloOk || selecionadas.length === 0
+                    ? "not-allowed"
+                    : "pointer",
+                opacity: !intervaloOk || selecionadas.length === 0 ? 0.5 : 1,
+                pointerEvents:
+                  !intervaloOk || selecionadas.length === 0 ? "none" : "auto",
+              }}
             >
-              <Play className="w-4 h-4" />
+              <Play size={16} fill="currentColor" />
               Gerar relatório
             </button>
           )}

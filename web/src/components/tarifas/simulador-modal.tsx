@@ -2,14 +2,33 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Calculator, Clock, Moon, ShieldCheck, X } from "lucide-react";
+import { Clock, Gauge, Moon, ShieldCheck, X } from "lucide-react";
 import { calcularTarifa, type TarifaSim } from "@/lib/tarifa-engine";
-import { Campo, Input } from "@/components/ui/campos";
 
 const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
+
+// ── Tokens do painel (fiéis ao protótipo Claude Design) ──
+const cssLabel: React.CSSProperties = {
+  display: "block",
+  fontSize: 11,
+  fontWeight: 700,
+  color: "#6B7280",
+  marginBottom: 6,
+};
+const cssInput: React.CSSProperties = {
+  width: "100%",
+  height: 42,
+  borderRadius: 11,
+  border: "1px solid #E4E8EC",
+  background: "#FAFBFC",
+  fontSize: 13,
+  color: "#1F2937",
+  padding: "0 13px",
+  outline: "none",
+};
 
 function toLocalInput(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
@@ -53,22 +72,30 @@ export function ModalSimulador({
   const MOTIVO = {
     tolerancia: {
       rotulo: "Dentro da tolerância",
-      cls: "bg-info-bg text-info border-info/20",
+      fg: "#0369A1",
+      bg: "#EFF6FF",
+      bd: "#BFDBFE",
       Icone: ShieldCheck,
     },
     pernoite: {
       rotulo: "Pernoite",
-      cls: "bg-violeta/10 text-violeta border-violeta/20",
+      fg: "#7C3AED",
+      bg: "#F5F3FF",
+      bd: "#DDD6FE",
       Icone: Moon,
     },
     normal: {
       rotulo: "Cobrança por tempo",
-      cls: "bg-brand-50 text-brand-700 border-brand-200",
+      fg: "#15803D",
+      bg: "#F0FDF4",
+      bd: "#BBF7D0",
       Icone: Clock,
     },
     tetoDiaria: {
       rotulo: "Teto de diária atingido",
-      cls: "bg-aviso-bg text-aviso border-aviso/25",
+      fg: "#B45309",
+      bg: "#FEF7E6",
+      bd: "#FCE3A6",
       Icone: ShieldCheck,
     },
   } as const;
@@ -78,7 +105,8 @@ export function ModalSimulador({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[90] grid place-items-center p-4 bg-noite/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[90] grid place-items-center p-4"
+      style={{ background: "rgba(16,27,20,.5)", backdropFilter: "blur(4px)" }}
       onClick={fechar}
     >
       <motion.div
@@ -87,69 +115,171 @@ export function ModalSimulador({
         exit={{ opacity: 0, scale: 0.94, y: 16 }}
         transition={{ type: "spring", stiffness: 380, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl bg-superficie shadow-[var(--shadow-pop)] p-6 max-h-[85dvh] overflow-y-auto"
+        className="w-full max-w-md max-h-[85dvh] overflow-y-auto"
+        style={{
+          background: "#fff",
+          border: "1px solid #E4E8EC",
+          borderRadius: 16,
+          boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+          padding: 22,
+        }}
       >
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-lg font-extrabold flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-brand-600" />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 16,
+              fontWeight: 700,
+              letterSpacing: "-.02em",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: "#1F2937",
+            }}
+          >
+            <Gauge style={{ width: 18, height: 18, color: "#16A34A" }} />
             Simular cobrança
           </h3>
           <button
             onClick={fechar}
             aria-label="Fechar"
-            className="toque-44 text-texto-3 hover:text-texto"
+            style={{
+              display: "grid",
+              placeItems: "center",
+              width: 34,
+              height: 34,
+              borderRadius: 9,
+              border: "none",
+              background: "transparent",
+              color: "#8695A0",
+              cursor: "pointer",
+            }}
           >
-            <X className="w-5 h-5" />
+            <X style={{ width: 18, height: 18 }} />
           </button>
         </div>
-        <p className="text-xs text-texto-2 mb-5">
-          Tarifa <b>{nome}</b> · mesmas regras que o app usa na saída.
+        <p style={{ margin: "3px 0 18px", fontSize: 12, color: "#6B7280" }}>
+          Tarifa <b style={{ color: "#1F2937" }}>{nome}</b> · mesmas regras que o
+          app usa na saída.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Campo label="Entrada">
-            <Input
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 16,
+          }}
+        >
+          <div>
+            <label style={cssLabel}>Entrada</label>
+            <input
               type="datetime-local"
               value={entrada}
               onChange={(e) => setEntrada(e.target.value)}
+              className="mono"
+              style={cssInput}
             />
-          </Campo>
-          <Campo label="Saída">
-            <Input
+          </div>
+          <div>
+            <label style={cssLabel}>Saída</label>
+            <input
               type="datetime-local"
               value={saida}
               onChange={(e) => setSaida(e.target.value)}
+              className="mono"
+              style={cssInput}
             />
-          </Campo>
+          </div>
         </div>
 
-        <div className="mt-5">
+        <div style={{ marginTop: 18 }}>
           {resultado == null ? (
-            <p className="text-sm font-semibold text-perigo bg-perigo-bg border border-perigo/20 rounded-xl px-3.5 py-2.5">
+            <p
+              style={{
+                margin: 0,
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#B91C1C",
+                background: "#FEF2F2",
+                border: "1px solid #FECACA",
+                borderRadius: 11,
+                padding: "10px 14px",
+              }}
+            >
               A saída precisa ser depois da entrada.
             </p>
           ) : (
-            <div className="rounded-2xl border border-borda bg-fundo/60 p-5">
-              <div className="flex items-center justify-between flex-wrap gap-2">
+            <div
+              style={{
+                borderRadius: 12,
+                border: "1px solid #E4E8EC",
+                background: "#FAFBFC",
+                padding: 18,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 8,
+                }}
+              >
                 <span
-                  className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${MOTIVO[resultado.motivo].cls}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "3px 10px",
+                    borderRadius: 999,
+                    color: MOTIVO[resultado.motivo].fg,
+                    background: MOTIVO[resultado.motivo].bg,
+                    border: `1px solid ${MOTIVO[resultado.motivo].bd}`,
+                  }}
                 >
                   {(() => {
                     const I = MOTIVO[resultado.motivo].Icone;
-                    return <I className="w-3.5 h-3.5" />;
+                    return <I style={{ width: 13, height: 13 }} />;
                   })()}
                   {MOTIVO[resultado.motivo].rotulo}
                 </span>
-                <span className="text-xs font-semibold text-texto-2 tabular-nums">
+                <span
+                  className="mono"
+                  style={{ fontSize: 12, fontWeight: 600, color: "#6B7280" }}
+                >
                   Permanência: {formatarPermanencia(resultado.duracaoMinutos)}
                 </span>
               </div>
 
-              <div className="mt-3 text-4xl font-black tabular-nums text-texto">
+              <div
+                className="mono"
+                style={{
+                  marginTop: 12,
+                  fontSize: 34,
+                  fontWeight: 700,
+                  color: "#1F2937",
+                }}
+              >
                 {moeda.format(resultado.valor)}
               </div>
 
-              <p className="mt-3 text-xs text-texto-2 leading-relaxed">
+              <p
+                style={{
+                  marginTop: 12,
+                  fontSize: 12,
+                  color: "#8695A0",
+                  lineHeight: 1.6,
+                }}
+              >
                 {resultado.motivo === "tolerancia" &&
                   `Permanência de até ${tarifa.tolerancia_minutos}min não é cobrada.`}
                 {resultado.motivo === "pernoite" &&

@@ -31,23 +31,25 @@ export default async function DashboardPage({
 
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
+  const inicioAno = new Date(hoje.getFullYear(), 0, 1);
 
   const [
     abertosTodos,
-    fechadosHoje,
+    { data: fechadosAno },
     { data: recentes },
     { data: ultimoSync },
     { count: mensalistas },
   ] = await Promise.all([
       // Abertos de TODOS os pátios (alimenta o widget "Ocupação por pátio").
       supabase.from("tickets").select("id, patio_id").eq("status", "aberto"),
-      // KPIs do pátio selecionado.
+      // Fechados do ANO (pátio selecionado): alimenta faturamento hoje/mês/ano,
+      // séries do gráfico e comparativos — uma query só.
       supabase
         .from("tickets")
         .select("valor_cobrado, saida")
         .eq("patio_id", selecionado.id)
         .eq("status", "fechado")
-        .gte("saida", hoje.toISOString()),
+        .gte("saida", inicioAno.toISOString()),
       supabase
         .from("tickets")
         .select(
@@ -76,24 +78,67 @@ export default async function DashboardPage({
     abertosPorPatio[t.patio_id] = (abertosPorPatio[t.patio_id] ?? 0) + 1;
   }
 
-  const faturamentoHoje = (fechadosHoje.data ?? []).reduce(
-    (s, t) => s + (Number(t.valor_cobrado) || 0),
-    0,
-  );
+  // ── Buckets de faturamento a partir dos fechados do ano ──
+  const mesAtual = hoje.getMonth();
+  const mensal = Array<number>(12).fill(0); // jan..dez
+  const diario = new Map<string, number>(); // yyyy-mm-dd → total
+  const chaveDia = (d: Date) =>
+    `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  for (const t of fechadosAno ?? []) {
+    if (!t.saida) continue;
+    const d = new Date(t.saida);
+    const v = Number(t.valor_cobrado) || 0;
+    mensal[d.getMonth()] += v;
+    diario.set(chaveDia(d), (diario.get(chaveDia(d)) ?? 0) + v);
+  }
+
+  const faturamentoAno = mensal.reduce((s, v) => s + v, 0);
+  const faturamentoMes = mensal[mesAtual];
+  const mesAnterior = mesAtual > 0 ? mensal[mesAtual - 1] : 0;
+  const deltaMes =
+    mesAnterior > 0
+      ? Math.round(((faturamentoMes - mesAnterior) / mesAnterior) * 100)
+      : null;
+
+  const faturamentoHoje = diario.get(chaveDia(hoje)) ?? 0;
+  const ontem = new Date(hoje);
+  ontem.setDate(ontem.getDate() - 1);
+  const faturamentoOntem = diario.get(chaveDia(ontem)) ?? 0;
+  const deltaHoje =
+    faturamentoOntem > 0
+      ? Math.round(((faturamentoHoje - faturamentoOntem) / faturamentoOntem) * 100)
+      : null;
+  const saidasHoje = (fechadosAno ?? []).filter(
+    (t) => t.saida && new Date(t.saida) >= hoje,
+  ).length;
+
+  // Série mensal (jan..mês atual) para as barrinhas do card do ano.
+  const serieMensal = mensal.slice(0, mesAtual + 1);
+  // Sparkline do hero: total diário dos últimos 14 dias.
+  const sparkline: number[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(hoje);
+    d.setDate(d.getDate() - i);
+    sparkline.push(diario.get(chaveDia(d)) ?? 0);
+  }
 
   return (
     <DashboardLive
       inicial={{
-        patios: lista,
         patioNome: selecionado.nome,
         patioCodigo: selecionado.codigo_acesso ?? null,
         noPatio: abertosPorPatio[selecionado.id] ?? 0,
         totalVagas: selecionado.qtd_vagas || 0,
         faturamentoHoje,
-        saidasHoje: fechadosHoje.data?.length ?? 0,
+        deltaHoje,
+        saidasHoje,
         mensalistas: mensalistas ?? 0,
+        faturamentoMes,
+        deltaMes,
+        faturamentoAno,
+        serieMensal,
+        sparkline,
         recentes: recentes ?? [],
-        abertosPorPatio,
         sincronizadoEm: ultimoSync?.sincronizado_em ?? null,
       }}
     />

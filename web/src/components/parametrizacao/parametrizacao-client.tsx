@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   SlidersHorizontal,
@@ -11,7 +11,6 @@ import {
   Printer,
   UserCheck,
   CircleSlash,
-  Sparkles,
   Loader2,
   Building2,
   MonitorSmartphone,
@@ -59,6 +58,22 @@ const OPCOES: OpcaoModo[] = [
   },
 ];
 
+const cardStyle: CSSProperties = {
+  borderRadius: 16,
+  background: "#fff",
+  border: "1px solid #E4E8EC",
+  boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+  overflow: "hidden",
+};
+
+const cardHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  padding: "16px 18px",
+  borderBottom: "1px solid #E4E8EC",
+};
+
 export function ParametrizacaoClient({
   patioId,
   patioNome,
@@ -97,26 +112,81 @@ export function ParametrizacaoClient({
   };
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 18,
+        paddingBottom: 112,
+      }}
+    >
       {/* Cabeçalho */}
-      <div className="flex items-start gap-4">
-        <span className="hidden sm:grid place-items-center w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-acento-teal text-white shadow-[var(--shadow-brand)] shrink-0">
-          <SlidersHorizontal className="w-6 h-6" />
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+        <span
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 14,
+            background: "linear-gradient(135deg,#16A34A,#22C55E)",
+            color: "#fff",
+            display: "grid",
+            placeItems: "center",
+            flexShrink: 0,
+          }}
+        >
+          <SlidersHorizontal style={{ width: 23, height: 23 }} />
         </span>
-        <div className="min-w-0">
-          <h1 className="text-2xl font-black tracking-tight text-texto">
+        <div style={{ minWidth: 0 }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 23,
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 700,
+              letterSpacing: "-.02em",
+              color: "#1F2937",
+            }}
+          >
             Parametrização
           </h1>
-          <p className="mt-1 text-sm text-texto-2 leading-relaxed">
+          <div style={{ marginTop: 3, fontSize: 13, color: "#6B7280" }}>
             Habilitações da operação, por pátio.
-          </p>
+          </div>
           {patioNome ? (
-            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-fundo border border-borda px-3 py-1 text-xs font-bold text-texto-2">
-              <Building2 className="w-3.5 h-3.5 text-brand-600" />
+            <span
+              style={{
+                marginTop: 8,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#6B7280",
+                background: "#F1F4F6",
+                border: "1px solid #E4E8EC",
+                borderRadius: 999,
+                padding: "4px 11px",
+              }}
+            >
+              <Building2 style={{ width: 13, height: 13, color: "#16A34A" }} />
               {patioNome}
             </span>
           ) : (
-            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-aviso-bg border border-aviso/25 px-3 py-1 text-xs font-bold text-aviso">
+            <span
+              style={{
+                marginTop: 8,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#B45309",
+                background: "#FEF3C7",
+                border: "1px solid #FDE68A",
+                borderRadius: 999,
+                padding: "4px 11px",
+              }}
+            >
               Nenhum pátio selecionado
             </span>
           )}
@@ -124,139 +194,218 @@ export function ParametrizacaoClient({
       </div>
 
       {/* Feature 1 — Impressão da foto do veículo no recibo */}
-      <div className="mt-8 pb-28">
-        <section className="rounded-2xl border border-borda bg-superficie shadow-[var(--shadow-card)] overflow-hidden">
-          <header className="flex items-center gap-3 p-5 pb-4 border-b border-borda">
-            <span className="grid place-items-center w-10 h-10 rounded-xl bg-brand-50 text-brand-600 shrink-0">
-              <Camera className="w-5 h-5" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="font-extrabold text-texto">
-                Impressão da foto do veículo no recibo
-              </h2>
-              <p className="text-xs text-texto-3 leading-relaxed">
-                Define se a foto tirada na entrada sai impressa no recibo do
-                cliente.
-              </p>
-            </div>
-          </header>
-
-          <div className="p-4 sm:p-5 space-y-3">
-            {OPCOES.map((o) => {
-              const sel = modoFoto === o.valor;
-              return (
-                <button
-                  key={o.valor}
-                  type="button"
-                  role="radio"
-                  aria-checked={sel}
-                  onClick={() => setModoFoto(o.valor)}
-                  className={`w-full text-left flex items-start gap-3.5 rounded-xl border p-4 transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand-400/50 ${
-                    sel
-                      ? "border-brand-400 bg-brand-50/50 shadow-[var(--shadow-card)]"
-                      : "border-borda bg-superficie hover:border-brand-200 hover:bg-fundo/50"
-                  }`}
-                >
-                  <span
-                    className={`grid place-items-center w-9 h-9 rounded-lg shrink-0 transition-colors ${
-                      sel
-                        ? "bg-brand-500 text-white"
-                        : "bg-fundo text-texto-3"
-                    }`}
-                  >
-                    <o.Icone className="w-[18px] h-[18px]" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-bold text-texto text-[15px]">
-                      {o.titulo}
-                    </span>
-                    <span className="block text-sm text-texto-2 leading-relaxed mt-0.5">
-                      {o.descricao}
-                    </span>
-                  </span>
-                  {/* indicador de seleção (marca única — só um modo por vez) */}
-                  <span
-                    className={`grid place-items-center w-6 h-6 rounded-md border-2 shrink-0 mt-0.5 transition-all ${
-                      sel
-                        ? "bg-brand-500 border-brand-500"
-                        : "bg-superficie border-borda"
-                    }`}
-                  >
-                    <AnimatePresence>
-                      {sel && (
-                        <motion.span
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          transition={{ duration: 0.15 }}
-                        >
-                          <Check className="w-4 h-4 text-white" strokeWidth={3.5} />
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Feature 2 — Modo quiosque do Android */}
-        <section className="mt-5 rounded-2xl border border-borda bg-superficie shadow-[var(--shadow-card)] overflow-hidden">
-          <header className="flex items-center gap-3 p-5 pb-4 border-b border-borda">
-            <span className="grid place-items-center w-10 h-10 rounded-xl bg-info-bg text-ceu shrink-0">
-              <MonitorSmartphone className="w-5 h-5" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="font-extrabold text-texto">Modo quiosque</h2>
-              <p className="text-xs text-texto-3 leading-relaxed">
-                Fixa o app na tela do aparelho: bloqueia a barra de status, as
-                notificações e os botões do Android.
-              </p>
-            </div>
-          </header>
-          <div className="p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="font-semibold text-texto text-[15px]">
-                  Manter o app fixo na tela
-                </p>
-                <p className="text-sm text-texto-2 leading-relaxed mt-0.5">
-                  Recomendado nos aparelhos do pátio: o operador não sai do app
-                  sem querer. Só sai pelo botão "Sair" do menu.
-                </p>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={quiosque}
-                aria-label="Modo quiosque"
-                onClick={() => setQuiosque((v) => !v)}
-                className={`relative shrink-0 w-12 h-7 rounded-full transition-colors duration-200 cursor-pointer mt-0.5 outline-none focus-visible:ring-2 focus-visible:ring-brand-400/50 ${
-                  quiosque
-                    ? "bg-gradient-to-r from-brand-600 to-brand-500"
-                    : "bg-borda"
-                }`}
-              >
-                <motion.span
-                  layout
-                  transition={{ type: "spring", stiffness: 520, damping: 34 }}
-                  className="absolute top-1 w-5 h-5 rounded-full bg-white shadow-[0_1px_3px_rgba(16,27,20,0.35)]"
-                  style={{ left: quiosque ? "calc(100% - 1.5rem)" : "0.25rem" }}
-                />
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Espaço reservado para as próximas parametrizações */}
-        <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-dashed border-borda py-6 text-texto-3">
-          <Sparkles className="w-4 h-4" />
-          <span className="text-sm font-medium">
-            Novas parametrizações serão adicionadas aqui.
+      <section style={cardStyle}>
+        <div style={cardHeaderStyle}>
+          <span
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 11,
+              background: "#DCFCE7",
+              color: "#16A34A",
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Camera style={{ width: 20, height: 20 }} />
           </span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>
+              Impressão da foto do veículo no recibo
+            </div>
+            <div style={{ fontSize: 12, color: "#8695A0" }}>
+              Define se a foto tirada na entrada sai impressa no recibo do
+              cliente.
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div
+          style={{
+            padding: "16px 18px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          {OPCOES.map((o) => {
+            const sel = modoFoto === o.valor;
+            return (
+              <button
+                key={o.valor}
+                type="button"
+                role="radio"
+                aria-checked={sel}
+                onClick={() => setModoFoto(o.valor)}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 13,
+                  borderRadius: 12,
+                  padding: 15,
+                  cursor: "pointer",
+                  transition: "background .15s, border-color .15s",
+                  border: sel ? "1px solid #BBF7D0" : "1px solid #E4E8EC",
+                  background: sel ? "#DCFCE7" : "#fff",
+                }}
+              >
+                <span
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    display: "grid",
+                    placeItems: "center",
+                    flexShrink: 0,
+                    background: sel ? "#16A34A" : "#F1F4F6",
+                    color: sel ? "#fff" : "#8695A0",
+                  }}
+                >
+                  <o.Icone style={{ width: 18, height: 18 }} />
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span
+                    style={{ display: "block", fontSize: 14, fontWeight: 700 }}
+                  >
+                    {o.titulo}
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: 13,
+                      color: "#6B7280",
+                      marginTop: 2,
+                    }}
+                  >
+                    {o.descricao}
+                  </span>
+                </span>
+                {/* indicador de seleção (marca única — só um modo por vez) */}
+                {sel ? (
+                  <span
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 7,
+                      background: "#16A34A",
+                      display: "grid",
+                      placeItems: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <motion.span
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.15 }}
+                      style={{ display: "grid", placeItems: "center" }}
+                    >
+                      <Check
+                        style={{ width: 15, height: 15, color: "#fff" }}
+                        strokeWidth={3.2}
+                      />
+                    </motion.span>
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 7,
+                      border: "2px solid #E4E8EC",
+                      background: "#fff",
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Feature 2 — Modo quiosque do Android */}
+      <section style={cardStyle}>
+        <div style={cardHeaderStyle}>
+          <span
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 11,
+              background: "#EEF4FF",
+              color: "#0EA5E9",
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            <MonitorSmartphone style={{ width: 20, height: 20 }} />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>Modo quiosque</div>
+            <div style={{ fontSize: 12, color: "#8695A0" }}>
+              Fixa o app na tela do aparelho: bloqueia barra de status,
+              notificações e botões do Android.
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            padding: "16px 18px",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>
+              Manter o app fixo na tela
+            </div>
+            <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
+              Recomendado nos aparelhos do pátio: o operador não sai do app sem
+              querer. Só sai pelo botão &quot;Sair&quot; do menu.
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={quiosque}
+            aria-label="Modo quiosque"
+            onClick={() => setQuiosque((v) => !v)}
+            style={{
+              position: "relative",
+              flexShrink: 0,
+              width: 48,
+              height: 28,
+              borderRadius: 999,
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              background: quiosque
+                ? "linear-gradient(90deg,#16A34A,#22C55E)"
+                : "#D5DBE1",
+            }}
+          >
+            <motion.span
+              layout
+              transition={{ type: "spring", stiffness: 520, damping: 34 }}
+              style={{
+                position: "absolute",
+                top: 3,
+                width: 22,
+                height: 22,
+                borderRadius: 999,
+                background: "#fff",
+                boxShadow: "0 1px 3px rgba(16,27,20,0.35)",
+                left: quiosque ? "calc(100% - 25px)" : 3,
+              }}
+            />
+          </button>
+        </div>
+      </section>
 
       {/* Barra de salvar (aparece só quando há mudança) */}
       <AnimatePresence>
@@ -268,31 +417,96 @@ export function ParametrizacaoClient({
             transition={{ type: "spring", stiffness: 380, damping: 32 }}
             className="fixed bottom-4 inset-x-4 lg:left-[calc(16rem+2rem)] lg:right-8 z-30"
           >
-            <div className="mx-auto max-w-3xl flex items-center gap-3 rounded-2xl border border-borda bg-superficie/95 backdrop-blur px-4 py-3 shadow-[var(--shadow-pop)]">
-              <span className="w-2 h-2 rounded-full bg-aviso shrink-0" />
-              <p className="text-sm font-semibold text-texto-2 flex-1 min-w-0">
+            <div
+              style={{
+                margin: "0 auto",
+                maxWidth: 640,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                borderRadius: 16,
+                border: "1px solid #E4E8EC",
+                background: "rgba(255,255,255,0.95)",
+                backdropFilter: "blur(8px)",
+                padding: "12px 16px",
+                boxShadow: "0 12px 30px -12px rgba(16,27,20,.24)",
+              }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  background: "#F59E0B",
+                  flexShrink: 0,
+                }}
+              />
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#6B7280",
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
                 Você tem alterações não salvas.
               </p>
               <button
+                type="button"
                 onClick={() => {
                   setModoFoto(inicial);
                   setQuiosque(quiosqueInic);
                 }}
                 disabled={salvando}
-                className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl text-sm font-bold text-texto-2 hover:bg-fundo transition-colors disabled:opacity-50"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  height: 40,
+                  padding: "0 14px",
+                  borderRadius: 11,
+                  border: "1px solid #E4E8EC",
+                  background: "#fff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#6B7280",
+                  cursor: salvando ? "default" : "pointer",
+                  opacity: salvando ? 0.5 : 1,
+                }}
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw style={{ width: 16, height: 16 }} />
                 <span className="hidden sm:inline">Descartar</span>
               </button>
               <button
+                type="button"
                 onClick={salvar}
                 disabled={salvando}
-                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white text-sm font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all disabled:opacity-60"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  height: 40,
+                  padding: "0 18px",
+                  borderRadius: 11,
+                  border: "none",
+                  background: "linear-gradient(90deg,#16A34A,#22C55E)",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#fff",
+                  cursor: salvando ? "default" : "pointer",
+                  boxShadow: "0 8px 22px -8px rgba(22,163,74,.5)",
+                  opacity: salvando ? 0.6 : 1,
+                }}
               >
                 {salvando ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2
+                    style={{ width: 16, height: 16 }}
+                    className="animate-spin"
+                  />
                 ) : (
-                  <Save className="w-4 h-4" />
+                  <Save style={{ width: 16, height: 16 }} />
                 )}
                 {salvando ? "Salvando…" : "Salvar"}
               </button>

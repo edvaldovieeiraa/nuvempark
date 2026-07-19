@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, History, ChevronRight, Building2 } from "lucide-react";
+import {
+  Search,
+  History,
+  ChevronRight,
+  ChevronDown,
+  Building2,
+} from "lucide-react";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { formatarDataHora } from "@/lib/format-data";
 
@@ -21,20 +27,37 @@ export type AuditRow = {
 
 type Filtros = { modulo: string; di: string; df: string; q: string };
 
-const MODULOS: Record<string, { label: string; cls: string }> = {
-  operacao: { label: "Operação", cls: "bg-aviso-bg text-aviso border-aviso/25" },
-  tarifas: { label: "Tarifas", cls: "bg-brand-50 text-brand-700 border-brand-200" },
-  operadores: { label: "Operadores", cls: "bg-info-bg text-info border-info/20" },
+type ModCor = { bg: string; border: string; text: string };
+type ModInfo = ModCor & { label: string };
+
+const CINZA: ModCor = { bg: "#F1F4F6", border: "#E4E8EC", text: "#6B7280" };
+
+// Cores dos pills por módulo — set do protótipo; módulos desconhecidos → cinza.
+const MODULOS: Record<string, ModInfo> = {
+  operacao: { label: "Operação", ...CINZA },
+  tarifas: { label: "Tarifas", bg: "#DCFCE7", border: "#BBF7D0", text: "#16A34A" },
+  operadores: {
+    label: "Operadores",
+    bg: "#EEF4FF",
+    border: "#CBD9FB",
+    text: "#2563EB",
+  },
   mensalistas: {
     label: "Mensalistas",
-    cls: "bg-violeta/10 text-violeta border-violeta/20",
+    bg: "#F3EEFE",
+    border: "#DDD0FB",
+    text: "#8B5CF6",
   },
-  config: { label: "Configurações", cls: "bg-fundo text-texto-2 border-borda" },
-  "tipos-veiculo": {
-    label: "Tipos de veículo",
-    cls: "bg-saida-bg text-saida border-saida/20",
-  },
-  patios: { label: "Pátios", cls: "bg-perigo-bg text-perigo border-perigo/20" },
+  config: { label: "Configurações", ...CINZA },
+  "tipos-veiculo": { label: "Tipos de veículo", ...CINZA },
+  patios: { label: "Pátios", bg: "#FEF1F1", border: "#FBD0D0", text: "#E11D48" },
+};
+
+const CARD: React.CSSProperties = {
+  background: "#fff",
+  border: "1px solid #E4E8EC",
+  borderRadius: 16,
+  boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
 };
 
 function isoToYmd(iso: string): string {
@@ -106,20 +129,30 @@ export function HistoricoClient({
   );
 
   return (
-    <div className="space-y-5 max-w-6xl">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <motion.header
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <h1 className="text-[26px] font-black tracking-tight flex items-center gap-2">
-          <History className="w-6 h-6 text-brand-600" />
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 23,
+            fontWeight: 700,
+            letterSpacing: "-.02em",
+            display: "flex",
+            alignItems: "center",
+            gap: 9,
+          }}
+        >
+          <History style={{ width: 22, height: 22, color: "#16A34A" }} />
           Histórico de alterações
-        </h1>
-        <p className="text-sm text-texto-2">
+        </h2>
+        <div style={{ marginTop: 3, fontSize: 13, color: "#6B7280" }}>
           Toda alteração feita no painel da rede · {total}
           {temFiltro ? " no filtro" : " no total"}
-        </p>
+        </div>
       </motion.header>
 
       {/* Filtros */}
@@ -127,30 +160,83 @@ export function HistoricoClient({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.05 }}
-        className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-3 flex flex-wrap items-center gap-2"
+        style={{
+          ...CARD,
+          padding: 12,
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 8,
+        }}
       >
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-texto-3" />
+        <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+          <Search
+            style={{
+              position: "absolute",
+              left: 13,
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: 15,
+              height: 15,
+              color: "#8695A0",
+              pointerEvents: "none",
+            }}
+          />
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar na descrição…"
-            className="w-full h-10 pl-9 pr-3 rounded-xl border border-borda bg-fundo text-sm font-semibold placeholder:font-normal placeholder:text-texto-3 focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15"
+            style={{
+              width: "100%",
+              height: 40,
+              padding: "0 13px 0 36px",
+              borderRadius: 11,
+              border: "1px solid #E4E8EC",
+              background: "#fff",
+              fontSize: 13,
+              color: "#1F2937",
+            }}
           />
         </div>
 
-        <select
-          value={filtros.modulo}
-          onChange={(e) => aplicar({ modulo: e.target.value })}
-          className="h-10 px-3 rounded-xl border border-borda bg-fundo text-sm font-semibold focus:outline-none focus:border-brand-400"
-        >
-          <option value="">Todos os módulos</option>
-          {Object.entries(MODULOS).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v.label}
-            </option>
-          ))}
-        </select>
+        <div style={{ position: "relative", display: "inline-flex" }}>
+          <select
+            value={filtros.modulo}
+            onChange={(e) => aplicar({ modulo: e.target.value })}
+            style={{
+              appearance: "none",
+              WebkitAppearance: "none",
+              height: 40,
+              padding: "0 34px 0 13px",
+              borderRadius: 11,
+              border: "1px solid #E4E8EC",
+              background: "#fff",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#1F2937",
+              cursor: "pointer",
+            }}
+          >
+            <option value="">Todos os módulos</option>
+            {Object.entries(MODULOS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            style={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: 14,
+              height: 14,
+              color: "#8695A0",
+              pointerEvents: "none",
+            }}
+          />
+        </div>
 
         <input
           type="date"
@@ -161,9 +247,18 @@ export function HistoricoClient({
             aplicar({ di: inicioDiaIso(e.target.value) });
           }}
           aria-label="De"
-          className="h-10 px-3 rounded-xl border border-borda bg-fundo text-sm font-semibold focus:outline-none focus:border-brand-400"
+          className="mono"
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            padding: 11,
+            borderRadius: 11,
+            border: "1px solid #E4E8EC",
+            background: "#fff",
+            color: "#1F2937",
+          }}
         />
-        <span className="text-texto-3 text-sm">até</span>
+        <span style={{ fontSize: 12, color: "#8695A0" }}>até</span>
         <input
           type="date"
           value={fim}
@@ -173,7 +268,16 @@ export function HistoricoClient({
             aplicar({ df: fimDiaIso(e.target.value) });
           }}
           aria-label="Até"
-          className="h-10 px-3 rounded-xl border border-borda bg-fundo text-sm font-semibold focus:outline-none focus:border-brand-400"
+          className="mono"
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            padding: 11,
+            borderRadius: 11,
+            border: "1px solid #E4E8EC",
+            background: "#fff",
+            color: "#1F2937",
+          }}
         />
 
         {temFiltro && (
@@ -184,7 +288,17 @@ export function HistoricoClient({
               setFim("");
               router.replace(pathname);
             }}
-            className="h-10 px-3 rounded-xl border border-borda bg-fundo text-sm font-semibold text-texto-2 hover:text-texto hover:border-brand-300 transition-colors"
+            style={{
+              height: 40,
+              padding: "0 13px",
+              borderRadius: 11,
+              border: "1px solid #E4E8EC",
+              background: "#fff",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#6B7280",
+              cursor: "pointer",
+            }}
           >
             Limpar
           </button>
@@ -196,74 +310,167 @@ export function HistoricoClient({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.1 }}
-        className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden"
+        style={{ ...CARD, overflow: "hidden" }}
       >
         {linhas.length === 0 ? (
-          <div className="px-5 py-16 flex flex-col items-center gap-3 text-center">
-            <span className="w-12 h-12 rounded-2xl bg-fundo grid place-items-center">
-              <History className="w-6 h-6 text-texto-3" />
+          <div
+            style={{
+              padding: "64px 20px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 12,
+              textAlign: "center",
+            }}
+          >
+            <span
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 16,
+                background: "#F1F4F6",
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
+              <History style={{ width: 24, height: 24, color: "#8695A0" }} />
             </span>
-            <p className="text-sm text-texto-3 max-w-[340px]">
+            <p style={{ fontSize: 13, color: "#8695A0", maxWidth: 340 }}>
               {temFiltro
                 ? "Nenhuma alteração com esses filtros."
                 : "Nenhuma alteração registrada ainda. As mudanças feitas no painel aparecem aqui."}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-borda">
-            {linhas.map((l) => {
-              const mod = MODULOS[l.modulo] ?? {
+          <div>
+            {linhas.map((l, i) => {
+              const mod: ModInfo = MODULOS[l.modulo] ?? {
                 label: l.modulo,
-                cls: "bg-fundo text-texto-2 border-borda",
+                ...CINZA,
               };
               const temDados = l.dados && Object.keys(l.dados).length > 0;
               const expandida = aberta === l.id;
+              const ultima = i === linhas.length - 1;
+              const zebra = i % 2 === 1 ? "#FAFBFC" : "#fff";
               return (
                 <div key={l.id}>
                   <button
                     onClick={() =>
                       temDados ? setAberta(expandida ? null : l.id) : undefined
                     }
-                    className={`w-full text-left px-5 py-3.5 flex items-start gap-3 transition-colors ${
-                      temDados ? "hover:bg-brand-50/40 cursor-pointer" : "cursor-default"
-                    }`}
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 12,
+                      padding: "14px 18px",
+                      borderBottom:
+                        ultima && !expandida ? "none" : "1px solid #EEF1F3",
+                      background: zebra,
+                      cursor: temDados ? "pointer" : "default",
+                    }}
                   >
                     {temDados ? (
                       <ChevronRight
-                        className={`w-4 h-4 mt-0.5 shrink-0 text-texto-3 transition-transform ${expandida ? "rotate-90" : ""}`}
+                        style={{
+                          width: 15,
+                          height: 15,
+                          marginTop: 2,
+                          flexShrink: 0,
+                          color: "#8695A0",
+                          transition: "transform .2s ease",
+                          transform: expandida ? "rotate(90deg)" : "none",
+                        }}
                       />
                     ) : (
-                      <span className="w-4 shrink-0" />
+                      <span style={{ width: 16, flexShrink: 0 }} />
                     )}
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
                         <span
-                          className={`inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full border ${mod.cls}`}
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "2px 9px",
+                            borderRadius: 999,
+                            background: mod.bg,
+                            color: mod.text,
+                            border: `1px solid ${mod.border}`,
+                          }}
                         >
                           {mod.label}
                         </span>
                         {l.patio_id && patios[l.patio_id] && (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-texto-3">
-                            <Building2 className="w-3 h-3" />
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              fontSize: 11,
+                              color: "#8695A0",
+                            }}
+                          >
+                            <Building2 style={{ width: 12, height: 12 }} />
                             {patios[l.patio_id]}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-texto mt-1 leading-snug">
+                      <div
+                        style={{
+                          fontSize: 13,
+                          marginTop: 5,
+                          color: "#1F2937",
+                          lineHeight: 1.4,
+                        }}
+                      >
                         {l.descricao}
-                      </p>
+                      </div>
                     </div>
 
-                    <div className="shrink-0 text-right">
-                      <div className="text-xs font-semibold text-texto-2 tabular-nums whitespace-nowrap">
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div
+                        className="mono"
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#6B7280",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         {formatarDataHora(l.criado_em)}
                       </div>
-                      <div className="text-[11px] text-texto-2 truncate max-w-[200px]">
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#6B7280",
+                          maxWidth: 200,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         {l.usuario_nome ?? l.usuario_email ?? "—"}
                       </div>
                       {l.usuario_email && l.usuario_nome && (
-                        <div className="text-[10px] text-texto-3 truncate max-w-[200px]">
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#8695A0",
+                            maxWidth: 200,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           {l.usuario_email}
                         </div>
                       )}
@@ -277,9 +484,13 @@ export function HistoricoClient({
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
+                        style={{
+                          overflow: "hidden",
+                          borderBottom: ultima ? "none" : "1px solid #EEF1F3",
+                          background: zebra,
+                        }}
                       >
-                        <div className="px-5 pb-4 pl-12">
+                        <div style={{ padding: "0 18px 16px 45px" }}>
                           <DadosView dados={l.dados as Record<string, unknown>} />
                         </div>
                       </motion.div>
@@ -294,22 +505,48 @@ export function HistoricoClient({
 
       {/* Paginação */}
       {totalPaginas > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-texto-3">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span style={{ fontSize: 12, color: "#8695A0" }}>
             Página {pagina} de {totalPaginas}
           </span>
-          <div className="flex gap-2">
+          <div style={{ display: "flex", gap: 8 }}>
             <button
               disabled={pagina <= 1}
               onClick={() => aplicar({ p: pagina - 1 })}
-              className="h-10 px-4 rounded-xl border border-borda bg-superficie text-sm font-semibold text-texto-2 hover:border-brand-300 hover:text-brand-700 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              style={{
+                height: 38,
+                padding: "0 15px",
+                borderRadius: 11,
+                border: "1px solid #E4E8EC",
+                background: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                color: pagina <= 1 ? "#B4C0C8" : "#6B7280",
+                cursor: pagina <= 1 ? "default" : "pointer",
+              }}
             >
               Anterior
             </button>
             <button
               disabled={pagina >= totalPaginas}
               onClick={() => aplicar({ p: pagina + 1 })}
-              className="h-10 px-4 rounded-xl border border-borda bg-superficie text-sm font-semibold text-texto-2 hover:border-brand-300 hover:text-brand-700 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              style={{
+                height: 38,
+                padding: "0 15px",
+                borderRadius: 11,
+                border: "1px solid #E4E8EC",
+                background: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                color: pagina >= totalPaginas ? "#B4C0C8" : "#6B7280",
+                cursor: pagina >= totalPaginas ? "default" : "pointer",
+              }}
             >
               Próxima
             </button>
@@ -337,7 +574,9 @@ function DadosView({ dados }: { dados: Record<string, unknown> }) {
     );
     if (chaves.length === 0) {
       return (
-        <p className="text-xs text-texto-3 italic">Sem alteração de valores.</p>
+        <p style={{ fontSize: 12, color: "#8695A0", fontStyle: "italic" }}>
+          Sem alteração de valores.
+        </p>
       );
     }
     return (

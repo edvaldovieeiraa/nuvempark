@@ -1,6 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import {
+  useActionState,
+  useEffect,
+  useState,
+  useTransition,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -97,25 +104,56 @@ export function TarifasClient({
 
   const toastRef = useToast();
 
+  // KPIs derivados dos dados reais. A tarifa "primária" é a primeira da ordem
+  // (a que o app deixa pré-selecionada), então a base/hora vem dela.
+  const primaria = ordem[0] ?? null;
+  const tetoMax = ordem.reduce((m, t) => Math.max(m, t.teto_diaria), 0);
+  const traco = "—";
+
   return (
-    // max-w-3xl (não 2xl como Tipos): a linha de preços é mais longa que um
-    // nome de tipo, e quebrá-la anularia a leitura rápida da tarifa.
-    <div className="space-y-6 max-w-3xl">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex items-end justify-between flex-wrap gap-3"
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
       >
         <div>
-          <h1 className="text-[26px] font-black tracking-tight">Tarifas</h1>
-          <p className="text-sm text-texto-2">
-            <b className="text-texto">{patioNome}</b> · as tabelas de preço que o
-            app usa na cobrança. <b>A ordem importa</b>: o app deixa a primeira
-            já selecionada.
-          </p>
+          {/* /painel/cadastros não existe: mantém o estilo do back link sem alvo. */}
+          <span
+            style={{
+              fontSize: 12,
+              color: "#6B7280",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            ‹ Cadastros
+          </span>
+          <h2
+            style={{
+              margin: "2px 0 0",
+              fontSize: 23,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Tarifas
+          </h2>
+          <div style={{ marginTop: 3, fontSize: 13, color: "#6B7280" }}>
+            <b style={{ color: "#1F2937" }}>{patioNome}</b> · {tarifas.length}{" "}
+            {tarifas.length === 1 ? "tabela ativa" : "tabelas ativas"}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {sujo && (
             <Botao carregando={salvandoOrdem} onClick={salvarOrdem} type="button">
               <Save className="w-4 h-4" />
@@ -124,122 +162,272 @@ export function TarifasClient({
           )}
           <Link
             href={`/painel/tarifas/nova?patio=${patioId}`}
-            className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-sm shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              height: 40,
+              padding: "0 16px",
+              borderRadius: 11,
+              border: "none",
+              background: "linear-gradient(90deg,#16A34A,#22C55E)",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#fff",
+              boxShadow: "0 8px 22px -8px rgba(22,163,74,.5)",
+            }}
           >
-            <Plus className="w-4 h-4" />
-            Nova tarifa
+            <Plus style={{ width: 15, height: 15 }} />
+            Nova tabela
           </Link>
         </div>
       </motion.header>
 
-      {/* Lista */}
+      {/* KPIs */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.05 }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3,1fr)",
+          gap: 12,
+        }}
+      >
+        <KpiCard
+          rotulo="Tarifa base / hora"
+          valor={primaria ? moeda.format(primaria.fracao_inicial_valor) : traco}
+          cor="#16A34A"
+        />
+        <KpiCard
+          rotulo="Diária máxima"
+          valor={tetoMax > 0 ? moeda.format(tetoMax) : traco}
+        />
+        <KpiCard
+          rotulo="Tolerância"
+          valor={primaria ? `${primaria.tolerancia_minutos} min` : traco}
+        />
+      </motion.div>
+
+      {/* Tabela */}
       <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.08 }}
-        className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden"
+        style={{
+          borderRadius: 16,
+          background: "#fff",
+          border: "1px solid #E4E8EC",
+          boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+          overflow: "hidden",
+        }}
       >
         {tarifas.length === 0 ? (
-          <div className="px-5 py-12 flex flex-col items-center gap-3 text-center">
+          <div
+            style={{
+              padding: "48px 20px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 12,
+              textAlign: "center",
+            }}
+          >
             <span className="w-12 h-12 rounded-2xl bg-brand-50 grid place-items-center">
               <CircleDollarSign className="w-6 h-6 text-brand-600" />
             </span>
-            <p className="text-sm text-texto-3">
+            <p style={{ fontSize: 13, color: "#8695A0" }}>
               Nenhuma tarifa neste pátio ainda.
             </p>
             <Link
               href={`/painel/tarifas/nova?patio=${patioId}`}
-              className="text-sm font-bold text-brand-700 hover:underline"
+              style={{ fontSize: 13, fontWeight: 700, color: "#16A34A" }}
             >
               Criar a primeira tarifa
             </Link>
           </div>
         ) : (
-          <ul className="divide-y divide-borda">
-            <AnimatePresence initial={false}>
-              {ordem.map((t, i) => (
-                <motion.li
-                  key={t.id}
-                  layout
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="px-4 py-3 flex items-center gap-3"
-                >
-                  <span className="w-9 h-9 rounded-xl bg-brand-50 grid place-items-center shrink-0">
-                    <CircleDollarSign className="w-4 h-4 text-brand-600" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm flex items-center gap-2 flex-wrap">
-                      {t.nome}
-                      {i === 0 && (
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}
+            >
+              <thead>
+                <tr style={{ textAlign: "left", background: "#FAFBFC" }}>
+                  <Th>Tabela</Th>
+                  <Th>Tipo</Th>
+                  <Th right>1ª hora</Th>
+                  <Th right>Hora adic.</Th>
+                  <Th right>Diária</Th>
+                  <Th>Status</Th>
+                  <Th right>Ações</Th>
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence initial={false}>
+                  {ordem.map((t, i) => (
+                    <motion.tr
+                      key={t.id}
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      style={{
+                        borderTop: "1px solid #EEF1F3",
+                        background: i % 2 === 1 ? "#FAFBFC" : undefined,
+                      }}
+                    >
+                      <td style={{ padding: "12px 18px", fontWeight: 700 }}>
                         <span
-                          className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-brand-700 bg-brand-50 border border-brand-200 rounded-full px-2 py-0.5"
-                          title="Já vem selecionada no app do operador"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            flexWrap: "wrap",
+                          }}
                         >
-                          <Star className="w-3 h-3" />
-                          padrão no app
+                          {t.nome}
+                          {i === 0 && (
+                            <span
+                              title="Já vem selecionada no app do operador"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                fontSize: 10,
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: ".04em",
+                                color: "#16A34A",
+                                background: "#DCFCE7",
+                                border: "1px solid #BBF7D0",
+                                borderRadius: 999,
+                                padding: "2px 8px",
+                              }}
+                            >
+                              <Star style={{ width: 11, height: 11 }} />
+                              padrão no app
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </p>
-                    <p className="text-[11px] text-texto-3 tabular-nums">
-                      <span className="font-bold text-info">
+                      </td>
+                      <td style={{ padding: "12px 12px", color: "#6B7280" }}>
                         {nomeAmigavel(t.tipo_veiculo)}
-                      </span>
-                      {" · "}
-                      {moeda.format(t.fracao_inicial_valor)}/
-                      {t.fracao_inicial_minutos}min
-                      {" · "}+{moeda.format(t.fracao_adicional_valor)}/
-                      {t.fracao_adicional_minutos}min
-                      {" · "}
-                      {t.teto_diaria > 0
-                        ? `diária ${moeda.format(t.teto_diaria)}`
-                        : "sem teto"}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setSimulando(t)}
-                    aria-label={`Simular cobrança da tarifa ${t.nome}`}
-                    title="Simular cobrança"
-                    className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors"
-                  >
-                    <Calculator className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setEditando(t)}
-                    aria-label={`Editar tarifa ${t.nome}`}
-                    className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => mover(i, -1)}
-                    disabled={i === 0}
-                    aria-label={`Subir ${t.nome}`}
-                    className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors disabled:opacity-25 disabled:pointer-events-none"
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => mover(i, 1)}
-                    disabled={i === ordem.length - 1}
-                    aria-label={`Descer ${t.nome}`}
-                    className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors disabled:opacity-25 disabled:pointer-events-none"
-                  >
-                    <ArrowDown className="w-4 h-4" />
-                  </button>
-                  <BotaoDesativar tarifa={t} />
-                </motion.li>
-              ))}
-            </AnimatePresence>
-          </ul>
+                      </td>
+                      <td
+                        className="mono"
+                        style={{
+                          padding: "12px 12px",
+                          textAlign: "right",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {t.fracao_inicial_valor > 0
+                          ? moeda.format(t.fracao_inicial_valor)
+                          : traco}
+                      </td>
+                      <td
+                        className="mono"
+                        style={{
+                          padding: "12px 12px",
+                          textAlign: "right",
+                          color: "#6B7280",
+                        }}
+                      >
+                        {t.fracao_adicional_valor > 0
+                          ? moeda.format(t.fracao_adicional_valor)
+                          : traco}
+                      </td>
+                      <td
+                        className="mono"
+                        style={{
+                          padding: "12px 12px",
+                          textAlign: "right",
+                          color: "#6B7280",
+                        }}
+                      >
+                        {t.teto_diaria > 0 ? moeda.format(t.teto_diaria) : traco}
+                      </td>
+                      <td style={{ padding: "12px 18px" }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "3px 10px",
+                            borderRadius: 999,
+                            background: "#DCFCE7",
+                            color: "#16A34A",
+                            border: "1px solid #BBF7D0",
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: 999,
+                              background: "#22C55E",
+                            }}
+                          />
+                          ativa
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px 12px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            gap: 2,
+                          }}
+                        >
+                          <AcaoBtn
+                            onClick={() => setSimulando(t)}
+                            aria-label={`Simular cobrança da tarifa ${t.nome}`}
+                            title="Simular cobrança"
+                          >
+                            <Calculator className="w-4 h-4" />
+                          </AcaoBtn>
+                          <AcaoBtn
+                            onClick={() => setEditando(t)}
+                            aria-label={`Editar tarifa ${t.nome}`}
+                            title="Editar"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </AcaoBtn>
+                          <AcaoBtn
+                            onClick={() => mover(i, -1)}
+                            disabled={i === 0}
+                            aria-label={`Subir ${t.nome}`}
+                            title="Subir"
+                          >
+                            <ArrowUp className="w-4 h-4" />
+                          </AcaoBtn>
+                          <AcaoBtn
+                            onClick={() => mover(i, 1)}
+                            disabled={i === ordem.length - 1}
+                            aria-label={`Descer ${t.nome}`}
+                            title="Descer"
+                          >
+                            <ArrowDown className="w-4 h-4" />
+                          </AcaoBtn>
+                          <BotaoDesativar tarifa={t} />
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
         )}
       </motion.section>
 
       {ordem.length > 0 && (
-        <p className="text-xs text-texto-3">
-          Lembre de <b>salvar</b> depois de mexer na ordem. As mudanças chegam ao
-          app na próxima sincronização.
+        <p style={{ fontSize: 12, color: "#8695A0" }}>
+          A ordem importa: o app deixa a primeira tabela já selecionada. Lembre
+          de <b style={{ color: "#6B7280" }}>salvar</b> depois de mexer na ordem
+          — as mudanças chegam ao app na próxima sincronização.
         </p>
       )}
 
@@ -261,6 +449,89 @@ export function TarifasClient({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function KpiCard({
+  rotulo,
+  valor,
+  cor,
+}: {
+  rotulo: string;
+  valor: string;
+  cor?: string;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 14,
+        padding: "15px 16px",
+        background: "#fff",
+        border: "1px solid #E4E8EC",
+        boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: ".06em",
+          textTransform: "uppercase",
+          color: "#8695A0",
+        }}
+      >
+        {rotulo}
+      </div>
+      <div
+        style={{
+          marginTop: 7,
+          fontSize: 22,
+          fontWeight: 700,
+          fontVariantNumeric: "tabular-nums",
+          color: cor,
+        }}
+      >
+        {valor}
+      </div>
+    </div>
+  );
+}
+
+function Th({
+  children,
+  right,
+}: {
+  children: ReactNode;
+  right?: boolean;
+}) {
+  return (
+    <th
+      style={{
+        padding: right ? "11px 12px" : "11px 18px",
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: ".06em",
+        textTransform: "uppercase",
+        color: "#8695A0",
+        textAlign: right ? "right" : "left",
+      }}
+    >
+      {children}
+    </th>
+  );
+}
+
+function AcaoBtn({
+  children,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      {...props}
+      className="w-8 h-8 rounded-lg grid place-items-center text-[#8695A0] hover:text-[#16A34A] hover:bg-[#F1F4F6] transition-colors disabled:opacity-25 disabled:pointer-events-none"
+    >
+      {children}
+    </button>
   );
 }
 
@@ -468,7 +739,8 @@ function BotaoDesativar({ tarifa }: { tarifa: Tarifa }) {
         <button
           onClick={abrir}
           aria-label={`Desativar tarifa ${tarifa.nome}`}
-          className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-perigo hover:bg-perigo-bg transition-colors"
+          title="Desativar"
+          className="w-8 h-8 rounded-lg grid place-items-center text-[#8695A0] hover:text-perigo hover:bg-perigo-bg transition-colors"
         >
           <Trash2 className="w-4 h-4" />
         </button>

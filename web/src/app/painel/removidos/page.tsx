@@ -2,13 +2,20 @@ import { createClient } from "@/lib/supabase/server";
 import { formatarDataHora } from "@/lib/format-data";
 import { labelTicketStatus } from "@/lib/status-labels";
 import { resolverPatio } from "@/lib/patio-scope";
-import { Revelar } from "@/components/ui/revelar";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { SemPatio } from "@/components/sem-patio";
 import { RemovidosFiltros } from "@/components/removidos/removidos-filtros";
-import { Ban, BrushCleaning } from "lucide-react";
+import { Ban } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+const TH_BASE: React.CSSProperties = {
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: ".06em",
+  textTransform: "uppercase",
+  color: "#8695A0",
+};
 
 export default async function RemovidosPage({
   searchParams,
@@ -42,18 +49,19 @@ export default async function RemovidosPage({
   const filtrando = Boolean(q || di || df);
 
   return (
-    <div className="space-y-5 max-w-6xl">
-      <Revelar>
-        <h1 className="text-[26px] font-black tracking-tight">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* ── Cabeçalho ── */}
+      <div>
+        <h2 style={{ margin: 0, fontSize: 23, fontWeight: 700, letterSpacing: "-.02em" }}>
           Tickets removidos
-        </h1>
-        <p className="text-sm text-texto-2">
-          <b className="text-texto">{patioNome}</b> · cancelados pelo operador ou
-          removidos em massa (Limpeza de Pátio) · {count ?? 0}
+        </h2>
+        <div style={{ marginTop: 3, fontSize: 13, color: "#6B7280" }}>
+          <b style={{ color: "#1F2937" }}>{patioNome}</b> · cancelados pelo
+          operador ou removidos em massa (Limpeza de Pátio) · {count ?? 0}
           {filtrando ? " no filtro" : " no total"}
           {(count ?? 0) > 100 && " · mostrando os 100 mais recentes"}
-        </p>
-      </Revelar>
+        </div>
+      </div>
 
       <RemovidosFiltros
         patioId={patioId}
@@ -62,97 +70,166 @@ export default async function RemovidosPage({
         df={df ?? ""}
       />
 
-      <Revelar atraso={0.08}>
-        <section className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden">
-          {lista.length === 0 ? (
-            <div className="px-5 py-14 flex flex-col items-center gap-3 text-center">
-              <span className="w-12 h-12 rounded-2xl bg-fundo grid place-items-center">
-                <Ban className="w-6 h-6 text-texto-3" />
-              </span>
-              <p className="text-sm text-texto-3 max-w-[340px]">
-                {filtrando
-                  ? "Nenhum ticket removido com esses filtros."
-                  : "Nenhum ticket cancelado ou removido — bom sinal: cancelamentos frequentes merecem atenção."}
-              </p>
-            </div>
-          ) : (
-            <ResponsiveTable>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
-                    <th className="px-5 py-3 font-bold">Placa</th>
-                    <th className="px-5 py-3 font-bold hidden md:table-cell">
-                      Entrada
-                    </th>
-                    <th className="px-5 py-3 font-bold">Removido em</th>
-                    <th className="px-5 py-3 font-bold hidden md:table-cell">
-                      Por
-                    </th>
-                    <th className="px-5 py-3 font-bold">Motivo</th>
-                    <th className="px-5 py-3 font-bold">Origem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lista.map((t) => {
-                    const viaLimpeza = Boolean(t.remocao_motivo);
-                    return (
-                      <tr
-                        key={t.id}
-                        className="border-t border-borda hover:bg-brand-50/40 transition-colors align-top"
+      {/* ── Tabela ── */}
+      <div
+        style={{
+          borderRadius: 16,
+          background: "#fff",
+          border: "1px solid #E4E8EC",
+          boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+          overflow: "hidden",
+        }}
+      >
+        {lista.length === 0 ? (
+          <div
+            className="flex flex-col items-center text-center"
+            style={{ gap: 12, padding: "56px 24px" }}
+          >
+            <span
+              className="grid place-items-center"
+              style={{ width: 48, height: 48, borderRadius: 16, background: "#F1F4F6" }}
+            >
+              <Ban className="w-6 h-6" style={{ color: "#9AA6B0" }} />
+            </span>
+            <p style={{ fontSize: 13, color: "#8695A0", maxWidth: 340 }}>
+              {filtrando
+                ? "Nenhum ticket removido com esses filtros."
+                : "Nenhum ticket cancelado ou removido — bom sinal: cancelamentos frequentes merecem atenção."}
+            </p>
+          </div>
+        ) : (
+          <ResponsiveTable>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ textAlign: "left", background: "#FAFBFC" }}>
+                  <th style={{ ...TH_BASE, padding: "11px 18px" }}>Placa</th>
+                  <th style={{ ...TH_BASE, padding: "11px 12px" }}>Entrada</th>
+                  <th style={{ ...TH_BASE, padding: "11px 12px" }}>Removido em</th>
+                  <th style={{ ...TH_BASE, padding: "11px 12px" }}>Por</th>
+                  <th style={{ ...TH_BASE, padding: "11px 12px" }}>Motivo</th>
+                  <th style={{ ...TH_BASE, padding: "11px 18px" }}>Origem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.map((t, i) => {
+                  const viaLimpeza = Boolean(t.remocao_motivo);
+                  const zebra = i % 2 === 1 ? "#FAFBFC" : undefined;
+                  return (
+                    <tr
+                      key={t.id}
+                      style={{
+                        borderTop: "1px solid #EEF1F3",
+                        verticalAlign: "top",
+                        background: zebra,
+                      }}
+                    >
+                      <td style={{ padding: "12px 18px" }}>
+                        <span
+                          className="mono"
+                          style={{
+                            fontWeight: 700,
+                            letterSpacing: ".1em",
+                            background: "#F1F4F6",
+                            border: "1px solid #E4E8EC",
+                            borderRadius: 6,
+                            padding: "3px 8px",
+                          }}
+                        >
+                          {t.placa}
+                        </span>
+                        <span
+                          style={{
+                            display: "block",
+                            fontSize: 11,
+                            color: "#8695A0",
+                            marginTop: 4,
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {t.tipo_veiculo}
+                        </span>
+                      </td>
+                      <td
+                        className="mono"
+                        style={{ padding: "12px 12px", color: "#6B7280", whiteSpace: "nowrap" }}
                       >
-                        <td className="px-5 py-3">
-                          <span className="font-black tracking-widest text-[13px] bg-fundo border border-borda rounded-md px-2 py-1">
-                            {t.placa}
+                        {formatarDataHora(t.entrada)}
+                      </td>
+                      <td
+                        className="mono"
+                        style={{ padding: "12px 12px", color: "#6B7280", whiteSpace: "nowrap" }}
+                      >
+                        {formatarDataHora(t.removido_em)}
+                      </td>
+                      <td style={{ padding: "12px 12px", color: "#6B7280" }}>
+                        <span style={{ display: "block" }}>
+                          {t.removido_por_nome ?? t.removido_por_email ?? "—"}
+                        </span>
+                        {t.removido_por_email && t.removido_por_nome && (
+                          <span
+                            style={{ display: "block", fontSize: 11, color: "#8695A0", marginTop: 2 }}
+                          >
+                            {t.removido_por_email}
                           </span>
-                          <span className="block text-[11px] text-texto-3 mt-1 capitalize">
-                            {t.tipo_veiculo}
+                        )}
+                      </td>
+                      <td style={{ padding: "12px 12px", color: "#6B7280", maxWidth: 240 }}>
+                        {t.remocao_motivo ?? "—"}
+                      </td>
+                      <td style={{ padding: "12px 18px", whiteSpace: "nowrap" }}>
+                        {viaLimpeza ? (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              padding: "3px 10px",
+                              borderRadius: 999,
+                              background: "#FEF1F1",
+                              color: "#E11D48",
+                              border: "1px solid #FBD0D0",
+                            }}
+                          >
+                            limpeza
                           </span>
-                        </td>
-                        <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap hidden md:table-cell">
-                          {formatarDataHora(t.entrada)}
-                        </td>
-                        <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
-                          {formatarDataHora(t.removido_em)}
-                        </td>
-                        <td className="px-5 py-3 text-texto-2 hidden md:table-cell">
-                          <span className="block">
-                            {t.removido_por_nome ?? t.removido_por_email ?? "—"}
+                        ) : (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              padding: "3px 10px",
+                              borderRadius: 999,
+                              background: "#F1F4F6",
+                              color: "#6B7280",
+                              border: "1px solid #E4E8EC",
+                              textTransform: "lowercase",
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: 999,
+                                background: "#8695A0",
+                              }}
+                            />
+                            {labelTicketStatus(t.status)}
                           </span>
-                          {t.removido_por_email && t.removido_por_nome && (
-                            <span className="block text-[11px] text-texto-3 mt-0.5">
-                              {t.removido_por_email}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3 text-texto-2 max-w-[260px]">
-                          {t.remocao_motivo ? (
-                            <span className="line-clamp-2">{t.remocao_motivo}</span>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td className="px-5 py-3 whitespace-nowrap">
-                          {viaLimpeza ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border bg-perigo-bg text-perigo border-perigo/20">
-                              <BrushCleaning className="w-3.5 h-3.5" />
-                              limpeza
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border bg-fundo text-texto-2 border-borda">
-                              <span className="w-1.5 h-1.5 rounded-full bg-texto-3" />
-                              {labelTicketStatus(t.status)}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </ResponsiveTable>
-          )}
-        </section>
-      </Revelar>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </ResponsiveTable>
+        )}
+      </div>
     </div>
   );
 }

@@ -51,7 +51,18 @@ export function LimpezaPatio({
     <>
       <button
         onClick={abrir}
-        className="inline-flex items-center gap-2 h-11 px-4 rounded-xl font-bold text-sm text-perigo bg-perigo-bg border border-perigo/25 hover:bg-perigo hover:text-white transition-colors"
+        className="inline-flex items-center gap-2 transition-colors hover:border-perigo/40 hover:text-perigo"
+        style={{
+          height: 38,
+          padding: "0 14px",
+          borderRadius: 11,
+          border: "1px solid #E4E8EC",
+          background: "#fff",
+          fontSize: 13,
+          fontWeight: 700,
+          color: "#6B7280",
+          cursor: "pointer",
+        }}
       >
         <BrushCleaning className="w-4 h-4" />
         Limpeza de Pátio

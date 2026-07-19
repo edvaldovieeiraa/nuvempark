@@ -52,21 +52,27 @@ export function PatiosClient({
   const configDe = (id: string) => configs.find((c) => c.patio_id === id);
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <motion.header
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <h1 className="text-[26px] font-black tracking-tight">Pátios</h1>
-        <p className="text-sm text-texto-2">
+        <h2 style={{ margin: 0, fontSize: 23 }}>Pátios</h2>
+        <div style={{ marginTop: 3, fontSize: 13, color: "#6B7280" }}>
           As unidades da sua rede. Cada pátio tem tarifas, operadores e caixa
           próprios.
-        </p>
-      </motion.header>
+        </div>
+      </motion.div>
 
       {/* Cards de pátios */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 14,
+        }}
+      >
         <AnimatePresence initial={false}>
           {patios.map((p, i) => {
             const ocupadas = abertosPorPatio[p.id] ?? 0;
@@ -74,6 +80,7 @@ export function PatiosClient({
               p.qtd_vagas > 0
                 ? Math.min(100, (ocupadas / p.qtd_vagas) * 100)
                 : 0;
+            const cheio = pct >= 90;
             return (
               <motion.div
                 key={p.id}
@@ -81,75 +88,142 @@ export function PatiosClient({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 whileHover={{ y: -3 }}
-                className={`relative rounded-2xl bg-superficie border border-borda shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] p-5 transition-shadow ${
-                  p.ativo ? "" : "opacity-60"
-                }`}
+                style={{
+                  background: "#fff",
+                  border: "1px solid #E4E8EC",
+                  borderRadius: 16,
+                  boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+                  padding: 18,
+                  opacity: p.ativo ? 1 : 0.6,
+                }}
               >
-                <div className="flex items-start justify-between">
-                  <span className="w-10 h-10 rounded-xl bg-brand-50 grid place-items-center">
-                    <ParkingSquare className="w-5 h-5 text-brand-600" />
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 11,
+                      background: "#DCFCE7",
+                      color: "#16A34A",
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                  >
+                    <ParkingSquare style={{ width: 20, height: 20 }} />
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                      p.ativo
-                        ? "bg-brand-50 text-brand-700 border-brand-200"
-                        : "bg-perigo-bg text-perigo border-perigo/20"
-                    }`}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "3px 9px",
+                      borderRadius: 999,
+                      ...(p.ativo
+                        ? {
+                            background: "#DCFCE7",
+                            color: "#16A34A",
+                            border: "1px solid #BBF7D0",
+                          }
+                        : {
+                            background: "#F1F4F6",
+                            color: "#8695A0",
+                            border: "1px solid #E4E8EC",
+                          }),
+                    }}
                   >
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${p.ativo ? "bg-brand-500" : "bg-perigo"}`}
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: 999,
+                        background: p.ativo ? "#22C55E" : "#8695A0",
+                      }}
                     />
                     {p.ativo ? "ativo" : "inativo"}
                   </span>
                 </div>
-                <h3 className="mt-3 font-extrabold text-lg leading-tight">
+
+                <h3
+                  style={{ margin: "12px 0 0", fontSize: 17, fontWeight: 800 }}
+                >
                   {p.nome}
                 </h3>
-                <div className="mt-1.5 flex items-center gap-2">
+
+                <div style={{ marginTop: 8 }}>
                   <CodigoAcesso codigo={p.codigo_acesso} />
-                  {p.codigo && (
-                    <span className="text-xs text-texto-3 font-mono">
-                      {p.codigo}
-                    </span>
-                  )}
                 </div>
 
-                <div className="mt-4">
-                  <div className="flex justify-between text-xs font-semibold text-texto-2 mb-1">
+                <div style={{ marginTop: 16 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#6B7280",
+                      marginBottom: 6,
+                    }}
+                  >
                     <span>Ocupação agora</span>
-                    <span className="tabular-nums">
+                    <span className="mono">
                       {ocupadas}
                       {p.qtd_vagas > 0 && ` / ${p.qtd_vagas}`}
                     </span>
                   </div>
-                  <div className="h-2 rounded-full bg-fundo overflow-hidden">
+                  <div
+                    style={{
+                      height: 8,
+                      borderRadius: 999,
+                      background: "#F1F4F6",
+                      overflow: "hidden",
+                    }}
+                  >
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${pct}%` }}
                       transition={{ duration: 0.8, delay: 0.2 + i * 0.06 }}
-                      className={`h-full rounded-full ${
-                        pct >= 90
-                          ? "bg-gradient-to-r from-saida to-perigo"
-                          : "bg-gradient-to-r from-brand-500 to-acento-teal"
-                      }`}
+                      style={{
+                        height: "100%",
+                        borderRadius: 999,
+                        background: cheio
+                          ? "linear-gradient(90deg,#F97316,#E11D48)"
+                          : "linear-gradient(90deg,#16A34A,#22C55E)",
+                      }}
                     />
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-borda flex items-center gap-1">
+                <div
+                  style={{
+                    marginTop: 16,
+                    paddingTop: 12,
+                    borderTop: "1px solid #EEF1F3",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
                   <AcaoIcone
                     rotulo="Editar pátio"
                     onClick={() => setEditando(p)}
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Pencil style={{ width: 15, height: 15 }} />
                   </AcaoIcone>
                   <AcaoIcone
                     rotulo="Cupom impresso"
                     onClick={() => setCupomDe(p)}
                   >
-                    <Receipt className="w-4 h-4" />
+                    <Receipt style={{ width: 15, height: 15 }} />
                   </AcaoIcone>
-                  <span className="flex-1" />
+                  <span style={{ flex: 1 }} />
                   <BotaoAtivo patio={p} />
                 </div>
               </motion.div>
@@ -182,7 +256,7 @@ function CodigoAcesso({ codigo }: { codigo: string | null }) {
   const toast = useToast();
   if (!codigo) {
     return (
-      <span className="text-[11px] font-semibold text-texto-3">
+      <span style={{ fontSize: 11, fontWeight: 600, color: "#8695A0" }}>
         código pendente
       </span>
     );
@@ -194,10 +268,23 @@ function CodigoAcesso({ codigo }: { codigo: string | null }) {
         toast.sucesso("Copiado!", `Código de acesso do app: ${codigo}`);
       }}
       title="Código que o operador digita no app — clique para copiar"
-      className="inline-flex items-center gap-1.5 font-mono font-black tracking-[0.25em] text-xs text-brand-700 bg-brand-50 border border-brand-200 rounded-lg px-2 py-1 hover:bg-brand-100 transition-colors"
+      className="mono hover:brightness-95 transition"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 12,
+        fontWeight: 700,
+        letterSpacing: ".22em",
+        color: "#16A34A",
+        background: "#DCFCE7",
+        border: "1px solid #BBF7D0",
+        borderRadius: 9,
+        padding: "4px 9px",
+      }}
     >
       {codigo}
-      <Copy className="w-3 h-3" />
+      <Copy style={{ width: 12, height: 12 }} />
     </button>
   );
 }
@@ -216,7 +303,8 @@ function AcaoIcone({
       onClick={onClick}
       aria-label={rotulo}
       title={rotulo}
-      className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors"
+      className="grid place-items-center rounded-[9px] text-[#8695A0] hover:text-[#16A34A] hover:bg-[#F1F4F6] transition-colors"
+      style={{ width: 30, height: 30 }}
     >
       {children}
     </button>
@@ -245,9 +333,11 @@ function BotaoAtivo({ patio }: { patio: Patio }) {
           <button
             onClick={abrir}
             aria-label={`Desativar ${patio.nome}`}
-            className="w-8 h-8 rounded-lg grid place-items-center text-texto-3 hover:text-perigo hover:bg-perigo-bg transition-colors"
+            title="Desativar pátio"
+            className="grid place-items-center rounded-[9px] text-[#8695A0] hover:text-[#E11D48] hover:bg-[#FEF2F2] transition-colors"
+            style={{ width: 30, height: 30 }}
           >
-            <Power className="w-4 h-4" />
+            <Power style={{ width: 15, height: 15 }} />
           </button>
         )}
       </Confirmar>
@@ -257,14 +347,23 @@ function BotaoAtivo({ patio }: { patio: Patio }) {
     <button
       onClick={() => comecar(executar)}
       disabled={pendente}
-      className="text-xs font-bold text-brand-700 bg-brand-50 border border-brand-200 rounded-lg px-3 py-1.5 hover:bg-brand-100 transition-colors disabled:opacity-60"
+      className="hover:brightness-95 transition disabled:opacity-60"
+      style={{
+        fontSize: 11,
+        fontWeight: 700,
+        color: "#16A34A",
+        background: "#DCFCE7",
+        border: "1px solid #BBF7D0",
+        borderRadius: 9,
+        padding: "6px 12px",
+      }}
     >
       reativar
     </button>
   );
 }
 
-/* ---------- Novo pátio (card + form embutido) ---------- */
+/* ---------- Novo pátio (card + link) ---------- */
 
 function NovoPatioCard() {
   return (
@@ -275,11 +374,37 @@ function NovoPatioCard() {
     >
       <Link
         href="/painel/patios/novo"
-        className="min-h-[220px] h-full rounded-2xl border-2 border-dashed border-borda hover:border-brand-300 hover:bg-brand-50/40 transition-colors grid place-items-center text-texto-3 hover:text-brand-700"
+        className="border-2 border-dashed border-[#D5DBE1] text-[#8695A0] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"
+        style={{
+          minHeight: 220,
+          height: "100%",
+          borderRadius: 16,
+          display: "grid",
+          placeItems: "center",
+          textDecoration: "none",
+        }}
       >
-        <span className="flex flex-col items-center gap-2 font-bold text-sm">
-          <span className="w-10 h-10 rounded-xl bg-fundo grid place-items-center">
-            <Plus className="w-5 h-5" />
+        <span
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 9,
+            fontSize: 13,
+            fontWeight: 700,
+          }}
+        >
+          <span
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 11,
+              background: "#F1F4F6",
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            <Plus style={{ width: 20, height: 20 }} />
           </span>
           Novo pátio
         </span>
@@ -288,7 +413,7 @@ function NovoPatioCard() {
   );
 }
 
-/* ---------- Modal editar ---------- */
+/* ---------- Modal base ---------- */
 
 function ModalBase({
   titulo,
@@ -304,7 +429,8 @@ function ModalBase({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[90] grid place-items-center p-4 bg-noite/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[90] grid place-items-center p-4"
+      style={{ background: "rgba(16,27,20,.5)", backdropFilter: "blur(4px)" }}
       onClick={fechar}
     >
       <motion.div
@@ -313,14 +439,20 @@ function ModalBase({
         exit={{ opacity: 0, scale: 0.94, y: 16 }}
         transition={{ type: "spring", stiffness: 380, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl bg-superficie shadow-[var(--shadow-pop)] p-6 max-h-[85dvh] overflow-y-auto"
+        className="w-full max-w-md p-6 max-h-[85dvh] overflow-y-auto"
+        style={{
+          background: "#fff",
+          border: "1px solid #E4E8EC",
+          borderRadius: 16,
+          boxShadow: "0 24px 60px -12px rgba(16,27,20,.28)",
+        }}
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-extrabold">{titulo}</h3>
           <button
             onClick={fechar}
             aria-label="Fechar"
-            className="toque-44 text-texto-3 hover:text-texto"
+            className="toque-44 text-[#8695A0] hover:text-[#1F2937]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -330,6 +462,8 @@ function ModalBase({
     </motion.div>
   );
 }
+
+/* ---------- Modal editar ---------- */
 
 function ModalEditar({ patio, fechar }: { patio: Patio; fechar: () => void }) {
   const toast = useToast();
@@ -399,13 +533,13 @@ function ModalCupom({
   }, [estado, toast, fechar]);
 
   const areaCls =
-    "w-full px-3.5 py-2.5 rounded-xl border border-borda bg-superficie text-sm " +
-    "font-mono placeholder:text-texto-3 focus:outline-none focus:border-brand-400 " +
-    "focus:ring-4 focus:ring-brand-500/15 resize-none";
+    "mono w-full px-3.5 py-2.5 rounded-xl border border-[#E4E8EC] bg-[#FAFBFC] text-sm " +
+    "placeholder:text-[#8695A0] focus:outline-none focus:border-[#16A34A] " +
+    "focus:ring-4 focus:ring-[#16A34A]/15 resize-none";
 
   return (
     <ModalBase titulo={`Cupom · ${patio.nome}`} fechar={fechar}>
-      <p className="text-xs text-texto-2 -mt-2 mb-4">
+      <p className="text-xs -mt-2 mb-4" style={{ color: "#6B7280" }}>
         Texto impresso no ticket da impressora térmica. Até 4 linhas de 48
         caracteres cada.
       </p>

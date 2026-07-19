@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { resolverPatio } from "@/lib/patio-scope";
-import { CabecalhoCadastro } from "@/components/painel/cabecalho-cadastro";
 import { PlanosClient } from "@/components/mensalistas/planos-client";
 import { SemPatio } from "@/components/sem-patio";
 
@@ -38,19 +37,12 @@ export default async function PlanosPage({
   }
 
   return (
-    <div className="space-y-6">
-      <CabecalhoCadastro
-        voltarHref={`/painel/mensalistas?patio=${patioId}`}
-        voltarLabel="Mensalistas"
-        titulo="Planos"
-        descricao={`${patioNome} · as categorias de livre passagem que aparecem no app.`}
-      />
-      <PlanosClient
-        patioId={patioId}
-        patioNome={patioNome ?? ""}
-        planos={planos ?? []}
-        qtdClientesPorPlano={qtdClientesPorPlano}
-      />
-    </div>
+    <PlanosClient
+      patioId={patioId}
+      patioNome={patioNome ?? ""}
+      voltarHref={`/painel/mensalistas?patio=${patioId}`}
+      planos={planos ?? []}
+      qtdClientesPorPlano={qtdClientesPorPlano}
+    />
   );
 }

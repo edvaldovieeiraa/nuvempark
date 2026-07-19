@@ -6,9 +6,6 @@ import { ParkingSquare } from "lucide-react";
 
 import { FotoVeiculoModal } from "@/components/foto-veiculo/foto-veiculo-modal";
 import { FotoVeiculoThumb } from "@/components/foto-veiculo/foto-veiculo-thumb";
-import { Operador } from "@/components/operador";
-import { ResponsiveTable } from "@/components/ui/responsive-table";
-import { formatarDataHora } from "@/lib/format-data";
 
 type Veiculo = {
   id: string;
@@ -20,6 +17,31 @@ type Veiculo = {
   /** Quem registrou a entrada. */
   operador_id: string | null;
 };
+
+const horaFmt = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** Pílula de origem: app (verde), mensalista (violeta), manual (cinza). */
+function origemPill(origem: string): { rotulo: string; style: React.CSSProperties } {
+  if (origem === "plano") {
+    return {
+      rotulo: "mensalista",
+      style: { color: "#8B5CF6", background: "#F3EEFE", border: "1px solid #DDD0FB" },
+    };
+  }
+  if (origem === "app") {
+    return {
+      rotulo: "app",
+      style: { color: "#16A34A", background: "#DCFCE7", border: "1px solid #BBF7D0" },
+    };
+  }
+  return {
+    rotulo: "manual",
+    style: { color: "#6B7280", background: "#F1F4F6", border: "1px solid #E4E8EC" },
+  };
+}
 
 /**
  * Lista dos veículos no pátio. Clicar na linha (ou na miniatura) abre a foto de
@@ -41,12 +63,25 @@ export function PatioLista({
 
   if (veiculos.length === 0) {
     return (
-      <section className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden">
+      <section
+        style={{
+          background: "#fff",
+          border: "1px solid #E4E8EC",
+          borderRadius: 16,
+          boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+          overflow: "hidden",
+        }}
+      >
         <div className="px-5 py-14 flex flex-col items-center gap-3 text-center">
-          <span className="w-12 h-12 rounded-2xl bg-brand-50 grid place-items-center">
-            <ParkingSquare className="w-6 h-6 text-brand-600" />
+          <span
+            className="grid place-items-center"
+            style={{ width: 48, height: 48, borderRadius: 14, background: "#DCFCE7" }}
+          >
+            <ParkingSquare className="w-6 h-6" style={{ color: "#16A34A" }} />
           </span>
-          <p className="text-sm text-texto-3">Nenhum veículo no pátio agora.</p>
+          <p style={{ fontSize: 13, color: "#8695A0" }}>
+            Nenhum veículo no pátio agora.
+          </p>
         </div>
       </section>
     );
@@ -54,66 +89,98 @@ export function PatioLista({
 
   return (
     <>
-      <section className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden">
-        <ResponsiveTable>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
-                <th className="pl-5 pr-2 py-3 font-bold">
-                  <span className="sr-only">Foto</span>
-                </th>
-                <th className="px-5 py-3 font-bold">Placa</th>
-                <th className="px-5 py-3 font-bold">Tipo</th>
-                <th className="px-5 py-3 font-bold hidden md:table-cell">
-                  Entrada
-                </th>
-                <th className="px-5 py-3 font-bold hidden md:table-cell">
-                  Operador
-                </th>
-                <th className="px-5 py-3 font-bold">Permanência</th>
-              </tr>
-            </thead>
-            <tbody>
-              {veiculos.map((t) => (
-                <tr
-                  key={t.id}
-                  onClick={() => setDetalhe(t)}
-                  className="border-t border-borda hover:bg-brand-50/40 transition-colors cursor-pointer"
+      <section
+        style={{
+          background: "#fff",
+          border: "1px solid #E4E8EC",
+          borderRadius: 16,
+          boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+          overflow: "hidden",
+        }}
+      >
+        {veiculos.map((t, i) => {
+          const pill = origemPill(t.origem);
+          const operador = operadores[t.operador_id ?? ""];
+          const ultimo = i === veiculos.length - 1;
+          return (
+            <div
+              key={t.id}
+              onClick={() => setDetalhe(t)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "12px 16px",
+                borderBottom: ultimo ? "none" : "1px solid #EEF1F3",
+                background: i % 2 === 1 ? "#FAFBFC" : "#fff",
+                cursor: "pointer",
+              }}
+            >
+              <FotoVeiculoThumb
+                url={fotos[t.id]}
+                placa={t.placa}
+                aoClicar={() => setDetalhe(t)}
+              />
+              <span
+                className="mono"
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: ".1em",
+                  background: "#F1F4F6",
+                  border: "1px solid #E4E8EC",
+                  borderRadius: 6,
+                  padding: "3px 9px",
+                  flexShrink: 0,
+                }}
+              >
+                {t.placa}
+              </span>
+              <span
+                style={{ fontSize: 12, color: "#6B7280", textTransform: "capitalize" }}
+              >
+                {t.tipo_veiculo}
+              </span>
+              <span
+                className="mono hidden sm:inline"
+                style={{ fontSize: 12, color: "#8695A0", whiteSpace: "nowrap" }}
+              >
+                {horaFmt.format(new Date(t.entrada))} · há {permanencia(t.entrada)}
+              </span>
+              <div
+                style={{
+                  marginLeft: "auto",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  minWidth: 0,
+                }}
+              >
+                {operador && (
+                  <span
+                    className="hidden md:inline truncate"
+                    style={{ fontSize: 12, color: "#6B7280", maxWidth: 160 }}
+                  >
+                    {operador}
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    borderRadius: 999,
+                    padding: "3px 9px",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                    ...pill.style,
+                  }}
                 >
-                  <td className="pl-5 pr-2 py-3 w-[52px]">
-                    <FotoVeiculoThumb
-                      url={fotos[t.id]}
-                      placa={t.placa}
-                      aoClicar={() => setDetalhe(t)}
-                    />
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className="font-black tracking-widest text-[13px] bg-fundo border border-borda rounded-md px-2 py-1">
-                      {t.placa}
-                    </span>
-                    {t.origem === "plano" && (
-                      <span className="ml-2 text-[10px] font-bold text-info bg-info-bg rounded-full px-2 py-0.5">
-                        mensalista
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3 text-texto-2 capitalize">
-                    {t.tipo_veiculo}
-                  </td>
-                  <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap hidden md:table-cell">
-                    {formatarDataHora(t.entrada)}
-                  </td>
-                  <td className="px-5 py-3 text-texto-2 hidden md:table-cell">
-                    <Operador nome={operadores[t.operador_id ?? ""]} />
-                  </td>
-                  <td className="px-5 py-3 font-bold tabular-nums">
-                    {permanencia(t.entrada)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </ResponsiveTable>
+                  {pill.rotulo}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
       <AnimatePresence>

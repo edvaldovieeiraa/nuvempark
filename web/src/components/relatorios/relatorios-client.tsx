@@ -1,14 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
-import {
-  TrendingUp,
-  CalendarDays,
-  Trophy,
-  CreditCard,
-  Car,
-} from "lucide-react";
+import { Clock, Receipt } from "lucide-react";
 
 type Dia = { dia: string; rotulo: string; total: number; saidas: number };
 type PorForma = { forma: string; total: number };
@@ -19,144 +13,359 @@ const moeda = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
+const POPPINS = "'Poppins', sans-serif";
+
+// Tokens do protótipo.
+const CARD: CSSProperties = {
+  background: "#fff",
+  border: "1px solid #E4E8EC",
+  borderRadius: 16,
+  boxShadow: "0 4px 16px -4px rgba(16,27,20,.06)",
+};
+const KPI_LABEL: CSSProperties = {
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: ".06em",
+  textTransform: "uppercase",
+  color: "#8695A0",
+};
+const KPI_NUM: CSSProperties = {
+  marginTop: 7,
+  fontSize: 20,
+  fontFamily: POPPINS,
+  fontWeight: 700,
+  fontVariantNumeric: "tabular-nums",
+};
+const CARD_HEAD: CSSProperties = {
+  padding: "14px 18px",
+  borderBottom: "1px solid #E4E8EC",
+  fontSize: 13,
+  fontWeight: 700,
+};
+
+function diaSemana(iso: string): string {
+  const wd = new Date(`${iso}T12:00:00`)
+    .toLocaleDateString("pt-BR", { weekday: "short" })
+    .replace(".", "");
+  return wd.charAt(0).toUpperCase() + wd.slice(1);
+}
+
+function periodoRotulo(inicio: string, fim: string): string {
+  const fmt = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+    });
+  return `${fmt(inicio)} – ${fmt(fim)}`;
+}
+
 export function RelatoriosClient({
   patioNome,
   porDia,
-  porForma,
-  porVeiculo,
 }: {
   patioNome: string;
   porDia: Dia[];
   porForma: PorForma[];
   porVeiculo: PorVeiculo[];
 }) {
-  const [focado, setFocado] = useState<Dia | null>(null);
-
   const total30 = porDia.reduce((s, d) => s + d.total, 0);
   const saidas30 = porDia.reduce((s, d) => s + d.saidas, 0);
   const diasComMovimento = porDia.filter((d) => d.total > 0).length;
   const mediaDia = diasComMovimento > 0 ? total30 / diasComMovimento : 0;
-  const melhorDia = porDia.reduce(
-    (m, d) => (d.total > m.total ? d : m),
-    porDia[0],
-  );
+  const ticketMedio = saidas30 > 0 ? total30 / saidas30 : 0;
   const maxDia = Math.max(1, ...porDia.map((d) => d.total));
 
+  // Ranking real "Melhores dias": ordena por faturamento, só dias com movimento.
+  const melhoresDias = [...porDia]
+    .filter((d) => d.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+
+  // Geometria do gráfico de área+linha (mesmos dados, recolorido em verde).
+  const VB_W = 720;
+  const X0 = 24;
+  const X1 = 696;
+  const Y_TOP = 24;
+  const Y_BASE = 180;
+  const n = porDia.length;
+  const px = (i: number) => (n <= 1 ? X0 : X0 + (i * (X1 - X0)) / (n - 1));
+  const py = (v: number) => Y_BASE - (v / maxDia) * (Y_BASE - Y_TOP);
+  const pontos = porDia.map((d, i) => ({ x: px(i), y: py(d.total) }));
+  const linePath = pontos
+    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(" ");
+  const areaPath = pontos.length
+    ? `M${pontos[0].x.toFixed(1)},${Y_BASE} ` +
+      pontos.map((p) => `L${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ") +
+      ` L${pontos[pontos.length - 1].x.toFixed(1)},${Y_BASE} Z`
+    : "";
+  const dot = pontos[pontos.length - 1];
+
+  const eixoIdx = [0, 7, 14, 22, 29].filter((i) => i < n);
+
+  // Exporta o faturamento diário real (dado já carregado, sem inventar nada).
+  function exportarCsv() {
+    const linhas = [
+      ["Dia", "Faturamento", "Saidas"],
+      ...porDia.map((d) => [d.dia, d.total.toFixed(2), String(d.saidas)]),
+    ];
+    const csv = linhas.map((r) => r.join(";")).join("\n");
+    const blob = new Blob(["﻿" + csv], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-faturamento.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
-    <div className="space-y-6 max-w-6xl">
-      <motion.header
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Cabeçalho */}
+      <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
       >
-        <h1 className="text-[26px] font-black tracking-tight">Relatórios</h1>
-        <p className="text-sm text-texto-2">
-          <b className="text-texto">{patioNome}</b> · faturamento dos últimos 30
-          dias.
-        </p>
-      </motion.header>
+        <div>
+          <h2
+            style={{
+              margin: 0,
+              fontSize: 23,
+              fontFamily: POPPINS,
+              fontWeight: 700,
+              letterSpacing: "-.02em",
+            }}
+          >
+            Relatórios
+          </h2>
+          <div style={{ marginTop: 3, fontSize: 13, color: "#6B7280" }}>
+            <b style={{ color: "#1F2937" }}>{patioNome}</b>
+            {n > 0 && ` · ${periodoRotulo(porDia[0].dia, porDia[n - 1].dia)}`}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            title="Últimos 30 dias"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              height: 38,
+              padding: "0 13px",
+              borderRadius: 11,
+              border: "1px solid #E4E8EC",
+              background: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#6B7280",
+              cursor: "pointer",
+            }}
+          >
+            <Clock style={{ width: 15, height: 15 }} />
+            Período
+          </button>
+          <button
+            type="button"
+            onClick={exportarCsv}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              height: 38,
+              padding: "0 15px",
+              borderRadius: 11,
+              border: "none",
+              background: "linear-gradient(90deg,#16A34A,#22C55E)",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#fff",
+              cursor: "pointer",
+              boxShadow: "0 8px 22px -8px rgba(22,163,74,.5)",
+            }}
+          >
+            <Receipt style={{ width: 15, height: 15 }} />
+            Exportar
+          </button>
+        </div>
+      </motion.div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <CardKpi
-          indice={0}
-          destaque
-          Icone={TrendingUp}
-          rotulo="Total 30 dias"
-          valor={moeda.format(total30)}
-        />
-        <CardKpi
-          indice={1}
-          Icone={CalendarDays}
-          rotulo="Média por dia ativo"
-          valor={moeda.format(mediaDia)}
-        />
-        <CardKpi
-          indice={2}
-          Icone={Car}
-          rotulo="Saídas pagas"
-          valor={String(saidas30)}
-        />
-        <CardKpi
-          indice={3}
-          Icone={Trophy}
-          rotulo={`Melhor dia (${melhorDia?.rotulo ?? "—"})`}
-          valor={moeda.format(melhorDia?.total ?? 0)}
-        />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4,1fr)",
+          gap: 12,
+        }}
+      >
+        <CardKpi rotulo="Faturamento" valor={moeda.format(total30)} destaque />
+        <CardKpi rotulo="Veículos" valor={String(saidas30)} />
+        <CardKpi rotulo="Ticket médio" valor={moeda.format(ticketMedio)} />
+        <CardKpi rotulo="Média/dia" valor={moeda.format(mediaDia)} />
       </div>
 
-      {/* Gráfico de barras 30 dias */}
-      <motion.section
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.12 }}
-        className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-5"
+      {/* Gráfico + ranking */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.6fr 1fr",
+          gap: 14,
+          alignItems: "start",
+        }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-sm">Faturamento por dia</h2>
-          <span className="text-xs font-bold text-texto-2 tabular-nums h-4">
-            {focado
-              ? `${focado.rotulo} · ${moeda.format(focado.total)} · ${focado.saidas} saídas`
-              : ""}
-          </span>
-        </div>
-        <div
-          className="flex items-end gap-[3px] h-40"
-          onMouseLeave={() => setFocado(null)}
+        {/* Faturamento por dia — área+linha em verde */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.1 }}
+          style={{ ...CARD, overflow: "hidden" }}
         >
-          {porDia.map((d, i) => (
-            <div
-              key={d.dia}
-              className="flex-1 h-full flex flex-col justify-end group cursor-default"
-              onMouseEnter={() => setFocado(d)}
+          <div
+            style={{
+              ...CARD_HEAD,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>
+              Faturamento por dia
+            </h3>
+            <span className="mono" style={{ fontSize: 11, color: "#8695A0" }}>
+              R$
+            </span>
+          </div>
+          <div style={{ padding: "18px 12px 8px" }}>
+            <svg
+              viewBox={`0 0 ${VB_W} 210`}
+              style={{ width: "100%", height: "auto", display: "block" }}
             >
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{
-                  height: `${Math.max(d.total > 0 ? 4 : 1.5, (d.total / maxDia) * 100)}%`,
-                }}
-                transition={{
-                  duration: 0.7,
-                  delay: 0.2 + i * 0.02,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                className={`w-full rounded-t-md transition-colors ${
-                  d.total > 0
-                    ? "bg-gradient-to-t from-brand-600 to-brand-400 group-hover:from-brand-700 group-hover:to-acento-teal"
-                    : "bg-borda"
-                }`}
-              />
+              <defs>
+                <linearGradient id="fillRel" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#22C55E" stopOpacity=".26" />
+                  <stop offset="1" stopColor="#22C55E" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <line x1={X0} y1={60} x2={X1} y2={60} stroke="#EEF1F3" strokeWidth={1} />
+              <line x1={X0} y1={120} x2={X1} y2={120} stroke="#EEF1F3" strokeWidth={1} />
+              <line x1={X0} y1={180} x2={X1} y2={180} stroke="#EEF1F3" strokeWidth={1} />
+              {areaPath && <path d={areaPath} fill="url(#fillRel)" />}
+              {linePath && (
+                <path
+                  d={linePath}
+                  fill="none"
+                  stroke="#16A34A"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+              {dot && (
+                <circle
+                  cx={dot.x}
+                  cy={dot.y}
+                  r={5}
+                  fill="#16A34A"
+                  stroke="#fff"
+                  strokeWidth={2.5}
+                />
+              )}
+            </svg>
+            <div
+              className="mono"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "0 24px 8px",
+                fontSize: 10,
+                color: "#8695A0",
+              }}
+            >
+              {eixoIdx.map((i) => (
+                <span key={i}>{porDia[i].rotulo}</span>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="flex justify-between mt-2 text-[10px] font-bold text-texto-3 tabular-nums">
-          <span>{porDia[0]?.rotulo}</span>
-          <span>{porDia[14]?.rotulo}</span>
-          <span>{porDia[29]?.rotulo}</span>
-        </div>
-      </motion.section>
+          </div>
+        </motion.div>
 
-      {/* Quebras */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        <Quebra
-          indice={0}
-          Icone={CreditCard}
-          titulo="Por forma de pagamento"
-          linhas={porForma
-            .sort((a, b) => b.total - a.total)
-            .map((f) => ({
-              rotulo: f.forma.replace("_", " "),
-              valor: f.total,
-            }))}
-        />
-        <Quebra
-          indice={1}
-          Icone={Car}
-          titulo="Por tipo de veículo"
-          linhas={porVeiculo
-            .sort((a, b) => b.total - a.total)
-            .map((v) => ({ rotulo: v.tipo, valor: v.total }))}
-        />
+        {/* Melhores dias — ranking real */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.16 }}
+          style={{ ...CARD, overflow: "hidden" }}
+        >
+          <div style={CARD_HEAD}>Melhores dias</div>
+          {melhoresDias.length === 0 ? (
+            <p
+              style={{
+                margin: 0,
+                padding: "28px 18px",
+                fontSize: 13,
+                color: "#8695A0",
+                textAlign: "center",
+              }}
+            >
+              Sem dados no período.
+            </p>
+          ) : (
+            <div style={{ padding: "6px 10px" }}>
+              {melhoresDias.map((d, i) => {
+                const zebra = i % 2 === 1;
+                const corRank = i < 2 ? "#16A34A" : "#8695A0";
+                return (
+                  <div
+                    key={d.dia}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "9px 8px",
+                      background: zebra ? "#FAFBFC" : "transparent",
+                      borderRadius: zebra ? 9 : 0,
+                    }}
+                  >
+                    <span
+                      className="mono"
+                      style={{
+                        width: 22,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: corRank,
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>
+                      {diaSemana(d.dia)} {d.rotulo}
+                    </span>
+                    <span
+                      style={{
+                        marginLeft: "auto",
+                        fontFamily: POPPINS,
+                        fontWeight: 700,
+                        fontSize: 13,
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {moeda.format(d.total)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
       </div>
     </div>
   );
@@ -165,107 +374,18 @@ export function RelatoriosClient({
 function CardKpi({
   rotulo,
   valor,
-  Icone,
   destaque = false,
-  indice,
 }: {
   rotulo: string;
   valor: string;
-  Icone: React.ComponentType<{ className?: string }>;
   destaque?: boolean;
-  indice: number;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay: indice * 0.07 }}
-      whileHover={{ y: -3 }}
-      className={`relative overflow-hidden rounded-2xl p-5 transition-shadow ${
-        destaque
-          ? "bg-gradient-to-br from-brand-700 via-brand-600 to-acento-teal text-white shadow-[var(--shadow-brand)]"
-          : "bg-superficie border border-borda shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)]"
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <span
-          className={`text-[11px] font-bold uppercase tracking-wider ${
-            destaque ? "text-white/75" : "text-texto-3"
-          }`}
-        >
-          {rotulo}
-        </span>
-        <span
-          className={`w-8 h-8 rounded-lg grid place-items-center ${
-            destaque ? "bg-white/15" : "bg-brand-50 text-brand-600"
-          }`}
-        >
-          <Icone className="w-4 h-4" />
-        </span>
-      </div>
-      <div className="mt-2 text-[24px] font-black tabular-nums leading-none">
+    <div style={{ ...CARD, borderRadius: 14, padding: "15px 16px" }}>
+      <div style={KPI_LABEL}>{rotulo}</div>
+      <div style={{ ...KPI_NUM, color: destaque ? "#16A34A" : "#1F2937" }}>
         {valor}
       </div>
-    </motion.div>
-  );
-}
-
-function Quebra({
-  titulo,
-  linhas,
-  Icone,
-  indice,
-}: {
-  titulo: string;
-  linhas: { rotulo: string; detalhe?: string; valor: number }[];
-  Icone: React.ComponentType<{ className?: string }>;
-  indice: number;
-}) {
-  const max = Math.max(1, ...linhas.map((l) => l.valor));
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay: 0.18 + indice * 0.06 }}
-      className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-5"
-    >
-      <div className="flex items-center gap-2 mb-4">
-        <span className="w-8 h-8 rounded-lg bg-brand-50 grid place-items-center">
-          <Icone className="w-4 h-4 text-brand-600" />
-        </span>
-        <h2 className="font-bold text-sm">{titulo}</h2>
-      </div>
-      {linhas.length === 0 ? (
-        <p className="text-sm text-texto-3 py-4 text-center">Sem dados no período.</p>
-      ) : (
-        <div className="space-y-3.5">
-          {linhas.map((l, i) => (
-            <div key={l.rotulo}>
-              <div className="flex justify-between items-baseline mb-1">
-                <span className="text-sm font-bold capitalize">
-                  {l.rotulo}
-                  {l.detalhe && (
-                    <span className="ml-2 text-[11px] font-semibold text-texto-3">
-                      {l.detalhe}
-                    </span>
-                  )}
-                </span>
-                <span className="text-sm font-bold tabular-nums">
-                  {moeda.format(l.valor)}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-fundo overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(l.valor / max) * 100}%` }}
-                  transition={{ duration: 0.8, delay: 0.3 + i * 0.06 }}
-                  className="h-full rounded-full bg-gradient-to-r from-brand-500 to-acento-teal"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </motion.section>
+    </div>
   );
 }
