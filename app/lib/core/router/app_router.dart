@@ -47,6 +47,40 @@ abstract final class Routes {
 /// consigam um context vivo para avisar o operador.
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
+// Transição do Brisa entre telas empilhadas. Deslocamento curto (10% da tela) e
+// não a varrida inteira do iOS: o Brisa é discreto, e o operador abre estas
+// telas dezenas de vezes por turno — animação longa aqui vira imposto.
+//
+// `chain(CurveTween(...))` em vez de `CurvedAnimation`: o transitionsBuilder roda
+// a cada quadro, e um CurvedAnimation por quadro seria um objeto com listener
+// para o coletor limpar sempre. Estes Animatable são criados uma vez só.
+final _chegada = Tween<Offset>(begin: const Offset(0.10, 0), end: Offset.zero)
+    .chain(CurveTween(curve: Curves.easeOutCubic));
+final _recuo = Tween<Offset>(begin: Offset.zero, end: const Offset(-0.07, 0))
+    .chain(CurveTween(curve: Curves.easeOutCubic));
+final _revela = CurveTween(curve: Curves.easeOut);
+
+/// Página com a transição do Brisa. Só para telas EMPILHADAS — as do fluxo de
+/// autenticação (splash/login/pátio) são trocas de raiz, e deslizá-las lateral-
+/// mente sugeriria um "voltar" que não existe.
+CustomTransitionPage<void> _brisa(GoRouterState state, Widget child) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    transitionDuration: const Duration(milliseconds: 320),
+    reverseTransitionDuration: const Duration(milliseconds: 260),
+    // A tela de baixo recua enquanto a nova chega: as duas se movem juntas, e é
+    // esse encaixe (não o deslocamento em si) que dá a leitura de profundidade.
+    transitionsBuilder: (context, anim, sec, filho) => SlideTransition(
+      position: _recuo.animate(sec),
+      child: SlideTransition(
+        position: _chegada.animate(anim),
+        child: FadeTransition(opacity: _revela.animate(anim), child: filho),
+      ),
+    ),
+    child: child,
+  );
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _RouterNotifier(ref);
   return GoRouter(
@@ -67,36 +101,58 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const NaoVinculadoScreen(),
       ),
       GoRoute(path: Routes.home, builder: (context, state) => const MainShell()),
-      GoRoute(path: Routes.entrada, builder: (context, state) => const EntradaScreen()),
-      GoRoute(path: Routes.movimentos, builder: (context, state) => const MovimentosTicketsScreen()),
+      GoRoute(
+        path: Routes.entrada,
+        pageBuilder: (context, state) => _brisa(state, const EntradaScreen()),
+      ),
+      GoRoute(
+        path: Routes.movimentos,
+        pageBuilder: (context, state) =>
+            _brisa(state, const MovimentosTicketsScreen()),
+      ),
       GoRoute(
         path: '/saida/:id',
-        builder: (context, state) => SaidaScreen(ticketId: state.pathParameters['id']!),
+        pageBuilder: (context, state) =>
+            _brisa(state, SaidaScreen(ticketId: state.pathParameters['id']!)),
       ),
-      GoRoute(path: Routes.caixa, builder: (context, state) => const CaixaScreen()),
+      GoRoute(
+        path: Routes.caixa,
+        pageBuilder: (context, state) => _brisa(state, const CaixaScreen()),
+      ),
       GoRoute(
         path: Routes.caixaMovimentos,
-        builder: (context, state) => const CaixaMovimentosScreen(),
+        pageBuilder: (context, state) =>
+            _brisa(state, const CaixaMovimentosScreen()),
       ),
       GoRoute(
         path: Routes.caixaDetalhe,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           // A sessão vem via `extra` (caixa aberto atual ou último fechamento).
           final sessao = state.extra as CaixaModel?;
           if (sessao == null) {
-            return const Scaffold(
-              body: Center(child: Text('Sessão de caixa não informada.')),
+            return _brisa(
+              state,
+              const Scaffold(
+                body: Center(child: Text('Sessão de caixa não informada.')),
+              ),
             );
           }
-          return CaixaDetalheScreen(sessao: sessao);
+          return _brisa(state, CaixaDetalheScreen(sessao: sessao));
         },
       ),
       GoRoute(
         path: Routes.mensalistas,
-        builder: (context, state) => const MensalistasScreen(),
+        pageBuilder: (context, state) => _brisa(state, const MensalistasScreen()),
       ),
-      GoRoute(path: Routes.impressora, builder: (context, state) => const PrinterSettingsScreen()),
-      GoRoute(path: Routes.sobre, builder: (context, state) => const SobreScreen()),
+      GoRoute(
+        path: Routes.impressora,
+        pageBuilder: (context, state) =>
+            _brisa(state, const PrinterSettingsScreen()),
+      ),
+      GoRoute(
+        path: Routes.sobre,
+        pageBuilder: (context, state) => _brisa(state, const SobreScreen()),
+      ),
     ],
   );
 });

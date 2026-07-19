@@ -11,6 +11,7 @@ import 'package:nuvempark_core/nuvempark_core.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/brisa.dart';
 import '../../caixa/presentation/providers/caixa_provider.dart';
 import '../../patio/domain/patio_model.dart';
 import '../../patio/domain/tarifa_config.dart';
@@ -38,6 +39,10 @@ class SaidaScreen extends ConsumerStatefulWidget {
 class _SaidaScreenState extends ConsumerState<SaidaScreen> {
   TicketModel? _ticket;
   TarifaConfig? _tarifaSelecionada;
+
+  /// Forma de pagamento destacada nos cards; o confirmar usa esta escolha.
+  /// A confirmação segue passando pelo diálogo — a seleção é só a UI do Brisa.
+  String? _formaSelecionada;
   bool _carregando = true;
   bool _fechando = false;
   String? _erro;
@@ -491,7 +496,8 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     final patioAsync = ref.watch(patioNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Saída')),
+      backgroundColor: AppColors.background,
+      appBar: appBarBrisa(context, 'Saída'),
       body: _carregando
           ? const Center(child: CircularProgressIndicator())
           : _erro != null
@@ -546,8 +552,13 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     final fmtMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     final permanencia = _fmtDuracao(ticket.tempoPermanencia);
 
+    // Forma destacada por padrão: primeira configurada. A confirmação continua
+    // passando pelo diálogo de resumo — a seleção é só o realce visual do Brisa.
+    _formaSelecionada ??=
+        patio.formasPagamento.isNotEmpty ? patio.formasPagamento.first : null;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -559,7 +570,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.surfaceContainer,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Row(
                 children: [
@@ -575,54 +586,29 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
           ],
 
           if (diferenca != null && pago != null) ...[
             _bannerDiferenca(pago, fmtMoeda),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
           ],
 
-          // Valor
-          Center(
-            child: Column(
-              children: [
-                Text(
-                    diferenca != null ? 'Diferença a pagar' : 'Total a pagar',
-                    style: const TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant, letterSpacing: 1)),
-                const SizedBox(height: 6),
-                Text(
-                  livre ? 'Livre passagem' : fmtMoeda.format(valor),
-                  style: TextStyle(
-                    fontSize: livre ? 26 : 40,
-                    fontWeight: FontWeight.w800,
-                    color: livre ? AppColors.entrada : AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Detalhes
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  _linha('Placa', ticket.placa),
-                  _linha('Tipo', ticket.tipoVeiculo),
-                  _linha('Permanência', permanencia),
-                  _linha('Tarifa', tarifaCalculo.nome, last: true),
-                ],
-              ),
-            ),
+          // Hero escuro do Brisa: placa em pílula, valor grande e chips de
+          // contexto (hora de entrada + tipo do veículo).
+          _heroSaida(
+            ticket: ticket,
+            caption: livre
+                ? null
+                : (diferenca != null ? 'DIFERENÇA A PAGAR' : 'TOTAL A PAGAR'),
+            valorLabel: livre ? 'Livre' : fmtMoeda.format(valor),
+            subLabel: '$permanencia · ${tarifaCalculo.nome}',
           ),
 
           // Seleção de tarifa (se múltiplas)
           if (opcoes.length > 1) ...[
-            const SizedBox(height: 16),
-            const Text('Tabela de preço', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.onSurfaceVariant)),
+            const SizedBox(height: 18),
+            const RotuloBrisa('Tabela de preço'),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -638,24 +624,56 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
             ),
           ],
 
-          const SizedBox(height: 24),
-          const Text('Forma de pagamento', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.onSurfaceVariant)),
-          const SizedBox(height: 10),
-
-          if (livre)
-            FilledButton(
-              onPressed: _fechando ? null : () => _confirmar(patio, fare, 'livre_passagem'),
-              child: _fechando
-                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                  : const Text('Confirmar saída (livre)'),
-            )
-          else if (exigeCaixa) ...[
+          if (livre) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.entradaBg,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.verified, color: AppColors.entrada),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Mensalista em dia — livre passagem, nada a cobrar.',
+                      style: TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 58,
+              child: FilledButton.icon(
+                onPressed: _fechando
+                    ? null
+                    : () => _confirmar(patio, fare, 'livre_passagem'),
+                icon: _fechando
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white))
+                    : const Icon(Icons.check_circle),
+                label: const Text('Confirmar saída livre'),
+              ),
+            ),
+          ] else if (exigeCaixa) ...[
+            const SizedBox(height: 16),
             // Caixa fechado: bloqueia o pagamento e leva o operador a abrir.
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: AppColors.saidaBg,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                     color: AppColors.saida.withValues(alpha: 0.3)),
               ),
@@ -672,46 +690,235 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
-            FilledButton.icon(
-              onPressed: () => context.push(Routes.caixa),
-              icon: const Icon(Icons.point_of_sale_outlined),
-              label: const Text('Abrir caixa'),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 54,
+              child: FilledButton.icon(
+                onPressed: () => context.push(Routes.caixa),
+                icon: const Icon(Icons.point_of_sale_outlined),
+                label: const Text('Abrir caixa'),
+              ),
             ),
           ] else ...[
-            // Registro manual das formas configuradas.
-            ...patio.formasPagamento.map((forma) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: OutlinedButton(
-                    onPressed: _fechando
-                        ? null
-                        : () => _confirmarComDialogo(patio, fare, forma,
-                            valorCobradoOverride: diferenca),
-                    child: Text(_labelForma(forma)),
-                  ),
-                )),
+            const SizedBox(height: 20),
+            const RotuloBrisa('Como o cliente vai pagar?'),
+            const SizedBox(height: 10),
+            // Grade 2 colunas com as formas configuradas (cards do Brisa).
+            LayoutBuilder(
+              builder: (ctx, c) {
+                const gap = 10.0;
+                final w = (c.maxWidth - gap) / 2;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: patio.formasPagamento
+                      .map((forma) => SizedBox(
+                            width: w,
+                            child: _cardForma(
+                              forma,
+                              _formaSelecionada == forma,
+                              () => setState(() => _formaSelecionada = forma),
+                            ),
+                          ))
+                      .toList(),
+                );
+              },
+            ),
             // Pix dinâmico: o operador gera o QR aqui e mostra pro cliente
             // pagar na hora. Some quando não há valor a cobrar (tolerância).
-            if (valor > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: FilledButton.icon(
-                  onPressed: _gerandoPix ? null : () => _pixDinamico(patio, fare),
+            if (valor > 0) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 52,
+                child: OutlinedButton.icon(
+                  onPressed:
+                      _gerandoPix ? null : () => _pixDinamico(patio, fare),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(
+                        color: AppColors.primaryFill, width: 2),
+                    foregroundColor: AppColors.primary,
+                  ),
                   icon: _gerandoPix
                       ? const SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2.2, color: Colors.white))
+                              strokeWidth: 2.2, color: AppColors.primary))
                       : const Icon(Icons.qr_code_2),
-                  label: Text(_gerandoPix ? 'Gerando Pix…' : 'Pix dinâmico'),
+                  label: Text(
+                      _gerandoPix ? 'Gerando Pix…' : 'Gerar QR Pix na tela'),
                 ),
               ),
+            ],
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 58,
+              child: FilledButton.icon(
+                onPressed: (_fechando || _formaSelecionada == null)
+                    ? null
+                    : () => _confirmarComDialogo(
+                          patio,
+                          fare,
+                          _formaSelecionada!,
+                          valorCobradoOverride: diferenca,
+                        ),
+                icon: _fechando
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white))
+                    : const Icon(Icons.check_circle),
+                label: Text(diferenca != null
+                    ? 'Cobrar diferença'
+                    : 'Confirmar saída'),
+              ),
+            ),
+            const SizedBox(height: 9),
+            const Text(
+              'o recibo imprime sozinho na confirmação',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: AppColors.outline),
+            ),
           ],
         ],
       ),
     );
   }
+
+  /// Hero escuro do Brisa (saída): placa em pílula, valor grande e dois chips
+  /// de contexto. Fundo #1F2937 com sombra esverdeada, igual ao protótipo.
+  Widget _heroSaida({
+    required TicketModel ticket,
+    required String? caption,
+    required String valorLabel,
+    required String subLabel,
+  }) {
+    final hora = DateFormat('HH:mm').format(ticket.entrada);
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F2937),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x4D14532D), blurRadius: 28, offset: Offset(0, 10)),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              ticket.placa,
+              style: const TextStyle(
+                  fontSize: 14,
+                  height: 1,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.6,
+                  color: Colors.white),
+            ),
+          ),
+          if (caption != null) ...[
+            const SizedBox(height: 12),
+            Text(caption,
+                style: const TextStyle(
+                    fontSize: 11,
+                    height: 1,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                    color: Color(0xFF9CA3AF))),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            valorLabel,
+            style: const TextStyle(
+                fontSize: 44,
+                height: 1,
+                fontWeight: FontWeight.w800,
+                color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Text(subLabel,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 13, height: 1.3, color: Color(0xFF9CA3AF))),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _heroChip('entrou $hora'),
+              const SizedBox(width: 8),
+              _heroChip(ticket.tipoVeiculo),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroChip(String texto) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(texto,
+            style: const TextStyle(
+                fontSize: 11,
+                height: 1,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFCBD5E1))),
+      );
+
+  /// Card de forma de pagamento (grade 2 colunas): ícone + rótulo, borda que
+  /// acende em verde quando selecionado.
+  Widget _cardForma(String forma, bool sel, VoidCallback onTap) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          height: 74,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: sel ? AppColors.primaryFill : AppColors.outlineVariant,
+              width: 2,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                  color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 2)),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(_iconeForma(forma),
+                  size: 22,
+                  color: sel ? AppColors.primary : AppColors.onSurfaceVariant),
+              const SizedBox(height: 5),
+              Text(_labelForma(forma),
+                  style: const TextStyle(
+                      fontSize: 13,
+                      height: 1,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.onSurface)),
+            ],
+          ),
+        ),
+      );
+
+  IconData _iconeForma(String forma) => switch (forma) {
+        'dinheiro' => Icons.payments_outlined,
+        'cartao_debito' => Icons.credit_card,
+        'cartao_credito' => Icons.credit_card,
+        'pix' => Icons.pix,
+        _ => Icons.attach_money,
+      };
 
   Widget _linha(String k, String v, {bool last = false}) => Container(
         padding: const EdgeInsets.symmetric(vertical: 11),

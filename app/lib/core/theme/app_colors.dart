@@ -20,79 +20,79 @@ import 'package:flutter/material.dart';
 /// do pátio, que é exatamente onde este app é usado.
 abstract final class AppColors {
   // ---- Backgrounds (claros) ----
-  /// Fundo do app (o "papel" do Brisa).
-  static const Color background = Color(0xFFF1F7F2);
+  /// Fundo do app (o "papel" do Brisa) — #F4F8F5 do protótipo novo.
+  static const Color background = Color(0xFFF4F8F5);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceContainerLowest = Color(0xFFFFFFFF);
-  static const Color surfaceContainerLow = Color(0xFFF5F9F6);
-  static const Color surfaceContainer = Color(0xFFEFF6F1);
-  static const Color surfaceContainerHigh = Color(0xFFE3EFE7);
-  static const Color surfaceContainerHighest = Color(0xFFDCE9E0);
+  static const Color surfaceContainerLow = Color(0xFFF9FAFB);
+  static const Color surfaceContainer = Color(0xFFF0FDF4);
+  static const Color surfaceContainerHigh = Color(0xFFECF7EF);
+  static const Color surfaceContainerHighest = Color(0xFFDCFCE7);
   static const Color surfaceBright = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFEFF6F1);
+  static const Color surfaceVariant = Color(0xFFF0FDF4);
 
-  /// Superfície ESCURA: cards de destaque e botões secundários do Brisa
-  /// (raio 28, sombra funda). Texto por cima é branco.
+  /// Superfície ESCURA: cards de destaque e botões secundários do Brisa.
+  /// Texto por cima é branco.
   static const Color surfaceInverse = Color(0xFF123B2A);
   static const Color onSurfaceInverse = Color(0xFFFFFFFF);
 
   // ---- Texto sobre fundo claro ----
-  static const Color onSurface = Color(0xFF123B2A);
-  static const Color onBackground = Color(0xFF123B2A);
-  static const Color onSurfaceVariant = Color(0xFF6E8177);
-  static const Color outline = Color(0xFF9DB0A5);
-  static const Color outlineVariant = Color(0xFFE3EFE7);
+  static const Color onSurface = Color(0xFF1F2937);
+  static const Color onBackground = Color(0xFF1F2937);
+  static const Color onSurfaceVariant = Color(0xFF6B7280);
+  static const Color outline = Color(0xFF9CA3AF);
+  static const Color outlineVariant = Color(0xFFE5E7EB);
 
   // ---- Primária (verde marca) ----
-  /// Tinta verde — segura como TEXTO (~5,4:1 no branco). Ver doc da classe.
-  static const Color primary = Color(0xFF0B7A4C);
+  /// Tinta verde — segura como TEXTO (#15803D, ~5:1 no branco). Ver doc da classe.
+  static const Color primary = Color(0xFF15803D);
   static const Color onPrimary = Color(0xFFFFFFFF);
 
-  /// Preenchimento — só como FUNDO de CTA/chip. Nunca como texto (~3,0:1).
-  static const Color primaryFill = Color(0xFF0FA968);
+  /// Preenchimento — FUNDO de CTA/chip (#16A34A). Texto branco por cima.
+  static const Color primaryFill = Color(0xFF16A34A);
   static const Color onPrimaryFill = Color(0xFFFFFFFF);
 
-  static const Color primaryContainer = Color(0xFFDFF2E7);
-  static const Color onPrimaryContainer = Color(0xFF0B7A4C);
+  static const Color primaryContainer = Color(0xFFDCFCE7);
+  static const Color onPrimaryContainer = Color(0xFF15803D);
 
   // ---- Accent ----
-  static const Color secondary = Color(0xFF0FA968);
+  static const Color secondary = Color(0xFF16A34A);
   static const Color onSecondary = Color(0xFFFFFFFF);
-  static const Color secondaryContainer = Color(0xFFDFF2E7);
-  static const Color secondaryFixed = Color(0xFFA9D6C1);
-  static const Color secondaryFixedDim = Color(0xFF0FA968);
+  static const Color secondaryContainer = Color(0xFFDCFCE7);
+  static const Color secondaryFixed = Color(0xFFA7D9BC);
+  static const Color secondaryFixedDim = Color(0xFF16A34A);
 
   // ---- Semânticas ----
   // Tripletes fundo/frente do Brisa: ok · aviso · erro · saída.
-  static const Color success = Color(0xFF0B7A4C);
-  static const Color successBg = Color(0xFFDFF2E7);
-  static const Color warning = Color(0xFFC77E06);
-  static const Color warningBg = Color(0xFFFFF4DE);
-  static const Color danger = Color(0xFFE0472C);
-  static const Color dangerBg = Color(0xFFFCE4DE);
-  static const Color error = Color(0xFFE0472C);
+  static const Color success = Color(0xFF16A34A);
+  static const Color successBg = Color(0xFFDCFCE7);
+  static const Color warning = Color(0xFFB45309);
+  static const Color warningBg = Color(0xFFFEF3C7);
+  static const Color danger = Color(0xFFDC2626);
+  static const Color dangerBg = Color(0xFFFEE2E2);
+  static const Color error = Color(0xFFDC2626);
   static const Color onError = Color(0xFFFFFFFF);
-  static const Color errorContainer = Color(0xFFFCE4DE);
+  static const Color errorContainer = Color(0xFFFEE2E2);
 
   // ---- Ações entrada/saída (temático) ----
-  static const Color entrada = Color(0xFF0B7A4C); // verde = entra/livre
-  static const Color entradaBg = Color(0xFFDFF2E7);
-  static const Color saida = Color(0xFFF0641E); // laranja = sai/ocupado
-  static const Color saidaBg = Color(0xFFFDEEE4);
+  static const Color entrada = Color(0xFF16A34A); // verde = entra/livre
+  static const Color entradaBg = Color(0xFFDCFCE7);
+  static const Color saida = Color(0xFFEA580C); // laranja = sai/ocupado
+  static const Color saidaBg = Color(0xFFFEF6F1);
 
   // ---- Gradiente assinatura (verde) ----
-  static const List<Color> gradient = [Color(0xFF0B7A4C), Color(0xFF0FA968)];
+  static const List<Color> gradient = [Color(0xFF16A34A), Color(0xFF15803D)];
 
   // ---- Indicadores de sync ----
-  static const Color syncOnline = Color(0xFF0FA968);
-  static const Color syncPending = Color(0xFFC77E06);
-  static const Color syncOffline = Color(0xFFE0472C);
+  static const Color syncOnline = Color(0xFF16A34A);
+  static const Color syncPending = Color(0xFFB45309);
+  static const Color syncOffline = Color(0xFFDC2626);
 
   // ---- Compat / atalhos ----
-  static const Color info = Color(0xFF0B7A4C);
+  static const Color info = Color(0xFF15803D);
   static const Color textSecondary = onSurfaceVariant;
   static const Color border = outlineVariant;
 
-  /// Sombra dos cards do Brisa: `0 2px 8px rgba(18,59,42,.08)`.
+  /// Sombra dos cards do Brisa: suave, esverdeada.
   static const Color shadow = Color(0x14123B2A);
 }

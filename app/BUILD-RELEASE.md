@@ -7,14 +7,20 @@ APK do operador apontando para a **API de produção** (`https://api.nuvempark.c
 ```bat
 cd C:\VibeCoding\NuvemPark\app
 C:\src\flutter\bin\flutter.bat build apk --release --split-per-abi ^
-  --dart-define=API_BASE_URL=https://api.nuvempark.com
+  --dart-define=API_BASE_URL=https://api.nuvempark.com ^
+  --dart-define=TICKET_PUBLIC_BASE_URL=https://nuvempark.com/t
 ```
 
 > No Git Bash / Claude Code, prefixe com `!` para rodar no shell da sessão (o
 > build é longo e é cortado se rodar como comando gerenciado/background):
 > ```
-> ! cd C:\VibeCoding\NuvemPark\app && C:\src\flutter\bin\flutter.bat build apk --release --split-per-abi --dart-define=API_BASE_URL=https://api.nuvempark.com
+> ! cd C:\VibeCoding\NuvemPark\app && C:\src\flutter\bin\flutter.bat build apk --release --split-per-abi --dart-define=API_BASE_URL=https://api.nuvempark.com --dart-define=TICKET_PUBLIC_BASE_URL=https://nuvempark.com/t
 > ```
+
+> **As DUAS `--dart-define` são obrigatórias em release.** Faltar a segunda não
+> quebra nada visivelmente: o app abre, opera e imprime — só que o QR do cupom
+> sai com o id cru do ticket em vez da URL, e o cliente que apontar a câmera não
+> abre página nenhuma e não consegue pagar por Pix. Ver "Regras da URL embutida".
 
 Leva ~5–15 min na 1ª vez (compila ML Kit). Avisos de KGP (`mobile_scanner`,
 `print_bluetooth_thermal`) são **warnings**, não erros.
@@ -45,6 +51,16 @@ Leva ~5–15 min na 1ª vez (compila ML Kit). Avisos de KGP (`mobile_scanner`,
   `--dart-define`. Produção = `https://api.nuvempark.com`.
 - O default do `lib/core/config/env.dart` (`http://10.0.2.2:8080`) é só para
   **dev no emulador** — NUNCA gere release sem o `--dart-define` de produção.
+  Sem ele o app INSTALA E ABRE normalmente (mostra o cache local antigo) e só
+  falha quando precisa da rede — Pix, sync, login. É uma falha silenciosa.
+- `TICKET_PUBLIC_BASE_URL` é o que vai **dentro do QR do cupom**. Produção =
+  `https://nuvempark.com/t` (a rota é `web/src/app/t/[id]`), e o QR fica
+  `https://nuvempark.com/t/<ticket_id>` — é essa página que gera o Pix
+  copia-e-cola para o cliente.
+  O default é **vazio**, e aí `Env.qrDoTicket()` imprime o id cru: um QR que a
+  câmera do cliente lê como texto sem sentido. O scanner de saída do app aceita
+  os dois formatos, então o operador não percebe nada — **quem descobre é o
+  cliente, na cancela, sem conseguir pagar.**
 
 ## Verificação rápida pós-build
 

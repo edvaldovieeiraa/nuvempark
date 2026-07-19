@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/brisa.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../caixa/domain/caixa_model.dart';
 import '../../caixa/presentation/providers/caixa_provider.dart';
@@ -109,7 +110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           onRefresh: _sincronizar,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24 + alturaNavBrisa),
             children: [
               _header(operadorNome, patio?.nome, printer),
               const SizedBox(height: 16),

@@ -66,7 +66,7 @@ class _ConexaoBannerState extends ConsumerState<ConexaoBanner> {
 
     // ── Colapsado: badge fino só com os ícones ──
     if (!_expandido) {
-      return Material(
+      return _flutuante(Material(
         color: AppColors.surface,
         child: InkWell(
           onTap: () => setState(() => _expandido = true),
@@ -105,11 +105,11 @@ class _ConexaoBannerState extends ConsumerState<ConexaoBanner> {
             ),
           ),
         ),
-      );
+      ));
     }
 
     // ── Expandido: barras com mensagem e ação ──
-    return Material(
+    return _flutuante(Material(
       color: AppColors.surface,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -148,8 +148,23 @@ class _ConexaoBannerState extends ConsumerState<ConexaoBanner> {
             ),
         ],
       ),
-    );
+    ));
   }
+
+  /// A nav virou vidro flutuante; o banner flutua junto, com o mesmo recuo
+  /// lateral e cantos arredondados. Encostado nela — e em largura total — ele
+  /// lia como erro de layout, uma faixa opaca brotando debaixo da pílula.
+  ///
+  /// O envelope mora aqui, e não no shell, porque quando não há o que avisar
+  /// este widget devolve `SizedBox.shrink()`: um Padding lá fora reservaria
+  /// espaço de um banner que não existe, empurrando a nav para cima à toa.
+  Widget _flutuante(Widget filho) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: filho,
+        ),
+      );
 
   Widget _barra({
     required Color cor,

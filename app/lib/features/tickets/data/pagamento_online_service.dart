@@ -117,16 +117,36 @@ class PagamentoOnlineService {
         expiraEm: expira is String ? DateTime.tryParse(expira)?.toLocal() : null,
       );
     } on DioException catch (e) {
-      // 409 = "Estadia já paga" / "Nada a pagar": a API já explica; repassamos.
-      if (e.response?.statusCode == 409) {
-        final data = e.response?.data;
-        final msg = data is Map && data['error'] is String
-            ? data['error'] as String
-            : 'Nada a cobrar.';
-        throw PixIndisponivelException(msg);
+      final resp = e.response;
+
+      // SEM resposta = a requisição não chegou ao servidor: timeout, DNS, offline.
+      // Só AQUI "sem conexão" é verdade. Antes, qualquer erro caía neste texto —
+      // um 500 do PSP virava "sem conexão" e escondia a causa real na saída.
+      if (resp == null) {
+        throw const PixIndisponivelException(
+            'Sem conexão para gerar o Pix. Tente de novo.');
       }
-      throw const PixIndisponivelException(
-          'Sem conexão para gerar o Pix. Tente de novo.');
+
+      // Servidor respondeu: a mensagem dele é a verdade. 409 já é esperado
+      // ("Estadia já paga" / "Nada a pagar"); os demais (500 etc.) trazem o
+      // motivo — mostrá-lo é o que permite diagnosticar sem o log do servidor.
+      final data = resp.data;
+      final msgServidor = data is Map && data['error'] is String
+          ? data['error'] as String
+          : (data is Map && data['message'] is String
+              ? data['message'] as String
+              : null);
+
+      if (resp.statusCode == 409) {
+        throw PixIndisponivelException(msgServidor ?? 'Nada a cobrar.');
+      }
+
+      throw PixIndisponivelException(
+        msgServidor != null
+            ? 'Pagamento indisponível: $msgServidor'
+            : 'O servidor recusou a cobrança (erro ${resp.statusCode}). '
+                'Tente de novo ou avise o suporte.',
+      );
     }
   }
 }

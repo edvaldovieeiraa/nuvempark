@@ -6,6 +6,7 @@ import 'package:nuvempark_core/nuvempark_core.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/brisa.dart';
 import '../../printing/data/print_templates.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tickets/domain/ticket_model.dart';
@@ -53,7 +54,7 @@ class _PatioTabState extends ConsumerState<PatioTab> {
           onRefresh: () async => ref.invalidate(ticketsAbertosProvider),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24 + alturaNavBrisa),
             children: [
               Row(
                 children: [

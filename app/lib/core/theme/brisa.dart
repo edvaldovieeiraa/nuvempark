@@ -8,6 +8,14 @@ import 'app_colors.dart';
 /// `rgba(18,59,42,.06)` e os raios 20/24/28 aparecem em quase toda tela, e
 /// copiá-los à mão garante que um dia divirjam.
 
+/// Espaço que a nav flutuante ocupa embaixo (pílula de 62 + respiro de 16).
+///
+/// As listas das abas SOMAM isto ao padding de baixo. A nav é vidro: ela precisa
+/// ter conteúdo passando atrás para ter o que borrar, então não existe mais uma
+/// faixa reservada empurrando as telas para cima. Sem esta folga, o último item
+/// de cada lista pararia debaixo da nav, inalcançável — o preço de sobrepor.
+const double alturaNavBrisa = 78;
+
 /// AppBar do Brisa: sem barra — um chip de voltar + título, sobre o fundo.
 ///
 /// As telas empilhadas (entrada, saída, movimentos, mensalistas) usam isto no

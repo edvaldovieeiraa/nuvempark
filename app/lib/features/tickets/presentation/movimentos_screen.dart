@@ -88,16 +88,52 @@ class _MovimentosTicketsScreenState
                   ),
                 ),
                 const SizedBox(height: 12),
-                if (lista.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(
-                      child: Text('Nenhum movimento com esse filtro.',
-                          style: TextStyle(color: AppColors.onSurfaceVariant)),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeIn,
+                  // O layoutBuilder padrão empilha os dois filhos centralizados,
+                  // e a lista saltaria de altura no meio da troca. Aqui só o
+                  // filho que ENTRA dita o tamanho; o que sai flutua por cima.
+                  layoutBuilder: (atual, anteriores) => Stack(
+                    alignment: Alignment.topCenter,
+                    children: [
+                      for (final w in anteriores)
+                        Positioned(left: 0, right: 0, top: 0, child: w),
+                      ?atual,
+                    ],
+                  ),
+                  transitionBuilder: (child, anim) => FadeTransition(
+                    opacity: anim,
+                    child: SlideTransition(
+                      position: Tween(
+                        begin: const Offset(0, 0.04),
+                        end: Offset.zero,
+                      ).animate(anim),
+                      child: child,
                     ),
-                  )
-                else
-                  ...lista.map(_tile),
+                  ),
+                  // Chaveado só pelo filtro: digitar na busca deve atualizar a
+                  // lista na hora, sem a lista inteira piscar a cada tecla.
+                  child: Column(
+                    key: ValueKey(_filtro),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: lista.isEmpty
+                        ? const [
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 40),
+                              child: Center(
+                                child: Text(
+                                  'Nenhum movimento com esse filtro.',
+                                  style: TextStyle(
+                                      color: AppColors.onSurfaceVariant),
+                                ),
+                              ),
+                            ),
+                          ]
+                        : [for (final t in lista) _tile(t)],
+                  ),
+                ),
                 const SizedBox(height: 24),
               ],
             ),
@@ -107,14 +143,39 @@ class _MovimentosTicketsScreenState
     );
   }
 
+  /// Chip do Brisa: o preenchimento e a cor do texto viajam juntos, em vez de
+  /// o ChoiceChip trocar de estado num quadro só.
   Widget _chip(String label, String valor) {
     final sel = _filtro == valor;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: sel,
-        onSelected: (_) => setState(() => _filtro = valor),
+      child: GestureDetector(
+        onTap: () {
+          if (_filtro != valor) setState(() => _filtro = valor);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: sel ? AppColors.primaryFill : AppColors.surface,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: sel ? AppColors.primaryFill : AppColors.border,
+            ),
+          ),
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 220),
+            style: TextStyle(
+              fontSize: 13,
+              height: 1,
+              fontWeight: FontWeight.w700,
+              // Branco sobre o preenchimento; tinta fraca quando solto.
+              color: sel ? Colors.white : AppColors.onSurfaceVariant,
+            ),
+            child: Text(label),
+          ),
+        ),
       ),
     );
   }
