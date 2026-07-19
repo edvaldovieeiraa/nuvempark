@@ -320,3 +320,30 @@ input, select, textarea {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent);
   z-index: 0;
 }
+
+/* ============================================================
+   Cadastro (signup) — split-screen fiel ao protótipo Claude Design.
+   Escopado em .cad-* — não afeta nenhuma outra tela.
+   ============================================================ */
+.cad-mobile-logo { display: none; }
+@media (max-width: 899px) {
+  .cad-left { display: none !important; }
+  .cad-mobile-logo { display: flex; }
+}
+.cad-input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cad-input:focus {
+  outline: none;
+  border-color: #16A34A !important;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.14);
+}
+.cad-input::placeholder { color: #9CA3AF; }
+@keyframes cadpulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
+.cad-dot { animation: cadpulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .cad-dot { animation: none; }
+}

@@ -3,31 +3,38 @@ import {
   Numeros,
   Recursos,
   ComoFunciona,
-  RoadmapTeaser,
+  Roadmap,
   Precos,
-  Garantias,
   CtaFinal,
 } from "@/components/site/secoes";
+import { PixTicket } from "@/components/site/pix-ticket";
 import { Avaria } from "@/components/site/avaria";
+import { ProvaSocial } from "@/components/site/prova-social";
+import { Faq } from "@/components/site/faq";
+import { LandingStyle } from "@/components/site/landing-style";
+import { POPPINS } from "@/components/site/tokens";
 
 export const metadata = {
-  title: "NuvemPark — Gestão de estacionamento na nuvem",
+  title: "NuvemPark — Cada carro registrado. Cada real no seu bolso.",
   description:
-    "Plataforma completa para gerir estacionamentos: app offline-first, cobrança automática, leitura de placa, impressão Bluetooth e painel em tempo real de toda a sua rede.",
+    "Aposente o caderno e o sistema caro. Seus operadores registram tudo pelo celular — até sem internet — e você acompanha o faturamento ao vivo. 15 dias grátis, sem cartão.",
 };
 
 export default function HomePage() {
   return (
-    <>
+    <div style={{ overflowX: "hidden", fontFamily: POPPINS }}>
+      <LandingStyle />
       <Hero />
       <Numeros />
-      <Recursos resumido />
+      <Recursos />
       <ComoFunciona />
+      <PixTicket />
       <Avaria />
-      <RoadmapTeaser />
+      <ProvaSocial />
+      <Roadmap />
       <Precos />
-      <Garantias />
+      <Faq />
       <CtaFinal />
-    </>
+    </div>
   );
 }

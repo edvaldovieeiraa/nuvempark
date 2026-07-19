@@ -1,270 +1,37 @@
 import Link from "next/link";
-import {
-  WifiOff,
-  ScanLine,
-  Clock,
-  Printer,
-  QrCode,
-  LayoutDashboard,
-  Building2,
-  ShieldCheck,
-  Smartphone,
-  RefreshCw,
-  Check,
-  ArrowRight,
-  Car,
-  Camera,
-  UserPlus,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, UserPlus, Smartphone, RefreshCw } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
-import { PlayBadge } from "@/components/site/play-badge";
 import { urlApp } from "@/lib/urls";
+import { MONO, WHATSAPP, eyebrow, h2, btnPrimary, btnGhostDark } from "@/components/site/tokens";
 import { Marca } from "@/components/marca";
 
-/** WhatsApp comercial da NuvemPark. */
-export const WHATSAPP =
-  "https://wa.me/5581996142120?text=Ol%C3%A1!%20Quero%20conhecer%20o%20NuvemPark";
+/* Re-exports para as sub-páginas do site continuarem importando de "secoes". */
+export { WHATSAPP } from "@/components/site/tokens";
+export { Recursos } from "@/components/site/recursos";
+export { Precos } from "@/components/site/precos";
 
 /* =========================================================
-   FAIXA DE NÚMEROS (credibilidade)
-   Painel de instrumentos da torre de controle: prolonga a
-   noite do hero (sem corte escuro→claro na primeira dobra),
-   valores esmeralda tabulares e divisórias finas — a leitura
-   dos mostradores antes de acender as luzes do site claro.
+   FAIXA DE NÚMEROS (ponte escura)
    ========================================================= */
 export function Numeros() {
   const itens = [
     { valor: "100%", rotulo: "offline — a fila anda mesmo sem internet" },
     { valor: "3 seg", rotulo: "da placa lida ao ticket na mão do cliente" },
-    { valor: "R$ 0", rotulo: "de equipamento — funciona no celular que você já tem" },
+    { valor: "R$ 0", rotulo: "de equipamento — usa o celular que você já tem" },
     { valor: "1 painel", rotulo: "para enxergar todos os seus pátios ao vivo" },
   ];
   return (
-    <section className="relative overflow-hidden bg-noite border-t border-white/8">
-      {/* mesma grade técnica do hero, bem sutil */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)",
-          backgroundSize: "44px 44px",
-        }}
-      />
-      <div className="relative mx-auto max-w-6xl px-5 py-12 grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
+    <section style={{ position: "relative", overflow: "hidden", background: "#0B1220", borderTop: "1px solid rgba(255,255,255,.08)" }}>
+      <div className="np-grid" style={{ position: "absolute", inset: 0, opacity: 0.04 }} />
+      <div data-num-grid style={{ position: "relative", maxWidth: 1152, margin: "0 auto", padding: "48px 20px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "32px 24px" }}>
         {itens.map((n, i) => (
-          <Reveal
-            key={n.rotulo}
-            delay={i * 0.08}
-            className="text-center lg:px-4 lg:border-l lg:border-white/10 lg:first:border-l-0"
-          >
-            <div className="text-3xl sm:text-4xl font-black text-brand-400 tabular-nums">
-              {n.valor}
-            </div>
-            <div className="mt-1.5 text-xs sm:text-sm text-white/65 font-medium">
-              {n.rotulo}
+          <Reveal key={n.rotulo} delay={i * 0.08}>
+            <div style={{ textAlign: "center", padding: "0 12px", borderLeft: i === 0 ? undefined : "1px solid rgba(255,255,255,.1)" }}>
+              <div style={{ fontSize: "clamp(2rem,4vw,2.5rem)", fontWeight: 800, color: "#22C55E", fontVariantNumeric: "tabular-nums" }}>{n.valor}</div>
+              <div style={{ marginTop: 6, fontSize: 14, color: "rgba(255,255,255,.65)", fontWeight: 500 }}>{n.rotulo}</div>
             </div>
           </Reveal>
         ))}
-      </div>
-    </section>
-  );
-}
-
-/* =========================================================
-   RECURSOS
-   ========================================================= */
-type Recurso = {
-  Icone: LucideIcon;
-  titulo: string;
-  texto: string;
-  /** classes de cor do ícone: fundo + texto + gradiente no hover */
-  cor: { fundo: string; texto: string; hover: string };
-};
-
-const COR = {
-  verde: { fundo: "bg-brand-50", texto: "text-brand-600", hover: "group-hover:from-brand-500 group-hover:to-acento-teal" },
-  azul: { fundo: "bg-info-bg", texto: "text-ceu", hover: "group-hover:from-ceu group-hover:to-acento-teal" },
-  violeta: { fundo: "bg-violeta/10", texto: "text-violeta", hover: "group-hover:from-violeta group-hover:to-ceu" },
-  ambar: { fundo: "bg-aviso-bg", texto: "text-ambar", hover: "group-hover:from-ambar group-hover:to-saida" },
-};
-
-const RECURSOS: Recurso[] = [
-  {
-    Icone: WifiOff,
-    titulo: "A internet caiu? Ninguém percebe.",
-    texto:
-      "O app registra entradas, saídas e pagamentos mesmo offline. Quando a conexão volta, tudo sobe sozinho para o painel. A fila não para — e o dinheiro não se perde.",
-    cor: COR.verde,
-  },
-  {
-    Icone: ScanLine,
-    titulo: "A câmera digita a placa por você",
-    texto:
-      "O operador aponta o celular e pronto: placa lida em um segundo. Sem erro de digitação, sem fila crescendo na entrada.",
-    cor: COR.azul,
-  },
-  {
-    Icone: Clock,
-    titulo: "O valor certo, sem conta de cabeça",
-    texto:
-      "Fração, hora, diária, tolerância e pernoite — o app calcula tudo sozinho. Você para de perder dinheiro em arredondamento de operador.",
-    cor: COR.ambar,
-  },
-  {
-    Icone: Printer,
-    titulo: "Ticket profissional na hora",
-    texto:
-      "Comprovante impresso com QR Code e o nome do seu estacionamento, numa impressora térmica de bolso. Seu pátio ganha cara de empresa grande.",
-    cor: COR.violeta,
-  },
-  {
-    Icone: QrCode,
-    titulo: "Saída em segundos, cliente feliz",
-    texto:
-      "O operador escaneia o QR do ticket e o sistema mostra o veículo, o tempo e o valor. Ninguém procurando papel em lista.",
-    cor: COR.violeta,
-  },
-  {
-    Icone: LayoutDashboard,
-    titulo: "Seu faturamento, ao vivo, no seu celular",
-    texto:
-      "Cada entrada e cada real aparecem no painel na hora em que acontecem. De casa, da praia, de onde você estiver.",
-    cor: COR.verde,
-  },
-  {
-    Icone: Building2,
-    titulo: "Da primeira vaga à quinta filial",
-    texto:
-      "Cada pátio com suas tarifas, operadores e caixa — tudo consolidado numa conta só. Crescer não exige trocar de sistema.",
-    cor: COR.azul,
-  },
-  {
-    Icone: ShieldCheck,
-    titulo: "Cada centavo tem dono",
-    texto:
-      "Caixa por operador, sangria registrada, fechamento com conferência. Se faltar dinheiro, você sabe exatamente onde e quando.",
-    cor: COR.ambar,
-  },
-  {
-    Icone: Camera,
-    titulo: "Avaria fotografada na entrada",
-    texto:
-      "Arranhão, amassado, retrovisor quebrado — o operador registra com foto e descrição na hora que o carro chega. Quando o cliente reclamar, você tem a prova, não a discussão.",
-    cor: COR.ambar,
-  },
-];
-
-export function Recursos({ resumido = false }: { resumido?: boolean }) {
-  const lista = resumido ? RECURSOS.slice(0, 4) : RECURSOS;
-  return (
-    <section id="recursos" className="py-24 bg-white">
-      <div className="mx-auto max-w-6xl px-5">
-        <Reveal className="text-center max-w-2xl mx-auto">
-          <span className="text-xs font-black uppercase tracking-[0.16em] text-brand-600">
-            Recursos
-          </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-texto">
-            Feito para o caos real
-            <br className="hidden sm:block" /> de um pátio cheio
-          </h2>
-          <p className="mt-4 text-texto-2 leading-relaxed">
-            Sexta-feira, 18h, fila na entrada e o cartão da maquininha falhando.
-            É para esse momento que o NuvemPark foi construído.
-          </p>
-        </Reveal>
-
-        <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {lista.map((r, i) => (
-            <Reveal key={r.titulo} delay={(i % 4) * 0.08}>
-              <div className="group h-full rounded-2xl border border-borda bg-white p-6 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:border-brand-200 hover:-translate-y-0.5 transition-all">
-                <span
-                  className={`inline-grid place-items-center w-11 h-11 rounded-xl ${r.cor.fundo} ${r.cor.texto} group-hover:bg-gradient-to-br ${r.cor.hover} group-hover:text-white transition-all`}
-                >
-                  <r.Icone className="w-5 h-5" />
-                </span>
-                <h3 className="mt-4 font-extrabold text-lg text-texto">
-                  {r.titulo}
-                </h3>
-                <p className="mt-2 text-sm text-texto-2 leading-relaxed">
-                  {r.texto}
-                </p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-
-        {resumido && (
-          <Reveal delay={0.2} className="mt-10 text-center">
-            <Link
-              href="/recursos"
-              className="inline-flex items-center gap-2 text-sm font-bold text-brand-700 hover:text-brand-800 transition-colors"
-            >
-              Ver todos os recursos
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </Reveal>
-        )}
-      </div>
-    </section>
-  );
-}
-
-/* =========================================================
-   ROADMAP TEASER (features futuras — sem detalhar)
-   ========================================================= */
-export function RoadmapTeaser() {
-  const proximas = [
-    "Pagamento por Pix integrado",
-    "App para o cliente final",
-    "Exportação de relatórios",
-    "Integrações via API",
-  ];
-  return (
-    <section className="py-20 bg-white">
-      <div className="mx-auto max-w-6xl px-5">
-        <Reveal>
-          <div className="relative overflow-hidden rounded-3xl border border-borda bg-fundo p-8 sm:p-12">
-            <div className="pointer-events-none absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-violeta via-ceu to-brand-500" />
-            <div className="flex flex-col lg:flex-row lg:items-center gap-8">
-              <div className="lg:flex-1">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-violeta">
-                  Em constante evolução
-                </span>
-                <h2 className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-texto">
-                  Você assina uma vez.
-                  <br />O produto melhora todo mês.
-                </h2>
-                <p className="mt-3 text-texto-2 leading-relaxed max-w-md">
-                  Cada novidade entra no seu plano automaticamente, sem custo
-                  extra e sem &ldquo;versão premium&rdquo;. Olha o que está
-                  chegando:
-                </p>
-                <Link
-                  href="/novidades"
-                  className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-brand-700 hover:text-brand-800 transition-colors"
-                >
-                  Conhecer as novidades
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-              <div className="lg:flex-1 grid sm:grid-cols-2 gap-3">
-                {proximas.map((p) => (
-                  <div
-                    key={p}
-                    className="flex items-center gap-2.5 rounded-xl border border-borda bg-white px-4 py-3.5 shadow-[var(--shadow-card)]"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-violeta to-ceu shrink-0" />
-                    <span className="text-sm font-bold text-texto">{p}</span>
-                    <span className="ml-auto text-[10px] font-black uppercase text-violeta bg-violeta/10 rounded-full px-2 py-0.5">
-                      breve
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Reveal>
       </div>
     </section>
   );
@@ -275,84 +42,49 @@ export function RoadmapTeaser() {
    ========================================================= */
 export function ComoFunciona() {
   const passos = [
-    {
-      n: "01",
-      Icone: UserPlus,
-      titulo: "Crie sua conta em 1 minuto",
-      texto:
-        "Cadastro grátis aqui no site, sem cartão e sem falar com vendedor. Confirmou o e-mail, seu painel já abre — com 15 dias liberados na hora.",
-      grad: "from-brand-500 to-acento-teal",
-      numCor: "text-brand-100",
-    },
-    {
-      n: "02",
-      Icone: Smartphone,
-      titulo: "Baixe o app e chame sua equipe",
-      texto:
-        "Você cadastra seus pátios e operadores no painel. Eles baixam o app no Android e entram com o código do pátio — sem instalação técnica, sem obra.",
-      grad: "from-ceu to-acento-teal",
-      numCor: "text-sky-100",
-    },
-    {
-      n: "03",
-      Icone: RefreshCw,
-      titulo: "Opere e acompanhe ao vivo",
-      texto:
-        "Carro chega, câmera lê a placa, ticket sai impresso. Cada entrada e cada real aparecem no seu painel na hora — a pergunta “quanto faturou hoje?” some.",
-      grad: "from-violeta to-ceu",
-      numCor: "text-violet-100",
-    },
+    { n: "01", Icone: UserPlus, numCor: "#DCFCE7", grad: "linear-gradient(135deg,#16A34A,#166534)", sombra: "0 8px 20px -8px rgba(21,128,61,.6)", titulo: "Crie sua conta em 1 minuto", texto: "Cadastro grátis, sem cartão e sem vendedor. Confirmou o e-mail, seu painel já abre — com 15 dias liberados na hora." },
+    { n: "02", Icone: Smartphone, numCor: "#BAE6FD", grad: "linear-gradient(135deg,#0EA5E9,#166534)", sombra: "0 8px 20px -8px rgba(14,165,233,.6)", titulo: "Baixe o app e chame a equipe", texto: "Cadastre pátios e operadores no painel. Eles baixam o app no Android e entram com o código do pátio — sem obra, sem técnico." },
+    { n: "03", Icone: RefreshCw, numCor: "#E9D5FF", grad: "linear-gradient(135deg,#8B5CF6,#0EA5E9)", sombra: "0 8px 20px -8px rgba(139,92,246,.6)", titulo: "Opere e acompanhe ao vivo", texto: "Carro chega, câmera lê a placa, ticket sai impresso. Cada real aparece no seu painel na hora." },
   ];
 
   return (
-    <section id="como-funciona" className="py-24 bg-fundo">
-      <div className="mx-auto max-w-6xl px-5">
-        <Reveal className="text-center max-w-2xl mx-auto">
-          <span className="text-xs font-black uppercase tracking-[0.16em] text-brand-600">
-            Como funciona
-          </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-texto">
-            Do cadastro ao primeiro
-            <br className="hidden sm:block" /> ticket, no mesmo dia.
-          </h2>
-          <p className="mt-4 text-texto-2 leading-relaxed">
-            Sistema de estacionamento costuma significar semanas de instalação e
-            equipamento caro. Aqui você mesmo põe pra rodar — em 3 passos:
-          </p>
+    <section id="como" data-sec style={{ background: "#F3F4F6", padding: "96px 0", borderTop: "1px solid #E5E7EB" }}>
+      <div style={{ maxWidth: 1152, margin: "0 auto", padding: "0 20px" }}>
+        <Reveal>
+          <div style={{ textAlign: "center", maxWidth: 640, margin: "0 auto" }}>
+            <span style={eyebrow}>Como funciona</span>
+            <h2 data-balance style={h2}>Do cadastro ao primeiro ticket, no mesmo dia.</h2>
+            <p style={{ margin: "16px 0 0", fontSize: 17, lineHeight: 1.6, color: "#6B7280" }}>
+              Sistema de estacionamento costuma significar semanas de instalação e
+              equipamento caro. Aqui você mesmo põe pra rodar — em 3 passos.
+            </p>
+          </div>
         </Reveal>
 
-        <div className="mt-14 grid md:grid-cols-3 gap-5">
-          {passos.map((p, i) => (
-            <Reveal key={p.n} delay={i * 0.12}>
-              <div className="relative h-full rounded-2xl border border-borda bg-white p-7 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] transition-shadow">
-                <span className={`text-5xl font-black tabular-nums ${p.numCor}`}>
-                  {p.n}
-                </span>
-                <span
-                  className={`absolute top-7 right-7 inline-grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br ${p.grad} text-white shadow-lg`}
-                >
-                  <p.Icone className="w-5 h-5" />
-                </span>
-                <h3 className="mt-4 font-extrabold text-lg text-texto">
-                  {p.titulo}
-                </h3>
-                <p className="mt-2 text-sm text-texto-2 leading-relaxed">
-                  {p.texto}
-                </p>
+        <div data-steps style={{ marginTop: 56, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, position: "relative" }}>
+          {passos.map((p) => (
+            <Reveal key={p.n}>
+              <div style={{ position: "relative", borderRadius: 20, background: "#fff", border: "1px solid #E5E7EB", padding: 28, boxShadow: "0 1px 2px rgba(11,18,32,.04),0 4px 16px -4px rgba(11,18,32,.06)", height: "100%" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 44, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: p.numCor, lineHeight: 1 }}>{p.n}</span>
+                  <span style={{ width: 44, height: 44, borderRadius: 12, background: p.grad, display: "grid", placeItems: "center", boxShadow: p.sombra }}>
+                    <p.Icone size={20} strokeWidth={2} color="#fff" />
+                  </span>
+                </div>
+                <h3 style={{ margin: "20px 0 0", fontSize: 18, fontWeight: 800, color: "#1F2937" }}>{p.titulo}</h3>
+                <p style={{ margin: "8px 0 0", fontSize: 15, lineHeight: 1.6, color: "#6B7280" }}>{p.texto}</p>
               </div>
             </Reveal>
           ))}
         </div>
 
-        <Reveal delay={0.2} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a
-            href={urlApp("/cadastro")}
-            className="group inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
-          >
-            Criar minha conta grátis
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </a>
-          <PlayBadge />
+        <Reveal>
+          <div style={{ marginTop: 40, textAlign: "center" }}>
+            <a href={urlApp("/cadastro")} style={btnPrimary()}>
+              Criar minha conta grátis
+              <ArrowRight size={16} strokeWidth={2.4} />
+            </a>
+          </div>
         </Reveal>
       </div>
     </section>
@@ -360,104 +92,32 @@ export function ComoFunciona() {
 }
 
 /* =========================================================
-   PREÇOS — plano único, por pátio
+   ROADMAP
    ========================================================= */
-const RECURSOS_PLANO = [
-  "App operacional offline-first",
-  "Cobrança automática por tempo",
-  "Leitura de placa por câmera",
-  "Impressão Bluetooth com QR Code",
-  "Painel web em tempo real",
-  "Vários pátios na mesma conta",
-  "Mensalistas e livre passagem",
-  "Operadores e caixa por sessão",
-  "Relatórios de faturamento",
-  "Suporte no WhatsApp",
-  "Atualizações incluídas",
-  "Sem fidelidade — cancele quando quiser",
-];
-
-export function Precos() {
+export function Roadmap() {
+  const proximas = ["Conciliação bancária", "App para o cliente", "Exportar relatórios", "Integrações via API"];
   return (
-    <section id="precos" className="py-24 bg-white">
-      <div className="mx-auto max-w-6xl px-5">
-        <Reveal className="text-center max-w-2xl mx-auto">
-          <span className="text-xs font-black uppercase tracking-[0.16em] text-brand-600">
-            Preço
-          </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-texto">
-            Teste 15 dias grátis.
-            <br className="hidden sm:block" /> Depois, R$ 129,90 por pátio.
-          </h2>
-          <p className="mt-4 text-texto-2 leading-relaxed">
-            Comece hoje sem pagar nada e sem cartão. Só vira mensalidade se você
-            decidir ficar — e aí é um preço só: sem taxa de instalação, sem
-            cobrança por operador, sem surpresa no boleto. Um carro por dia paga
-            o sistema.
-          </p>
-        </Reveal>
-
-        <Reveal delay={0.1} className="mt-14 max-w-3xl mx-auto">
-          <div className="relative rounded-3xl bg-white border border-borda shadow-[var(--shadow-card-hover)] overflow-hidden">
-            <div className="grid md:grid-cols-2">
-              {/* Preço — a janela acesa no escuro: mesma cena do hero,
-                  invertida (a noite entra no card claro e o valor é a luz) */}
-              <div className="relative overflow-hidden p-8 sm:p-10 flex flex-col justify-center bg-noite">
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-[0.05]"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)",
-                    backgroundSize: "40px 40px",
-                  }}
-                />
-                <div className="pointer-events-none absolute -top-20 -right-16 w-72 h-72 rounded-full bg-brand-500/15 blur-3xl" />
-                <div className="relative">
-                  <span className="inline-flex w-fit items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-brand-300 bg-brand-500/10 border border-brand-400/25 px-3 py-1 rounded-full">
-                    15 dias grátis, depois:
-                  </span>
-                  <div className="mt-5 flex items-end gap-2">
-                    <span className="text-5xl sm:text-6xl font-black tabular-nums text-white">
-                      R$ 129<span className="text-3xl sm:text-4xl">,90</span>
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm font-semibold text-white/60">
-                    por mês, por pátio — tudo incluso
-                  </p>
-                  <p className="mt-5 text-sm text-white/70 leading-relaxed">
-                    Menos do que um único cliente deixa no seu caixa por dia.
-                    Adicione ou remova pátios quando quiser — o valor acompanha.
-                  </p>
-                  <a
-                    href={urlApp("/cadastro")}
-                    className="mt-7 inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
-                  >
-                    Começar grátis agora
-                    <ArrowRight className="w-4 h-4" />
-                  </a>
-                  <p className="mt-3 text-[11px] text-white/55">
-                    Sem cartão para testar. Só cobramos se você decidir continuar —
-                    e cancela quando quiser, sem multa.
-                  </p>
+    <section style={{ background: "#fff", padding: "80px 0" }}>
+      <div style={{ maxWidth: 1152, margin: "0 auto", padding: "0 20px" }}>
+        <Reveal>
+          <div data-roadmap style={{ borderRadius: 24, border: "1px solid #E5E7EB", background: "#F3F4F6", padding: 48, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "center" }}>
+            <div>
+              <span style={eyebrow}>Em constante evolução</span>
+              <h2 style={{ margin: "12px 0 0", fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: 800, letterSpacing: "-.01em", lineHeight: 1.12, color: "#1F2937" }}>
+                Você assina uma vez.<br />O produto melhora todo mês.
+              </h2>
+              <p style={{ margin: "16px 0 0", fontSize: 16, lineHeight: 1.6, color: "#6B7280", maxWidth: 420 }}>
+                Cada novidade entra no seu plano automaticamente, sem custo extra e
+                sem “versão premium”. Olha o que está chegando:
+              </p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {proximas.map((p) => (
+                <div key={p} style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 14, border: "1px solid #E5E7EB", background: "#fff", padding: "14px 16px" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 9999, background: "#16A34A", flex: "none" }} />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#1F2937" }}>{p}</span>
                 </div>
-              </div>
-
-              {/* Recursos */}
-              <div className="p-8 sm:p-10 border-t md:border-t-0 md:border-l border-borda bg-fundo/60">
-                <p className="text-[11px] font-black uppercase tracking-wider text-texto-3 mb-4">
-                  Tudo incluso
-                </p>
-                <ul className="grid gap-2.5">
-                  {RECURSOS_PLANO.map((r) => (
-                    <li key={r} className="flex items-start gap-2.5 text-sm">
-                      <span className="mt-0.5 inline-grid place-items-center w-4 h-4 rounded-full shrink-0 bg-brand-50 text-brand-600 border border-brand-200">
-                        <Check className="w-3 h-3" strokeWidth={3} />
-                      </span>
-                      <span className="text-texto-2">{r}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              ))}
             </div>
           </div>
         </Reveal>
@@ -467,88 +127,38 @@ export function Precos() {
 }
 
 /* =========================================================
-   FAIXA DE GARANTIAS (tira o medo do clique, antes do CTA)
-   ========================================================= */
-export function Garantias() {
-  const itens = [
-    { Icone: Smartphone, t: "Você mesmo cria a conta", d: "Sem vendedor, sem espera. Em 1 minuto está dentro do painel." },
-    { Icone: ShieldCheck, t: "Sem cartão para testar", d: "15 dias completos, todos os recursos. Só paga se decidir ficar." },
-    { Icone: RefreshCw, t: "Cancele quando quiser", d: "Sem fidelidade e sem multa. Seus dados são seus." },
-  ];
-  return (
-    <section className="py-16 bg-fundo border-y border-borda">
-      <div className="mx-auto max-w-5xl px-5 grid sm:grid-cols-3 gap-6">
-        {itens.map((g, i) => (
-          <Reveal key={g.t} delay={i * 0.1} className="text-center sm:text-left">
-            <span className="inline-grid place-items-center w-11 h-11 rounded-xl bg-brand-50 text-brand-600 mb-3">
-              <g.Icone className="w-5 h-5" />
-            </span>
-            <h3 className="font-extrabold text-texto">{g.t}</h3>
-            <p className="mt-1 text-sm text-texto-2 leading-relaxed">{g.d}</p>
-          </Reveal>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* =========================================================
-   CTA FINAL — a noite fecha a página como abriu (bookend do
-   hero): palco escuro, grade técnica, esmeralda como a luz
-   do dinheiro. O convite final acontece na torre de controle.
+   CTA FINAL (bookend escuro)
    ========================================================= */
 export function CtaFinal() {
   return (
-    <section id="cta" className="py-24 bg-white">
-      <div className="mx-auto max-w-5xl px-5">
+    <section style={{ background: "#fff", padding: "0 0 96px" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 20px" }}>
         <Reveal>
-          <div className="relative overflow-hidden rounded-3xl bg-noite p-10 sm:p-16 text-center shadow-[0_32px_80px_-24px_rgba(11,21,18,0.45)]">
-            {/* céu do pátio + grade técnica, iguais ao hero */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-noite via-noite-2 to-noite" />
-            <div
-              className="pointer-events-none absolute inset-0 opacity-[0.05]"
-              style={{
-                backgroundImage:
-                  "linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)",
-                backgroundSize: "44px 44px",
-                maskImage:
-                  "radial-gradient(ellipse 80% 80% at 50% 30%, black 30%, transparent 80%)",
-              }}
-            />
-            <div className="pointer-events-none absolute -top-24 -left-16 w-80 h-80 rounded-full bg-brand-500/12 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -right-16 w-72 h-72 rounded-full bg-acento/10 blur-3xl" />
-
-            <div className="relative">
-              <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-                Quanto o seu pátio
-                <br className="hidden sm:block" />{" "}
-                <span className="text-brand-400">faturou hoje?</span>
+          <div style={{ position: "relative", overflow: "hidden", borderRadius: 32, background: "#0B1220", padding: "72px 40px", textAlign: "center", boxShadow: "0 32px 80px -24px rgba(11,18,32,.45)" }}>
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,#0B1220,#10201A 55%,#0B1220)" }} />
+            <div className="np-grid np-grid-mask-cta" style={{ position: "absolute", inset: 0, opacity: 0.05 }} />
+            <div style={{ position: "absolute", top: -96, left: -64, width: "20rem", height: "20rem", borderRadius: 9999, background: "rgba(22,163,74,.12)", filter: "blur(64px)" }} />
+            <div style={{ position: "absolute", bottom: -96, right: -64, width: "18rem", height: "18rem", borderRadius: 9999, background: "rgba(14,165,233,.1)", filter: "blur(64px)" }} />
+            <div style={{ position: "relative" }}>
+              <h2 style={{ margin: 0, fontSize: "clamp(2rem,4vw,2.75rem)", fontWeight: 800, letterSpacing: "-.02em", color: "#fff" }}>
+                Quanto o seu pátio<br /><span style={{ color: "#22C55E" }}>faturou hoje?</span>
               </h2>
-              <p className="mt-4 text-white/70 max-w-xl mx-auto leading-relaxed">
-                Se a resposta foi &ldquo;preciso perguntar ao operador&rdquo;, você
-                já tem um bom motivo para testar. Crie sua conta agora e comece a
-                enxergar o faturamento em tempo real{" "}
-                <b className="text-white">hoje mesmo</b> — grátis por 15 dias, sem
-                cartão.
+              <p style={{ margin: "16px auto 0", maxWidth: 560, fontSize: 17, lineHeight: 1.6, color: "rgba(255,255,255,.7)" }}>
+                Se a resposta foi “preciso perguntar ao operador”, você já tem um
+                bom motivo para testar. Comece a enxergar o faturamento em tempo
+                real <b style={{ color: "#fff" }}>hoje mesmo</b> — grátis por 15
+                dias, sem cartão.
               </p>
-              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <a
-                  href={urlApp("/cadastro")}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
-                >
+              <div style={{ marginTop: 32, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 12 }}>
+                <a href={urlApp("/cadastro")} style={btnPrimary(52, 32)}>
                   Criar minha conta grátis
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight size={16} strokeWidth={2.4} />
                 </a>
-                <a
-                  href={WHATSAPP}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center h-12 px-8 rounded-xl border border-white/15 bg-white/[0.03] text-white/85 font-bold hover:border-white/30 hover:text-white hover:bg-white/[0.07] transition-all"
-                >
+                <a href={WHATSAPP} target="_blank" rel="noopener noreferrer" style={{ ...btnGhostDark, padding: "0 32px" }}>
                   Tirar dúvidas no WhatsApp
                 </a>
               </div>
-              <p className="mt-4 text-xs text-white/55">
+              <p style={{ margin: "16px 0 0", fontSize: 13, color: "rgba(255,255,255,.55)" }}>
                 Leva 1 minuto. Você mesmo cria a conta — sem espera, sem vendedor.
               </p>
             </div>
@@ -565,21 +175,21 @@ export function CtaFinal() {
 export function SiteFooter() {
   const colunas: {
     titulo: string;
-    links: { href: string; label: string; externo?: boolean; app?: boolean }[];
+    links: { href: string; label: string; externo?: boolean; app?: boolean; interno?: boolean }[];
   }[] = [
     {
       titulo: "Produto",
       links: [
-        { href: "/recursos", label: "Recursos" },
-        { href: "/novidades", label: "Novidades" },
-        { href: "/precos", label: "Preços" },
+        { href: "/recursos", label: "Recursos", interno: true },
+        { href: "/precos", label: "Preços", interno: true },
+        { href: "/novidades", label: "Novidades", interno: true },
       ],
     },
     {
       titulo: "Empresa",
       links: [
-        { href: "/sobre", label: "Sobre nós" },
-        { href: "/contato", label: "Contato" },
+        { href: "/sobre", label: "Sobre nós", interno: true },
+        { href: "/contato", label: "Contato", interno: true },
       ],
     },
     {
@@ -592,77 +202,50 @@ export function SiteFooter() {
     },
   ];
 
+  const linkStyle: React.CSSProperties = { fontSize: 14, color: "#6B7280" };
+
   return (
-    <footer className="bg-white border-t border-borda">
-      <div className="mx-auto max-w-6xl px-5 py-14">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+    <footer style={{ background: "#fff", borderTop: "1px solid #E5E7EB" }}>
+      <div style={{ maxWidth: 1152, margin: "0 auto", padding: "56px 20px" }}>
+        <div data-footer style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 40 }}>
           <div>
-            <div className="flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-acento-teal grid place-items-center shadow-[var(--shadow-brand)]">
-                <Marca />
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg,#16A34A,#166534)", display: "grid", placeItems: "center" }}>
+                <Marca className="w-5 h-5" corP="#166534" />
               </span>
-              <span className="font-extrabold text-texto tracking-tight">
-                Nuvem<span className="text-brand-600">Park</span>
+              <span style={{ fontWeight: 300, fontSize: 19, color: "#1F2937" }}>
+                Nuvem<span style={{ fontWeight: 800, color: "#15803D" }}>Park</span>
               </span>
             </div>
-            <p className="mt-3 text-sm text-texto-3 max-w-xs leading-relaxed">
-              O sistema que cabe no bolso do operador — e coloca o faturamento
-              do pátio na sua mão.
+            <p style={{ margin: "12px 0 0", fontSize: 14, color: "#94A3B8", maxWidth: 280, lineHeight: 1.6 }}>
+              O sistema que cabe no bolso do operador — e coloca o faturamento do
+              pátio na sua mão.
             </p>
-            <div className="mt-4">
-              <PlayBadge />
-            </div>
           </div>
 
           {colunas.map((c) => (
             <div key={c.titulo}>
-              <p className="text-xs font-black uppercase tracking-wider text-texto-3 mb-3">
-                {c.titulo}
-              </p>
-              <ul className="space-y-2.5">
-                {c.links.map((l) =>
-                  l.externo ? (
-                    <li key={l.label}>
-                      <a
-                        href={l.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-texto-2 hover:text-brand-700 transition-colors"
-                      >
-                        {l.label}
-                      </a>
-                    </li>
-                  ) : l.app ? (
-                    <li key={l.label}>
-                      <a
-                        href={l.href}
-                        className="text-sm text-texto-2 hover:text-brand-700 transition-colors"
-                      >
-                        {l.label}
-                      </a>
-                    </li>
-                  ) : (
-                    <li key={l.label}>
-                      <Link
-                        href={l.href}
-                        className="text-sm text-texto-2 hover:text-brand-700 transition-colors"
-                      >
-                        {l.label}
-                      </Link>
-                    </li>
-                  ),
-                )}
+              <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "#94A3B8" }}>{c.titulo}</p>
+              <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+                {c.links.map((l) => (
+                  <li key={l.label}>
+                    {l.interno ? (
+                      <Link href={l.href} style={linkStyle}>{l.label}</Link>
+                    ) : (
+                      <a href={l.href} target={l.externo ? "_blank" : undefined} rel={l.externo ? "noopener noreferrer" : undefined} style={linkStyle}>{l.label}</a>
+                    )}
+                  </li>
+                ))}
               </ul>
             </div>
           ))}
         </div>
 
-        <div className="mt-12 pt-6 border-t border-borda flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-texto-3">
+        <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid #E5E7EB", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, color: "#94A3B8" }}>
           <span>© 2026 NuvemPark. Todos os direitos reservados.</span>
-          <span>nuvempark.com</span>
+          <span style={{ fontFamily: MONO }}>nuvempark.com</span>
         </div>
       </div>
     </footer>
   );
 }
-

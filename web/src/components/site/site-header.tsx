@@ -45,14 +45,17 @@ export function SiteHeader() {
       <div className="mx-auto max-w-6xl px-5">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-acento-teal grid place-items-center shadow-[var(--shadow-brand)]">
-              <Marca />
+            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#16A34A] to-[#166534] grid place-items-center shadow-[0_8px_24px_-6px_rgba(21,128,61,0.5)]">
+              <Marca corP="#166534" />
             </span>
             <span
-              className={`font-extrabold tracking-tight text-lg transition-colors ${escuro ? "text-white" : "text-texto"}`}
+              className={`font-light tracking-tight text-xl transition-colors ${escuro ? "text-white" : "text-[#1F2937]"}`}
             >
               Nuvem
-              <span className={escuro ? "text-brand-400" : "text-brand-600"}>
+              <span
+                className="font-extrabold"
+                style={{ color: escuro ? "#22C55E" : "#15803D" }}
+              >
                 Park
               </span>
             </span>
@@ -92,7 +95,7 @@ export function SiteHeader() {
             </a>
             <a
               href={urlApp("/cadastro")}
-              className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
+              className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-[#16A34A] to-[#166534] shadow-[0_8px_24px_-6px_rgba(21,128,61,0.5)] hover:brightness-110 transition-all"
             >
               Começar grátis
             </a>
