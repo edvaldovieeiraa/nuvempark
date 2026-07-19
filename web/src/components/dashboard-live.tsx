@@ -122,7 +122,7 @@ export function DashboardLive({ inicial }: { inicial: Inicial }) {
 
   return (
     <div
-      className="max-w-6xl mx-auto"
+      className="max-w-6xl"
       style={{ fontFamily: "'IBM Plex Sans', sans-serif", color: "#17212B" }}
     >
       {/* ── Cabeçalho ── */}

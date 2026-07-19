@@ -189,25 +189,27 @@ input, select, textarea {
 .pshell {
   height: 100dvh;
   overflow: hidden;
-  /* O liquid glass só "aparece" com DETALHE atrás dele: blur de cor lisa é
-     invisível. Por isso, na faixa onde a sidebar fica, colocamos um RUÍDO
-     grosso (feTurbulence, baseFrequency baixa = manchas ~20-40px) que sobrevive
-     ao blur e vira frost de verdade. Fora dessa faixa o fundo é limpo. */
-  background:
-    /* 1. ruído fosco (grayscale), confinado à faixa esquerda atrás da sidebar */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")
-      left top / 262px 300px repeat-y,
-    /* 2. faixa vertical rica de cor atrás da sidebar (dá cor que atravessa o vidro) */
-    linear-gradient(180deg, rgba(45, 212, 191, 0.55), rgba(14, 165, 233, 0.42) 48%, rgba(139, 92, 246, 0.36))
-      left top / 262px 100% no-repeat,
-    /* 3. brilhos ambientes suaves no resto da tela */
-    radial-gradient(720px 520px at 8% 6%, rgba(45, 212, 191, 0.26), transparent 58%),
-    radial-gradient(760px 540px at 30% 104%, rgba(139, 92, 246, 0.15), transparent 55%),
-    radial-gradient(700px 500px at 100% 0%, rgba(249, 115, 22, 0.11), transparent 55%),
-    #EDF1F4;
+  /* Fundo LIMPO do painel. O frost do menu agora é assado no próprio menu
+     (.gnav.liquid), então não precisamos mais de faixa de cor/brilhos atrás
+     dele — que só vazavam pro lado e deixavam o fundo estranho. Cinza-claro
+     neutro (do design), com um leve gradiente pra não ficar chapado. */
+  background: linear-gradient(160deg, #F3F5F7, #E9EDF1);
 }
-.pshell .pmain { padding-left: 264px; }
-.pshell.pcollapsed .pmain { padding-left: 128px; }
+.pshell .pmain { padding-left: 264px; transition: padding-left .28s cubic-bezier(.4, 0, .2, 1); }
+.pshell.pcollapsed .pmain { padding-left: 110px; }
+/* Conteúdo do painel ocupa 100% da largura disponível: neutraliza os caps
+   max-w-* das páginas (o usuário quer tela cheia). Especificidade > utilitário. */
+.pshell .pmain > * { max-width: none; }
+/* Tipografia do design em TODAS as telas do painel: corpo IBM Plex Sans,
+   títulos Libre Franklin, placas/códigos IBM Plex Mono. Alinha as internas
+   ao redesign sem tocar em cada página. */
+.pshell .pmain { font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+.pshell .pmain h1, .pshell .pmain h2, .pshell .pmain h3 {
+  font-family: "Libre Franklin", sans-serif; letter-spacing: -0.01em;
+}
+.pshell .pmain .mono, .pshell .pmain .font-mono {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
 @media (max-width: 1023px) {
   .pshell .pmain, .pshell.pcollapsed .pmain { padding-left: 18px; }
 }
@@ -249,11 +251,11 @@ input, select, textarea {
 .gnav.collapsed .lbl { opacity: 0; max-width: 0; margin: 0 !important; }
 .gnav.collapsed .navscroll .lbl { white-space: nowrap; }
 .gnav.collapsed .hidec { opacity: 0; max-width: 0; overflow: hidden; pointer-events: none; }
-.gnav.collapsed .navitem { justify-content: center; padding-left: 0; padding-right: 0; }
+.gnav.collapsed .navitem { justify-content: center; padding-left: 0 !important; padding-right: 0 !important; }
 .gnav.collapsed .navscroll { padding-right: 0; }
 .gnav.collapsed .navitem, .gnav.collapsed .gitem, .gnav.collapsed .pitem { gap: 0 !important; }
 .gnav.collapsed .cbtn { margin-left: 0 !important; }
-.gnav.collapsed .gitem { justify-content: center; padding-left: 0; padding-right: 0; }
+.gnav.collapsed .gitem { justify-content: center; padding-left: 0 !important; padding-right: 0 !important; }
 .gnav.collapsed .subwrap { display: none; }
 .gnav.collapsed:hover { width: 240px !important; padding-left: 14px !important; padding-right: 12px !important;
   z-index: 30; box-shadow: 0 28px 70px -18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.14); }
@@ -274,15 +276,12 @@ input, select, textarea {
      sobre base escura reproduzem o vidro fosco (D) em 100% dos navegadores.
      O backdrop-filter fica como bônus pra quem o aplica de fato. */
   background:
-    /* grão de frost (feTurbulence) — dá a textura fosca do vidro */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")
-      left top / 320px 320px,
-    /* glows luminosos (luz atravessando o vidro): teal no topo, roxo embaixo, azul no meio */
-    radial-gradient(135% 50% at 24% -8%, rgba(45, 212, 191, 0.4), transparent 58%),
-    radial-gradient(150% 55% at 30% 108%, rgba(139, 92, 246, 0.34), transparent 58%),
-    radial-gradient(120% 42% at 92% 42%, rgba(14, 165, 233, 0.18), transparent 60%),
-    /* base bem escura (opaca) pra um vidro fosco mais escuro */
-    linear-gradient(160deg, rgba(18, 27, 37, 0.95), rgba(8, 12, 18, 0.97));
+    /* grão FINO e uniforme (frost) — sutil, sem manchas */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"),
+    /* leve brilho teal só no topo, centrado (uniforme mesmo recolhido) */
+    radial-gradient(150% 20% at 50% 0%, rgba(45, 212, 191, 0.14), transparent 70%),
+    /* base escura UNIFORME com leve profundidade top→baixo */
+    linear-gradient(180deg, #1b2732 0%, #141d27 55%, #10161e 100%);
   /* bônus pra navegadores que DE FATO aplicam backdrop-filter (não quebra nada sem ele) */
   backdrop-filter: blur(30px) saturate(175%) brightness(1.06);
   -webkit-backdrop-filter: blur(30px) saturate(175%) brightness(1.06);
