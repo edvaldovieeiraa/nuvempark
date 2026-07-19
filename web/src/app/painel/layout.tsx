@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { ultimaSincronizacaoPorPatio } from "@/lib/patio-scope";
 import { TelaBloqueio } from "@/components/painel-bloqueio";
@@ -24,7 +25,7 @@ export default async function PainelLayout({
     supabase.from("tenants").select("nome, codigo").single(),
     supabase
       .from("patios")
-      .select("id, nome, codigo_acesso")
+      .select("id, nome, codigo_acesso, qtd_vagas")
       .eq("ativo", true)
       .order("nome"),
     supabase.from("assinaturas").select("estado, trial_expira_em").maybeSingle(),
@@ -69,11 +70,24 @@ export default async function PainelLayout({
     (patios ?? []).map((p) => p.id),
   );
 
+  // Pátio ativo do seletor (cookie np_patio), validado contra a lista.
+  const lista = patios ?? [];
+  const cookiePatio = (await cookies()).get("np_patio")?.value;
+  const patioAtivoId =
+    lista.find((p) => p.id === cookiePatio)?.id ?? lista[0]?.id ?? "";
+
   return (
     <PainelShell
       userEmail={user.email ?? ""}
       tenantNome={tenant?.nome ?? "Minha conta"}
       sincronizacoes={sincronizacoes}
+      patios={lista.map((p) => ({
+        id: p.id,
+        nome: p.nome,
+        codigo: p.codigo_acesso ?? null,
+        vagas: p.qtd_vagas ?? 0,
+      }))}
+      patioAtivoId={patioAtivoId}
       assinaturaAlerta={assinaturaAlerta}
       sair={sair}
     >

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -31,6 +31,7 @@ import {
   History,
   PanelLeftClose,
   ChevronDown,
+  Check,
   LogOut,
   Menu as MenuIcon,
   X,
@@ -134,11 +135,15 @@ function Logo({ size = 20 }: { size?: number }) {
   );
 }
 
+type PatioOpcao = { id: string; nome: string; codigo: string | null; vagas: number };
+
 export function PainelShell({
   children,
   userEmail,
   tenantNome,
   sincronizacoes,
+  patios,
+  patioAtivoId,
   assinaturaAlerta = false,
   sair,
 }: {
@@ -146,15 +151,27 @@ export function PainelShell({
   userEmail: string;
   tenantNome: string;
   sincronizacoes: Record<string, string>;
+  patios: PatioOpcao[];
+  patioAtivoId: string;
   assinaturaAlerta?: boolean;
   sair: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const alerta = (label: string) => label === "Assinatura" && assinaturaAlerta;
 
   const [collapsed, setCollapsed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [abertos, setAbertos] = useState<Record<string, boolean>>({});
+  const [patioOpen, setPatioOpen] = useState(false);
+
+  // Seletor de pátio: pátio ativo (cookie np_patio, escopado no servidor).
+  const patioAtivo = patios.find((p) => p.id === patioAtivoId) ?? patios[0];
+  const selecionarPatio = (id: string) => {
+    document.cookie = `np_patio=${id}; path=/; max-age=31536000; samesite=lax`;
+    setPatioOpen(false);
+    router.refresh();
+  };
 
   useEffect(() => {
     const v = localStorage.getItem("painel_collapsed");
@@ -260,6 +277,97 @@ export function PainelShell({
             <PanelLeftClose className="w-[18px] h-[18px]" />
           </button>
         </div>
+
+        {/* Seletor de pátio ativo (some quando recolhido) */}
+        {patioAtivo && (
+          <div className="patiosel hidec" style={{ position: "relative", padding: "0 2px 8px" }}>
+            <div
+              onClick={() => setPatioOpen((v) => !v)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "9px 11px",
+                borderRadius: 13,
+                background: "rgba(255,255,255,.06)",
+                border: "1px solid rgba(255,255,255,.12)",
+                cursor: "pointer",
+              }}
+            >
+              <span
+                className="grid place-items-center shrink-0"
+                style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(45,212,191,.16)", color: "#5EEAD4" }}
+              >
+                <Building2 className="w-4 h-4" />
+              </span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".09em", textTransform: "uppercase", color: "rgba(255,255,255,.42)" }}>
+                  Pátio ativo
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {patioAtivo.nome}
+                </div>
+              </div>
+              <ChevronDown
+                className="chev w-[15px] h-[15px] shrink-0"
+                data-open={patioOpen}
+                style={{ color: "rgba(255,255,255,.5)" }}
+              />
+            </div>
+            {patioOpen && (
+              <>
+                <div
+                  onClick={() => setPatioOpen(false)}
+                  style={{ position: "fixed", inset: 0, zIndex: 35 }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% - 2px)",
+                    left: 2,
+                    right: 2,
+                    zIndex: 40,
+                    borderRadius: 14,
+                    padding: 6,
+                    background: "linear-gradient(160deg,#26333F,#1A2530)",
+                    border: "1px solid rgba(255,255,255,.14)",
+                    boxShadow: "0 24px 50px -14px rgba(0,0,0,.7)",
+                  }}
+                >
+                  {patios.map((p) => {
+                    const sel = p.id === patioAtivo.id;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => selecionarPatio(p.id)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "9px 10px",
+                          borderRadius: 10,
+                          cursor: "pointer",
+                          background: sel ? "rgba(94,234,212,.1)" : "transparent",
+                        }}
+                      >
+                        <span style={{ width: 8, height: 8, borderRadius: 999, flexShrink: 0, background: "#2DD4BF", opacity: 0.9 }} />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {p.nome}
+                          </div>
+                          <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: "rgba(255,255,255,.45)" }}>
+                            {p.codigo ? `#${p.codigo} · ` : ""}{p.vagas} vagas
+                          </div>
+                        </div>
+                        {sel && <Check className="w-[15px] h-[15px] shrink-0" style={{ color: "#5EEAD4" }} />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Navegação */}
         <div

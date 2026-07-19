@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardLive } from "@/components/dashboard-live";
 import { OnboardingGate } from "@/components/onboarding/onboarding-wizard";
@@ -23,8 +24,10 @@ export default async function DashboardPage({
   // Rede nova sem pátios → onboarding guiado (pátio, tarifa, ticket, operador).
   if (lista.length === 0) return <OnboardingGate />;
 
-  // Pátio em escopo: o do seletor (?patio) ou o primeiro.
-  const selecionado = lista.find((p) => p.id === patio) ?? lista[0];
+  // Pátio em escopo: cookie do seletor (np_patio) > ?patio > primeiro.
+  const cookiePatio = (await cookies()).get("np_patio")?.value;
+  const alvo = cookiePatio ?? patio;
+  const selecionado = lista.find((p) => p.id === alvo) ?? lista[0];
 
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);

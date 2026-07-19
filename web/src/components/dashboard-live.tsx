@@ -10,7 +10,6 @@ import {
   Plus,
   FileCheck,
   Clock,
-  ChevronDown,
   Bell,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -148,7 +147,6 @@ export function DashboardLive({ inicial }: { inicial: Inicial }) {
               }}
             >
               {patioNome}
-              <ChevronDown className="w-4 h-4" style={{ color: "#8695A0" }} />
             </span>
             {patioCodigo && (
               <button
