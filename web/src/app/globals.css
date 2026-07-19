@@ -176,3 +176,139 @@ input, select, textarea {
   .fundo-aurora { background: none !important; }
   .print\:hidden { display: none !important; }
 }
+
+/* ============================================================
+   REDESIGN — Menu do painel (sidebar desktop + nav mobile).
+   Portado fielmente do protótipo (NuvemPark Prototipo/Mobile).
+   Tudo escopado em .gnav / .pshell / .psheet / .pbottom — não
+   afeta nenhuma outra tela até a fatia dela ser migrada.
+   ============================================================ */
+@keyframes psheetup { from { transform: translateY(101%); } to { transform: translateY(0); } }
+@keyframes pfadein { from { opacity: 0; } to { opacity: 1; } }
+
+.pshell {
+  height: 100dvh;
+  overflow: hidden;
+  /* O liquid glass só "aparece" com DETALHE atrás dele: blur de cor lisa é
+     invisível. Por isso, na faixa onde a sidebar fica, colocamos um RUÍDO
+     grosso (feTurbulence, baseFrequency baixa = manchas ~20-40px) que sobrevive
+     ao blur e vira frost de verdade. Fora dessa faixa o fundo é limpo. */
+  background:
+    /* 1. ruído fosco (grayscale), confinado à faixa esquerda atrás da sidebar */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")
+      left top / 262px 300px repeat-y,
+    /* 2. faixa vertical rica de cor atrás da sidebar (dá cor que atravessa o vidro) */
+    linear-gradient(180deg, rgba(45, 212, 191, 0.55), rgba(14, 165, 233, 0.42) 48%, rgba(139, 92, 246, 0.36))
+      left top / 262px 100% no-repeat,
+    /* 3. brilhos ambientes suaves no resto da tela */
+    radial-gradient(720px 520px at 8% 6%, rgba(45, 212, 191, 0.26), transparent 58%),
+    radial-gradient(760px 540px at 30% 104%, rgba(139, 92, 246, 0.15), transparent 55%),
+    radial-gradient(700px 500px at 100% 0%, rgba(249, 115, 22, 0.11), transparent 55%),
+    #EDF1F4;
+}
+.pshell .pmain { padding-left: 264px; }
+.pshell.pcollapsed .pmain { padding-left: 128px; }
+@media (max-width: 1023px) {
+  .pshell .pmain, .pshell.pcollapsed .pmain { padding-left: 18px; }
+}
+
+.gnav { width: 240px; }
+.gnav .navitem { display: flex; align-items: center; }
+.gnav .lbl { white-space: nowrap; overflow: hidden; max-width: 172px; opacity: 1;
+  transition: opacity .16s ease, max-width .28s cubic-bezier(.4,0,.2,1); }
+.gnav .lbl.brand { flex-shrink: 0; max-width: none; }
+.gnav .navscroll { position: relative; flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 5px; padding-right: 2px;
+  scrollbar-width: none; -ms-overflow-style: none; }
+.gnav .navscroll::-webkit-scrollbar { width: 0; height: 0; }
+.gnav .navscroll .lbl { font-size: 12.5px; white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
+.gnav .pitem, .gnav .gitem, .gnav .subitem { position: relative; z-index: 1; }
+.gnav .hoverslider { position: absolute; left: 0; right: 0; top: 0; height: 40px; border-radius: 13px;
+  background: linear-gradient(120deg, rgba(45,212,191,.24), rgba(20,184,166,.12));
+  border: 1px solid rgba(94,234,212,.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 6px 18px -8px rgba(20,184,166,.5);
+  opacity: 0; transform: translateY(0);
+  transition: transform .32s cubic-bezier(.34,1.08,.36,1), height .32s cubic-bezier(.34,1.08,.36,1), opacity .2s ease;
+  pointer-events: none; z-index: 0; }
+.gnav .pitem { border: 1px solid transparent; }
+.gnav .pitem[data-active="true"] { color: #5EEAD4; font-weight: 700; }
+.gnav .gitem { border: 1px solid transparent; }
+.gnav .gitem[data-active="true"] { color: #5EEAD4; }
+.gnav .chev { transition: transform .22s cubic-bezier(.4,0,.2,1); }
+.gnav .chev[data-open="true"] { transform: rotate(180deg); }
+.gnav .subwrap { display: flex; flex-direction: column; gap: 2px; margin: 2px 0 4px; overflow: hidden; }
+.gnav .subitem { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 34px; border-radius: 11px;
+  color: rgba(255,255,255,.6); font-weight: 600; font-size: 12.5px; cursor: pointer; border: 1px solid transparent; }
+.gnav .subitem svg { color: rgba(255,255,255,.4); }
+.gnav .subitem[data-active="true"] { color: #5EEAD4; font-weight: 700; }
+.gnav .subitem[data-active="true"] svg { color: #5EEAD4; }
+.gnav .cbtn { cursor: pointer; border: none; background: transparent; }
+.gnav .cbtn svg { transition: transform .28s cubic-bezier(.4,0,.2,1); }
+.gnav.collapsed .cbtn svg { transform: rotate(180deg); }
+.gnav.collapsed { width: 80px !important; padding-left: 10px !important; padding-right: 10px !important; }
+.gnav.collapsed .lbl { opacity: 0; max-width: 0; margin: 0 !important; }
+.gnav.collapsed .navscroll .lbl { white-space: nowrap; }
+.gnav.collapsed .hidec { opacity: 0; max-width: 0; overflow: hidden; pointer-events: none; }
+.gnav.collapsed .navitem { justify-content: center; padding-left: 0; padding-right: 0; }
+.gnav.collapsed .navscroll { padding-right: 0; }
+.gnav.collapsed .navitem, .gnav.collapsed .gitem, .gnav.collapsed .pitem { gap: 0 !important; }
+.gnav.collapsed .cbtn { margin-left: 0 !important; }
+.gnav.collapsed .gitem { justify-content: center; padding-left: 0; padding-right: 0; }
+.gnav.collapsed .subwrap { display: none; }
+.gnav.collapsed:hover { width: 240px !important; padding-left: 14px !important; padding-right: 12px !important;
+  z-index: 30; box-shadow: 0 28px 70px -18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.14); }
+.gnav.collapsed:hover .lbl { opacity: 1; max-width: 172px; }
+.gnav.collapsed:hover .lbl.brand { max-width: none; }
+.gnav.collapsed:hover .hidec { opacity: 1; max-width: 200px; }
+.gnav.collapsed:hover .navitem { justify-content: flex-start; padding-left: 12px; padding-right: 12px; }
+.gnav.collapsed:hover .subwrap { display: flex; }
+
+/* ── Liquid Glass (iOS 26) — material translúcido do menu ──
+   Fundo quase transparente + backdrop borrado/saturado + refração pelo filtro
+   SVG (#liquidGlass, no layout raiz) + brilho especular nas bordas (rim light).
+   O -webkit- não aceita url() (Safari) → cai no blur/saturate sem a refração. */
+.gnav.liquid {
+  /* Frost ASSADO no próprio menu — não depende de backdrop-filter (que alguns
+     navegadores/GPU desligada ignoram em runtime, deixando só o tint sem borrar).
+     Como não há conteúdo real atrás da sidebar, brilhos teal/roxo + grão de vidro
+     sobre base escura reproduzem o vidro fosco (D) em 100% dos navegadores.
+     O backdrop-filter fica como bônus pra quem o aplica de fato. */
+  background:
+    /* grão de frost (feTurbulence) — dá a textura fosca do vidro */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")
+      left top / 320px 320px,
+    /* glows luminosos (luz atravessando o vidro): teal no topo, roxo embaixo, azul no meio */
+    radial-gradient(135% 50% at 24% -8%, rgba(45, 212, 191, 0.4), transparent 58%),
+    radial-gradient(150% 55% at 30% 108%, rgba(139, 92, 246, 0.34), transparent 58%),
+    radial-gradient(120% 42% at 92% 42%, rgba(14, 165, 233, 0.18), transparent 60%),
+    /* base bem escura (opaca) pra um vidro fosco mais escuro */
+    linear-gradient(160deg, rgba(18, 27, 37, 0.95), rgba(8, 12, 18, 0.97));
+  /* bônus pra navegadores que DE FATO aplicam backdrop-filter (não quebra nada sem ele) */
+  backdrop-filter: blur(30px) saturate(175%) brightness(1.06);
+  -webkit-backdrop-filter: blur(30px) saturate(175%) brightness(1.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    /* rim light no topo (vidro pegando luz) */
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.55),
+    /* anel fino de contorno */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.09),
+    /* halo interno = espessura/curvatura da lente */
+    inset 0 0 14px 2px rgba(255, 255, 255, 0.07),
+    /* bandas de refração nas laterais */
+    inset 3px 0 8px -5px rgba(255, 255, 255, 0.45),
+    inset -3px 0 8px -5px rgba(255, 255, 255, 0.2),
+    inset 0 -3px 8px -5px rgba(255, 255, 255, 0.18),
+    inset 0 -24px 50px -30px rgba(0, 0, 0, 0.4),
+    0 30px 70px -20px rgba(0, 0, 0, 0.55);
+}
+/* Faixa especular sutil no topo (o vidro pegando luz), sem lavar o conteúdo. */
+.gnav.liquid::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 46%;
+  border-radius: 26px 26px 0 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent);
+  z-index: 0;
+}

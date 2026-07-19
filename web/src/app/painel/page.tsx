@@ -29,8 +29,13 @@ export default async function DashboardPage({
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
-  const [abertosTodos, fechadosHoje, { data: recentes }, { data: ultimoSync }] =
-    await Promise.all([
+  const [
+    abertosTodos,
+    fechadosHoje,
+    { data: recentes },
+    { data: ultimoSync },
+    { count: mensalistas },
+  ] = await Promise.all([
       // Abertos de TODOS os pátios (alimenta o widget "Ocupação por pátio").
       supabase.from("tickets").select("id, patio_id").eq("status", "aberto"),
       // KPIs do pátio selecionado.
@@ -56,6 +61,11 @@ export default async function DashboardPage({
         .order("sincronizado_em", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      // Mensalistas do pátio (contagem para o card do dashboard).
+      supabase
+        .from("clientes")
+        .select("id", { count: "exact", head: true })
+        .eq("patio_id", selecionado.id),
     ]);
 
   const abertosPorPatio: Record<string, number> = {};
@@ -78,6 +88,7 @@ export default async function DashboardPage({
         totalVagas: selecionado.qtd_vagas || 0,
         faturamentoHoje,
         saidasHoje: fechadosHoje.data?.length ?? 0,
+        mensalistas: mensalistas ?? 0,
         recentes: recentes ?? [],
         abertosPorPatio,
         sincronizadoEm: ultimoSync?.sincronizado_em ?? null,

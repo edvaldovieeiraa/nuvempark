@@ -4,20 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import {
-  Wallet,
   Car,
   LogOut as SaidaIcon,
-  Receipt,
-  ParkingSquare,
-  Inbox,
-  type LucideIcon,
+  Users,
+  Plus,
+  FileCheck,
+  Clock,
+  ChevronDown,
+  Bell,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { formatarDataHora } from "@/lib/format-data";
-import { labelTicketStatus } from "@/lib/status-labels";
 import { useToast } from "@/components/ui/toast";
 import { SyncBadge } from "@/components/sync-badge";
-import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 type Patio = {
   id: string;
@@ -44,6 +42,7 @@ type Inicial = {
   totalVagas: number;
   faturamentoHoje: number;
   saidasHoje: number;
+  mensalistas: number;
   recentes: Ticket[];
   abertosPorPatio: Record<string, number>;
   sincronizadoEm: string | null;
@@ -53,11 +52,23 @@ const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
+const hora = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+// Fontes do redesign (carregadas no layout raiz).
+const LIBRE = "'Libre Franklin', sans-serif";
+const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+
+function saudacao(): string {
+  const h = new Date().getHours();
+  return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+}
 
 /**
- * Dashboard ao vivo: KPIs animados + escuta da tabela tickets via Supabase
- * Realtime (respeita RLS — só o tenant do gestor). Evento novo → toast +
- * router.refresh para revalidar os dados do server.
+ * Dashboard ao vivo (redesign) — KPIs animados + escuta de `tickets` via
+ * Supabase Realtime (respeita RLS). Evento novo → toast + router.refresh.
  */
 export function DashboardLive({ inicial }: { inicial: Inicial }) {
   const router = useRouter();
@@ -73,7 +84,6 @@ export function DashboardLive({ inicial }: { inicial: Inicial }) {
         "postgres_changes",
         { event: "*", schema: "public", table: "tickets" },
         (payload) => {
-          // Toast com debounce de 3s p/ não inundar em rajadas de sync
           const agora = Date.now();
           if (agora - ultimoEvento.current > 3000) {
             ultimoEvento.current = agora;
@@ -95,7 +105,6 @@ export function DashboardLive({ inicial }: { inicial: Inicial }) {
     return () => {
       supabase.removeChannel(channel);
     };
-    // toast é estável (useMemo no provider)
   }, [router, toast]);
 
   const {
@@ -106,293 +115,482 @@ export function DashboardLive({ inicial }: { inicial: Inicial }) {
     totalVagas,
     faturamentoHoje,
     saidasHoje,
+    mensalistas,
     recentes,
-    abertosPorPatio,
     sincronizadoEm,
   } = inicial;
   const ticketMedio = saidasHoje > 0 ? faturamentoHoje / saidasHoje : 0;
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div
+      className="max-w-6xl mx-auto"
+      style={{ fontFamily: "'IBM Plex Sans', sans-serif", color: "#17212B" }}
+    >
+      {/* ── Cabeçalho ── */}
       <motion.header
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex items-center justify-between flex-wrap gap-3"
+        className="flex items-center justify-between gap-3 mb-4"
       >
         <div>
-          <h1 className="text-[26px] font-black tracking-tight">Dashboard</h1>
-          <p className="text-sm text-texto-2 flex items-center gap-2 flex-wrap">
-            <b className="text-texto">{patioNome}</b>
+          <div style={{ fontSize: 12, color: "#5A6B78", fontWeight: 600 }}>
+            {saudacao()} 👋
+          </div>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span
+              className="inline-flex items-center gap-1.5"
+              style={{
+                fontFamily: LIBRE,
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {patioNome}
+              <ChevronDown className="w-4 h-4" style={{ color: "#8695A0" }} />
+            </span>
             {patioCodigo && (
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(patioCodigo);
-                  toast.sucesso(
-                    "Copiado!",
-                    `Código de acesso do app: ${patioCodigo}`,
-                  );
+                  toast.sucesso("Copiado!", `Código de acesso do app: ${patioCodigo}`);
                 }}
                 title="Código que o operador digita no app — clique para copiar"
-                className="font-mono font-black tracking-[0.25em] text-xs text-brand-700 bg-brand-50 border border-brand-200 rounded-lg px-2 py-0.5 hover:bg-brand-100 transition-colors"
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.2em",
+                  color: "#0E7C74",
+                  background: "#E6F4F2",
+                  border: "1px solid #C9E7E3",
+                  borderRadius: 8,
+                  padding: "2px 8px",
+                }}
               >
                 {patioCodigo}
               </button>
             )}
-            <span className="text-texto-3">
-              · {patios.length} {patios.length === 1 ? "pátio" : "pátios"} na
-              rede
+            <span style={{ fontSize: 12, color: "#8695A0" }}>
+              · {patios.length} {patios.length === 1 ? "pátio" : "pátios"}
             </span>
-          </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <SyncBadge iso={sincronizadoEm} />
           <span
-            className={`inline-flex items-center gap-2 text-xs font-bold px-3.5 py-2 rounded-full transition-colors ${
-              aoVivo
-                ? "bg-brand-50 text-brand-700 border border-brand-200"
-                : "bg-superficie text-texto-3 border border-borda"
-            }`}
+            className="relative inline-grid place-items-center"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              border: "1px solid rgba(255,255,255,.8)",
+              background: "rgba(255,255,255,.7)",
+              color: "#46545E",
+            }}
+            title="Notificações"
           >
-            <span className="relative flex w-2 h-2">
-              {aoVivo && (
-                <span className="absolute inline-flex w-full h-full rounded-full bg-brand-500 animate-ping-slow" />
-              )}
+            <Bell className="w-[19px] h-[19px]" />
+            {aoVivo && (
               <span
-                className={`relative inline-flex w-2 h-2 rounded-full ${aoVivo ? "bg-brand-500" : "bg-texto-3"}`}
+                style={{
+                  position: "absolute",
+                  top: 9,
+                  right: 10,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  background: "#2DD4BF",
+                  border: "2px solid #fff",
+                }}
               />
-            </span>
-            {aoVivo ? "AO VIVO" : "conectando…"}
+            )}
           </span>
         </div>
       </motion.header>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi
-          destaque
-          indice={0}
-          Icone={Wallet}
-          label="Faturamento hoje"
-          valor={faturamentoHoje}
-          formato="moeda"
-        />
-        <Kpi
-          indice={1}
-          Icone={Car}
-          label="No pátio agora"
-          valor={noPatio}
-          sufixo={totalVagas > 0 ? ` / ${totalVagas}` : ""}
-        />
-        <Kpi indice={2} Icone={SaidaIcon} label="Saídas hoje" valor={saidasHoje} />
-        <Kpi
-          indice={3}
-          Icone={Receipt}
-          label="Ticket médio"
-          valor={ticketMedio}
-          formato="moeda"
-        />
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-4 items-start">
+        {/* ── Coluna esquerda: hero + stats + ações ── */}
+        <div className="flex flex-col gap-3.5">
+          {/* Hero: faturamento hoje */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              borderRadius: 22,
+              padding: 22,
+              background:
+                "linear-gradient(135deg,#1B2733,#243240 55%,#2A3947)",
+              color: "#fff",
+              boxShadow: "0 24px 50px -22px rgba(20,29,40,.6)",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: -30,
+                right: -10,
+                width: 180,
+                height: 180,
+                borderRadius: 999,
+                background: "rgba(45,212,191,.18)",
+                filter: "blur(46px)",
+              }}
+            />
+            <div className="relative flex items-center justify-between">
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,.55)",
+                }}
+              >
+                Faturamento hoje
+              </span>
+              <span
+                className="inline-flex items-center gap-1.5"
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  background: "rgba(45,212,191,.16)",
+                  color: "#5EEAD4",
+                  border: "1px solid rgba(94,234,212,.34)",
+                }}
+              >
+                <span className="relative flex" style={{ width: 7, height: 7 }}>
+                  {aoVivo && (
+                    <span
+                      className="absolute animate-ping-slow"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: 999,
+                        background: "#2DD4BF",
+                      }}
+                    />
+                  )}
+                  <span
+                    className="relative"
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: 999,
+                      background: aoVivo ? "#2DD4BF" : "rgba(255,255,255,.4)",
+                    }}
+                  />
+                </span>
+                {aoVivo ? "AO VIVO" : "CONECTANDO"}
+              </span>
+            </div>
+            <div
+              className="relative"
+              style={{
+                marginTop: 10,
+                fontFamily: LIBRE,
+                fontWeight: 700,
+                fontSize: 42,
+                letterSpacing: "-0.02em",
+                fontVariantNumeric: "tabular-nums",
+                lineHeight: 1,
+              }}
+            >
+              <NumeroAnimado valor={faturamentoHoje} formato="moeda" />
+            </div>
+            <div
+              className="relative"
+              style={{ marginTop: 9, fontSize: 12, color: "rgba(255,255,255,.6)" }}
+            >
+              ticket{" "}
+              <b style={{ color: "#fff" }}>{moeda.format(ticketMedio)}</b> ·{" "}
+              <b style={{ color: "#2DD4BF" }}>{saidasHoje}</b> saídas hoje
+            </div>
+          </motion.div>
 
-      <div className="grid lg:grid-cols-3 gap-4 items-start">
-        {/* Ocupação por pátio */}
+          {/* 3 stats */}
+          <div className="grid grid-cols-3 gap-2.5">
+            <StatCard
+              indice={0}
+              Icone={Car}
+              iconBg="#EEF4FF"
+              iconFg="#0EA5E9"
+              label="No pátio"
+              valor={noPatio}
+              sufixo={totalVagas > 0 ? `/${totalVagas}` : ""}
+            />
+            <StatCard
+              indice={1}
+              Icone={SaidaIcon}
+              iconBg="#FFF3E8"
+              iconFg="#F97316"
+              label="Saídas"
+              valor={saidasHoje}
+            />
+            <StatCard
+              indice={2}
+              Icone={Users}
+              iconBg="#F3EEFE"
+              iconFg="#8B5CF6"
+              label="Mensal."
+              valor={mensalistas}
+            />
+          </div>
+
+          {/* Ações */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              onClick={() => router.push("/painel/mensalistas")}
+              className="flex items-center justify-center gap-2"
+              style={{
+                height: 52,
+                borderRadius: 15,
+                border: "none",
+                background: "linear-gradient(90deg,#0E7C74,#14B8A6)",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                boxShadow: "0 12px 26px -10px rgba(14,124,116,.5)",
+              }}
+            >
+              <Plus className="w-[18px] h-[18px]" />
+              Novo mensalista
+            </button>
+            <button
+              onClick={() => router.push("/painel/financeiro/prestacao")}
+              className="flex items-center justify-center gap-2"
+              style={{
+                height: 52,
+                borderRadius: 15,
+                border: "1px solid #D6DDE3",
+                background: "#fff",
+                color: "#1F2A33",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              <FileCheck className="w-[18px] h-[18px]" style={{ color: "#0E7C74" }} />
+              Prestação
+            </button>
+          </div>
+        </div>
+
+        {/* ── Coluna direita: movimentos ao vivo ── */}
         <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.15 }}
-          className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden"
+          style={{
+            borderRadius: 18,
+            background: "#fff",
+            border: "1px solid #E4E8EC",
+            boxShadow: "0 4px 16px -6px rgba(16,27,20,.08)",
+            overflow: "hidden",
+          }}
         >
-          <div className="px-5 py-4 border-b border-borda flex items-center gap-2">
-            <ParkingSquare className="w-4 h-4 text-brand-600" />
-            <h2 className="font-bold text-sm">Ocupação por pátio</h2>
+          <div className="flex items-center justify-between" style={{ padding: "13px 16px" }}>
+            <div className="flex items-center gap-2">
+              <Clock className="w-[15px] h-[15px]" style={{ color: "#0E7C74" }} />
+              <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>
+                Movimentos ao vivo
+              </h3>
+            </div>
+            <button
+              onClick={() => router.push("/painel/movimentos")}
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#0E7C74",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Ver tudo
+            </button>
           </div>
-          <div className="p-5 space-y-4">
-            {patios.length === 0 ? (
-              <Vazio texto="Nenhum pátio ativo." />
+          <div style={{ padding: "2px 8px 10px" }}>
+            {recentes.length === 0 ? (
+              <div
+                className="flex flex-col items-center text-center gap-2"
+                style={{ padding: "40px 24px", color: "#8695A0" }}
+              >
+                <span
+                  className="grid place-items-center"
+                  style={{ width: 44, height: 44, borderRadius: 14, background: "#F1F4F6" }}
+                >
+                  <Car className="w-5 h-5" style={{ color: "#9AA6B0" }} />
+                </span>
+                <p style={{ fontSize: 13, maxWidth: 260 }}>
+                  Nenhum ticket ainda. Os movimentos do app aparecem aqui em tempo real.
+                </p>
+              </div>
             ) : (
-              patios.map((p, i) => {
-                const ocupadas = abertosPorPatio[p.id] ?? 0;
-                const pct =
-                  p.qtd_vagas > 0
-                    ? Math.min(100, (ocupadas / p.qtd_vagas) * 100)
-                    : 0;
-                const cheio = pct >= 90;
+              recentes.map((t, i) => {
+                const saiu = t.status === "fechado";
+                const quando = saiu && t.saida ? t.saida : t.entrada;
                 return (
-                  <div key={p.id}>
-                    <div className="flex items-center justify-between mb-1.5 gap-2">
-                      <span className="text-sm font-bold truncate">{p.nome}</span>
-                      <span className="flex items-center gap-2 shrink-0">
-                        {p.codigo_acesso && (
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(p.codigo_acesso!);
-                              toast.sucesso(
-                                "Copiado!",
-                                `Código do ${p.nome}: ${p.codigo_acesso}`,
-                              );
-                            }}
-                            title="Código de acesso do app — clique para copiar"
-                            className="font-mono font-black tracking-[0.2em] text-[11px] text-brand-700 bg-brand-50 border border-brand-200 rounded-md px-1.5 py-0.5 hover:bg-brand-100 transition-colors"
-                          >
-                            {p.codigo_acesso}
-                          </button>
-                        )}
-                        <span className="text-xs font-semibold text-texto-2 tabular-nums">
-                          {ocupadas}
-                          {p.qtd_vagas > 0 && ` / ${p.qtd_vagas}`}
-                        </span>
-                      </span>
-                    </div>
-                    <div className="h-2.5 rounded-full bg-fundo overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{
-                          duration: 0.9,
-                          delay: 0.3 + i * 0.08,
-                          ease: [0.22, 1, 0.36, 1],
+                  <motion.div
+                    key={t.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 + i * 0.03 }}
+                    className="flex items-center gap-3"
+                    style={{
+                      padding: "9px 8px",
+                      borderRadius: 12,
+                      background: i % 2 ? "#FAFBFC" : "transparent",
+                    }}
+                  >
+                    <span
+                      className="grid place-items-center shrink-0"
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 10,
+                        background: saiu ? "#FFF3E8" : "#E6F4F2",
+                        color: saiu ? "#F97316" : "#0E7C74",
+                      }}
+                    >
+                      {saiu ? (
+                        <SaidaIcon className="w-4 h-4" />
+                      ) : (
+                        <Car className="w-4 h-4" />
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <div
+                        style={{
+                          fontFamily: MONO,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: "0.08em",
                         }}
-                        className={`h-full rounded-full ${
-                          cheio
-                            ? "bg-gradient-to-r from-saida to-perigo"
-                            : "bg-gradient-to-r from-brand-500 to-acento-teal"
-                        }`}
-                      />
+                      >
+                        {t.placa}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#8695A0" }}>
+                        {t.tipo_veiculo} · {saiu ? "saída" : "entrada"} ·{" "}
+                        {hora.format(new Date(quando))}
+                      </div>
                     </div>
-                  </div>
+                    <span className="ml-auto shrink-0">
+                      {saiu ? (
+                        <span
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 800,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {t.valor_cobrado != null
+                            ? moeda.format(Number(t.valor_cobrado))
+                            : "—"}
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#0E7C74",
+                            background: "#E6F4F2",
+                            border: "1px solid #C9E7E3",
+                            borderRadius: 999,
+                            padding: "3px 9px",
+                          }}
+                        >
+                          no pátio
+                        </span>
+                      )}
+                    </span>
+                  </motion.div>
                 );
               })
             )}
           </div>
-        </motion.section>
-
-        {/* Últimos movimentos */}
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.2 }}
-          className="lg:col-span-2 bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden"
-        >
-          <div className="px-5 py-4 border-b border-borda">
-            <h2 className="font-bold text-sm">Últimos movimentos</h2>
-          </div>
-          {recentes.length === 0 ? (
-            <Vazio texto="Nenhum ticket ainda. Os movimentos do app aparecem aqui em tempo real." />
-          ) : (
-            <ResponsiveTable>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-[11px] text-texto-3 uppercase tracking-wider">
-                    <th className="px-5 py-3 font-bold">Placa</th>
-                    <th className="px-5 py-3 font-bold hidden md:table-cell">Tipo</th>
-                    <th className="px-5 py-3 font-bold">Entrada</th>
-                    <th className="px-5 py-3 font-bold">Status</th>
-                    <th className="px-5 py-3 font-bold text-right">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentes.map((t, i) => (
-                    <motion.tr
-                      key={t.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.25 + i * 0.04 }}
-                      className="border-t border-borda hover:bg-brand-50/40 transition-colors"
-                    >
-                      <td className="px-5 py-3">
-                        <span className="font-black tracking-widest text-[13px] bg-fundo border border-borda rounded-md px-2 py-1">
-                          {t.placa}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-texto-2 capitalize hidden md:table-cell">
-                        {t.tipo_veiculo}
-                      </td>
-                      <td className="px-5 py-3 text-texto-2 tabular-nums whitespace-nowrap">
-                        {formatarDataHora(t.entrada)}
-                      </td>
-                      <td className="px-5 py-3">
-                        <StatusChip status={t.status} />
-                      </td>
-                      <td className="px-5 py-3 text-right font-bold tabular-nums">
-                        {t.valor_cobrado != null
-                          ? moeda.format(Number(t.valor_cobrado))
-                          : "—"}
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </ResponsiveTable>
-          )}
         </motion.section>
       </div>
     </div>
   );
 }
 
-/* ---------- KPI com número animado ---------- */
+/* ---------- Stat card ---------- */
 
-function Kpi({
+function StatCard({
+  Icone,
+  iconBg,
+  iconFg,
   label,
   valor,
-  Icone,
-  formato,
   sufixo = "",
-  destaque = false,
   indice,
 }: {
+  Icone: typeof Car;
+  iconBg: string;
+  iconFg: string;
   label: string;
   valor: number;
-  Icone: LucideIcon;
-  formato?: "moeda";
   sufixo?: string;
-  destaque?: boolean;
   indice: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay: indice * 0.07 }}
-      whileHover={{ y: -3 }}
-      className={`relative overflow-hidden rounded-2xl p-5 transition-shadow ${
-        destaque
-          ? "bg-gradient-to-br from-brand-700 via-brand-600 to-acento-teal text-white shadow-[var(--shadow-brand)]"
-          : "bg-superficie border border-borda shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)]"
-      }`}
+      transition={{ duration: 0.4, delay: indice * 0.07 }}
+      style={{
+        borderRadius: 16,
+        padding: 14,
+        background: "#fff",
+        border: "1px solid #E4E8EC",
+        boxShadow: "0 4px 16px -6px rgba(16,27,20,.08)",
+      }}
     >
-      {destaque && (
-        <div className="pointer-events-none absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
-      )}
-      <div className="flex items-center justify-between">
-        <span
-          className={`text-[11px] font-bold uppercase tracking-wider ${
-            destaque ? "text-white/75" : "text-texto-3"
-          }`}
-        >
-          {label}
-        </span>
-        <span
-          className={`w-8 h-8 rounded-lg grid place-items-center ${
-            destaque ? "bg-white/15" : "bg-brand-50 text-brand-600"
-          }`}
-        >
-          <Icone className="w-4 h-4" />
-        </span>
+      <span
+        className="grid place-items-center"
+        style={{ width: 30, height: 30, borderRadius: 9, background: iconBg, color: iconFg }}
+      >
+        <Icone className="w-4 h-4" />
+      </span>
+      <div
+        style={{
+          marginTop: 10,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.05em",
+          textTransform: "uppercase",
+          color: "#8695A0",
+        }}
+      >
+        {label}
       </div>
-      <div className="mt-2 text-[26px] font-black tabular-nums leading-none">
-        <NumeroAnimado valor={valor} formato={formato} />
+      <div
+        style={{
+          marginTop: 3,
+          fontFamily: LIBRE,
+          fontSize: 21,
+          fontWeight: 700,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        <NumeroAnimado valor={valor} />
         {sufixo && (
-          <span
-            className={`text-base font-bold ${destaque ? "text-white/70" : "text-texto-3"}`}
-          >
-            {sufixo}
-          </span>
+          <span style={{ fontSize: 13, color: "#8695A0" }}>{sufixo}</span>
         )}
       </div>
     </motion.div>
   );
 }
+
+/* ---------- Número animado ---------- */
 
 function NumeroAnimado({
   valor,
@@ -415,34 +613,4 @@ function NumeroAnimado({
   }, [valor, mv]);
 
   return <motion.span>{texto}</motion.span>;
-}
-
-/* ---------- Auxiliares ---------- */
-
-function Vazio({ texto }: { texto: string }) {
-  return (
-    <div className="px-5 py-10 flex flex-col items-center gap-2 text-center">
-      <span className="w-11 h-11 rounded-2xl bg-fundo grid place-items-center">
-        <Inbox className="w-5 h-5 text-texto-3" />
-      </span>
-      <p className="text-sm text-texto-3 max-w-[280px]">{texto}</p>
-    </div>
-  );
-}
-
-function StatusChip({ status }: { status: string }) {
-  const cfg =
-    status === "aberto"
-      ? { cls: "bg-brand-50 text-brand-700 border-brand-200", dot: "bg-brand-500", label: "no pátio" }
-      : status === "fechado"
-        ? { cls: "bg-fundo text-texto-2 border-borda", dot: "bg-texto-3", label: "saiu" }
-        : { cls: "bg-saida-bg text-saida border-saida/20", dot: "bg-saida", label: labelTicketStatus(status) };
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${cfg.cls}`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-      {cfg.label}
-    </span>
-  );
 }
