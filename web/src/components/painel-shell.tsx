@@ -103,8 +103,22 @@ const NAV: Item[] = [
   },
 ];
 
-function ativa(pathname: string, href: string) {
+// Todos os hrefs navegáveis, para desempatar por "match mais específico".
+const TODOS_HREF = NAV.flatMap((i) =>
+  i.filhos ? i.filhos.map((f) => f.href) : i.href ? [i.href] : [],
+);
+
+function casa(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
+}
+// Ativo só se casar E nenhum href mais específico também casar. Sem isso o
+// Dashboard ("/painel") acenderia em toda rota, e "Clientes"
+// ("/painel/mensalistas") roubaria o destaque de "/painel/mensalistas/planos".
+function ativa(pathname: string, href: string) {
+  if (!casa(pathname, href)) return false;
+  return !TODOS_HREF.some(
+    (o) => o.length > href.length && casa(pathname, o),
+  );
 }
 function grupoAtivo(pathname: string, item: Item) {
   return item.filhos?.some((f) => ativa(pathname, f.href)) ?? false;

@@ -84,6 +84,17 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
                 onTap: _confirmarLogout,
               ),
             ]),
+
+            // Logo da marca no pé do menu, abaixo do "Sair do app".
+            const SizedBox(height: 28),
+            Center(
+              child: Image.asset(
+                'assets/images/nuvempark-logo-principal.png',
+                width: 210,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
