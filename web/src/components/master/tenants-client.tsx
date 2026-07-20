@@ -438,7 +438,7 @@ function ModalCriarTenant({ fechar }: { fechar: () => void }) {
             </Campo>
             <div className="pt-1 border-t border-borda" />
             <Campo label="Valor por pátio (mensal, R$)">
-              <Input name="valor_por_patio" defaultValue="199.00" />
+              <Input name="valor_por_patio" defaultValue="129.90" />
             </Campo>
             <Botao carregando={pendente} className="w-full">
               Criar rede

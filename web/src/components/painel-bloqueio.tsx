@@ -67,7 +67,7 @@ export function TelaBloqueio({
               Plano NuvemPark
             </span>
             <span className="text-2xl font-black text-brand-700">
-              R$ 199
+              R$ 129,90
               <span className="text-sm font-bold text-texto-3">/pátio/mês</span>
             </span>
           </div>

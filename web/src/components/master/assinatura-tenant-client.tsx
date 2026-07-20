@@ -244,6 +244,7 @@ export function AssinaturaTenantClient(props: {
         <div className="mt-5 pt-4 border-t border-borda flex items-center gap-2 flex-wrap">
           <EditarCobranca
             tenantId={props.tenantId}
+            valorInicial={props.valorPorPatio}
             emailInicial={props.emailCobranca}
             cpfInicial={props.cpfCnpj}
             diaInicial={props.diaVencimento}
@@ -526,11 +527,13 @@ function LinhaFatura({
 
 function EditarCobranca({
   tenantId,
+  valorInicial,
   emailInicial,
   cpfInicial,
   diaInicial,
 }: {
   tenantId: string;
+  valorInicial: number;
   emailInicial: string | null;
   cpfInicial: string | null;
   diaInicial: number;
@@ -538,16 +541,26 @@ function EditarCobranca({
   const toast = useToast();
   const [aberto, setAberto] = useState(false);
   const [salvando, comecar] = useTransition();
+  // Valor editável como texto (aceita vírgula ou ponto). Ex.: "129,90".
+  const [valor, setValor] = useState(
+    valorInicial.toFixed(2).replace(".", ","),
+  );
   const [email, setEmail] = useState(emailInicial ?? "");
   const [cpf, setCpf] = useState(cpfInicial ?? "");
   const [dia, setDia] = useState(String(diaInicial ?? 10));
 
   function salvar() {
+    const valorNum = Number(valor.replace(/\./g, "").replace(",", "."));
+    if (!Number.isFinite(valorNum) || valorNum < 0) {
+      toast.erro("Valor por pátio inválido.");
+      return;
+    }
     comecar(async () => {
       const r = await salvarDadosCobranca(tenantId, {
         email: email.trim(),
         cpfCnpj: cpf.trim(),
         diaVencimento: Number(dia) || 10,
+        valorPorPatio: valorNum,
       });
       if (r?.ok) {
         toast.sucesso(r.msg);
@@ -565,7 +578,7 @@ function EditarCobranca({
         className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-borda bg-superficie text-texto-2 text-sm font-bold hover:bg-fundo transition-colors"
       >
         <Pencil className="w-4 h-4" />
-        Dados de cobrança
+        Editar plano e cobrança
       </button>
 
       <AnimatePresence>
@@ -577,7 +590,24 @@ function EditarCobranca({
             transition={{ duration: 0.2 }}
             className="w-full overflow-hidden"
           >
-            <div className="mt-2 grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end bg-fundo/60 border border-borda rounded-xl p-4">
+            <div className="mt-2 grid sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-end bg-fundo/60 border border-borda rounded-xl p-4">
+              <label className="text-sm">
+                <span className="block text-xs font-bold text-texto-3 mb-1">
+                  Valor por pátio
+                </span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-texto-3 pointer-events-none">
+                    R$
+                  </span>
+                  <input
+                    inputMode="decimal"
+                    value={valor}
+                    onChange={(e) => setValor(e.target.value)}
+                    placeholder="129,90"
+                    className="w-32 h-10 pl-9 pr-3 rounded-lg border border-borda bg-superficie text-sm font-bold tabular-nums focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10"
+                  />
+                </div>
+              </label>
               <label className="text-sm">
                 <span className="block text-xs font-bold text-texto-3 mb-1">
                   E-mail de cobrança

@@ -378,22 +378,41 @@ export async function alternarSuspensao(
 /** Salva os dados de cobrança da rede (e-mail, CPF/CNPJ, dia de vencimento). */
 export async function salvarDadosCobranca(
   tenantId: string,
-  dados: { email: string; cpfCnpj: string; diaVencimento: number },
+  dados: {
+    email: string;
+    cpfCnpj: string;
+    diaVencimento: number;
+    // Mensalidade por pátio. Opcional: quando ausente, o valor não é mexido.
+    valorPorPatio?: number;
+  },
 ): Promise<Resultado> {
   if (!(await sessaoMasterAtiva()))
     return { ok: false, msg: "Sessão master expirada." };
 
+  const patch: Record<string, unknown> = {
+    email_cobranca: dados.email || null,
+    cpf_cnpj: dados.cpfCnpj || null,
+    dia_vencimento: Math.min(28, Math.max(1, dados.diaVencimento || 10)),
+  };
+
+  // Só grava o valor quando veio um número válido e não-negativo — evita zerar
+  // a mensalidade por engano. Faturas JÁ emitidas não mudam (o valor é copiado
+  // para a fatura na emissão); o novo valor vale das próximas em diante.
+  if (
+    dados.valorPorPatio !== undefined &&
+    Number.isFinite(dados.valorPorPatio) &&
+    dados.valorPorPatio >= 0
+  ) {
+    patch.valor_por_patio = Math.round(dados.valorPorPatio * 100) / 100;
+  }
+
   const sb = createAdminClient();
   const { error } = await sb
     .from("assinaturas")
-    .update({
-      email_cobranca: dados.email || null,
-      cpf_cnpj: dados.cpfCnpj || null,
-      dia_vencimento: Math.min(28, Math.max(1, dados.diaVencimento || 10)),
-    })
+    .update(patch)
     .eq("tenant_id", tenantId);
   if (error) return { ok: false, msg: "Não foi possível salvar." };
 
   revalida();
-  return { ok: true, msg: "Dados de cobrança atualizados." };
+  return { ok: true, msg: "Dados da assinatura atualizados." };
 }

@@ -128,7 +128,7 @@ export async function criarContaTrial(
   const expira = new Date(Date.now() + TRIAL_DIAS * 24 * 60 * 60 * 1000);
   await sb.from("assinaturas").insert({
     tenant_id: tenant.id,
-    valor_por_patio: 199,
+    valor_por_patio: 129.9,
     estado: "trial",
     trial_expira_em: expira.toISOString(),
     origem: "signup",
