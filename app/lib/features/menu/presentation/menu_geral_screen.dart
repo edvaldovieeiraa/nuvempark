@@ -85,14 +85,31 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
               ),
             ]),
 
-            // Logo da marca no pé do menu, abaixo do "Sair do app".
-            const SizedBox(height: 28),
-            Center(
-              child: Image.asset(
-                'assets/images/nuvempark-logo-principal.png',
-                width: 210,
-                fit: BoxFit.contain,
-              ),
+            // Logo da marca no pé do menu, abaixo do "Sair do app". Variante
+            // TRANSPARENTE (a de fundo branco viraria um retângulo branco sobre
+            // o fundo #F4F8F5). Opacidade .95 + versão, como no protótipo.
+            const SizedBox(height: 26),
+            Column(
+              children: [
+                Opacity(
+                  opacity: 0.95,
+                  child: Image.asset(
+                    'assets/images/nuvempark-logo-principal-transp.png',
+                    width: 194,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'versão 1.0.0',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    height: 1,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFFCBD5C6),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
           ],

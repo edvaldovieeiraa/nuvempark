@@ -130,22 +130,35 @@ class SyncEngine {
         },
       );
 
+      final body = resp.data;
+
+      // BLINDAGEM: só é sucesso se a resposta for o JSON esperado da API
+      // (`{ok:true, ...}`). Um proxy no meio (Cloudflare) pode devolver 200 com
+      // uma PÁGINA HTML de desafio — e aí `body` chega como String, não Map.
+      // Tratar isso como sucesso marcaria o item 'sincronizado' e o APAGARIA da
+      // fila sem a API ter recebido nada: perda silenciosa de dado, justamente
+      // no caminho mais crítico do app. Sem `ok:true`, é retry — o item fica na
+      // fila e sobe de novo no próximo tick (com backoff).
+      if (body is! Map || body['ok'] != true) {
+        await _registrarFalha(
+          item,
+          'Resposta inesperada do /sync (sem ok:true) — possível desafio de proxy',
+        );
+        return _Envio.retry;
+      }
+
       // Camada 2: o servidor pode responder 200 sinalizando que ignorou o update
       // porque o ticket foi removido no painel (Limpeza de Pátio). Isso é SUCESSO
       // do item — nunca retry — e dispara a convergência local do ticket.
-      final body = resp.data;
       final ignoradoRemovido = item.entidade == 'ticket' &&
-          body is Map &&
           body['ignorado'] == true &&
           body['motivo'] == 'removido';
 
       // Hora do servidor: é ela que o painel exibe. Guardar a nossa faria as
       // duas telas mostrarem números diferentes para o mesmo evento.
-      if (body is Map) {
-        final iso = body['sincronizado_em'];
-        if (iso is String) {
-          _ultimoCarimboServidor = DateTime.tryParse(iso)?.toLocal();
-        }
+      final iso = body['sincronizado_em'];
+      if (iso is String) {
+        _ultimoCarimboServidor = DateTime.tryParse(iso)?.toLocal();
       }
 
       // Marca o sync_log e a flag da entidade na MESMA transação: sem isto, se

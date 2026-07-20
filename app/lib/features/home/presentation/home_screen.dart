@@ -19,6 +19,7 @@ import '../../tickets/data/foto_entrada_service.dart';
 import '../../tickets/data/placa_ocr_service.dart';
 import '../../tickets/presentation/camera_placa_screen.dart';
 import '../../tickets/presentation/providers/ticket_provider.dart';
+import '../../tickets/domain/ticket_model.dart';
 import '../../tickets/domain/ticket_qr.dart';
 import '../../tickets/presentation/placa_formatter.dart';
 import '../../tickets/presentation/qr_scanner_screen.dart';
@@ -146,8 +147,133 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                 ],
               ),
+
+              // Últimas entradas: 5 veículos mais recentes no pátio, cada um
+              // toca direto na saída/pagamento.
+              ..._blocoUltimasEntradas(abertos),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Card "Últimas entradas": os 5 veículos mais recentes no pátio. Cada linha
+  /// toca direto na saída/pagamento daquele ticket, e o "ver todas" leva à aba
+  /// Pátio. Some quando o pátio está vazio (não há saída a registrar).
+  List<Widget> _blocoUltimasEntradas(List<TicketModel> abertos) {
+    if (abertos.isEmpty) return const [];
+    final recentes = [...abertos]
+      ..sort((a, b) => b.entrada.compareTo(a.entrada));
+    final top = recentes.take(5).toList();
+
+    return [
+      const SizedBox(height: 14),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+                color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 6),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Últimas entradas',
+                      style: TextStyle(
+                          fontSize: 14,
+                          height: 1.2,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.onSurface),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: widget.onVerPatio,
+                    borderRadius: BorderRadius.circular(999),
+                    child: _pilula(
+                      texto: 'ver todas',
+                      bg: AppColors.primaryContainer,
+                      fg: AppColors.primary,
+                      icone: Icons.arrow_forward,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            for (var i = 0; i < top.length; i++)
+              _linhaEntrada(top[i], divisoria: i < top.length - 1),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  /// Uma linha do card de entradas — toca e vai para a saída/pagamento do
+  /// ticket. O chevron sinaliza que a linha navega.
+  Widget _linhaEntrada(TicketModel t, {required bool divisoria}) {
+    return InkWell(
+      onTap: () => context.push(Routes.saidaDetalhe(t.id)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          border: divisoria
+              ? const Border(
+                  bottom: BorderSide(
+                      color: AppColors.surfaceContainerHigh, width: 1))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.entradaBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.directions_car,
+                  size: 19, color: AppColors.entrada),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.placa,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 14.5,
+                        height: 1.3,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                        color: AppColors.onSurface),
+                  ),
+                  Text(
+                    'entrou às ${_hora.format(t.entrada)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 11.5,
+                        height: 1.3,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, size: 20, color: AppColors.outline),
+          ],
         ),
       ),
     );
