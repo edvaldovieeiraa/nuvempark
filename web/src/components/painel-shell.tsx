@@ -257,12 +257,18 @@ export function PainelShell({
         <div className="navitem" style={{ gap: 10, padding: "2px 4px 10px" }}>
           <div
             className="grid place-items-center shrink-0"
+            // Recolhida, o botão de expandir (.cbtn) fica oculto/sem clique (só
+            // no hover) — o operador ficava sem como reabrir. O logo está SEMPRE
+            // visível no topo, então ele vira o alvo de expandir quando recolhida.
+            onClick={collapsed ? () => setCollapsed(false) : undefined}
+            title={collapsed ? "Expandir menu" : undefined}
             style={{
               width: 36,
               height: 36,
               borderRadius: 11,
               background: "linear-gradient(135deg,#166534,#22C55E)",
               boxShadow: "0 8px 20px -8px rgba(22,101,52,.55)",
+              cursor: collapsed ? "pointer" : "default",
             }}
           >
             <Logo />
