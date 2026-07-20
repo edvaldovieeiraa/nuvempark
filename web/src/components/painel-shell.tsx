@@ -442,7 +442,10 @@ export function PainelShell({
               <div key={item.label}>
                 <div
                   className="gitem navitem"
-                  data-slidertarget={gAtivo && !aberto}
+                  // Recolhida, os filhos ficam display:none (subwrap oculto), então
+                  // o destaque tem de pousar no ÍCONE-PAI do grupo. Expandida e
+                  // aberta, quem carrega o destaque é o filho ativo.
+                  data-slidertarget={gAtivo && (collapsed || !aberto)}
                   onMouseEnter={(e) => posEm(e.currentTarget)}
                   onClick={() =>
                     setAbertos((a) => ({
