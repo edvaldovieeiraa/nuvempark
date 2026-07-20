@@ -180,6 +180,7 @@ export function PainelShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [abertos, setAbertos] = useState<Record<string, boolean>>({});
   const [patioOpen, setPatioOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   // Seletor de pátio: pátio ativo (cookie np_patio, escopado no servidor).
   const patioAtivo = patios.find((p) => p.id === patioAtivoId) ?? patios[0];
@@ -549,72 +550,77 @@ export function PainelShell({
           </div>
         </div>
 
-        {/* Conta */}
+        {/* Conta — o Link (perfil) e o botão Sair são IRMÃOS. Antes o botão
+            ficava DENTRO do <Link>: clicar nele navegava pro perfil (form
+            aninhado em <a> é HTML inválido) em vez de deslogar. */}
         <div style={{ padding: "12px 6px 2px", borderTop: "1px solid rgba(255,255,255,.12)" }}>
-          <Link
-            href="/painel/perfil"
-            className="navitem"
-            style={{ gap: 10, padding: 0, borderRadius: 12 }}
-          >
-            <span
-              className="grid place-items-center shrink-0"
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 999,
-                background: "linear-gradient(135deg,#22C55E,#0EA5E9)",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: 13,
-              }}
+          <div className="navitem" style={{ gap: 10, padding: 0, borderRadius: 12 }}>
+            <Link
+              href="/painel/perfil"
+              className="flex items-center gap-2.5 min-w-0"
+              style={{ flex: 1, borderRadius: 12 }}
             >
-              {inicial}
-            </span>
-            <span className="lbl" style={{ minWidth: 0 }}>
               <span
-                style={{
-                  display: "block",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "#fff",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {tenantNome}
-              </span>
-              <span
-                style={{
-                  display: "block",
-                  fontSize: 10,
-                  color: "rgba(255,255,255,.5)",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {userEmail}
-              </span>
-            </span>
-            <form action={sair} className="hidec" style={{ marginLeft: "auto" }}>
-              <button
-                title="Sair"
-                className="grid place-items-center"
+                className="grid place-items-center shrink-0"
                 style={{
                   width: 34,
                   height: 34,
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,.1)",
-                  background: "rgba(255,255,255,.04)",
-                  color: "rgba(255,255,255,.55)",
-                  cursor: "pointer",
+                  borderRadius: 999,
+                  background: "linear-gradient(135deg,#22C55E,#0EA5E9)",
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 13,
                 }}
               >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </form>
-          </Link>
+                {inicial}
+              </span>
+              <span className="lbl" style={{ minWidth: 0 }}>
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#fff",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {tenantNome}
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: 10,
+                    color: "rgba(255,255,255,.5)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {userEmail}
+                </span>
+              </span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setLogoutOpen(true)}
+              title="Sair"
+              className="grid place-items-center hidec shrink-0"
+              style={{
+                marginLeft: "auto",
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                border: "1px solid rgba(255,255,255,.1)",
+                background: "rgba(255,255,255,.04)",
+                color: "rgba(255,255,255,.55)",
+                cursor: "pointer",
+              }}
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -878,25 +884,109 @@ export function PainelShell({
                     {userEmail}
                   </div>
                 </div>
-                <form action={sair}>
-                  <button
-                    className="inline-flex items-center gap-1.5"
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: 11,
-                      border: "1px solid #E4E8EC",
-                      background: "#FAFBFC",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "#5A6B78",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <LogOut className="w-[15px] h-[15px]" />
-                    Sair
-                  </button>
-                </form>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setLogoutOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5"
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 11,
+                    border: "1px solid #E4E8EC",
+                    background: "#FAFBFC",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#5A6B78",
+                    cursor: "pointer",
+                  }}
+                >
+                  <LogOut className="w-[15px] h-[15px]" />
+                  Sair
+                </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ Modal de confirmação de logout (desktop + mobile) ══ */}
+      {logoutOpen && (
+        <div
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ zIndex: 60, padding: 20 }}
+        >
+          <div
+            onClick={() => setLogoutOpen(false)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(20,29,40,.5)",
+              animation: "pfadein .2s ease both",
+            }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: 380,
+              background: "#fff",
+              borderRadius: 22,
+              padding: 24,
+              boxShadow: "0 30px 70px -20px rgba(20,29,40,.55)",
+              fontFamily: "'Poppins', sans-serif",
+              animation: "psheetup .3s cubic-bezier(.22,1,.36,1) both",
+            }}
+          >
+            <div
+              className="grid place-items-center"
+              style={{ width: 52, height: 52, borderRadius: 16, background: "#FEE2E2", marginBottom: 14 }}
+            >
+              <LogOut className="w-6 h-6" style={{ color: "#DC2626" }} />
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#1F2A33" }}>Sair da conta?</div>
+            <div style={{ marginTop: 6, fontSize: 13.5, lineHeight: 1.5, color: "#5A6B78" }}>
+              Você vai precisar entrar de novo com seu e-mail e senha.
+            </div>
+            <div className="flex" style={{ gap: 10, marginTop: 20 }}>
+              <button
+                type="button"
+                onClick={() => setLogoutOpen(false)}
+                style={{
+                  flex: 1,
+                  height: 46,
+                  borderRadius: 12,
+                  border: "1px solid #E4E8EC",
+                  background: "#fff",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#46545E",
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+              <form action={sair} style={{ flex: 1 }}>
+                <button
+                  type="submit"
+                  style={{
+                    width: "100%",
+                    height: 46,
+                    borderRadius: 12,
+                    border: "none",
+                    background: "#DC2626",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  Sair
+                </button>
+              </form>
             </div>
           </div>
         </div>
