@@ -289,6 +289,11 @@ input, select, textarea {
 .gnav.collapsed:hover .brandrow { flex-direction: row; gap: 10px !important; }
 .gnav.collapsed:hover .brandrow .lbl.brand { display: block; }
 .gnav.collapsed:hover .cbtn { margin-left: auto !important; }
+/* Recolhida, o seletor de pátio fica oculto — mas com só opacity/max-width ele
+   continuava ocupando ~74px de ALTURA, empurrando os ícones do nav pra baixo
+   (menu "pesado embaixo"). display:none tira do fluxo; no hover ele volta. */
+.gnav.collapsed .patiosel { display: none; }
+.gnav.collapsed:hover .patiosel { display: block; }
 .gnav.collapsed:hover { width: 240px !important; padding-left: 14px !important; padding-right: 12px !important;
   z-index: 30; box-shadow: 0 28px 70px -18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.14); }
 .gnav.collapsed:hover .lbl { opacity: 1; max-width: 172px; }
