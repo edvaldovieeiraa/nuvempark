@@ -203,7 +203,10 @@ input, select, textarea {
     radial-gradient(400px 400px at calc(100% - 80px) calc(100% + 80px), rgba(34, 197, 94, 0.20), transparent 68%),
     #F3F5F7;
 }
-.pshell .pmain { padding-left: 264px; transition: padding-left .28s cubic-bezier(.4, 0, .2, 1); }
+/* Folga entre a barra flutuante e o conteúdo. Expandida a barra vai até 262px
+   (left 22 + width 240); 288 dá ~26px de respiro — o mesmo que a recolhida
+   (128 - borda 102). Antes era 264 = só 2px, e o conteúdo colava no menu. */
+.pshell .pmain { padding-left: 288px; transition: padding-left .28s cubic-bezier(.4, 0, .2, 1); }
 .pshell.pcollapsed .pmain { padding-left: 128px; }
 /* Conteúdo do painel ocupa 100% da largura disponível: neutraliza os caps
    max-w-* das páginas (o usuário quer tela cheia). Especificidade > utilitário. */
@@ -292,6 +295,15 @@ input, select, textarea {
 .gnav.collapsed:hover .lbl.brand { max-width: none; }
 .gnav.collapsed:hover .hidec { opacity: 1; max-width: 200px; }
 .gnav.collapsed:hover .navitem { justify-content: flex-start; padding-left: 12px; padding-right: 12px; }
+/* No flyout (barra recolhida + hover), restaura o respiro dos itens. As regras
+   do estado recolhido zeram gap/padding com !important, e a regra de hover acima
+   não vencia isso nos gitem/pitem — o ícone colava na borda e o texto no ícone
+   ("espremido"). Aqui devolvemos o gap 11 e o padding 12 do menu expandido. */
+.gnav.collapsed:hover .navitem,
+.gnav.collapsed:hover .gitem,
+.gnav.collapsed:hover .pitem { gap: 11px !important; }
+.gnav.collapsed:hover .gitem,
+.gnav.collapsed:hover .pitem { padding-left: 12px !important; padding-right: 12px !important; justify-content: flex-start !important; }
 .gnav.collapsed:hover .subwrap { display: flex; }
 
 /* ── Liquid Glass (iOS 26) — material translúcido do menu ──
