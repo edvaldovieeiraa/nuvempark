@@ -208,7 +208,13 @@ export function PainelShell({
     ? Date.now() - new Date(ultimaSync).getTime() < 3 * 60 * 1000
     : false;
 
-  // ── Hoverslider: descansa no item ATIVO e desliza pro item sob o cursor ──
+  // ── Realce do menu ──────────────────────────────────────────────────────
+  // O item ATIVO é destacado por CSS (atributo data-active) — confiável, sem
+  // depender de medição de DOM. O "slider" abaixo é SÓ o realce que desliza sob
+  // o CURSOR no hover; ao sair do menu, ele some. Antes o slider também tentava
+  // "descansar" no ativo via getBoundingClientRect, e perdia a corrida de
+  // layout no load (vinha com opacity:0) — o destaque sumia de forma
+  // intermitente.
   const navRef = useRef<HTMLDivElement>(null);
   const [slider, setSlider] = useState({ top: 0, height: 40, show: false });
   const posEm = (el: HTMLElement | null) => {
@@ -218,12 +224,9 @@ export function PainelShell({
     const nr = nav.getBoundingClientRect();
     setSlider({ top: r.top - nr.top + nav.scrollTop, height: r.height, show: true });
   };
-  const resetSlider = () => {
-    const alvo = navRef.current?.querySelector<HTMLElement>('[data-slidertarget="true"]');
-    if (alvo) posEm(alvo);
-    else setSlider((s) => ({ ...s, show: false }));
-  };
-  // Reposiciona no item ativo quando a rota/abertura muda.
+  // Só esconde o slider — o item ativo é marcado por CSS, não por ele.
+  const resetSlider = () => setSlider((s) => ({ ...s, show: false }));
+  // Ao trocar de rota, esconde o slider de hover (o novo ativo já vem do CSS).
   useEffect(() => {
     resetSlider();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -407,7 +410,7 @@ export function PainelShell({
                   key={item.label}
                   href={item.href!}
                   className="pitem navitem"
-                  data-slidertarget={act}
+                  data-active={act}
                   onMouseEnter={(e) => posEm(e.currentTarget)}
                   style={{
                     gap: 11,
@@ -443,9 +446,9 @@ export function PainelShell({
                 <div
                   className="gitem navitem"
                   // Recolhida, os filhos ficam display:none (subwrap oculto), então
-                  // o destaque tem de pousar no ÍCONE-PAI do grupo. Expandida e
-                  // aberta, quem carrega o destaque é o filho ativo.
-                  data-slidertarget={gAtivo && (collapsed || !aberto)}
+                  // o destaque vai no ÍCONE-PAI do grupo. Expandida e aberta, quem
+                  // carrega o destaque é o filho ativo (subitem).
+                  data-active={gAtivo && (collapsed || !aberto)}
                   onMouseEnter={(e) => posEm(e.currentTarget)}
                   onClick={() =>
                     setAbertos((a) => ({
@@ -482,7 +485,6 @@ export function PainelShell({
                           key={f.href}
                           href={f.href}
                           className="subitem"
-                          data-slidertarget={act}
                           data-active={act}
                           onMouseEnter={(e) => posEm(e.currentTarget)}
                         >
