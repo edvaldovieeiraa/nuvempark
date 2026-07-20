@@ -254,7 +254,7 @@ export function PainelShell({
         }}
       >
         {/* Marca + recolher */}
-        <div className="navitem" style={{ gap: 10, padding: "2px 4px 10px" }}>
+        <div className="navitem brandrow" style={{ gap: 10, padding: "2px 4px 10px" }}>
           <div
             className="grid place-items-center shrink-0"
             // Recolhida, o botão de expandir (.cbtn) fica oculto/sem clique (só
@@ -286,7 +286,7 @@ export function PainelShell({
             <span style={{ fontWeight: 800, color: "#22C55E" }}>Park</span>
           </span>
           <button
-            className="cbtn hidec"
+            className="cbtn"
             onClick={() => setCollapsed((c) => !c)}
             title={collapsed ? "Expandir" : "Recolher"}
             style={{

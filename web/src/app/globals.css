@@ -277,6 +277,15 @@ input, select, textarea {
 .gnav.collapsed .cbtn { margin-left: 0 !important; }
 .gnav.collapsed .gitem { justify-content: center; padding-left: 0 !important; padding-right: 0 !important; }
 .gnav.collapsed .subwrap { display: none; }
+/* Cabeçalho da barra RECOLHIDA: logo em cima, botão de recolher/expandir logo
+   abaixo — os DOIS sempre visíveis e clicáveis. Antes o botão ficava oculto e
+   sem clique (só reaparecia no hover), e o operador ficava sem como reabrir.
+   No hover a barra reexpande e o cabeçalho volta à linha normal. */
+.gnav.collapsed .brandrow { flex-direction: column; gap: 10px !important; }
+.gnav.collapsed .brandrow .lbl.brand { display: none; }
+.gnav.collapsed:hover .brandrow { flex-direction: row; gap: 10px !important; }
+.gnav.collapsed:hover .brandrow .lbl.brand { display: block; }
+.gnav.collapsed:hover .cbtn { margin-left: auto !important; }
 .gnav.collapsed:hover { width: 240px !important; padding-left: 14px !important; padding-right: 12px !important;
   z-index: 30; box-shadow: 0 28px 70px -18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.14); }
 .gnav.collapsed:hover .lbl { opacity: 1; max-width: 172px; }
