@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
+import { getAssinaturaStatus } from '../lib/assinatura.js';
 
 /**
  * GET /bootstrap?patio_id=... — hidrata a config offline do app.
@@ -96,12 +97,10 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       veiculos: veiculosPorCliente.get(c.id) ?? [],
     }));
 
-    // Estado da assinatura (gate).
-    const { data: assinatura } = await db
-      .from('assinaturas')
-      .select('estado')
-      .eq('tenant_id', operador.tenant_id)
-      .maybeSingle();
+    // Estado da assinatura (gate). Reusa o mesmo db tenant-scoped — o objeto
+    // completo alimenta o gate em tempo real do app; `assinatura_estado` fica
+    // por compat com o cliente antigo.
+    const assinaturaStatus = await getAssinaturaStatus(db, operador.tenant_id);
 
     // Tickets removidos no painel (Limpeza de Pátio) nos últimos 30 dias — o app
     // converge o estado local por aqui na abertura. Usa o índice parcial
@@ -134,7 +133,8 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       },
       tarifas: tarifas ?? [],
       clientes: clientesOut,
-      assinatura_estado: assinatura?.estado ?? 'ativa',
+      assinatura_estado: assinaturaStatus.estado,
+      assinatura: assinaturaStatus,
       tickets_removidos: (removidos ?? []).map((r) => r.id),
     });
   });

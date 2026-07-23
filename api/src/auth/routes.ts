@@ -8,6 +8,7 @@ import {
   hashRefreshToken,
   type OperadorTokenPayload,
 } from './jwt.js';
+import { resolveAssinaturaStatus } from '../lib/assinatura.js';
 
 /**
  * Auth do operador — portado do E-Park com camada de tenant (decisões #8 e #17).
@@ -125,9 +126,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
     const patioIds = patios.map((p) => p.id);
 
-    // 5) Estado da assinatura (gate — decisão #11 + trial).
-    //    Regra de ouro: acesso só se 'ativa' OU trial ainda vigente.
-    //    Sem acesso => recusa o login com 403 (bloqueia o app, mesmo APK adulterado).
+    // 5) Estado da assinatura. Decisão #11 REVISTA (2026-07-23): o login NÃO
+    //    recusa mais tenant suspenso/cancelado/atrasado — o app ENTRA e aplica
+    //    o bloqueio (tela dedicada) ou o banner (atrasada). Único corte no login:
+    //    o TRIAL EXPIRADO (comportamento do trial preservado). Sem isto o app
+    //    não conseguiria mostrar a tela de bloqueio com mensagem clara.
     const { data: assinatura } = await admin
       .from('assinaturas')
       .select('estado, trial_expira_em')
@@ -139,16 +142,12 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       assinaturaEstado === 'trial' &&
       !!assinatura?.trial_expira_em &&
       new Date(assinatura.trial_expira_em).getTime() > Date.now();
-    const liberaAcesso = assinaturaEstado === 'ativa' || trialVigente;
 
-    if (!liberaAcesso) {
-      const motivo =
-        assinaturaEstado === 'trial'
-          ? 'Seu teste grátis expirou. Ative a assinatura no painel para continuar.'
-          : assinaturaEstado === 'atrasada'
-            ? 'Há uma fatura em aberto. Regularize o pagamento para reativar o acesso.'
-            : 'Acesso indisponível. Fale com o responsável pela sua conta.';
-      return reply.code(403).send({ error: motivo, assinatura_estado: assinaturaEstado });
+    if (assinaturaEstado === 'trial' && !trialVigente) {
+      return reply.code(403).send({
+        error: 'Seu teste grátis expirou. Ative a assinatura no painel para continuar.',
+        assinatura_estado: assinaturaEstado,
+      });
     }
 
     // 6) Tokens. Access carrega tenant_id (o RLS lê isso).
@@ -179,6 +178,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       expires_at: expiresAt.toISOString(),
     });
 
+    // Status completo (tenant-scoped, semeia o cache). O app usa `assinatura`
+    // para decidir bloqueio/banner já na entrada; `assinatura_estado` fica por
+    // compat com o cliente antigo.
+    const assinaturaStatus = await resolveAssinaturaStatus(tenant.id);
+
     return reply.send({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -186,6 +190,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       tenant: { id: tenant.id, nome: tenant.nome, codigo: codigo_tenant },
       patios,
       assinatura_estado: assinaturaEstado,
+      assinatura: assinaturaStatus,
     });
   });
 
@@ -251,7 +256,15 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       patio_ids: patioIds,
     });
 
-    return reply.send({ access_token: accessToken, refresh_token: newRefresh });
+    // Publica o estado atual da assinatura no refresh (o app renova de tempos
+    // em tempos, então isto também é um canal de atualização do gate).
+    const assinaturaStatus = await resolveAssinaturaStatus(sessao.tenant_id);
+
+    return reply.send({
+      access_token: accessToken,
+      refresh_token: newRefresh,
+      assinatura: assinaturaStatus,
+    });
   });
 
   // ----------------------------------------------------------------- LOGOUT
