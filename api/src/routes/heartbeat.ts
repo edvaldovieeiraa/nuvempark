@@ -1,11 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
 import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
-
-const corpoSchema = z.object({
-  patio_id: z.string().uuid().optional(),
-});
+import { avaliarDispositivo } from '../lib/dispositivos.js';
 
 /**
  * POST /heartbeat — "o app deste pátio está vivo".
@@ -14,20 +10,17 @@ const corpoSchema = z.object({
  * parado o painel não conseguia distinguir app ocioso de app fechado. O app
  * bate aqui a cada 60s (mecanismo à parte do sync engine — não o toca).
  *
- * Carimba dispositivos.ultimo_acesso e devolve 204. É chamado por todo tablet
- * a cada minuto, então o caminho feliz é UM único UPDATE.
+ * NÃO cria mais nada em `dispositivos` (o antigo trust-on-first-use saiu): o
+ * ÚNICO ponto que registra dispositivo agora é o /auth/login. O heartbeat só:
+ *  1) localiza o dispositivo pelo device_uuid (RLS garante o tenant),
+ *  2) reavalia via fn_dispositivo_pode_logar (gate em tempo real),
+ *  3) carimba ultimo_acesso.
  *
- * REGISTRO NA PRIMEIRA BATIDA (trust on first use): nada mais no produto insere
- * em `dispositivos` — o painel só ativa/revoga, e a tela de cadastro do E-Park
- * (código curto por aparelho) nunca foi portada. Sem registrar aqui, a tabela
- * ficaria vazia para sempre e o "App conectado" jamais acenderia. Então um
- * aparelho desconhecido, com sessão válida, se cadastra sozinho como 'ativo'.
+ * ⚠️ NÃO grava evento em dispositivo_acessos: são ~1.440 batidas/dia por
+ * aparelho — inundaria a tabela. Só ultimo_acesso.
  *
- * O registro NUNCA ressuscita um revogado: revogar é a única defesa do gestor
- * contra um aparelho perdido, e um upsert ingênuo (que resetasse `status`)
- * desfaria isso a cada 60s — o aparelho roubado voltaria sozinho. Por isso a
- * ordem aqui é UPDATE → checar existência → só então inserir, e a inserção usa
- * ON CONFLICT DO NOTHING (nunca UPDATE).
+ * pode=false → 403 com o mesmo contrato do login (com codigo_pareamento), para
+ * o app cair na tela de bloqueio em ~60s, sem esperar o token de 8h expirar.
  */
 export async function heartbeatRoutes(app: FastifyInstance): Promise<void> {
   app.post('/heartbeat', { preHandler: requireAuth }, async (req, reply) => {
@@ -37,84 +30,52 @@ export async function heartbeatRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: 'Header X-Device-Id obrigatório' });
     }
 
-    const corpo = corpoSchema.safeParse(req.body ?? {});
-    if (!corpo.success) {
-      return reply.code(400).send({ error: 'Corpo inválido' });
-    }
-    const patioId = corpo.data.patio_id;
-
-    // Cliente tenant-scoped: a RLS é a 2ª camada — mesmo com um device_uuid de
-    // outro tenant, nada aqui acha linha.
+    // Cliente tenant-scoped: a RLS é a 2ª camada — um device_uuid de outro
+    // tenant não acha linha aqui.
     const db = await tenantClient(operador.tenant_id);
 
-    const syntheticUuid = `${deviceUuid.replace(/-/g, '').substring(0, 8).toLowerCase()}-0000-4000-8000-000000000000`;
-    const uuids = [deviceUuid, syntheticUuid];
+    const { data: disp } = await db
+      .from('dispositivos')
+      .select('id, patio_id, status, codigo_pareamento')
+      .eq('device_uuid', deviceUuid)
+      .order('ultimo_acesso', { ascending: false, nullsFirst: false })
+      .limit(1);
+    const dispositivo = (disp ?? [])[0] as
+      | { id: string; patio_id: string; status: string; codigo_pareamento: string | null }
+      | undefined;
 
-    // Carimbo do SERVIDOR: é ele que volta pro app e alimenta a "última
-    // sincronização". App e painel passam a exibir ESTE mesmo instante — o
-    // relógio do servidor, não o do aparelho — então nunca divergem.
+    // Desconhecido: o login é quem registra. Não cadastramos aqui.
+    if (!dispositivo) {
+      return reply.code(404).send({ error: 'Dispositivo não registrado' });
+    }
+
+    // Gate em tempo real (regra de ouro no banco).
+    let avaliacao;
+    try {
+      avaliacao = await avaliarDispositivo(db, dispositivo.patio_id, deviceUuid);
+    } catch {
+      // Fail-open: erro transitório na RPC não deve trancar um app válido.
+      avaliacao = { pode: true, motivo: 'ok', acao: 'permitir' as const };
+    }
+    if (!avaliacao.pode) {
+      return reply.code(403).send({
+        erro: 'dispositivo_nao_autorizado',
+        motivo: avaliacao.motivo,
+        codigo_pareamento: dispositivo.codigo_pareamento ?? null,
+        mensagem: 'Este dispositivo não está autorizado neste pátio.',
+      });
+    }
+
+    // Carimbo do SERVIDOR: volta pro app e alimenta a "última sincronização".
+    // App e painel exibem ESTE instante (relógio do servidor), nunca divergem.
     const agora = new Date().toISOString();
-
-    // 1) Caminho feliz (99,9% das batidas): o aparelho já existe e está ativo.
-    // Um único UPDATE cobre os dois formatos de uuid; o select('status') é o
-    // RETURNING do próprio update, não uma query extra.
-    const { data: atualizados, error: erroUpdate } = await db
+    const { error: erroUpdate } = await db
       .from('dispositivos')
       .update({ ultimo_acesso: agora })
-      .in('device_uuid', uuids)
-      .neq('status', 'revogado')
-      .select('status');
+      .eq('id', dispositivo.id);
 
     if (erroUpdate) {
       return reply.code(500).send({ error: 'Falha ao registrar heartbeat' });
-    }
-    if (atualizados && atualizados.length > 0) {
-      // Devolve o carimbo (antes era 204 vazio): o app grava isto como
-      // "última sincronização", alinhado ao que o painel lê de ultimo_acesso.
-      return reply.code(200).send({ sincronizado_em: agora });
-    }
-
-    // 2) Nada atualizado: ou não existe, ou está revogado. Só aqui (raro) vale
-    // uma query a mais para separar os dois casos.
-    const { data: existente } = await db
-      .from('dispositivos')
-      .select('status')
-      .in('device_uuid', uuids)
-      .maybeSingle();
-
-    if (existente) {
-      // Existe e não foi atualizado ⇒ está revogado. Não registrar, não carimbar.
-      return reply.code(403).send({ error: 'Dispositivo revogado' });
-    }
-
-    // 3) Aparelho desconhecido → registrar. Sem pátio não dá: patio_id é NOT
-    // NULL e adivinhar (ex.: patio_ids[0]) cadastraria o aparelho no pátio
-    // errado para um operador multi-pátio.
-    if (!patioId) {
-      return reply.code(404).send({ error: 'Dispositivo não registrado' });
-    }
-    // O pátio tem que ser um a que ESTE operador tem acesso. A RLS garante o
-    // tenant, mas não o pátio dentro dele.
-    if (!operador.patio_ids.includes(patioId)) {
-      return reply.code(403).send({ error: 'Pátio fora do escopo do operador' });
-    }
-
-    // ignoreDuplicates ⇒ INSERT ... ON CONFLICT DO NOTHING. Duas batidas
-    // simultâneas (device_uuid é UNIQUE) não derrubam uma à outra, e um
-    // revogado que escapasse da checagem acima jamais teria o status resetado.
-    const { error: erroInsert } = await db.from('dispositivos').upsert(
-      {
-        tenant_id: operador.tenant_id,
-        patio_id: patioId,
-        device_uuid: deviceUuid,
-        status: 'ativo',
-        ultimo_acesso: agora,
-      },
-      { onConflict: 'device_uuid', ignoreDuplicates: true },
-    );
-
-    if (erroInsert) {
-      return reply.code(500).send({ error: 'Falha ao registrar dispositivo' });
     }
 
     return reply.code(200).send({ sincronizado_em: agora });

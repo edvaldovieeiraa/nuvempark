@@ -13,6 +13,12 @@ export interface OperadorTokenPayload {
   nome: string;
   tenant_id: string; // ⚠️ novo no NuvemPark — o que o RLS lê
   patio_ids: string[];
+  /**
+   * Token restrito de DRENAGEM: emitido no /refresh quando o dispositivo está
+   * bloqueado mas dentro da janela de 7 dias. O middleware só deixa este token
+   * chamar POST /sync (para o outbox terminar de drenar). Ausente = token pleno.
+   */
+  modo?: 'drenagem';
 }
 
 const secret = new TextEncoder().encode(env.NUVEMPARK_JWT_SECRET);

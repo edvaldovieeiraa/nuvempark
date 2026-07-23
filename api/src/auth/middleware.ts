@@ -35,6 +35,18 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply): Pro
     return;
   }
 
+  // Modo DRENAGEM: token restrito (dispositivo bloqueado, dentro da janela de
+  // 7 dias). Só POST /sync passa — o resto do app fica trancado, mas o outbox
+  // termina de drenar. O caminho de sync NUNCA é barrado por licença (ver
+  // routes/sync.ts): a expiração da sessão é o único corte, aos 7 dias.
+  if (req.operador.modo === 'drenagem') {
+    const rota = (req.routeOptions?.url ?? req.url).split('?')[0] ?? '';
+    if (!rota.endsWith('/sync')) {
+      await reply.code(403).send({ erro: 'dispositivo_nao_autorizado' });
+      return;
+    }
+  }
+
   // Publica o estado da assinatura. Best-effort: nunca bloqueia a rota (a rota
   // de sync tem que drenar mesmo com tenant suspenso — o bloqueio é do APP).
   try {

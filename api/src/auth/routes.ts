@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { admin } from '../supabase.js';
+import { admin, tenantClient } from '../supabase.js';
 import {
   signAccessToken,
   generateRefreshToken,
@@ -9,6 +9,14 @@ import {
   type OperadorTokenPayload,
 } from './jwt.js';
 import { resolveAssinaturaStatus } from '../lib/assinatura.js';
+import {
+  avaliarDispositivo,
+  hashAndroidId,
+  mergePorAndroidId,
+  registrarEvento,
+  UNIQUE_VIOLATION,
+} from '../lib/dispositivos.js';
+import { compact } from '../lib/coerce.js';
 
 /**
  * Auth do operador — portado do E-Park com camada de tenant (decisões #8 e #17).
@@ -23,7 +31,17 @@ const loginSchema = z.object({
   usuario: z.string().trim().min(1),
   senha: z.string().min(1),
   device_uuid: z.string().trim().min(1),
+  // Novos campos — TODOS opcionais (o app publicado continua funcionando; sem
+  // android_id o merge por reinstalação simplesmente não acontece).
+  android_id: z.string().trim().min(1).optional(),
+  fabricante: z.string().trim().optional(),
+  modelo: z.string().trim().optional(),
+  so_versao: z.string().trim().optional(),
+  app_versao: z.string().trim().optional(),
 });
+
+const JANELA_DRENAGEM_MS = 7 * 24 * 60 * 60 * 1000;
+const MSG_DISPOSITIVO_NEGADO = 'Este dispositivo não está autorizado neste pátio.';
 
 const refreshSchema = z.object({
   refresh_token: z.string().min(1),
@@ -42,7 +60,18 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Dados de login inválidos' });
     }
-    const { codigo_tenant, usuario, senha, device_uuid } = parsed.data;
+    const {
+      codigo_tenant,
+      usuario,
+      senha,
+      device_uuid,
+      android_id,
+      fabricante,
+      modelo,
+      so_versao,
+      app_versao,
+    } = parsed.data;
+    const ip = req.ip;
 
     // 1) Resolve o código (4 díg). Decisão 2026-07-10: o código é do PÁTIO —
     //    o operador entra direto na unidade onde trabalha. Fallback: código
@@ -150,6 +179,223 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
+    // 5.5) BINDING DE DISPOSITIVO (gate de licença por pátio).
+    //  O login é o ÚNICO ponto que cria linha em public.dispositivos.
+    //  Só acontece quando há UM pátio resolvido (login por código de pátio, ou
+    //  fallback de tenant que resultou em 1 pátio). No fluxo legado multi-pátio
+    //  (operador escolhe o pátio depois) não há como fixar o par (pátio,device),
+    //  então o binding é pulado — preserva o app publicado. A REGRA DE OURO mora
+    //  em fn_dispositivo_pode_logar; aqui só obedecemos a `acao`.
+    const bindPatioId = patioFixoId ?? (patios.length === 1 ? patios[0]?.id ?? null : null);
+    if (bindPatioId) {
+      const agora = new Date().toISOString();
+      // Cliente TENANT-SCOPED (regra de ouro): o tenant já está resolvido.
+      const db = await tenantClient(tenant.id);
+      const hash = android_id ? hashAndroidId(android_id) : undefined;
+
+      // 1) Reidentificação por android_id (reinstalação) no MESMO pátio.
+      let deviceUuidEfetivo = device_uuid;
+      if (android_id) {
+        const merged = await mergePorAndroidId(db, {
+          patioId: bindPatioId,
+          tenantId: tenant.id,
+          androidIdHash: hashAndroidId(android_id),
+          novoDeviceUuid: device_uuid,
+          operadorId: operador.id,
+          fabricante,
+          modelo,
+          appVersao: app_versao,
+          ip,
+        });
+        if (merged) deviceUuidEfetivo = merged.device_uuid;
+      }
+
+      // 2) A regra de ouro decide.
+      let avaliacao;
+      try {
+        avaliacao = await avaliarDispositivo(db, bindPatioId, deviceUuidEfetivo);
+      } catch (e) {
+        req.log.error({ err: e }, 'fn_dispositivo_pode_logar falhou no login');
+        return reply.code(500).send({ error: 'Falha ao avaliar dispositivo' });
+      }
+
+      // Helper: corpo do 403 (contrato consumido pelo app do Bloco 5).
+      const negar = (motivo: string, codigo: string | null) =>
+        reply.code(403).send({
+          erro: 'dispositivo_nao_autorizado',
+          motivo,
+          codigo_pareamento: codigo,
+          mensagem: MSG_DISPOSITIVO_NEGADO,
+        });
+
+      // Insere como pendente e devolve o codigo_pareamento (coluna gerada).
+      // Robusto a corrida: se o device já existir agora, lê o código atual.
+      const inserirPendente = async (): Promise<string | null> => {
+        const ins = await db
+          .from('dispositivos')
+          .insert(
+            compact({
+              tenant_id: tenant.id,
+              patio_id: bindPatioId,
+              device_uuid,
+              status: 'pendente',
+              licenca: 'nenhuma',
+              android_id_hash: hash,
+              fabricante,
+              modelo,
+              so_versao,
+              app_versao,
+            }),
+          )
+          .select('codigo_pareamento')
+          .maybeSingle();
+        if (!ins.error && ins.data) {
+          return (ins.data as { codigo_pareamento: string }).codigo_pareamento;
+        }
+        const cur = await db
+          .from('dispositivos')
+          .select('codigo_pareamento')
+          .eq('patio_id', bindPatioId)
+          .eq('device_uuid', device_uuid)
+          .maybeSingle();
+        return (cur.data as { codigo_pareamento?: string } | null)?.codigo_pareamento ?? null;
+      };
+
+      if (avaliacao.acao === 'permitir') {
+        // Dispositivo já existe e está ativo: atualiza metadados + ultimo_acesso.
+        await db
+          .from('dispositivos')
+          .update(
+            compact({
+              ultimo_acesso: agora,
+              android_id_hash: hash,
+              fabricante,
+              modelo,
+              so_versao,
+              app_versao,
+            }),
+          )
+          .eq('patio_id', bindPatioId)
+          .eq('device_uuid', deviceUuidEfetivo);
+        registrarEvento(db, {
+          patioId: bindPatioId,
+          tenantId: tenant.id,
+          deviceUuid: deviceUuidEfetivo,
+          operadorId: operador.id,
+          evento: 'login_ok',
+          fabricante,
+          modelo,
+          appVersao: app_versao,
+          ip,
+        });
+        // segue para emitir tokens
+      } else if (avaliacao.acao === 'criar_incluso') {
+        // 1º aparelho do pátio: entra sem fricção como ativo/incluso.
+        const { error: insErr } = await db.from('dispositivos').insert(
+          compact({
+            tenant_id: tenant.id,
+            patio_id: bindPatioId,
+            device_uuid,
+            status: 'ativo',
+            licenca: 'incluso',
+            vinculado_em: agora,
+            ultimo_acesso: agora,
+            android_id_hash: hash,
+            fabricante,
+            modelo,
+            so_versao,
+            app_versao,
+          }),
+        );
+        if (insErr) {
+          // Corrida: dois aparelhos num pátio vazio. O índice único parcial
+          // uq_dispositivo_incluso_por_patio barra o 2º → cai em pendente.
+          if (insErr.code === UNIQUE_VIOLATION) {
+            const codigo = await inserirPendente();
+            registrarEvento(db, {
+              patioId: bindPatioId,
+              tenantId: tenant.id,
+              deviceUuid: device_uuid,
+              operadorId: operador.id,
+              evento: 'login_negado',
+              motivo: 'limite_atingido',
+              fabricante,
+              modelo,
+              appVersao: app_versao,
+              ip,
+            });
+            return negar('limite_atingido', codigo);
+          }
+          req.log.error({ err: insErr }, 'falha ao inserir dispositivo incluso');
+          return reply.code(500).send({ error: 'Falha ao registrar dispositivo' });
+        }
+        registrarEvento(db, {
+          patioId: bindPatioId,
+          tenantId: tenant.id,
+          deviceUuid: device_uuid,
+          operadorId: operador.id,
+          evento: 'vinculado',
+          motivo: 'slot_incluso_livre',
+          fabricante,
+          modelo,
+          appVersao: app_versao,
+          ip,
+        });
+        registrarEvento(db, {
+          patioId: bindPatioId,
+          tenantId: tenant.id,
+          deviceUuid: device_uuid,
+          operadorId: operador.id,
+          evento: 'login_ok',
+          fabricante,
+          modelo,
+          appVersao: app_versao,
+          ip,
+        });
+        // segue para emitir tokens
+      } else if (avaliacao.acao === 'criar_pendente') {
+        const codigo = await inserirPendente();
+        registrarEvento(db, {
+          patioId: bindPatioId,
+          tenantId: tenant.id,
+          deviceUuid: device_uuid,
+          operadorId: operador.id,
+          evento: 'login_negado',
+          motivo: avaliacao.motivo,
+          fabricante,
+          modelo,
+          appVersao: app_versao,
+          ip,
+        });
+        return negar(avaliacao.motivo, codigo);
+      } else {
+        // acao === 'negar'
+        let codigo: string | null = null;
+        if (avaliacao.motivo !== 'limite_pendentes') {
+          const cur = await db
+            .from('dispositivos')
+            .select('codigo_pareamento')
+            .eq('patio_id', bindPatioId)
+            .eq('device_uuid', deviceUuidEfetivo)
+            .maybeSingle();
+          codigo = (cur.data as { codigo_pareamento?: string } | null)?.codigo_pareamento ?? null;
+        }
+        registrarEvento(db, {
+          patioId: bindPatioId,
+          tenantId: tenant.id,
+          deviceUuid: deviceUuidEfetivo,
+          operadorId: operador.id,
+          evento: 'login_negado',
+          motivo: avaliacao.motivo,
+          fabricante,
+          modelo,
+          appVersao: app_versao,
+          ip,
+        });
+        return negar(avaliacao.motivo, codigo);
+      }
+    }
+
     // 6) Tokens. Access carrega tenant_id (o RLS lê isso).
     const payload: OperadorTokenPayload = {
       sub: operador.id,
@@ -239,22 +485,83 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       .eq('tenant_id', sessao.tenant_id);
     const patioIds = (vinculos ?? []).map((v) => v.patio_id);
 
-    // Rotação in-place (one-time-use): substitui hash + expiry na MESMA linha.
+    // Reavaliação de dispositivo a cada refresh (gate em tempo real). Só quando
+    // o device foi bindado a um pátio (fluxo novo); device legado/não-bindado
+    // segue o refresh normal (não quebra o app publicado).
+    let modoDrenagem = false;
+    {
+      const dbT = await tenantClient(sessao.tenant_id);
+      const { data: disp } = await dbT
+        .from('dispositivos')
+        .select('patio_id, status, bloqueado_em')
+        .eq('device_uuid', device_uuid)
+        .order('ultimo_acesso', { ascending: false, nullsFirst: false })
+        .limit(1);
+      const dispositivo = (disp ?? [])[0] as
+        | { patio_id: string; status: string; bloqueado_em: string | null }
+        | undefined;
+
+      if (dispositivo) {
+        let avaliacao;
+        try {
+          avaliacao = await avaliarDispositivo(dbT, dispositivo.patio_id, device_uuid);
+        } catch (e) {
+          // Fail-open: erro transitório na RPC não deve derrubar a sessão.
+          req.log.error({ err: e }, 'reavaliação de dispositivo falhou no refresh');
+          avaliacao = { pode: true, motivo: 'ok', acao: 'permitir' as const };
+        }
+        if (!avaliacao.pode) {
+          const encerrar = async (msg: string) => {
+            await admin.from('operador_sessoes').delete().eq('id', sessao.id);
+            return reply.code(401).send({ error: msg });
+          };
+          if (avaliacao.motivo === 'assinatura_bloqueada') {
+            return encerrar('Assinatura bloqueada');
+          }
+          if (dispositivo.status === 'revogado') {
+            return encerrar('Dispositivo revogado');
+          }
+          if (dispositivo.status === 'bloqueado') {
+            const dentroJanela =
+              !!dispositivo.bloqueado_em &&
+              Date.now() < new Date(dispositivo.bloqueado_em).getTime() + JANELA_DRENAGEM_MS;
+            if (dentroJanela) {
+              modoDrenagem = true; // token restrito de drenagem (só /sync)
+            } else {
+              return encerrar('Dispositivo bloqueado');
+            }
+          } else {
+            // pendente/negado → sessão não deveria existir; encerra.
+            return encerrar('Dispositivo não autorizado');
+          }
+        }
+      }
+    }
+
+    // Rotação in-place (one-time-use): substitui o hash na MESMA linha. Em
+    // DRENAGEM a rotação continua (segurança), mas NÃO estende a validade da
+    // sessão — o corte de 7 dias é reavaliado aqui a cada refresh.
     const newRefresh = generateRefreshToken();
     const newHash = hashRefreshToken(newRefresh);
-    const newExpiry = new Date(Date.now() + REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
-    await admin
-      .from('operador_sessoes')
-      .update({ refresh_token_hash: newHash, expires_at: newExpiry.toISOString() })
-      .eq('id', sessao.id);
+    const rotacao: { refresh_token_hash: string; expires_at?: string } = {
+      refresh_token_hash: newHash,
+    };
+    if (!modoDrenagem) {
+      rotacao.expires_at = new Date(
+        Date.now() + REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000,
+      ).toISOString();
+    }
+    await admin.from('operador_sessoes').update(rotacao).eq('id', sessao.id);
 
-    const accessToken = await signAccessToken({
+    const accessPayload: OperadorTokenPayload = {
       sub: operador.id,
       usuario: operador.usuario,
       nome: operador.nome,
       tenant_id: sessao.tenant_id,
       patio_ids: patioIds,
-    });
+    };
+    if (modoDrenagem) accessPayload.modo = 'drenagem';
+    const accessToken = await signAccessToken(accessPayload);
 
     // Publica o estado atual da assinatura no refresh (o app renova de tempos
     // em tempos, então isto também é um canal de atualização do gate).

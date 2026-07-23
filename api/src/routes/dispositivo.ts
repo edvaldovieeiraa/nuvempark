@@ -3,9 +3,11 @@ import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
 
 /**
- * GET /dispositivo — device binding. Portado do E-Park.
- * Header X-Device-Id → match exato, senão synthetic-uuid (short code registrado no admin).
- * status='revogado' → 403; qualquer outro passa. Fire-and-forget em ultimo_acesso.
+ * GET /dispositivo — device binding.
+ * Busca por (patio_id, device_uuid) EXATO. O fallback synthetic-uuid do E-Park
+ * saiu: virava 2ª fonte de verdade e permitia casar aparelhos distintos pelo
+ * prefixo de 8 hex do uuid. Agora só o match exato conta.
+ * Não encontrado → 404. Revogado → 403.
  */
 export async function dispositivoRoutes(app: FastifyInstance): Promise<void> {
   app.get('/dispositivo', { preHandler: requireAuth }, async (req, reply) => {
@@ -14,29 +16,30 @@ export async function dispositivoRoutes(app: FastifyInstance): Promise<void> {
     if (!deviceUuid) {
       return reply.code(400).send({ error: 'Header X-Device-Id obrigatório' });
     }
+    const patioIdQuery = (req.query as Record<string, string | undefined>).patio_id;
 
     const db = await tenantClient(operador.tenant_id);
 
-    const syntheticUuid = `${deviceUuid.replace(/-/g, '').substring(0, 8).toLowerCase()}-0000-4000-8000-000000000000`;
-
-    let { data: dispositivo } = await db
+    let query = db
       .from('dispositivos')
-      .select('id, device_uuid, patio_id, status')
-      .eq('device_uuid', deviceUuid)
-      .maybeSingle();
+      .select('id, device_uuid, patio_id, status, licenca, apelido, codigo_pareamento')
+      .eq('device_uuid', deviceUuid);
+    if (patioIdQuery) query = query.eq('patio_id', patioIdQuery);
 
-    if (!dispositivo) {
-      const retry = await db
-        .from('dispositivos')
-        .select('id, device_uuid, patio_id, status')
-        .eq('device_uuid', syntheticUuid)
-        .maybeSingle();
-      dispositivo = retry.data;
-      // Upgrade fire-and-forget: grava o uuid real p/ acelerar buscas futuras.
-      if (dispositivo && dispositivo.device_uuid !== deviceUuid) {
-        void db.from('dispositivos').update({ device_uuid: deviceUuid }).eq('id', dispositivo.id);
-      }
-    }
+    const { data: rows } = await query
+      .order('ultimo_acesso', { ascending: false, nullsFirst: false })
+      .limit(1);
+    const dispositivo = (rows ?? [])[0] as
+      | {
+          id: string;
+          device_uuid: string;
+          patio_id: string;
+          status: string;
+          licenca: string;
+          apelido: string | null;
+          codigo_pareamento: string | null;
+        }
+      | undefined;
 
     if (!dispositivo) {
       return reply.code(404).send({ error: 'Dispositivo não registrado' });
@@ -45,10 +48,7 @@ export async function dispositivoRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(403).send({ error: 'Dispositivo revogado' });
     }
 
-    // Fire-and-forget: carimba último acesso.
-    void db.from('dispositivos').update({ ultimo_acesso: new Date().toISOString() }).eq('id', dispositivo.id);
-
-    // Nome do pátio vinculado.
+    // Nome do pátio vinculado (compat com o app publicado).
     const { data: patio } = await db
       .from('patios')
       .select('id, nome, codigo')
@@ -59,6 +59,10 @@ export async function dispositivoRoutes(app: FastifyInstance): Promise<void> {
       patio_id: dispositivo.patio_id,
       nome_patio: patio?.nome ?? null,
       codigo_patio: patio?.codigo ?? null,
+      status: dispositivo.status,
+      licenca: dispositivo.licenca,
+      apelido: dispositivo.apelido,
+      codigo_pareamento: dispositivo.codigo_pareamento,
     });
   });
 }

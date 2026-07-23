@@ -102,6 +102,35 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
     // por compat com o cliente antigo.
     const assinaturaStatus = await getAssinaturaStatus(db, operador.tenant_id);
 
+    // Estado do DISPOSITIVO (só informa — bootstrap NUNCA bloqueia por licença).
+    // Lê pelo X-Device-Id; ausente → null (app antigo sem o header).
+    const deviceUuid = (req.headers['x-device-id'] as string | undefined)?.trim();
+    let dispositivoOut:
+      | { status: string; licenca: string; apelido: string | null; codigo_pareamento: string | null }
+      | null = null;
+    if (deviceUuid) {
+      const { data: d } = await db
+        .from('dispositivos')
+        .select('status, licenca, apelido, codigo_pareamento')
+        .eq('patio_id', patioId)
+        .eq('device_uuid', deviceUuid)
+        .maybeSingle();
+      if (d) {
+        const row = d as {
+          status: string;
+          licenca: string;
+          apelido: string | null;
+          codigo_pareamento: string | null;
+        };
+        dispositivoOut = {
+          status: row.status,
+          licenca: row.licenca,
+          apelido: row.apelido,
+          codigo_pareamento: row.codigo_pareamento,
+        };
+      }
+    }
+
     // Tickets removidos no painel (Limpeza de Pátio) nos últimos 30 dias — o app
     // converge o estado local por aqui na abertura. Usa o índice parcial
     // idx_tickets_removidos (patio_id, removido_em desc) where status='removido'.
@@ -135,6 +164,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       clientes: clientesOut,
       assinatura_estado: assinaturaStatus.estado,
       assinatura: assinaturaStatus,
+      dispositivo: dispositivoOut,
       tickets_removidos: (removidos ?? []).map((r) => r.id),
     });
   });
