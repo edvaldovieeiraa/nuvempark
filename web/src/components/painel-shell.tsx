@@ -258,6 +258,13 @@ export function PainelShell({
       {/* ══ SIDEBAR DESKTOP ══ */}
       <aside
         className={`gnav liquid ${collapsed ? "collapsed" : ""} hidden lg:flex`}
+        // Recolhido, o hover expande o flyout (CSS puro, sem estado React) e
+        // mostra os subitens; ao SAIR o mouse, o menu recolhe de novo e a lista
+        // encurta — sem um clique (navegação), o reset não disparava e a rolagem
+        // voltava. Realinha ao topo quando o mouse deixa o menu recolhido.
+        onMouseLeave={() => {
+          alinharTopoSeRecolhido();
+        }}
         style={{
           position: "absolute",
           top: 22,
