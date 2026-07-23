@@ -9,6 +9,8 @@ import '../../features/auth/presentation/screens/revogado_screen.dart';
 import '../../features/auth/presentation/screens/nao_vinculado_screen.dart';
 import '../../features/assinatura/presentation/bloqueio_screen.dart';
 import '../../features/assinatura/presentation/providers/assinatura_provider.dart';
+import '../../features/dispositivo/presentation/dispositivo_bloqueio_screen.dart';
+import '../../features/dispositivo/presentation/providers/dispositivo_provider.dart';
 import '../../features/patio/presentation/patio_select_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/tickets/presentation/entrada_screen.dart';
@@ -29,6 +31,7 @@ abstract final class Routes {
   static const revogado = '/revogado';
   static const naoVinculado = '/nao-vinculado';
   static const bloqueio = '/bloqueio';
+  static const dispositivoBloqueado = '/dispositivo-bloqueado';
   static const home = '/home';
   static const entrada = '/entrada';
   static const saida = '/saida';
@@ -107,6 +110,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.bloqueio,
         builder: (context, state) => const BloqueioScreen(),
       ),
+      GoRoute(
+        path: Routes.dispositivoBloqueado,
+        builder: (context, state) => const DispositivoBloqueioScreen(),
+      ),
       GoRoute(path: Routes.home, builder: (context, state) => const MainShell()),
       GoRoute(
         path: Routes.entrada,
@@ -171,12 +178,25 @@ class _RouterNotifier extends ChangeNotifier {
     // heartbeat traz bloqueia=true (ou false, no desbloqueio automático), o
     // redirect roda de novo e leva à /bloqueio (ou de volta pra /home).
     _ref.listen(assinaturaControllerProvider, (prev, next) => notifyListeners());
+    // Gate de dispositivo: 403 (login/heartbeat/drenagem) liga o bloqueio;
+    // heartbeat 200 o desliga. Reavaliar a rota nas duas transições.
+    _ref.listen(dispositivoControllerProvider, (prev, next) => notifyListeners());
   }
   final Ref _ref;
 
   String? redirect(BuildContext context, GoRouterState state) {
     final auth = _ref.read(authControllerProvider);
     final loc = state.matchedLocation;
+
+    // GATE DE DISPOSITIVO — precedência sobre tudo, exceto o carregamento
+    // inicial (deixa o splash restaurar o snapshot). Vale inclusive deslogado
+    // (403 no login): a tela mostra o código de pareamento para o gestor liberar.
+    if (auth is! AuthLoading &&
+        _ref.read(dispositivoControllerProvider) != null) {
+      return loc == Routes.dispositivoBloqueado
+          ? null
+          : Routes.dispositivoBloqueado;
+    }
 
     switch (auth) {
       case AuthLoading():
@@ -207,6 +227,7 @@ class _RouterNotifier extends ChangeNotifier {
           Routes.naoVinculado,
           Routes.patioSelect,
           Routes.bloqueio,
+          Routes.dispositivoBloqueado,
         };
         return entryScreens.contains(loc) ? Routes.home : null;
     }

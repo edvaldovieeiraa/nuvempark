@@ -7,6 +7,8 @@ import '../../data/token_storage.dart';
 import '../../domain/nuvempark_user.dart';
 import '../../../patio/domain/patio_resumo.dart';
 import '../../../assinatura/presentation/providers/assinatura_provider.dart';
+import '../../../dispositivo/domain/dispositivo_bloqueio.dart';
+import '../../../dispositivo/presentation/providers/dispositivo_provider.dart';
 
 // ── Estado ──────────────────────────────────────────────────────────────────
 
@@ -113,6 +115,15 @@ class AuthController extends Notifier<AuthState> {
         result.patios,
         assinaturaEstado: result.assinaturaEstado,
       );
+    } on DispositivoBloqueadoException catch (e) {
+      // Dispositivo não autorizado: NÃO é erro de login. Aciona o gate (o guard
+      // leva à tela de bloqueio) e fica deslogado (a API não emitiu tokens).
+      // Sem rethrow → a tela de login não mostra erro; o guard já roteia.
+      ref.read(dispositivoControllerProvider.notifier).bloquear(
+            motivo: e.motivo,
+            codigoPareamento: e.codigoPareamento,
+          );
+      state = const AuthLoggedOut();
     } catch (e) {
       state = const AuthLoggedOut();
       rethrow;
@@ -162,6 +173,7 @@ class AuthController extends Notifier<AuthState> {
     await LockTask.parar(); // libera o app antes de sair
     await _repo.logout();
     ref.read(assinaturaControllerProvider.notifier).limpar();
+    ref.read(dispositivoControllerProvider.notifier).limpar();
     state = const AuthLoggedOut();
   }
 }

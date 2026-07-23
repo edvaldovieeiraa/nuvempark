@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/dispositivo/presentation/providers/dispositivo_provider.dart';
 import '../../features/sync/presentation/sync_info_provider.dart';
 import '../config/env.dart';
 import '../di/providers.dart';
@@ -82,6 +83,12 @@ class HeartbeatService with WidgetsBindingObserver {
               receiveTimeout: Env.heartbeatTimeout,
             ),
           );
+
+      // Chegamos aqui só com 2xx (o Dio lança em 4xx/5xx). Um heartbeat 200
+      // significa que o dispositivo PASSOU no gate (fn_dispositivo_pode_logar):
+      // se havia bloqueio, é o momento do auto-desbloqueio — o gestor liberou.
+      // (O 403 dispositivo cai no catch, e o DispositivoInterceptor já bloqueou.)
+      _ref.read(dispositivoControllerProvider.notifier).liberar();
 
       // "Última sincronização" = último CONTATO com o servidor. O heartbeat bate
       // a cada 60s independente de haver dado a subir, então esse carimbo avança

@@ -13,6 +13,7 @@ final bootstrapRepositoryProvider = Provider<BootstrapRepository>(
   (ref) => BootstrapRepository(
     dio: ref.read(dioProvider),
     db: ref.read(appDatabaseProvider),
+    storage: ref.read(tokenStorageProvider),
   ),
 );
 

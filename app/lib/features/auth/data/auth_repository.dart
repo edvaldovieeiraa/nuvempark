@@ -2,8 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:nuvempark_core/nuvempark_core.dart';
 
 import '../../../core/config/env.dart';
+import '../../../core/device/device_info_service.dart';
 import '../../patio/domain/patio_resumo.dart';
 import '../../assinatura/domain/assinatura_status.dart';
+import '../../dispositivo/domain/dispositivo_bloqueio.dart';
 import '../domain/nuvempark_user.dart';
 import 'token_storage.dart';
 
@@ -33,10 +35,15 @@ class BindingInfo {
 }
 
 class AuthRepository {
-  AuthRepository({required this.dio, required this.storage});
+  AuthRepository({
+    required this.dio,
+    required this.storage,
+    required this.deviceInfo,
+  });
 
   final Dio dio;
   final TokenStorage storage;
+  final DeviceInfoService deviceInfo;
 
   /// Login por CÓDIGO DO TENANT (4 díg) + usuário + senha.
   /// A API resolve o tenant e retorna user + patios + estado da assinatura.
@@ -47,6 +54,9 @@ class AuthRepository {
   }) async {
     try {
       final deviceUuid = await storage.getOrCreateDeviceUuid();
+      // Identidade do aparelho (aditiva). Falha aqui NÃO bloqueia o login: os
+      // campos são opcionais e simplesmente não vão no corpo.
+      final dev = await deviceInfo.carregar();
       final resp = await dio.post(
         '${Env.authBase}/login',
         data: {
@@ -54,6 +64,11 @@ class AuthRepository {
           'usuario': usuario.trim().toUpperCase(),
           'senha': senha,
           'device_uuid': deviceUuid,
+          if (dev.androidId != null) 'android_id': dev.androidId,
+          if (dev.fabricante != null) 'fabricante': dev.fabricante,
+          if (dev.modelo != null) 'modelo': dev.modelo,
+          if (dev.soVersao != null) 'so_versao': dev.soVersao,
+          if (dev.appVersao != null) 'app_versao': dev.appVersao,
         },
         options: Options(headers: {'Authorization': null}),
       );
@@ -93,6 +108,18 @@ class AuthRepository {
         assinatura: assinaturaObj,
       );
     } on DioException catch (e) {
+      // 403 dispositivo_nao_autorizado: NÃO é erro de credencial/rede. Distingue
+      // para o app ir à tela de bloqueio (com sessão/outbox intactos) em vez de
+      // mostrar "login inválido". A API não emitiu tokens — nada a limpar.
+      final data = e.response?.data;
+      if (e.response?.statusCode == 403 &&
+          data is Map &&
+          data['erro'] == 'dispositivo_nao_autorizado') {
+        throw DispositivoBloqueadoException(
+          motivo: data['motivo']?.toString() ?? 'bloqueado',
+          codigoPareamento: data['codigo_pareamento']?.toString(),
+        );
+      }
       throw ApiException.fromDio(e);
     }
   }

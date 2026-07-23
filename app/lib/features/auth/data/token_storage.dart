@@ -22,6 +22,15 @@ abstract final class _K {
   static const assinaturaEstado = 'nuvempark_assinatura_estado';
   static const assinaturaBloqueia = 'nuvempark_assinatura_bloqueia';
   static const assinaturaTs = 'nuvempark_assinatura_ts';
+  // Último estado conhecido do BLOQUEIO DE DISPOSITIVO. Restaurado no splash
+  // (matar/reabrir o app não fura o bloqueio). Não guarda android_id.
+  static const dispBloqueioMotivo = 'nuvempark_disp_bloqueio_motivo';
+  static const dispBloqueioCodigo = 'nuvempark_disp_bloqueio_codigo';
+  // Info do dispositivo vinda do /bootstrap — só exibição (Ajustes).
+  static const dispInfoStatus = 'nuvempark_disp_info_status';
+  static const dispInfoLicenca = 'nuvempark_disp_info_licenca';
+  static const dispInfoApelido = 'nuvempark_disp_info_apelido';
+  static const dispInfoCodigo = 'nuvempark_disp_info_codigo';
 }
 
 /// Snapshot persistido do gate de assinatura.
@@ -129,6 +138,63 @@ class TokenStorage {
     await _storage.write(_K.patioCodigo, codigo);
   }
 
+  // ── Gate de dispositivo (último bloqueio conhecido) ────────────────────────
+  Future<void> saveDispositivoBloqueio({
+    required String motivo,
+    String? codigo,
+  }) async {
+    await _storage.write(_K.dispBloqueioMotivo, motivo);
+    if (codigo != null && codigo.isNotEmpty) {
+      await _storage.write(_K.dispBloqueioCodigo, codigo);
+    } else {
+      await _storage.delete(_K.dispBloqueioCodigo);
+    }
+  }
+
+  Future<DispositivoBloqueioSnapshot?> readDispositivoBloqueio() async {
+    final motivo = await _storage.read(_K.dispBloqueioMotivo);
+    if (motivo == null || motivo.isEmpty) return null;
+    return DispositivoBloqueioSnapshot(
+      motivo: motivo,
+      codigo: await _storage.read(_K.dispBloqueioCodigo),
+    );
+  }
+
+  Future<void> clearDispositivoBloqueio() async {
+    await _storage.delete(_K.dispBloqueioMotivo);
+    await _storage.delete(_K.dispBloqueioCodigo);
+  }
+
+  // ── Info do dispositivo (do /bootstrap) — só exibição ──────────────────────
+  Future<void> saveDispositivoInfo({
+    String? status,
+    String? licenca,
+    String? apelido,
+    String? codigo,
+  }) async {
+    await _escreverOuApagar(_K.dispInfoStatus, status);
+    await _escreverOuApagar(_K.dispInfoLicenca, licenca);
+    await _escreverOuApagar(_K.dispInfoApelido, apelido);
+    await _escreverOuApagar(_K.dispInfoCodigo, codigo);
+  }
+
+  Future<DispositivoInfoSnapshot> readDispositivoInfo() async {
+    return DispositivoInfoSnapshot(
+      status: await _storage.read(_K.dispInfoStatus),
+      licenca: await _storage.read(_K.dispInfoLicenca),
+      apelido: await _storage.read(_K.dispInfoApelido),
+      codigo: await _storage.read(_K.dispInfoCodigo),
+    );
+  }
+
+  Future<void> _escreverOuApagar(String chave, String? valor) async {
+    if (valor != null && valor.isNotEmpty) {
+      await _storage.write(chave, valor);
+    } else {
+      await _storage.delete(chave);
+    }
+  }
+
   // ── Limpeza ────────────────────────────────────────────────────────────────
   Future<void> clearSession() async {
     await _storage.delete(_K.accessToken);
@@ -150,5 +216,34 @@ class TokenStorage {
     await _storage.delete(_K.assinaturaEstado);
     await _storage.delete(_K.assinaturaBloqueia);
     await _storage.delete(_K.assinaturaTs);
+    // device_uuid é preservado de propósito (ver doc acima); o bloqueio e a
+    // info do dispositivo são efêmeros e saem no logout.
+    await _storage.delete(_K.dispBloqueioMotivo);
+    await _storage.delete(_K.dispBloqueioCodigo);
+    await _storage.delete(_K.dispInfoStatus);
+    await _storage.delete(_K.dispInfoLicenca);
+    await _storage.delete(_K.dispInfoApelido);
+    await _storage.delete(_K.dispInfoCodigo);
   }
+}
+
+/// Snapshot persistido do bloqueio de dispositivo.
+class DispositivoBloqueioSnapshot {
+  const DispositivoBloqueioSnapshot({required this.motivo, this.codigo});
+  final String motivo;
+  final String? codigo;
+}
+
+/// Snapshot da info do dispositivo (do /bootstrap).
+class DispositivoInfoSnapshot {
+  const DispositivoInfoSnapshot({
+    this.status,
+    this.licenca,
+    this.apelido,
+    this.codigo,
+  });
+  final String? status;
+  final String? licenca;
+  final String? apelido;
+  final String? codigo;
 }

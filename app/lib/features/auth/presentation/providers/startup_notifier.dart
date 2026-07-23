@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/di/providers.dart';
 import '../../../assinatura/presentation/providers/assinatura_provider.dart';
+import '../../../dispositivo/presentation/providers/dispositivo_provider.dart';
 import 'auth_provider.dart';
 
 /// Verifica o estado inicial do app sem chamadas de rede bloqueantes.
@@ -28,9 +29,10 @@ class StartupNotifier extends AsyncNotifier<void> {
         return;
       }
 
-      // Restaura o último gate conhecido ANTES de marcar logado — matar e
-      // reabrir o app não pode furar o bloqueio (o guard já decide com ele).
+      // Restaura os gates conhecidos ANTES de marcar logado — matar e reabrir o
+      // app não pode furar o bloqueio (o guard já decide com eles).
       await ref.read(assinaturaControllerProvider.notifier).restaurar();
+      await ref.read(dispositivoControllerProvider.notifier).restaurar();
       auth.continuarOffline(user);
     } catch (_) {
       // flutter_secure_storage pode lançar (ex.: chave do Keystore invalidada

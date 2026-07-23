@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvempark_core/nuvempark_core.dart';
 
 import '../config/env.dart';
+import '../device/device_info_service.dart';
 import '../network/bearer_interceptor.dart';
 import '../network/refresh_interceptor.dart';
 import '../network/assinatura_interceptor.dart';
+import '../network/dispositivo_interceptor.dart';
 import '../../database/app_database.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/data/token_storage.dart';
@@ -43,15 +45,23 @@ final dioProvider = Provider<Dio>((ref) {
   // do refresh: quando um 401 é renovado e a requisição repetida, é a resposta
   // repetida (já com os headers) que queremos ler.
   dio.interceptors.add(AssinaturaInterceptor(ref));
+  // Gate de dispositivo: 403 `dispositivo_nao_autorizado` → tela de bloqueio,
+  // sem tocar sessão/outbox. Depois do refresh (que só trata 401).
+  dio.interceptors.add(DispositivoInterceptor(ref));
 
   return dio;
 });
+
+// ── DeviceInfoService ──────────────────────────────────────────────────────
+final deviceInfoServiceProvider =
+    Provider<DeviceInfoService>((_) => DeviceInfoService());
 
 // ── AuthRepository ─────────────────────────────────────────────────────────
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => AuthRepository(
     dio: ref.read(dioProvider),
     storage: ref.read(tokenStorageProvider),
+    deviceInfo: ref.read(deviceInfoServiceProvider),
   ),
 );
 

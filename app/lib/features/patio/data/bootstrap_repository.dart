@@ -5,15 +5,23 @@ import 'package:drift/drift.dart';
 
 import '../../../core/config/env.dart';
 import '../../../database/app_database.dart';
+import '../../auth/data/token_storage.dart';
 
 /// Baixa a config do pátio (config + tarifas + clientes) e grava no Drift.
 /// O endpoint NuvemPark recebe `patio_id`; internamente o Drift usa a coluna
 /// `operacaoId` (nome mantido do leve-patio) para preservar as queries.
 class BootstrapRepository {
-  BootstrapRepository({required this.dio, required this.db});
+  BootstrapRepository({
+    required this.dio,
+    required this.db,
+    this.storage,
+  });
 
   final Dio dio;
   final AppDatabase db;
+  // Opcional: em produção o provider injeta; testes de bootstrap que não exercem
+  // a info de dispositivo podem omitir.
+  final TokenStorage? storage;
 
   Future<void> sincronizar(String patioId) async {
     final resp = await dio.get<Map<String, dynamic>>(
@@ -29,6 +37,18 @@ class BootstrapRepository {
     final removidosIds = <String>[
       for (final e in (data['tickets_removidos'] as List?) ?? const []) e as String,
     ];
+
+    // Info do dispositivo (aditivo) — só exibição, NÃO bloqueia nada aqui (o
+    // gate é login/refresh/heartbeat). API antiga omite → não regrava.
+    final dispositivoJson = data['dispositivo'];
+    if (storage != null && dispositivoJson is Map<String, dynamic>) {
+      await storage!.saveDispositivoInfo(
+        status: dispositivoJson['status'] as String?,
+        licenca: dispositivoJson['licenca'] as String?,
+        apelido: dispositivoJson['apelido'] as String?,
+        codigo: dispositivoJson['codigo_pareamento'] as String?,
+      );
+    }
 
     // ── OperacaoCache (config do pátio) ──────────────────────────────────────
     final configStr = jsonEncode({
