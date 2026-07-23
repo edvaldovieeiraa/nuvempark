@@ -233,6 +233,15 @@ export function PainelShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, collapsed, abertos]);
 
+  // Ao RECOLHER, os subitens somem (subwrap display:none) e a lista encurta. Se
+  // o operador estava rolado lá embaixo (ex.: "Histórico de alterações", último
+  // item de Configurações), o navegador NÃO zera a rolagem sozinho enquanto o
+  // conteúdo recolhido ainda transborda — ele só a clampa ao novo máximo. Os
+  // ícones do topo ficavam ACIMA da área visível ("sumiam"). Realinha ao topo.
+  useEffect(() => {
+    if (collapsed && navRef.current) navRef.current.scrollTop = 0;
+  }, [collapsed]);
+
   const inicial = (userEmail || "?").charAt(0).toUpperCase();
 
   return (
