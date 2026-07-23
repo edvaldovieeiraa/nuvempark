@@ -32,7 +32,7 @@ Plataforma vendida por **assinatura mensal por estacionamento**, com três super
 | 8 | Login do operador | **Código do tenant + usuário + senha** |
 | 9 | Pagamento principal | **Pix dinâmico no ticket via PSP**, fallback manual offline |
 | 10 | PSP | **Split/subconta (ex: Asaas)** — via camada de adaptador trocável |
-| 11 | Gate de assinatura | **Bloqueia painel; app opera em modo restrito** na graça. Estados: `ativa → atrasada → suspensa` |
+| 11 | Gate de assinatura | **REVISTO 2026-07-23:** `suspensa`/`cancelada`/tenant inativo = **bloqueio TOTAL** no app (tela dedicada, em tempo real, sem deslogar) — não mais "modo restrito". `atrasada` = banner + opera. Gate lido em TODA resposta autenticada (headers), não só no login. Ver HANDOFF "Gate de assinatura em tempo real". Estados: `trial → ativa → atrasada → suspensa/cancelada` |
 | 12 | Escopo dia 1 | Núcleo portado + Pix + painel/dashboard. Super-admin/billing = pós-1º cliente |
 | 13 | Estratégia de app | **Repo novo, portar módulo a módulo** (sync + tarifa portados com fidelidade cirúrgica) |
 | 14 | Cliente-alvo 1º pagante | **Rede pequena (2-5 pátios)** → hierarquia + dashboard consolidado são requisito dia 1 |
@@ -61,7 +61,9 @@ assinaturas (por tenant, com estado)
 - **Toda** tabela operacional carrega `tenant_id` + `patio_id`.
 - **RLS real** por `tenant_id` — isolamento no banco, não no código.
 - **Identidade:** gestor via Supabase Auth; operador via JWT com `tenant_id`/`patio_id` no claim.
-- **Billing:** tabela `assinaturas` + webhook do PSP; gate lê estado no login/bootstrap.
+- **Billing:** tabela `assinaturas` + webhook do PSP; gate publicado em **toda
+  resposta autenticada** (headers `X-Assinatura-*`) — bloqueio em tempo real no
+  app, não só no login/bootstrap (ver decisão #11 revista).
 - **Pagamento:** camada de adaptador (interface única, PSP trocável); Asaas como primeiro provedor, split por subconta.
 
 ---

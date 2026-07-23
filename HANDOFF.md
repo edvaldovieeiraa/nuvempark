@@ -1,6 +1,8 @@
 # NuvemPark — Handoff (estado ao retomar)
 
-> Última atualização: 2026-07-16. Web + API **em produção**; heartbeat validado
+> Última atualização: 2026-07-23. **Gate de assinatura em tempo real** no app +
+> API (ver seção dedicada) e menu lateral recolhido do painel (ícones/a11y).
+> Web + API **em produção**; heartbeat validado
 > end-to-end no Moto G05 (Android 15) contra `api.nuvempark.com`. APK de release
 > instalado no aparelho. `flutter analyze` limpo, api typecheck limpo.
 >
@@ -80,6 +82,44 @@ cada 61–92s **com a tela apagada, na bateria, sem Device Owner** — o pior ca
    serviço — um pátio abre mais que isso. `WorkManager` não serve (piso de
    15 min). Camada extra p/ tablet fixo: Device Owner + `STAY_ON_WHILE_PLUGGED_IN`
    (tela não dorme na tomada → nem chega a ir pra background).
+
+## Gate de assinatura em tempo real (2026-07-23)
+
+Antes o estado da assinatura só era lido no login/bootstrap: quando o master
+suspendia um tenant, o operador continuava operando até deslogar. Agora o
+bloqueio comercial chega **em tempo real** (≤60s ou no próximo sync), **sem
+deslogar**. Ver **decisão #11 (REVISTA)** no BRAINSTORM: `suspensa` deixou de ser
+"modo restrito" e passou a ser **bloqueio total**.
+
+**Modelo:** `suspensa` / `cancelada` / `tenants.ativo=false` → **bloqueio total**
+(tela `/bloqueio`). `atrasada` → **banner + opera**. `trial` vigente / `ativa` →
+normal. `trial` expirado → só barra no LOGIN (comportamento do trial preservado).
+
+**API publica, app aplica** (nenhuma rota passou a rejeitar o que aceitava):
+- `withAuth` resolve o status **tenant-scoped** (RLS; reusa `fn_assinatura_libera`;
+  cache 30s por tenant) e carimba em TODA resposta autenticada:
+  `X-Assinatura-Estado` + `X-Assinatura-Bloqueia`. Também injeta `request.assinatura`.
+- `login`/`refresh`/`bootstrap` incluem o objeto `assinatura` no corpo
+  (`assinatura_estado` mantido por compat). **`login` não recusa mais** tenant
+  suspenso/cancelado/atrasado — o app entra e mostra a tela de bloqueio.
+- `POST /sync` segue aceitando normal (dreno do outbox nunca para).
+- **Nada de migration nova, nada de service_role** neste bloco.
+
+**App (`app/lib/features/assinatura/`):**
+- Interceptor Dio global lê os headers de toda resposta → `assinaturaProvider`.
+  É o que faz o bloqueio chegar durante o sync/heartbeat.
+- Estado persistido em SecureStorage (`nuvempark_assinatura_*`) e **restaurado no
+  splash antes de rotear** — force-close não fura o bloqueio.
+- Guard do go_router: `bloqueia=true` → `/bloqueio` (sem back). Desbloqueio
+  automático quando volta `false` (master reativa → devolve à `/home`, sem relogin).
+- Tela `/bloqueio`: nome do pátio, contador de outbox, **Tentar novamente**
+  (revalida via heartbeat) e **Sair**. **Sync + heartbeat seguem rodando** ali
+  (upload da fila + canal de desbloqueio); quando o outbox zera, avisa.
+- **Fail-open offline:** sem sinal do servidor, mantém o último estado conhecido;
+  modo avião com assinatura ativa opera normal (nunca bloqueia por falta de rede).
+- Banner da home passa a ler o gate **vivo** e cobre só `atrasada`.
+- Núcleo (TarifaEngine, sync engine, OCR) **intocado**. Testes: `api` 45/45,
+  `app` 86/86, `flutter analyze` limpo, api typecheck limpo.
 
 ## ⚠️ Pontos de atenção / correções feitas (importantes)
 
