@@ -27,6 +27,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val canalLockTask = "nuvempark/lock_task"
     private val canalBackground = "nuvempark/background"
+    private val canalDevice = "nuvempark/device"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -79,6 +80,28 @@ class MainActivity : FlutterActivity() {
                     "isentoDeBateria" -> result.success(isentoDeBateria())
                     "pedirIsencaoBateria" -> result.success(pedirIsencaoBateria())
                     "ehDeviceOwner" -> result.success(ehDeviceOwner())
+                    else -> result.notImplemented()
+                }
+            }
+
+        // ANDROID_ID de verdade (Settings.Secure.ANDROID_ID): único por
+        // aparelho + chave de assinatura, ESTÁVEL entre reinstalações do app.
+        // Diferente de Build.ID (que o device_info_plus expõe e NÃO é único).
+        // Não exige permissão. Usado só para o binding no servidor.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, canalDevice)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "getAndroidId" -> {
+                        try {
+                            val id = Settings.Secure.getString(
+                                contentResolver,
+                                Settings.Secure.ANDROID_ID,
+                            )
+                            result.success(id)
+                        } catch (e: Exception) {
+                            result.success(null)
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }

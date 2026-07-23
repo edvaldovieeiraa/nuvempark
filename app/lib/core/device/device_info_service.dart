@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/services.dart';
 
 import '../config/env.dart';
 
@@ -10,8 +11,13 @@ import '../config/env.dart';
 /// erro de leitura) — a API aceita ausência, e o login nunca é bloqueado por
 /// falha aqui.
 ///
-/// `androidId` = ANDROID_ID (via [AndroidDeviceInfo.id]). Vai em CLARO por HTTPS
-/// no login; quem faz o sha256 é o servidor. NUNCA é persistido localmente.
+/// `androidId` = Settings.Secure.ANDROID_ID (via MethodChannel nativo) — único
+/// por aparelho + chave de assinatura e ESTÁVEL entre reinstalações, que é o que
+/// permite o servidor reconhecer o mesmo aparelho após reinstalar. NÃO usamos o
+/// `AndroidDeviceInfo.id` do device_info_plus: nas versões atuais ele é o
+/// `Build.ID` (id de build do firmware), que NÃO é único por aparelho.
+/// Vai em CLARO por HTTPS no login; o sha256 é feito no servidor. Nunca é
+/// persistido localmente. Não exige permissão Android.
 class DadosDispositivo {
   const DadosDispositivo({
     this.androidId,
@@ -29,6 +35,8 @@ class DadosDispositivo {
 }
 
 class DeviceInfoService {
+  static const _canal = MethodChannel('nuvempark/device');
+
   DadosDispositivo? _cache;
 
   /// Lê os dados uma vez e memoiza. Erro/plataforma não-Android → campos null,
@@ -42,7 +50,7 @@ class DeviceInfoService {
       if (Platform.isAndroid) {
         final info = await DeviceInfoPlugin().androidInfo;
         dados = DadosDispositivo(
-          androidId: info.id, // ANDROID_ID (conforme contrato do bloco)
+          androidId: await _lerAndroidId(),
           fabricante: info.manufacturer,
           modelo: info.model,
           soVersao: 'Android ${info.version.release}',
@@ -56,5 +64,16 @@ class DeviceInfoService {
     }
     _cache = dados;
     return dados;
+  }
+
+  /// Settings.Secure.ANDROID_ID via canal nativo. Qualquer falha → null (o
+  /// campo é opcional; só desabilita o merge por reinstalação naquele login).
+  Future<String?> _lerAndroidId() async {
+    try {
+      final id = await _canal.invokeMethod<String>('getAndroidId');
+      return (id != null && id.isNotEmpty) ? id : null;
+    } catch (_) {
+      return null;
+    }
   }
 }
