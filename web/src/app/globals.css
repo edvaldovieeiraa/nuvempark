@@ -280,6 +280,11 @@ input, select, textarea {
 .gnav.collapsed .cbtn { margin-left: 0 !important; }
 .gnav.collapsed .gitem { justify-content: center; padding-left: 0 !important; padding-right: 0 !important; }
 .gnav.collapsed .subwrap { display: none; }
+/* BLINDAGEM: recolhido, some SÓ o texto (.lbl) e o chevron (.chev.hidec) — o
+   ÍCONE do item de nav nunca. Rede de segurança contra "menu recolhido sem
+   ícones": mesmo que uma regra futura de label vaze pro ícone, ela não vence. */
+.gnav.collapsed .pitem > svg:not(.chev),
+.gnav.collapsed .gitem > svg:not(.chev) { opacity: 1 !important; max-width: none !important; }
 /* Cabeçalho da barra RECOLHIDA: logo em cima, botão de recolher/expandir logo
    abaixo — os DOIS sempre visíveis e clicáveis. Antes o botão ficava oculto e
    sem clique (só reaparecia no hover), e o operador ficava sem como reabrir.

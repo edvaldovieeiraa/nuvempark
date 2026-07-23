@@ -418,6 +418,11 @@ export function PainelShell({
                   href={item.href!}
                   className="pitem navitem"
                   data-active={act}
+                  // Recolhido, o item é só um ícone — sem isto ele fica sem nome
+                  // acessível (leitor de tela e tooltip nativo não têm o que ler).
+                  title={item.label}
+                  aria-label={item.label}
+                  aria-current={act ? "page" : undefined}
                   onMouseEnter={(e) => posEm(e.currentTarget)}
                   style={{
                     gap: 11,
@@ -456,6 +461,11 @@ export function PainelShell({
                   // o destaque vai no ÍCONE-PAI do grupo. Expandida e aberta, quem
                   // carrega o destaque é o filho ativo (subitem).
                   data-active={gAtivo && (collapsed || !aberto)}
+                  // Recolhido, o grupo vira um ícone só — precisa de nome acessível.
+                  role="button"
+                  title={item.label}
+                  aria-label={item.label}
+                  aria-expanded={aberto}
                   onMouseEnter={(e) => posEm(e.currentTarget)}
                   onClick={() =>
                     setAbertos((a) => ({
@@ -493,6 +503,9 @@ export function PainelShell({
                           href={f.href}
                           className="subitem"
                           data-active={act}
+                          title={f.label}
+                          aria-label={f.label}
+                          aria-current={act ? "page" : undefined}
                           onMouseEnter={(e) => posEm(e.currentTarget)}
                         >
                           <f.Icone className="w-4 h-4 shrink-0" />
@@ -558,6 +571,8 @@ export function PainelShell({
             <Link
               href="/painel/perfil"
               className="flex items-center gap-2.5 min-w-0"
+              title="Perfil"
+              aria-label={`Perfil — ${tenantNome}`}
               style={{ flex: 1, borderRadius: 12 }}
             >
               <span
@@ -606,6 +621,7 @@ export function PainelShell({
               type="button"
               onClick={() => setLogoutOpen(true)}
               title="Sair"
+              aria-label="Sair da conta"
               className="grid place-items-center hidec shrink-0"
               style={{
                 marginLeft: "auto",
