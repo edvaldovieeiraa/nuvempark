@@ -69,3 +69,32 @@ export function formatarData(valor: ValorData): string {
   const d = paraDate(valor);
   return d ? _dataSo.format(d) : VAZIO;
 }
+
+const _rel = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });
+
+const _UNIDADES: ReadonlyArray<readonly [Intl.RelativeTimeFormatUnit, number]> = [
+  ["year", 31_536_000],
+  ["month", 2_592_000],
+  ["day", 86_400],
+  ["hour", 3_600],
+  ["minute", 60],
+  ["second", 1],
+];
+
+/**
+ * Tempo relativo em pt-BR ("há 40 segundos", "há 3 dias", "agora mesmo").
+ * Usa Intl.RelativeTimeFormat no mesmo fuso lógico das demais funções.
+ * Inválido/nulo → `—`.
+ */
+export function tempoRelativo(valor: ValorData): string {
+  const d = paraDate(valor);
+  if (!d) return VAZIO;
+  const seg = Math.round((d.getTime() - Date.now()) / 1000); // <0 = passado
+  if (Math.abs(seg) < 5) return "agora mesmo";
+  for (const [unidade, tamanho] of _UNIDADES) {
+    if (Math.abs(seg) >= tamanho || unidade === "second") {
+      return _rel.format(Math.round(seg / tamanho), unidade);
+    }
+  }
+  return VAZIO;
+}
