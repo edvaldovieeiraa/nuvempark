@@ -105,10 +105,13 @@ export default async function DispositivosGestorPage() {
     if (!atual || a.criado_em > atual) ultimaTentativa.set(chave, a.criado_em);
   }
 
-  // ── Seção A: ativos agrupados por pátio ────────────────────────────────────
+  // ── Seção A: em operação (ativos + bloqueados) por pátio ───────────────────
+  // Bloqueados entram aqui (não em pendentes/revogados) para que o gestor os
+  // ENXERGUE e consiga DESBLOQUEAR — senão o dispositivo bloqueado sumiria de
+  // todas as abas e não haveria como reativá-lo.
   const ativosPorPatio = new Map<string, DispRow[]>();
   for (const d of disps) {
-    if (d.status !== "ativo") continue;
+    if (d.status !== "ativo" && d.status !== "bloqueado") continue;
     const arr = ativosPorPatio.get(d.patio_id) ?? [];
     arr.push(d);
     ativosPorPatio.set(d.patio_id, arr);
@@ -127,7 +130,7 @@ export default async function DispositivosGestorPage() {
         id: p.id,
         nome: p.nome,
         temIncluso: temIncluso.get(p.id) ?? false,
-        ativos: ds.length,
+        ativos: ds.filter((d) => d.status === "ativo").length,
         extrasPagos,
         valorExtra,
         dispositivos: ds.map((d) => ({
@@ -138,6 +141,7 @@ export default async function DispositivosGestorPage() {
           codigoPareamento: d.codigo_pareamento,
           appVersao: d.app_versao,
           ultimoAcesso: d.ultimo_acesso,
+          status: d.status,
           licenca: d.licenca,
           valorMensal: valorLicencaPorDisp.get(d.id) ?? valorExtra,
         })),

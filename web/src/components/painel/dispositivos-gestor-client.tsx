@@ -47,6 +47,7 @@ export type DispAtivo = {
   codigoPareamento: string | null;
   appVersao: string | null;
   ultimoAcesso: string | null;
+  status: string;
   licenca: string;
   valorMensal: number;
 };
@@ -261,10 +262,17 @@ function SecaoAtivos({ patios }: { patios: PatioAtivo[] }) {
 
 function LinhaAtivo({ d, slotLivre }: { d: DispAtivo; slotLivre: boolean }) {
   const podePromover = slotLivre && d.licenca !== "incluso";
+  const bloqueado = d.status === "bloqueado";
   return (
-    <tr className="border-t border-borda hover:bg-brand-50/30 transition-colors">
+    <tr
+      className={`border-t border-borda transition-colors ${
+        bloqueado ? "bg-perigo-bg/20 hover:bg-perigo-bg/30" : "hover:bg-brand-50/30"
+      }`}
+    >
       <td className="px-4 py-2.5">
-        <ApelidoEditor id={d.id} apelido={d.apelido} />
+        <div className={bloqueado ? "opacity-60" : undefined}>
+          <ApelidoEditor id={d.id} apelido={d.apelido} />
+        </div>
         <div className="text-[11px] text-texto-3">
           {[d.fabricante, d.modelo].filter(Boolean).join(" ") || "aparelho não identificado"}
         </div>
@@ -276,13 +284,19 @@ function LinhaAtivo({ d, slotLivre }: { d: DispAtivo; slotLivre: boolean }) {
         {d.appVersao ? `v${d.appVersao}` : "—"}
       </td>
       <td className="px-4 py-2.5">
-        <LicencaBadge licenca={d.licenca} valorMensal={d.valorMensal} />
+        {bloqueado ? (
+          <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border bg-perigo-bg text-perigo border-perigo/20">
+            Bloqueado
+          </span>
+        ) : (
+          <LicencaBadge licenca={d.licenca} valorMensal={d.valorMensal} />
+        )}
       </td>
       <td className="px-4 py-2.5 text-texto-3 hidden md:table-cell whitespace-nowrap">
         {d.ultimoAcesso ? `visto ${tempoRelativo(d.ultimoAcesso)}` : "—"}
       </td>
       <td className="px-4 py-2.5 text-right">
-        <MenuAcoes id={d.id} licenca={d.licenca} status="ativo" podePromover={podePromover} />
+        <MenuAcoes id={d.id} licenca={d.licenca} status={d.status} podePromover={podePromover} />
       </td>
     </tr>
   );
