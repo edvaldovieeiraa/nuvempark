@@ -1,12 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "NuvemPark — Painel do Gestor",
@@ -25,10 +19,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} h-full antialiased`}>
+    <html lang="pt-BR" className="h-full antialiased">
       <head>
-        {/* Fontes do redesign (aplicadas por componente; o resto do painel segue
-            com Geist até a fatia de cada tela ser migrada). */}
+        {/* Fontes do redesign, carregadas em runtime pelo navegador (Poppins nos
+            componentes migrados; o resto usa a stack sans do sistema). NÃO usar
+            next/font/google aqui: ele baixa a fonte em BUILD e, sem rede pro
+            Google Fonts na máquina de build, o deploy inteiro quebra. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
