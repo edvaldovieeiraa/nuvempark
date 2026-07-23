@@ -43,7 +43,7 @@ begin
        and rel.relnamespace = 'public'::regnamespace
        and con.contype = 'u'
        and (
-         select array_agg(att.attname order by att.attnum)
+         select array_agg(att.attname::text order by att.attnum)
            from unnest(con.conkey) as k(attnum)
            join pg_attribute att
              on att.attrelid = con.conrelid and att.attnum = k.attnum
@@ -83,7 +83,7 @@ begin
        and rel.relnamespace = 'public'::regnamespace
        and con.contype = 'c'
        and (
-         select array_agg(att.attname order by att.attnum)
+         select array_agg(att.attname::text order by att.attnum)
            from unnest(con.conkey) as k(attnum)
            join pg_attribute att
              on att.attrelid = con.conrelid and att.attnum = k.attnum
