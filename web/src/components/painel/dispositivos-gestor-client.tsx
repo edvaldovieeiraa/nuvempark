@@ -30,6 +30,12 @@ import { useToast } from "@/components/ui/toast";
 import { Botao } from "@/components/ui/botao";
 import { Input, Select } from "@/components/ui/campos";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
+import {
+  calcularPosMenu,
+  estiloMenu,
+  useFecharAoRolar,
+  type MenuPos,
+} from "@/components/ui/menu-flutuante";
 import { tempoRelativo, formatarDataHora } from "@/lib/format-data";
 
 // ─────────────────────────────────────────────────────────── Tipos (props) ──
@@ -606,15 +612,20 @@ function MenuAcoes({
 }) {
   const toast = useToast();
   const [menu, setMenu] = useState(false);
-  const [paraCima, setParaCima] = useState(false);
+  const [pos, setPos] = useState<MenuPos | null>(null);
   const [modal, setModal] = useState<null | "revogar" | "bloquear">(null);
   const botaoRef = useRef<HTMLButtonElement>(null);
   const [, comecar] = useTransition();
 
+  useFecharAoRolar(menu, () => setMenu(false));
+
   function abrir() {
-    const r = botaoRef.current?.getBoundingClientRect();
-    if (r) setParaCima(window.innerHeight - r.bottom < 240);
-    setMenu((m) => !m);
+    if (menu) {
+      setMenu(false);
+      return;
+    }
+    setPos(calcularPosMenu(botaoRef.current));
+    setMenu(true);
   }
 
   function agir(fn: () => Promise<Resultado>) {
@@ -627,7 +638,7 @@ function MenuAcoes({
   }
 
   return (
-    <div className="relative inline-block">
+    <div className="inline-block">
       <button
         ref={botaoRef}
         onClick={abrir}
@@ -637,17 +648,16 @@ function MenuAcoes({
         <MoreVertical className="w-4 h-4" />
       </button>
       <AnimatePresence>
-        {menu && (
+        {menu && pos && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setMenu(false)} />
+            <div className="fixed inset-0 z-[60]" onClick={() => setMenu(false)} />
             <motion.div
-              initial={{ opacity: 0, y: paraCima ? 6 : -6, scale: 0.96 }}
+              initial={{ opacity: 0, y: pos.bottom != null ? 6 : -6, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: paraCima ? 6 : -6, scale: 0.96 }}
+              exit={{ opacity: 0, y: pos.bottom != null ? 6 : -6, scale: 0.96 }}
               transition={{ duration: 0.15 }}
-              className={`absolute right-0 z-50 w-52 rounded-xl bg-superficie border border-borda shadow-[var(--shadow-pop)] p-1.5 text-left ${
-                paraCima ? "bottom-10" : "top-10"
-              }`}
+              style={estiloMenu(pos)}
+              className="fixed z-[61] w-56 rounded-xl bg-superficie border border-borda shadow-[var(--shadow-pop)] p-1.5 text-left"
             >
               {podePromover && (
                 <ItemMenu destaque onClick={() => agir(() => promoverIncluso(id))}>

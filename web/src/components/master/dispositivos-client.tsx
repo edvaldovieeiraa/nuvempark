@@ -31,6 +31,12 @@ import { useToast } from "@/components/ui/toast";
 import { Botao } from "@/components/ui/botao";
 import { Input, Select } from "@/components/ui/campos";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
+import {
+  calcularPosMenu,
+  estiloMenu,
+  useFecharAoRolar,
+  type MenuPos,
+} from "@/components/ui/menu-flutuante";
 import { tempoRelativo } from "@/lib/format-data";
 
 // ─────────────────────────────────────────────────────────── Tipos (props) ──
@@ -403,15 +409,20 @@ function PatioBloco({ patio }: { patio: Patio }) {
 function LinhaDispositivo({ d, slotLivre }: { d: Dispositivo; slotLivre: boolean }) {
   const toast = useToast();
   const [menu, setMenu] = useState(false);
-  const [paraCima, setParaCima] = useState(false);
+  const [pos, setPos] = useState<MenuPos | null>(null);
   const [confirmarRevogar, setConfirmarRevogar] = useState(false);
   const botaoRef = useRef<HTMLButtonElement>(null);
   const [, comecar] = useTransition();
 
+  useFecharAoRolar(menu, () => setMenu(false));
+
   function abrirMenu() {
-    const r = botaoRef.current?.getBoundingClientRect();
-    if (r) setParaCima(window.innerHeight - r.bottom < 280);
-    setMenu((m) => !m);
+    if (menu) {
+      setMenu(false);
+      return;
+    }
+    setPos(calcularPosMenu(botaoRef.current));
+    setMenu(true);
   }
 
   function agir(fn: () => Promise<Resultado>) {
@@ -455,7 +466,7 @@ function LinhaDispositivo({ d, slotLivre }: { d: Dispositivo; slotLivre: boolean
       <td className="px-2 py-2.5 text-texto-3 hidden md:table-cell whitespace-nowrap">
         {tempoRelativo(d.ultimoAcesso)}
       </td>
-      <td className="px-2 py-2.5 text-right relative">
+      <td className="px-2 py-2.5 text-right">
         <button
           ref={botaoRef}
           onClick={abrirMenu}
@@ -465,17 +476,16 @@ function LinhaDispositivo({ d, slotLivre }: { d: Dispositivo; slotLivre: boolean
           <MoreVertical className="w-4 h-4" />
         </button>
         <AnimatePresence>
-          {menu && (
+          {menu && pos && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setMenu(false)} />
+              <div className="fixed inset-0 z-[60]" onClick={() => setMenu(false)} />
               <motion.div
-                initial={{ opacity: 0, y: paraCima ? 6 : -6, scale: 0.96 }}
+                initial={{ opacity: 0, y: pos.bottom != null ? 6 : -6, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: paraCima ? 6 : -6, scale: 0.96 }}
+                exit={{ opacity: 0, y: pos.bottom != null ? 6 : -6, scale: 0.96 }}
                 transition={{ duration: 0.15 }}
-                className={`absolute right-2 z-50 w-56 rounded-xl bg-superficie border border-borda shadow-[var(--shadow-pop)] p-1.5 text-left ${
-                  paraCima ? "bottom-11" : "top-11"
-                }`}
+                style={estiloMenu(pos)}
+                className="fixed z-[61] w-56 rounded-xl bg-superficie border border-borda shadow-[var(--shadow-pop)] p-1.5 text-left"
               >
                 {podePromover && (
                   <MenuItem destaque onClick={() => agir(() => promoverIncluso(d.id))}>
