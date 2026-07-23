@@ -135,7 +135,7 @@ function FichaEvidencia() {
         <div className="relative rounded-xl overflow-hidden border border-white/8 aspect-[16/10] bg-noite-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/uploads/avaria-hero.png"
+            src="/uploads/avaria-hero.webp"
             alt="Operadora registrando avarias do veículo pelo tablet na entrada"
             className="block w-full h-full object-cover"
           />

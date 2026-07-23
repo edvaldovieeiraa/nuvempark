@@ -47,7 +47,7 @@ export function PixTicket() {
             <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", border: "1px solid #E5E7EB", boxShadow: "0 30px 80px -28px rgba(11,18,32,.3)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/uploads/pix-ticket-hero.png"
+                src="/uploads/pix-ticket-hero.webp"
                 alt="Cliente escaneia o QR do ticket NuvemPark e paga com Pix no celular"
                 style={{ display: "block", width: "100%", height: "auto" }}
               />
