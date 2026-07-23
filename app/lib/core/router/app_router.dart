@@ -7,6 +7,8 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/revogado_screen.dart';
 import '../../features/auth/presentation/screens/nao_vinculado_screen.dart';
+import '../../features/assinatura/presentation/bloqueio_screen.dart';
+import '../../features/assinatura/presentation/providers/assinatura_provider.dart';
 import '../../features/patio/presentation/patio_select_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/tickets/presentation/entrada_screen.dart';
@@ -26,6 +28,7 @@ abstract final class Routes {
   static const patioSelect = '/patio-select';
   static const revogado = '/revogado';
   static const naoVinculado = '/nao-vinculado';
+  static const bloqueio = '/bloqueio';
   static const home = '/home';
   static const entrada = '/entrada';
   static const saida = '/saida';
@@ -100,6 +103,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.naoVinculado,
         builder: (context, state) => const NaoVinculadoScreen(),
       ),
+      GoRoute(
+        path: Routes.bloqueio,
+        builder: (context, state) => const BloqueioScreen(),
+      ),
       GoRoute(path: Routes.home, builder: (context, state) => const MainShell()),
       GoRoute(
         path: Routes.entrada,
@@ -160,6 +167,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 class _RouterNotifier extends ChangeNotifier {
   _RouterNotifier(this._ref) {
     _ref.listen(authControllerProvider, (prev, next) => notifyListeners());
+    // O gate de assinatura também dispara reavaliação da rota: quando um sync/
+    // heartbeat traz bloqueia=true (ou false, no desbloqueio automático), o
+    // redirect roda de novo e leva à /bloqueio (ou de volta pra /home).
+    _ref.listen(assinaturaControllerProvider, (prev, next) => notifyListeners());
   }
   final Ref _ref;
 
@@ -181,12 +192,21 @@ class _RouterNotifier extends ChangeNotifier {
       case AuthNeedsUpdate():
         return Routes.login; // placeholder até a tela de update ser portada
       case AuthLoggedIn():
+        // GATE em tempo real: assinatura bloqueada → tela de bloqueio, sem back.
+        // Desbloqueio automático: quando bloqueia volta a false, o operador na
+        // /bloqueio é devolvido à /home (a tela entra na lista de entrada).
+        final bloqueado =
+            _ref.read(assinaturaControllerProvider)?.bloqueia ?? false;
+        if (bloqueado) {
+          return loc == Routes.bloqueio ? null : Routes.bloqueio;
+        }
         const entryScreens = {
           Routes.login,
           Routes.splash,
           Routes.revogado,
           Routes.naoVinculado,
           Routes.patioSelect,
+          Routes.bloqueio,
         };
         return entryScreens.contains(loc) ? Routes.home : null;
     }

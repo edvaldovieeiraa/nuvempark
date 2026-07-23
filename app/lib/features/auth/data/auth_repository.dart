@@ -3,6 +3,7 @@ import 'package:nuvempark_core/nuvempark_core.dart';
 
 import '../../../core/config/env.dart';
 import '../../patio/domain/patio_resumo.dart';
+import '../../assinatura/domain/assinatura_status.dart';
 import '../domain/nuvempark_user.dart';
 import 'token_storage.dart';
 
@@ -11,10 +12,13 @@ class LoginResult {
     required this.user,
     required this.patios,
     required this.assinaturaEstado,
+    required this.assinatura,
   });
   final NuvemparkUser user;
   final List<PatioResumo> patios;
   final String assinaturaEstado; // 'ativa' | 'atrasada' | 'suspensa'
+  /// Objeto completo do gate (bloqueia/libera/trial). Fonte inicial do gate.
+  final AssinaturaStatus assinatura;
 }
 
 class BindingInfo {
@@ -61,6 +65,16 @@ class AuthRepository {
           .toList();
       final tenant = data['tenant'] as Map<String, dynamic>;
       final assinaturaEstado = data['assinatura_estado'] as String? ?? 'ativa';
+      // Objeto completo (API nova). Cliente contra API antiga: cai no estado.
+      final assinaturaObj = data['assinatura'] is Map<String, dynamic>
+          ? AssinaturaStatus.fromJson(data['assinatura'] as Map<String, dynamic>)
+          : AssinaturaStatus(
+              estado: assinaturaEstado,
+              libera:
+                  assinaturaEstado == 'ativa' || assinaturaEstado == 'trial',
+              bloqueia: assinaturaEstado == 'suspensa' ||
+                  assinaturaEstado == 'cancelada',
+            );
 
       await storage.saveTokens(
         accessToken: data['access_token'] as String,
@@ -76,6 +90,7 @@ class AuthRepository {
         user: user,
         patios: patios,
         assinaturaEstado: assinaturaEstado,
+        assinatura: assinaturaObj,
       );
     } on DioException catch (e) {
       throw ApiException.fromDio(e);

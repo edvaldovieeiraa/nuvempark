@@ -17,6 +17,23 @@ abstract final class _K {
   static const patioNome = 'nuvempark_patio_nome';
   static const patioCodigo = 'nuvempark_patio_codigo';
   static const ultimoSync = 'nuvempark_ultimo_sync';
+  // Último estado conhecido da assinatura (gate). Restaurado no splash ANTES de
+  // decidir a rota — matar e reabrir o app não pode furar o bloqueio.
+  static const assinaturaEstado = 'nuvempark_assinatura_estado';
+  static const assinaturaBloqueia = 'nuvempark_assinatura_bloqueia';
+  static const assinaturaTs = 'nuvempark_assinatura_ts';
+}
+
+/// Snapshot persistido do gate de assinatura.
+class AssinaturaSnapshot {
+  const AssinaturaSnapshot({
+    required this.estado,
+    required this.bloqueia,
+    this.carimbo,
+  });
+  final String estado;
+  final bool bloqueia;
+  final DateTime? carimbo;
 }
 
 /// Persiste tokens e identidade do dispositivo em SecureStorage.
@@ -82,6 +99,28 @@ class TokenStorage {
   Future<String?> readPatioNome() => _storage.read(_K.patioNome);
   Future<String?> readPatioCodigo() => _storage.read(_K.patioCodigo);
 
+  // ── Gate de assinatura (último estado conhecido) ───────────────────────────
+  Future<void> saveAssinatura({
+    required String estado,
+    required bool bloqueia,
+  }) async {
+    await _storage.write(_K.assinaturaEstado, estado);
+    await _storage.write(_K.assinaturaBloqueia, bloqueia ? '1' : '0');
+    await _storage.write(_K.assinaturaTs, DateTime.now().toIso8601String());
+  }
+
+  Future<AssinaturaSnapshot?> readAssinatura() async {
+    final estado = await _storage.read(_K.assinaturaEstado);
+    if (estado == null || estado.isEmpty) return null;
+    final bloqueia = (await _storage.read(_K.assinaturaBloqueia)) == '1';
+    final tsIso = await _storage.read(_K.assinaturaTs);
+    return AssinaturaSnapshot(
+      estado: estado,
+      bloqueia: bloqueia,
+      carimbo: tsIso != null ? DateTime.tryParse(tsIso) : null,
+    );
+  }
+
   Future<void> savePatioVinculado({
     required String nome,
     required String codigo,
@@ -108,5 +147,8 @@ class TokenStorage {
     await _storage.delete(_K.patioId);
     await _storage.delete(_K.patioNome);
     await _storage.delete(_K.patioCodigo);
+    await _storage.delete(_K.assinaturaEstado);
+    await _storage.delete(_K.assinaturaBloqueia);
+    await _storage.delete(_K.assinaturaTs);
   }
 }

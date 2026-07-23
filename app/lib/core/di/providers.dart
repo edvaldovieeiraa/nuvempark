@@ -5,6 +5,7 @@ import 'package:nuvempark_core/nuvempark_core.dart';
 import '../config/env.dart';
 import '../network/bearer_interceptor.dart';
 import '../network/refresh_interceptor.dart';
+import '../network/assinatura_interceptor.dart';
 import '../../database/app_database.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/data/token_storage.dart';
@@ -38,6 +39,10 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     RefreshInterceptor(dio: dio, storage: storage, ref: ref),
   );
+  // Publica o estado da assinatura de toda resposta autenticada no gate. Depois
+  // do refresh: quando um 401 é renovado e a requisição repetida, é a resposta
+  // repetida (já com os headers) que queremos ler.
+  dio.interceptors.add(AssinaturaInterceptor(ref));
 
   return dio;
 });

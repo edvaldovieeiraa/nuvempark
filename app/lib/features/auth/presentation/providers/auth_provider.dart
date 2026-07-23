@@ -6,6 +6,7 @@ import '../../data/auth_repository.dart';
 import '../../data/token_storage.dart';
 import '../../domain/nuvempark_user.dart';
 import '../../../patio/domain/patio_resumo.dart';
+import '../../../assinatura/presentation/providers/assinatura_provider.dart';
 
 // ── Estado ──────────────────────────────────────────────────────────────────
 
@@ -104,6 +105,9 @@ class AuthController extends Notifier<AuthState> {
         senha: senha,
       );
       await _storage.saveUser(result.user);
+      // Semeia o gate já na entrada (o app precisa entrar mesmo bloqueado, para
+      // mostrar a tela de bloqueio — o corte de login é só do trial expirado).
+      ref.read(assinaturaControllerProvider.notifier).definir(result.assinatura);
       await _resolverAposLogin(
         result.user,
         result.patios,
@@ -157,6 +161,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> logout() async {
     await LockTask.parar(); // libera o app antes de sair
     await _repo.logout();
+    ref.read(assinaturaControllerProvider.notifier).limpar();
     state = const AuthLoggedOut();
   }
 }

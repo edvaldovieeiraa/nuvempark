@@ -10,6 +10,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/brisa.dart';
+import '../../assinatura/presentation/providers/assinatura_provider.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../caixa/domain/caixa_model.dart';
 import '../../caixa/presentation/providers/caixa_provider.dart';
@@ -96,7 +97,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
-    final assinatura = auth is AuthLoggedIn ? auth.assinaturaEstado : 'ativa';
+    // Estado VIVO do gate (headers do sync/heartbeat). Fallback: o do login.
+    final assinatura = ref.watch(assinaturaControllerProvider)?.estado ??
+        (auth is AuthLoggedIn ? auth.assinaturaEstado : 'ativa');
     final operadorNome = auth is AuthLoggedIn ? auth.user.nome : '';
     final patio = ref.watch(patioNotifierProvider).value;
     final abertos = ref.watch(ticketsAbertosProvider).value ?? const [];
@@ -116,7 +119,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               _header(operadorNome, patio?.nome, printer),
               const SizedBox(height: 16),
 
-              if (assinatura != 'ativa') _bannerAssinatura(assinatura),
+              // Só 'atrasada' vira banner (opera normal). suspensa/cancelada não
+              // chegam aqui — o gate leva à tela de bloqueio antes da home.
+              if (assinatura == 'atrasada') _bannerAssinatura(),
 
               // Ocupação em destaque (toca → aba Pátio)
               _cardOcupacao(abertos.length, patio?.qtdVagas ?? 0),
@@ -766,7 +771,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _bannerAssinatura(String estado) => Container(
+  Widget _bannerAssinatura() => Container(
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(14),
@@ -775,16 +780,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.saida.withValues(alpha: 0.3)),
         ),
-        child: Row(
+        child: const Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: AppColors.saida),
-            const SizedBox(width: 10),
+            Icon(Icons.warning_amber_rounded, color: AppColors.saida),
+            SizedBox(width: 10),
             Expanded(
               child: Text(
-                estado == 'atrasada'
-                    ? 'Assinatura atrasada — regularize para manter o acesso completo.'
-                    : 'Assinatura suspensa — modo restrito.',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                'Assinatura atrasada — regularize para manter o acesso completo.',
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],

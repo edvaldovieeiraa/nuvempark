@@ -56,6 +56,11 @@ class HeartbeatService with WidgetsBindingObserver {
     _timer = Timer.periodic(Env.heartbeatInterval, (_) => _bater());
   }
 
+  /// Força uma batida imediata (ex.: botão "Tentar novamente" da tela de
+  /// bloqueio revalidando o gate). A resposta traz os headers X-Assinatura-*,
+  /// que o interceptor aplica no provider — e o desbloqueio chega na hora.
+  Future<void> baterAgora() => _bater();
+
   /// Um tick. Reentrância-safe: se o anterior ainda está no ar (rede lenta),
   /// este é descartado em vez de empilhar requisições.
   Future<void> _bater() async {
