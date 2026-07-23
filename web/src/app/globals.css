@@ -231,7 +231,10 @@ input, select, textarea {
 .gnav .lbl.brand { flex-shrink: 0; max-width: none; }
 .gnav .navscroll { position: relative; flex: 1; min-height: 0; overflow-y: auto;
   display: flex; flex-direction: column; gap: 5px; padding-right: 2px;
-  scrollbar-width: none; -ms-overflow-style: none; }
+  scrollbar-width: none; -ms-overflow-style: none;
+  /* Sem scroll-anchoring: ao recolher (subitens somem), o navegador não deve
+     "ancorar" a rolagem num item do meio e reintroduzir offset — o JS zera. */
+  overflow-anchor: none; }
 .gnav .navscroll::-webkit-scrollbar { width: 0; height: 0; }
 .gnav .navscroll .lbl { font-size: 12.5px; white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
 .gnav .pitem, .gnav .gitem, .gnav .subitem { position: relative; z-index: 1; }

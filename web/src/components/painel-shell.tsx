@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -233,14 +233,23 @@ export function PainelShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, collapsed, abertos]);
 
-  // Ao RECOLHER, os subitens somem (subwrap display:none) e a lista encurta. Se
-  // o operador estava rolado lá embaixo (ex.: "Histórico de alterações", último
-  // item de Configurações), o navegador NÃO zera a rolagem sozinho enquanto o
-  // conteúdo recolhido ainda transborda — ele só a clampa ao novo máximo. Os
-  // ícones do topo ficavam ACIMA da área visível ("sumiam"). Realinha ao topo.
-  useEffect(() => {
-    if (collapsed && navRef.current) navRef.current.scrollTop = 0;
+  // Recolhido, os subitens somem (subwrap display:none) e a lista encurta. Numa
+  // janela baixa o strip de ícones ainda TRANSBORDA, e o navegador só clampa o
+  // scrollTop ao novo máximo (não zera) — os ícones do topo (Dashboard) ficavam
+  // ACIMA da dobra ("sumiam"). Realinha ao topo a cada recolhimento E a cada
+  // navegação com o menu recolhido. O rAF re-afirma após a transição de largura
+  // (0.28s), cujos reflows poderiam reintroduzir uma rolagem.
+  const alinharTopoSeRecolhido = useCallback(() => {
+    if (!collapsed) return;
+    const nav = navRef.current;
+    if (!nav) return;
+    nav.scrollTop = 0;
+    const raf = requestAnimationFrame(() => {
+      if (navRef.current) navRef.current.scrollTop = 0;
+    });
+    return () => cancelAnimationFrame(raf);
   }, [collapsed]);
+  useEffect(() => alinharTopoSeRecolhido(), [alinharTopoSeRecolhido, pathname]);
 
   const inicial = (userEmail || "?").charAt(0).toUpperCase();
 
