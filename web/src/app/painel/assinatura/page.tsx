@@ -23,6 +23,9 @@ export type FaturaRow = {
   gateway_pix_copia: string | null;
   gateway_pix_qrcode: string | null;
   gateway_boleto_url: string | null;
+  // Valores CONGELADOS da linha (nunca recalcular a partir do estado atual).
+  qtd_dispositivos_extras: number;
+  valor_dispositivo_extra: number;
 };
 
 export default async function AssinaturaPage() {
@@ -39,7 +42,7 @@ export default async function AssinaturaPage() {
   ] = await Promise.all([
     supabase
       .from("assinaturas")
-      .select("estado, valor_por_patio, dia_vencimento, trial_expira_em")
+      .select("estado, valor_por_patio, dia_vencimento, trial_expira_em, valor_dispositivo_extra")
       .maybeSingle(),
     supabase
       .from("patios")
@@ -48,10 +51,20 @@ export default async function AssinaturaPage() {
     supabase
       .from("faturas")
       .select(
-        "id, competencia, vencimento, valor, estado, pago_em, forma_pagamento, gateway_link, gateway_pix_copia, gateway_pix_qrcode, gateway_boleto_url",
+        "id, competencia, vencimento, valor, estado, pago_em, forma_pagamento, gateway_link, gateway_pix_copia, gateway_pix_qrcode, gateway_boleto_url, qtd_dispositivos_extras, valor_dispositivo_extra",
       )
       .order("competencia", { ascending: false }),
   ]);
+
+  // Extras cobráveis do estado ATUAL (regra de negócio no banco).
+  let extrasAtuais = 0;
+  if (tenantId) {
+    const { data } = await supabase.rpc("fn_contar_dispositivos_cobraveis", {
+      p_tenant: tenantId,
+    });
+    extrasAtuais = typeof data === "number" ? data : 0;
+  }
+  const valorDispositivoExtra = Number(assinatura?.valor_dispositivo_extra) || 0;
 
   // Dias de trial via função do banco (null se não estiver em trial).
   let trialDias: number | null = null;
@@ -96,6 +109,8 @@ export default async function AssinaturaPage() {
       historico={historico}
       projecaoTrial={projecaoTrial}
       gatewayAtivo={asaasConfigurado()}
+      extrasAtuais={extrasAtuais}
+      valorDispositivoExtra={valorDispositivoExtra}
     />
   );
 }

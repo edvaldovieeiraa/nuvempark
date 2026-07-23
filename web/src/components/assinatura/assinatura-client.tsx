@@ -142,6 +142,8 @@ export function AssinaturaClient({
   historico,
   projecaoTrial,
   gatewayAtivo,
+  extrasAtuais,
+  valorDispositivoExtra,
 }: {
   assinatura: Assinatura;
   qtdPatiosAtivos: number;
@@ -150,13 +152,18 @@ export function AssinaturaClient({
   historico: FaturaRow[];
   projecaoTrial: ProjecaoTrial | null;
   gatewayAtivo: boolean;
+  extrasAtuais: number;
+  valorDispositivoExtra: number;
 }) {
   const estado = assinatura?.estado ?? "ativa";
   const estadoPill = PILLS[estado] ?? PILLS.ativa;
   const estadoRotulo = labelAssinaturaEstado(estado);
   const valorPatio = Number(assinatura?.valor_por_patio) || 0;
-  const mensal = valorPatio * qtdPatiosAtivos;
+  const subtotalPatios = valorPatio * qtdPatiosAtivos;
+  const subtotalExtras = extrasAtuais * valorDispositivoExtra;
   const emTrial = estado === "trial";
+  // Durante o trial, os extras não são cobrados (mas o cliente vê o que virá).
+  const mensal = subtotalPatios + (emTrial ? 0 : subtotalExtras);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -264,6 +271,50 @@ export function AssinaturaClient({
             mono={false}
           />
         </div>
+
+        {/* Composição da mensalidade (conta aberta) */}
+        <div
+          style={{
+            marginTop: 16,
+            borderTop: "1px solid #EEF1F3",
+            paddingTop: 14,
+          }}
+        >
+          <ComposicaoLinha
+            descricao={`${qtdPatiosAtivos} ${qtdPatiosAtivos === 1 ? "pátio" : "pátios"}`}
+            unitario={valorPatio}
+            total={subtotalPatios}
+          />
+          {extrasAtuais > 0 && (
+            <ComposicaoLinha
+              descricao={`${extrasAtuais} ${extrasAtuais === 1 ? "dispositivo" : "dispositivos"}`}
+              unitario={valorDispositivoExtra}
+              total={subtotalExtras}
+              nota={
+                emTrial
+                  ? `não cobrado durante o teste · passa a ${moeda.format(valorDispositivoExtra)}/mês ao final`
+                  : null
+              }
+              riscado={emTrial}
+            />
+          )}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+              marginTop: 10,
+              paddingTop: 10,
+              borderTop: "1px solid #EEF1F3",
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 700 }}>Total</span>
+            <span className="mono" style={{ fontSize: 18, fontWeight: 800 }}>
+              {moeda.format(mensal)}
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#8695A0" }}>/mês</span>
+            </span>
+          </div>
+        </div>
       </motion.section>
 
       {/* Aviso trial: pode pagar já e ativar */}
@@ -338,6 +389,7 @@ export function AssinaturaClient({
                 <div style={{ fontSize: 12, color: "#8695A0", marginTop: 1 }}>
                   Vencimento {formatarData(f.vencimento)}
                 </div>
+                <ExtrasCongelados f={f} />
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span
@@ -415,6 +467,7 @@ export function AssinaturaClient({
                     ? ` · ${FORMAS[f.forma_pagamento] ?? f.forma_pagamento}`
                     : ""}
                 </div>
+                <ExtrasCongelados f={f} />
               </div>
             </div>
             <div
@@ -472,6 +525,67 @@ function Linha({
       >
         {valor}
       </span>
+    </div>
+  );
+}
+
+/** Extras CONGELADOS de uma fatura já emitida (nunca recalcula). */
+function ExtrasCongelados({ f }: { f: FaturaRow }) {
+  const qtd = f.qtd_dispositivos_extras ?? 0;
+  if (qtd <= 0) return null;
+  const unit = Number(f.valor_dispositivo_extra) || 0;
+  return (
+    <div style={{ fontSize: 11, color: "#8695A0", marginTop: 1 }}>
+      inclui {qtd} {qtd === 1 ? "dispositivo extra" : "dispositivos extras"} ×{" "}
+      {moeda.format(unit)}
+    </div>
+  );
+}
+
+function ComposicaoLinha({
+  descricao,
+  unitario,
+  total,
+  nota = null,
+  riscado = false,
+}: {
+  descricao: string;
+  unitario: number;
+  total: number;
+  nota?: string | null;
+  riscado?: boolean;
+}) {
+  return (
+    <div style={{ padding: "5px 0" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          gap: 10,
+          fontSize: 13,
+          color: riscado ? "#8695A0" : "#1F2937",
+        }}
+      >
+        <span style={{ fontWeight: 600 }}>{descricao}</span>
+        <span className="mono" style={{ color: "#8695A0", flex: 1, textAlign: "right", fontSize: 12 }}>
+          × {moeda.format(unitario)}
+        </span>
+        <span
+          className="mono"
+          style={{
+            fontWeight: 700,
+            minWidth: 92,
+            textAlign: "right",
+            textDecoration: riscado ? "line-through" : undefined,
+          }}
+        >
+          {moeda.format(total)}
+        </span>
+      </div>
+      {nota && (
+        <div style={{ fontSize: 11, color: INFO.color, fontWeight: 600, marginTop: 2 }}>{nota}</div>
+      )}
     </div>
   );
 }

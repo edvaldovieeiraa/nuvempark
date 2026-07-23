@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardLive } from "@/components/dashboard-live";
+import { AlertaDispositivos } from "@/components/painel/alerta-dispositivos";
+import { resumoPendentes } from "@/lib/dispositivos-gestor";
 import { OnboardingGate } from "@/components/onboarding/onboarding-wizard";
 
 export const dynamic = "force-dynamic";
@@ -122,9 +124,13 @@ export default async function DashboardPage({
     sparkline.push(diario.get(chaveDia(d)) ?? 0);
   }
 
+  const pendentes = await resumoPendentes(supabase);
+
   return (
-    <DashboardLive
-      inicial={{
+    <div className="space-y-4">
+      <AlertaDispositivos total={pendentes.total} patios={pendentes.patios} />
+      <DashboardLive
+        inicial={{
         patioNome: selecionado.nome,
         patioCodigo: selecionado.codigo_acesso ?? null,
         noPatio: abertosPorPatio[selecionado.id] ?? 0,
@@ -140,7 +146,8 @@ export default async function DashboardPage({
         sparkline,
         recentes: recentes ?? [],
         sincronizadoEm: ultimoSync?.sincronizado_em ?? null,
-      }}
-    />
+        }}
+      />
+    </div>
   );
 }
