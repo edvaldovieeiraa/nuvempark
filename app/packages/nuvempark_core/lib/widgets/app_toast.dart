@@ -21,12 +21,36 @@ class AppToast {
     _show(context, message, _azul, Icons.info_outline);
   }
 
+  /// Erro com uma AÇÃO (ex.: "Reimprimir"). Fica visível por mais tempo para o
+  /// operador ter tempo de tocar. Usado por trabalhos de fundo (impressão) que
+  /// falham depois da tela ter saído.
+  static void errorAcao(
+    BuildContext context,
+    String message, {
+    required String acaoLabel,
+    required VoidCallback onAcao,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    _show(
+      context,
+      message,
+      colors.error,
+      Icons.error_outline,
+      acaoLabel: acaoLabel,
+      onAcao: onAcao,
+      duration: const Duration(seconds: 8),
+    );
+  }
+
   static void _show(
     BuildContext context,
     String message,
     Color iconColor,
-    IconData icon,
-  ) {
+    IconData icon, {
+    String? acaoLabel,
+    VoidCallback? onAcao,
+    Duration duration = const Duration(seconds: 3),
+  }) {
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
     final colors = Theme.of(context).colorScheme;
@@ -35,7 +59,14 @@ class AppToast {
       ..showSnackBar(
         SnackBar(
           backgroundColor: colors.surfaceContainerHighest,
-          duration: const Duration(seconds: 3),
+          duration: duration,
+          action: (acaoLabel != null && onAcao != null)
+              ? SnackBarAction(
+                  label: acaoLabel,
+                  textColor: iconColor,
+                  onPressed: onAcao,
+                )
+              : null,
           content: Row(
             children: [
               Icon(icon, color: iconColor, size: 22),

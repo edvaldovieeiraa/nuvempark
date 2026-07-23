@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as dev;
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,6 +57,10 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
   void initState() {
     super.initState();
     _carregarTicket();
+    // Pré-aquece a impressora enquanto o operador escolhe a forma de pagamento,
+    // para o recibo (impresso em background após a confirmação) não pagar o
+    // custo de reconexão Bluetooth.
+    unawaited(_preAquecerImpressora());
   }
 
   /// Consulta do pagamento online. BEST-EFFORT: erro ou timeout deixa
@@ -386,16 +388,6 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     // condicional), mas esta trava de UI evita o retrabalho e o toast dobrado.
     setState(() => _fechando = true);
 
-    // [INSTRUMENTAÇÃO TEMPORÁRIA — BLOCO 1] Mede a latência real de cada etapa
-    // do caminho crítico da saída em device físico. Só em debug; remover/blindar
-    // antes do commit final do fix. Cada lap é o tempo ACUMULADO desde o toque.
-    final swPerf = Stopwatch()..start();
-    void lap(String etapa) {
-      if (kDebugMode) {
-        dev.log('$etapa: ${swPerf.elapsedMilliseconds}ms', name: 'saida-perf');
-      }
-    }
-
     final ticket = _ticket!;
     final isLivre = formaPagamento == 'livre_passagem';
     final saida = DateTime.now();
@@ -429,7 +421,6 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
         }
         caixaSessaoId = sessao.id;
       }
-      lap('caixa lido');
 
       // Quem está VALIDANDO a saída agora — não confundir com o operador da
       // entrada, que pode ser de outro turno. É o que o painel audita.
@@ -440,7 +431,6 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
         }
         return;
       }
-      lap('user lido (SecureStorage)');
 
       // Fecho do ticket + receita no caixa numa ÚNICA transação atômica. Pago
       // online / livre passagem passam caixaSessaoId nulo e não movimentam a
@@ -455,46 +445,36 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
             caixaSessaoId: caixaSessaoId,
             placa: ticket.placa,
           );
-      lap('registrarSaida (commit local atômico)');
 
       if (mounted) {
         if (movimentaCaixa) ref.invalidate(caixaSessaoNotifierProvider);
         ref.invalidate(ticketsAbertosProvider);
       }
-      unawaited(syncEngine.drain());
-      lap('invalidate providers + drain disparado (fire-and-forget)');
 
-      // Auto-print do recibo de saída, se houver impressora.
-      final printer =
-          await printerFuture.catchError((_) => const PrinterState());
-      lap('printerFuture resolvido');
-      if (printer.temImpressora) {
-        final bytes = PrintTemplates.reciboSaida(
-          placa: ticket.placa,
-          tipoVeiculo: ticket.tipoVeiculo,
-          entrada: ticket.entrada,
-          saida: saida,
-          valorCobrado: valorCobrado,
-          formaPagamento: formaPagamento,
-          operacaoNome: patio.nome,
-          isIsento: isLivre,
-          cols: printer.cols,
-          avancoFinal: printer.avancoFinal,
-          cabecalho: patio.ticketCabecalho,
-          rodape: patio.ticketRodape,
-        );
-        final ok = await printerNotifier.print(bytes);
-        lap('print Bluetooth concluído (ok=$ok)');
-        if (mounted && !ok) {
-          AppToast.error(context, 'Falha ao imprimir o recibo.');
-        }
-      }
-
+      // ── Confirmação IMEDIATA. O commit local (fecho + caixa + outbox) já está
+      // persistido — fechar o app agora não perde nada. Tudo daqui pra baixo é
+      // background e NÃO segura o botão. Espelha o entrada_screen.
       if (mounted) {
-        lap('UI liberada (antes do pop)');
         AppToast.success(context, 'Saída registrada!');
         context.pop();
       }
+
+      // Fire-and-forget: a fila sobe sozinha (e, offline, na próxima drenagem).
+      unawaited(syncEngine.drain());
+
+      // Recibo: impressão Bluetooth pode reconectar e demorar SEGUNDOS (socket
+      // ocioso → disconnect + connect). Fora do caminho crítico. A saída já está
+      // registrada e válida; falha avisa pelo navigator raiz com "Reimprimir".
+      unawaited(_imprimirReciboSaida(
+        printerFuture: printerFuture,
+        printerNotifier: printerNotifier,
+        ticket: ticket,
+        saida: saida,
+        valorCobrado: valorCobrado,
+        formaPagamento: formaPagamento,
+        patio: patio,
+        isIsento: isLivre,
+      ));
     } on TicketJaFechadoException {
       // Duplo-toque / retry: a saída já foi efetivada por outra chamada. Não é
       // erro — nada foi cobrado a mais (o fecho é atômico). Só sai da tela.
@@ -507,6 +487,76 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       if (mounted) AppToast.error(context, 'Erro ao registrar saída.');
     } finally {
       if (mounted) setState(() => _fechando = false);
+    }
+  }
+
+  /// Imprime o recibo FORA do caminho crítico. Não usa `ref` nem o `context` da
+  /// tela (ela já saiu): monta os bytes com os providers capturados e o aviso de
+  /// falha (com "Reimprimir") vai pelo navigator raiz.
+  Future<void> _imprimirReciboSaida({
+    required Future<PrinterState> printerFuture,
+    required PrinterNotifier printerNotifier,
+    required TicketModel ticket,
+    required DateTime saida,
+    required double valorCobrado,
+    required String formaPagamento,
+    required PatioModel patio,
+    required bool isIsento,
+  }) async {
+    final printer =
+        await printerFuture.catchError((_) => const PrinterState());
+    if (!printer.temImpressora) return;
+
+    final bytes = PrintTemplates.reciboSaida(
+      placa: ticket.placa,
+      tipoVeiculo: ticket.tipoVeiculo,
+      entrada: ticket.entrada,
+      saida: saida,
+      valorCobrado: valorCobrado,
+      formaPagamento: formaPagamento,
+      operacaoNome: patio.nome,
+      isIsento: isIsento,
+      cols: printer.cols,
+      avancoFinal: printer.avancoFinal,
+      cabecalho: patio.ticketCabecalho,
+      rodape: patio.ticketRodape,
+    );
+    await _tentarImprimir(printerNotifier, bytes);
+  }
+
+  /// Envia os bytes à impressora e, se falhar, oferece "Reimprimir" (mesmos
+  /// bytes) pelo navigator raiz. A saída já está registrada — reimprimir é só
+  /// papel, nunca refaz cobrança.
+  Future<void> _tentarImprimir(
+    PrinterNotifier printerNotifier,
+    List<int> bytes,
+  ) async {
+    final ok = await printerNotifier.print(bytes);
+    if (ok) return;
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx != null && ctx.mounted) {
+      AppToast.errorAcao(
+        ctx,
+        'Falha ao imprimir o recibo.',
+        acaoLabel: 'Reimprimir',
+        onAcao: () => _tentarImprimir(printerNotifier, bytes),
+      );
+    }
+  }
+
+  /// Pré-aquece a conexão Bluetooth enquanto a tela de saída está aberta: se há
+  /// impressora salva mas o socket esfriou, reconecta em background AGORA — assim
+  /// o print pós-confirmação (já fora do caminho crítico) não precisa gastar os
+  /// segundos de reconexão no momento do clique.
+  Future<void> _preAquecerImpressora() async {
+    final printer = await ref
+        .read(printerNotifierProvider.future)
+        .catchError((_) => const PrinterState());
+    if (!printer.temImpressora || printer.isConnected) return;
+    try {
+      await ref.read(printerNotifierProvider.notifier).reconectar();
+    } catch (_) {
+      // best-effort: falhar aqui só significa que o print reconecta na hora.
     }
   }
 

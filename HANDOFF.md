@@ -50,6 +50,13 @@
     fechamento caixa, teste), provider (conexão blindada + reconexão), tela de config
     (permissões BT, pareados, 58/80mm, avanço, teste). **Auto-print integrado na
     entrada e na saída**. Acesso: ícone de impressora na home. Config em /impressora.
+    - **Impressão FORA do caminho crítico (entrada E saída):** o recibo imprime
+      em background DEPOIS do commit local + navegação — o botão de confirmar
+      nunca espera o Bluetooth (que reconecta e leva segundos com o socket
+      ocioso). Falha de impressão vira snackbar não-bloqueante com **Reimprimir**
+      (a saída/entrada já está registrada e válida). A tela de saída ainda
+      **pré-aquece** a conexão BT ao abrir, pra o print em background nem
+      reconectar. Confirmar saída fica ≤300ms (só transação Drift + nav).
 
 ## Heartbeat + status online no painel (2026-07-16)
 
