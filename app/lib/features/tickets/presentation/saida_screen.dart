@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as dev;
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -384,6 +386,16 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     // condicional), mas esta trava de UI evita o retrabalho e o toast dobrado.
     setState(() => _fechando = true);
 
+    // [INSTRUMENTAÇÃO TEMPORÁRIA — BLOCO 1] Mede a latência real de cada etapa
+    // do caminho crítico da saída em device físico. Só em debug; remover/blindar
+    // antes do commit final do fix. Cada lap é o tempo ACUMULADO desde o toque.
+    final swPerf = Stopwatch()..start();
+    void lap(String etapa) {
+      if (kDebugMode) {
+        dev.log('$etapa: ${swPerf.elapsedMilliseconds}ms', name: 'saida-perf');
+      }
+    }
+
     final ticket = _ticket!;
     final isLivre = formaPagamento == 'livre_passagem';
     final saida = DateTime.now();
@@ -417,6 +429,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
         }
         caixaSessaoId = sessao.id;
       }
+      lap('caixa lido');
 
       // Quem está VALIDANDO a saída agora — não confundir com o operador da
       // entrada, que pode ser de outro turno. É o que o painel audita.
@@ -427,6 +440,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
         }
         return;
       }
+      lap('user lido (SecureStorage)');
 
       // Fecho do ticket + receita no caixa numa ÚNICA transação atômica. Pago
       // online / livre passagem passam caixaSessaoId nulo e não movimentam a
@@ -441,16 +455,19 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
             caixaSessaoId: caixaSessaoId,
             placa: ticket.placa,
           );
+      lap('registrarSaida (commit local atômico)');
 
       if (mounted) {
         if (movimentaCaixa) ref.invalidate(caixaSessaoNotifierProvider);
         ref.invalidate(ticketsAbertosProvider);
       }
       unawaited(syncEngine.drain());
+      lap('invalidate providers + drain disparado (fire-and-forget)');
 
       // Auto-print do recibo de saída, se houver impressora.
       final printer =
           await printerFuture.catchError((_) => const PrinterState());
+      lap('printerFuture resolvido');
       if (printer.temImpressora) {
         final bytes = PrintTemplates.reciboSaida(
           placa: ticket.placa,
@@ -467,12 +484,14 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
           rodape: patio.ticketRodape,
         );
         final ok = await printerNotifier.print(bytes);
+        lap('print Bluetooth concluído (ok=$ok)');
         if (mounted && !ok) {
           AppToast.error(context, 'Falha ao imprimir o recibo.');
         }
       }
 
       if (mounted) {
+        lap('UI liberada (antes do pop)');
         AppToast.success(context, 'Saída registrada!');
         context.pop();
       }
