@@ -212,12 +212,15 @@ export function Hero() {
 
           <MockupDashboard />
 
-          {/* celular do operador */}
+          {/* celular do operador — screenshot real da tela de nova entrada */}
           <div
             data-hero-phone
             style={{ position: "absolute", right: -16, bottom: -40, zIndex: 10, width: 216 }}
           >
-            <MockupApp />
+            <PhoneShot
+              src="/uploads/Screenshot_20260720-204441.png"
+              alt="Tela de nova entrada do app NuvemPark: fotografar placa, tipo de veículo e registrar entrada"
+            />
           </div>
         </div>
       </div>
@@ -461,49 +464,58 @@ function KpiClaro({
   );
 }
 
-/** Celular com a tela de "Nova entrada" do app do operador. */
-function MockupApp() {
+/** Moldura realista de celular com um screenshot real do app. Porte fiel do
+    protótipo (Claude Design): corpo metálico + notch, cantos arredondados. */
+export function PhoneShot({
+  src,
+  alt,
+  width = "100%",
+  radius = 46,
+  imgRadius = 39,
+  notchW = 62,
+  notchH = 18,
+  notchTop = 13,
+}: {
+  src: string;
+  alt: string;
+  width?: number | string;
+  radius?: number;
+  imgRadius?: number;
+  notchW?: number;
+  notchH?: number;
+  notchTop?: number;
+}) {
   return (
-    <div style={{ borderRadius: 28, border: "6px solid #111B2E", boxShadow: "0 32px 64px -16px rgba(0,0,0,.8)", overflow: "hidden", background: "#111B2E" }}>
-      <div style={{ background: "#F3F4F6", borderRadius: 20, overflow: "hidden" }}>
-        <div style={{ background: "linear-gradient(90deg,#16A34A,#166534)", padding: "12px 14px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 8, color: "rgba(255,255,255,.7)", fontWeight: 600, marginBottom: 8 }}>
-            <span>09:41</span>
-            <span>▮▮▮ 100%</span>
-          </div>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.7)" }}>Pátio Centro</p>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: "#fff" }}>Nova entrada</p>
-        </div>
-        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div>
-            <p style={{ margin: "0 0 4px", fontSize: 9, fontWeight: 700, color: "#94A3B8" }}>PLACA</p>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ flex: 1, height: 36, borderRadius: 8, border: "2px solid #16A34A", background: "#fff", padding: "0 8px", display: "flex", alignItems: "center" }}>
-                <span style={{ fontWeight: 800, letterSpacing: ".2em", fontSize: 13, color: "#1F2937", fontFamily: MONO }}>RIO2A18</span>
-              </div>
-              <span style={{ width: 36, height: 36, borderRadius: 8, background: "#DCFCE7", border: "1px solid #BBF7D0", display: "grid", placeItems: "center" }}>
-                <ScanLine size={16} strokeWidth={2} color="#16A34A" />
-              </span>
-            </div>
-            <p style={{ margin: "4px 0 0", fontSize: 8, fontWeight: 700, color: "#16A34A" }}>✓ lida pela câmera</p>
-          </div>
-          <div>
-            <p style={{ margin: "0 0 4px", fontSize: 9, fontWeight: 700, color: "#94A3B8" }}>VEÍCULO</p>
-            <div style={{ display: "flex", gap: 4 }}>
-              <span style={{ flex: 1, textAlign: "center", fontSize: 10, fontWeight: 700, padding: "6px 0", borderRadius: 8, background: "#16A34A", color: "#fff" }}>Carro</span>
-              <span style={{ flex: 1, textAlign: "center", fontSize: 10, fontWeight: 700, padding: "6px 0", borderRadius: 8, background: "#fff", border: "1px solid #E5E7EB", color: "#6B7280" }}>Moto</span>
-              <span style={{ flex: 1, textAlign: "center", fontSize: 10, fontWeight: 700, padding: "6px 0", borderRadius: 8, background: "#fff", border: "1px solid #E5E7EB", color: "#6B7280" }}>Van</span>
-            </div>
-          </div>
-          <div style={{ height: 40, borderRadius: 12, background: "linear-gradient(90deg,#16A34A,#166534)", display: "grid", placeItems: "center", boxShadow: "0 8px 24px -6px rgba(21,128,61,.5)" }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>REGISTRAR ENTRADA</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, paddingBottom: 2 }}>
-            <Printer size={12} strokeWidth={2} color="#94A3B8" />
-            <span style={{ fontSize: 8, fontWeight: 600, color: "#94A3B8" }}>Imprime o ticket automaticamente</span>
-          </div>
-        </div>
-      </div>
+    <div
+      style={{
+        position: "relative",
+        width,
+        borderRadius: radius,
+        padding: 7,
+        background: "linear-gradient(140deg,#4a4a4c,#1c1c1e 42%,#3a3a3c)",
+        boxShadow: "0 32px 64px -16px rgba(0,0,0,.8)",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        style={{ display: "block", width: "100%", height: "auto", borderRadius: imgRadius }}
+      />
+      <span
+        style={{
+          position: "absolute",
+          top: notchTop,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: notchW,
+          height: notchH,
+          borderRadius: 9999,
+          background: "#000",
+          zIndex: 4,
+          boxShadow: "inset 0 0 0 1px rgba(255,255,255,.06)",
+        }}
+      />
     </div>
   );
 }

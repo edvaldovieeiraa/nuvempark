@@ -172,8 +172,8 @@ function VarianteA() {
         bullets={["Nada de fila parada quando o Wi-Fi some", "Sincronização automática, sem clique"]}
         glow="radial-gradient(60% 60% at 50% 40%,rgba(22,163,74,.14),transparent 70%)"
         imagens={[
-          { src: "/uploads/Screenshot_20260717-201639.png", alt: "Pátio ao vivo no app do operador" },
-          { src: "/uploads/Screenshot_20260717-201535.png", alt: "Tela inicial do operador no app" },
+          { src: "/uploads/Screenshot_20260720-204528.png", alt: "Pagamento por Pix registrado mesmo offline" },
+          { src: "/uploads/Screenshot_20260723-175938.png", alt: "Tela inicial do operador com aviso de sem internet — opera normal e sincroniza depois" },
         ]}
         badge={
           <div style={{ position: "absolute", right: -14, bottom: -14, zIndex: 3, display: "flex", alignItems: "center", gap: 8, background: "#0B1220", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "10px 14px", boxShadow: "0 16px 40px -12px rgba(0,0,0,.5)" }}>
@@ -195,8 +195,8 @@ function VarianteA() {
         bullets={["Zero fila crescendo por digitação lenta", "Tarifa que você configura, aplicada sem falha"]}
         glow="radial-gradient(60% 60% at 50% 40%,rgba(14,165,233,.12),transparent 70%)"
         imagens={[
-          { src: "/uploads/Screenshot_20260717-201639.png", alt: "Placa preenchida sozinha na Nova entrada" },
-          { src: "/uploads/Screenshot_20260718-103253.png", alt: "Câmera do app lendo a placa em tempo real" },
+          { src: "/uploads/Screenshot_20260720-204441-d127ff1f.png", alt: "Nova entrada com placa preenchida e tabela de preço aplicada" },
+          { src: "/uploads/Screenshot_20260718-103329-77db7448.png", alt: "Câmera do app lendo a placa em tempo real" },
         ]}
         badge={
           <div style={{ position: "absolute", left: -14, top: -14, zIndex: 3, display: "flex", alignItems: "center", gap: 8, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "10px 14px", boxShadow: "0 16px 40px -12px rgba(11,18,32,.2)" }}>
@@ -217,8 +217,8 @@ function VarianteA() {
         bullets={["Caixa por operador, com dono e horário", "Da primeira vaga à quinta filial, sem trocar de sistema"]}
         glow="radial-gradient(60% 60% at 50% 40%,rgba(22,163,74,.14),transparent 70%)"
         imagens={[
-          { src: "/uploads/Screenshot_20260717-201543.png", alt: "Detalhamento do fechamento de caixa por operador" },
-          { src: "/uploads/Screenshot_20260717-201549.png", alt: "Caixa com saldo e faturamento ao vivo" },
+          { src: "/uploads/Screenshot_20260720-204514.png", alt: "Saída com tabela de preço e formas de pagamento" },
+          { src: "/uploads/Screenshot_20260723-181324.png", alt: "Caixa por operador com saldo esperado e fechamento" },
         ]}
         badge={
           <div style={{ position: "absolute", right: -14, top: -14, display: "inline-flex", alignItems: "center", gap: 6, background: "#DCFCE7", border: "1px solid #BBF7D0", borderRadius: 9999, padding: "6px 12px", boxShadow: "0 12px 32px -12px rgba(11,18,32,.2)" }}>

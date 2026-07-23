@@ -131,29 +131,22 @@ function FichaEvidencia() {
           </span>
         </div>
 
-        {/* "foto" do carro com marcadores */}
-        <div className="relative rounded-xl overflow-hidden bg-gradient-to-b from-noite-3 to-noite-2 border border-white/8 aspect-[16/10]">
-          {/* grade de scanner sutil */}
-          <div
-            className="absolute inset-0 opacity-20"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(245,158,11,.4) 1px,transparent 1px)",
-              backgroundSize: "100% 22px",
-            }}
+        {/* foto real do registro de avaria na entrada */}
+        <div className="relative rounded-xl overflow-hidden border border-white/8 aspect-[16/10] bg-noite-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/uploads/avaria-hero.png"
+            alt="Operadora registrando avarias do veículo pelo tablet na entrada"
+            className="block w-full h-full object-cover"
           />
-          {/* silhueta do carro */}
-          <CarroSilhueta />
-
-          {/* marcador de avaria 1 — pulsante (o micro-motion com função) */}
-          <Marcador className="left-[26%] top-[38%]" label="Arranhão · porta diant. esq." />
-          {/* marcador de avaria 2 */}
-          <Marcador className="left-[63%] top-[58%]" label="Amassado · paralama" atraso />
-
-          {/* rótulo de canto: câmera */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: "linear-gradient(180deg,transparent 58%,rgba(11,18,32,.4))" }}
+          />
+          {/* rótulo de canto: registro na entrada */}
           <div className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-md bg-black/50 backdrop-blur px-2 py-1">
             <Camera className="w-3 h-3 text-saida" />
-            <span className="font-mono text-[10px] text-white/70">CAM 01</span>
+            <span className="font-mono text-[10px] text-white/70">Registro na entrada · 14:07</span>
           </div>
         </div>
 
@@ -164,34 +157,6 @@ function FichaEvidencia() {
           <MetaDado Icone={Camera} rotulo="Fotos" valor="3" />
         </div>
       </div>
-    </div>
-  );
-}
-
-function Marcador({
-  className,
-  label,
-  atraso = false,
-}: {
-  className: string;
-  label: string;
-  atraso?: boolean;
-}) {
-  return (
-    <div className={`absolute ${className} group/mark`}>
-      {/* ping */}
-      <span className="absolute inset-0 grid place-items-center">
-        <span
-          className="w-5 h-5 rounded-full bg-saida/40 animate-ping-slow"
-          style={atraso ? { animationDelay: "-1.1s" } : undefined}
-        />
-      </span>
-      {/* ponto central */}
-      <span className="relative block w-5 h-5 rounded-full border-2 border-saida bg-saida/25" />
-      {/* etiqueta */}
-      <span className="absolute left-6 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-noite/90 border border-saida/30 px-2 py-1 text-[10px] font-mono font-bold text-saida shadow-lg">
-        {label}
-      </span>
     </div>
   );
 }
@@ -225,37 +190,3 @@ function MetaDado({
 }
 
 /** Silhueta lateral simples de um carro (SVG inline, leve). */
-function CarroSilhueta() {
-  return (
-    <svg
-      viewBox="0 0 320 160"
-      className="absolute inset-0 w-full h-full p-6 opacity-90"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M28 108 h264 M50 108 c0-14 11-25 25-25s25 11 25 25 M220 108 c0-14 11-25 25-25s25 11 25 25"
-        stroke="rgba(255,255,255,0.18)"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M40 108 L52 70 c3-9 11-15 21-15 h94 l40 33 h34 c12 0 22 10 22 22 v0"
-        stroke="rgba(255,255,255,0.35)"
-        strokeWidth="3"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-      <path
-        d="M78 55 h84 l30 33 H100 z"
-        stroke="rgba(255,255,255,0.2)"
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-        fill="rgba(255,255,255,0.03)"
-      />
-      {/* rodas */}
-      <circle cx="75" cy="108" r="15" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
-      <circle cx="245" cy="108" r="15" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
-    </svg>
-  );
-}
