@@ -30,6 +30,7 @@ import {
   Building2,
   Printer,
   History,
+  Download,
   PanelLeftClose,
   ChevronDown,
   Check,
@@ -91,6 +92,7 @@ const NAV: Item[] = [
     ],
   },
   { label: "Relatórios", Icone: BarChart3, href: "/painel/relatorios", porPatio: true },
+  { label: "Baixar app", Icone: Download, href: "/painel/download" },
   { label: "Assinatura", Icone: CreditCard, href: "/painel/assinatura" },
   {
     label: "Configurações",
