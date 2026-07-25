@@ -21,10 +21,40 @@ function tab(active: boolean): React.CSSProperties {
   };
 }
 
+/**
+ * ⚠️ CONTEÚDO ILUSTRATIVO — pessoas e estabelecimentos FICTÍCIOS.
+ *
+ * Nenhum destes é cliente real. Existem para a seção não ficar com
+ * "[Nome do cliente]" no ar enquanto não houver depoimento de verdade, e vêm
+ * acompanhados do aviso visível logo abaixo da grade — mesmo padrão que a aba
+ * "Em destaque" já usava.
+ *
+ * Ao substituir por clientes REAIS: troque os três objetos, tenha autorização
+ * escrita de cada pessoa para publicar nome e frase, e REMOVA o aviso e a
+ * constante ILUSTRATIVO. Publicar depoimento inventado como se fosse real é
+ * publicidade enganosa (CDC, art. 37).
+ */
+const ILUSTRATIVO = true;
+
 const DEPOIMENTOS = [
-  "“Parei de perguntar pro operador quanto entrou. Abro o celular e já sei — de casa, no domingo. Nunca mais tive caixa sem dono.”",
-  "“A foto de avaria na entrada acabou com a discussão na saída. Já economizei mais do que a mensalidade em um único mês.”",
-  "“Comecei com um pátio, hoje toco três na mesma conta. Não precisei de obra, cancela nem técnico — só o celular que a equipe já tinha.”",
+  {
+    texto:
+      "“Parei de perguntar pro operador quanto entrou. Abro o celular e já sei — de casa, no domingo. Nunca mais tive caixa sem dono.”",
+    nome: "Ricardo Almeida",
+    negocio: "Estacionamento Centro · Recife/PE",
+  },
+  {
+    texto:
+      "“A foto de avaria na entrada acabou com a discussão na saída. Já economizei mais do que a mensalidade em um único mês.”",
+    nome: "Patrícia Nogueira",
+    negocio: "Pátio Boa Viagem · Recife/PE",
+  },
+  {
+    texto:
+      "“Comecei com um pátio, hoje toco três na mesma conta. Não precisei de obra, cancela nem técnico — só o celular que a equipe já tinha.”",
+    nome: "Marcos Tenório",
+    negocio: "Rede Park Fácil · Caruaru/PE",
+  },
 ];
 
 function Avatar({ size = 44 }: { size?: number }) {
@@ -55,23 +85,36 @@ export function ProvaSocial() {
         </Reveal>
 
         {aba === "a" ? (
+          <>
           <div data-prova-grid style={{ marginTop: 48, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-            {DEPOIMENTOS.map((d, i) => (
-              <Reveal key={i}>
+            {DEPOIMENTOS.map((d) => (
+              <Reveal key={d.nome}>
                 <div style={{ borderRadius: 20, background: "#fff", border: "1px solid #E5E7EB", padding: 28, boxShadow: "0 1px 2px rgba(11,18,32,.04),0 4px 16px -4px rgba(11,18,32,.06)", display: "flex", flexDirection: "column", height: "100%" }}>
-                  <div style={{ display: "flex", gap: 2, color: "#F59E0B" }}>★★★★★</div>
-                  <p style={{ margin: "16px 0 0", fontSize: 16, lineHeight: 1.6, color: "#1F2937", flex: 1 }}>{d}</p>
+                  {/* Estrelas só quando houver avaliação REAL: nota inventada é
+                      o elemento que mais faz um card ilustrativo passar por
+                      avaliação de cliente. */}
+                  {!ILUSTRATIVO && (
+                    <div style={{ display: "flex", gap: 2, color: "#F59E0B" }}>★★★★★</div>
+                  )}
+                  <p style={{ margin: ILUSTRATIVO ? 0 : "16px 0 0", fontSize: 16, lineHeight: 1.6, color: "#1F2937", flex: 1 }}>{d.texto}</p>
                   <div style={{ marginTop: 24, display: "flex", alignItems: "center", gap: 12 }}>
                     <Avatar />
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "#1F2937" }}>[Nome do cliente]</div>
-                      <div style={{ fontSize: 13, color: "#94A3B8" }}>[Estacionamento · cidade]</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "#1F2937" }}>{d.nome}</div>
+                      <div style={{ fontSize: 13, color: "#94A3B8" }}>{d.negocio}</div>
                     </div>
                   </div>
                 </div>
               </Reveal>
             ))}
           </div>
+          {ILUSTRATIVO && (
+            <p style={{ margin: "16px 0 0", textAlign: "center", fontSize: 13, color: "#94A3B8" }}>
+              Depoimentos ilustrativos — pessoas e estabelecimentos fictícios,
+              criados para demonstrar o formato da seção.
+            </p>
+          )}
+          </>
         ) : (
           <>
             <Reveal>
@@ -88,15 +131,20 @@ export function ProvaSocial() {
                   <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 14 }}>
                     <Avatar size={52} />
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>[Nome do cliente]</div>
-                      <div style={{ fontSize: 13, color: "rgba(255,255,255,.55)" }}>[Estacionamento · cidade]</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>
+                        {DEPOIMENTOS[0].nome}
+                      </div>
+                      <div style={{ fontSize: 13, color: "rgba(255,255,255,.55)" }}>
+                        {DEPOIMENTOS[0].negocio}
+                      </div>
                     </div>
                   </div>
                 </div>
                 <div style={{ position: "relative", display: "grid", gap: 16 }}>
+                  {/* Números FICTÍCIOS — o aviso logo abaixo do bloco diz isso. */}
                   {[
-                    ["[+38%]", "em faturamento rastreado"],
-                    ["[3 pátios]", "numa conta só"],
+                    ["+38%", "em faturamento rastreado"],
+                    ["3 pátios", "numa conta só"],
                   ].map(([v, l]) => (
                     <div key={v} style={{ borderRadius: 16, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", padding: 20, textAlign: "center" }}>
                       <div style={{ fontSize: 32, fontWeight: 800, color: "#22C55E", fontVariantNumeric: "tabular-nums" }}>{v}</div>
