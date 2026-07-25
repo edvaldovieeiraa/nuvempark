@@ -5,9 +5,14 @@ import { notFound } from "next/navigation";
 import { ChevronRight, Clock } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
 import { Marca } from "@/components/marca";
+import { CtaFimDePost, CtaInline } from "@/components/blog/cta";
+import { FaqPost } from "@/components/blog/faq";
 import { JsonLd } from "@/components/blog/jsonld";
-import { ConteudoMarkdown } from "@/components/blog/markdown";
+import { ConteudoMarkdown, dividirMarkdown } from "@/components/blog/markdown";
+import { CapturaEmail } from "@/components/blog/newsletter";
 import { PostCard } from "@/components/blog/post-card";
+import { ProgressoLeitura } from "@/components/blog/progresso-leitura";
+import { Compartilhar } from "@/components/blog/share";
 import { obterPostPorSlug, postsRelacionados } from "@/lib/blog";
 import { dataAtributo, dataLonga, dataRelativa } from "@/lib/blog-datas";
 import {
@@ -89,10 +94,14 @@ export default async function PostPage({ params }: Props) {
   if (!post) notFound();
 
   const relacionados = await postsRelacionados(post, 3);
+  const url = urlSite(`/blog/${post.slug}`);
+  const partes = dividirMarkdown(post.conteudo_md);
   const faqSchema = schemaFaq(post.faq);
 
   return (
     <div className="pt-16">
+      <ProgressoLeitura />
+
       <article>
         {/* ── Cabeçalho ───────────────────────────────────────────────── */}
         <header className="fundo-mesh border-b border-borda pt-10 pb-12">
@@ -197,7 +206,27 @@ export default async function PostPage({ params }: Props) {
 
         {/* ── Conteúdo ────────────────────────────────────────────────── */}
         <div className="mx-auto max-w-3xl px-5 pt-10 pb-16">
-          <ConteudoMarkdown markdown={post.conteudo_md} />
+          {partes ? (
+            <>
+              <ConteudoMarkdown markdown={partes[0]} />
+              <CtaInline />
+              <ConteudoMarkdown markdown={partes[1]} />
+            </>
+          ) : (
+            <ConteudoMarkdown markdown={post.conteudo_md} />
+          )}
+
+          <div className="mt-12 border-t border-borda pt-6">
+            <Compartilhar url={url} titulo={post.titulo} />
+          </div>
+
+          <FaqPost itens={post.faq} />
+
+          <CtaFimDePost />
+
+          <div className="mt-12">
+            <CapturaEmail compacto />
+          </div>
         </div>
       </article>
 

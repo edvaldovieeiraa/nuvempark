@@ -4,6 +4,7 @@ import { CabecalhoBlog } from "@/components/blog/cabecalho";
 import { JsonLd } from "@/components/blog/jsonld";
 import { ListaPosts } from "@/components/blog/listagem";
 import { PilulasCategoria } from "@/components/blog/navegacao";
+import { CapturaEmail } from "@/components/blog/newsletter";
 import { listarCategorias, listarPosts, POSTS_POR_PAGINA } from "@/lib/blog";
 import { schemaColecao, schemaMigalhas } from "@/lib/blog-seo";
 import { urlSite } from "@/lib/urls";
@@ -88,6 +89,10 @@ export default async function BlogPaginaPage({ params }: Props) {
             totalPaginas={listagem.totalPaginas}
             base="/blog"
           />
+        </div>
+
+        <div className="mt-16">
+          <CapturaEmail />
         </div>
       </div>
 

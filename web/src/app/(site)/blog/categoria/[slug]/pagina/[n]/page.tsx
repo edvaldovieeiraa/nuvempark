@@ -4,6 +4,7 @@ import { CabecalhoBlog } from "@/components/blog/cabecalho";
 import { JsonLd } from "@/components/blog/jsonld";
 import { ListaPosts } from "@/components/blog/listagem";
 import { PilulasCategoria } from "@/components/blog/navegacao";
+import { CapturaEmail } from "@/components/blog/newsletter";
 import {
   listarCategorias,
   listarPosts,
@@ -99,6 +100,10 @@ export default async function CategoriaPaginaPage({ params }: Props) {
             totalPaginas={listagem.totalPaginas}
             base={base}
           />
+        </div>
+
+        <div className="mt-16">
+          <CapturaEmail />
         </div>
       </div>
 

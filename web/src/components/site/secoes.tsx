@@ -182,6 +182,7 @@ export function SiteFooter() {
       links: [
         { href: "/recursos", label: "Recursos", interno: true },
         { href: "/precos", label: "Preços", interno: true },
+        { href: "/blog", label: "Blog", interno: true },
         { href: "/novidades", label: "Novidades", interno: true },
       ],
     },

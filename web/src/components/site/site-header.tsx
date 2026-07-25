@@ -10,8 +10,9 @@ import { Marca } from "@/components/marca";
 
 const LINKS = [
   { href: "/recursos", label: "Recursos" },
-  { href: "/novidades", label: "Novidades" },
   { href: "/precos", label: "Preços" },
+  { href: "/blog", label: "Blog" },
+  { href: "/novidades", label: "Novidades" },
   { href: "/sobre", label: "Sobre" },
   { href: "/contato", label: "Contato" },
 ];

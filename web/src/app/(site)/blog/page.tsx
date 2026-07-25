@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Reveal } from "@/components/site/reveal";
 import { CtaFinal } from "@/components/site/secoes";
+import { BarraTrial } from "@/components/blog/cta";
 import { CabecalhoBlog } from "@/components/blog/cabecalho";
 import { JsonLd } from "@/components/blog/jsonld";
 import { ListaPosts } from "@/components/blog/listagem";
 import { PilulasCategoria } from "@/components/blog/navegacao";
 import { PostDestaque } from "@/components/blog/post-card";
+import { CapturaEmail } from "@/components/blog/newsletter";
 import {
   listarCategorias,
   listarPosts,
@@ -66,6 +68,7 @@ export default async function BlogHomePage() {
 
   return (
     <div className="pt-16">
+      <BarraTrial />
 
       <CabecalhoBlog
         chip="Blog"
@@ -97,6 +100,10 @@ export default async function BlogHomePage() {
             totalPaginas={listagem.totalPaginas}
             base="/blog"
           />
+        </div>
+
+        <div className="mt-16">
+          <CapturaEmail />
         </div>
       </div>
 
