@@ -14,3 +14,21 @@ export function urlApp(path: string): string {
   if (!APP_HOST) return path; // mesmo domínio (dev / separação off)
   return `https://${APP_HOST}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+/**
+ * Origem ABSOLUTA do site institucional (sem barra no fim).
+ * Usada por canonical, Open Graph, sitemap, RSS e JSON-LD — esses campos não
+ * aceitam caminho relativo, então precisam do host mesmo em dev.
+ * Ordem: NEXT_PUBLIC_SITE_URL > NEXT_PUBLIC_SITE_HOST > produção.
+ */
+export const SITE_URL: string = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.NEXT_PUBLIC_SITE_HOST
+    ? `https://${process.env.NEXT_PUBLIC_SITE_HOST}`
+    : "https://nuvempark.com")
+).replace(/\/+$/, "");
+
+/** Monta uma URL absoluta do site (ex.: "/blog/meu-post"). */
+export function urlSite(path = "/"): string {
+  return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}

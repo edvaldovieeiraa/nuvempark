@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import { Reveal } from "@/components/site/reveal";
 import { CtaFinal } from "@/components/site/secoes";
 import { CabecalhoBlog } from "@/components/blog/cabecalho";
+import { JsonLd } from "@/components/blog/jsonld";
 import { ListaPosts } from "@/components/blog/listagem";
 import { PilulasCategoria } from "@/components/blog/navegacao";
 import { PostDestaque } from "@/components/blog/post-card";
@@ -10,6 +12,8 @@ import {
   obterPostDestaque,
   POSTS_POR_PAGINA,
 } from "@/lib/blog";
+import { schemaBlog, schemaOrganizacaoRaiz } from "@/lib/blog-seo";
+import { urlSite } from "@/lib/urls";
 
 /**
  * Home do blog. ISR de 5 minutos: o conteúdo é público e igual para todo
@@ -22,8 +26,31 @@ import {
  */
 export const revalidate = 300;
 
+const TITULO = "Blog NuvemPark — gestão de estacionamento na prática";
 const DESCRICAO =
   "Guias práticos de gestão de estacionamento: controle de caixa, tarifas, leitura de placa, Pix e faturamento em tempo real.";
+
+export const metadata: Metadata = {
+  title: TITULO,
+  description: DESCRICAO,
+  alternates: {
+    canonical: urlSite("/blog"),
+    types: { "application/rss+xml": urlSite("/blog/rss.xml") },
+  },
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "NuvemPark",
+    url: urlSite("/blog"),
+    title: TITULO,
+    description: DESCRICAO,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITULO,
+    description: DESCRICAO,
+  },
+};
 
 export default async function BlogHomePage() {
   const [destaque, categorias, listagem] = await Promise.all([
@@ -39,6 +66,7 @@ export default async function BlogHomePage() {
 
   return (
     <div className="pt-16">
+
       <CabecalhoBlog
         chip="Blog"
         titulo={
@@ -73,6 +101,9 @@ export default async function BlogHomePage() {
       </div>
 
       <CtaFinal />
+
+      <JsonLd dados={schemaOrganizacaoRaiz()} />
+      <JsonLd dados={schemaBlog(listagem.posts)} />
     </div>
   );
 }

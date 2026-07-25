@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { CabecalhoBlog } from "@/components/blog/cabecalho";
 import { ListaPosts } from "@/components/blog/listagem";
 import { PilulasCategoria } from "@/components/blog/navegacao";
@@ -7,7 +8,16 @@ import { listarCategorias, listarPosts, POSTS_POR_PAGINA } from "@/lib/blog";
  * Resultados da busca. É a ÚNICA rota do blog que lê `searchParams`, e por isso
  * a única renderizada a cada requisição — daí ela viver num caminho separado,
  * em vez de virar um parâmetro da home (que ficaria dinâmica junto).
+ *
+ * `noindex`: página de resultado interno não deve competir com os posts na
+ * busca do Google (é o clássico "thin content" de search results).
  */
+export const metadata: Metadata = {
+  title: "Buscar no blog | Blog NuvemPark",
+  description: "Busque artigos sobre gestão de estacionamento no blog do NuvemPark.",
+  robots: { index: false, follow: true },
+};
+
 type Props = { searchParams: Promise<{ q?: string | string[] }> };
 
 export default async function BuscaPage({ searchParams }: Props) {

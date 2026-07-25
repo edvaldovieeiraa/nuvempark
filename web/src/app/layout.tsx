@@ -1,8 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { ToastProvider } from "@/components/ui/toast";
+import { SITE_URL } from "@/lib/urls";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  // Base das URLs relativas de metadata (canonical, Open Graph, imagens
+  // geradas por `opengraph-image`). Sem ela, o Next resolve para localhost e
+  // as og:image do blog saem quebradas em produção.
+  metadataBase: new URL(SITE_URL),
   title: "NuvemPark — Painel do Gestor",
   description: "Gestão de estacionamento na nuvem",
 };

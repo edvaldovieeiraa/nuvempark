@@ -1,8 +1,12 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CabecalhoBlog } from "@/components/blog/cabecalho";
+import { JsonLd } from "@/components/blog/jsonld";
 import { ListaPosts } from "@/components/blog/listagem";
 import { PilulasCategoria } from "@/components/blog/navegacao";
 import { listarCategorias, listarPosts, POSTS_POR_PAGINA } from "@/lib/blog";
+import { schemaColecao, schemaMigalhas } from "@/lib/blog-seo";
+import { urlSite } from "@/lib/urls";
 
 /**
  * Páginas 2, 3, … da home do blog.
@@ -25,6 +29,30 @@ function paginaValida(bruto: string): number | null {
   if (!/^[1-9]\d*$/.test(bruto)) return null;
   const n = Number(bruto);
   return Number.isSafeInteger(n) ? n : null;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { n } = await params;
+  const pagina = paginaValida(n);
+  if (!pagina) return { title: "Página não encontrada | Blog NuvemPark" };
+
+  const titulo = `Blog NuvemPark — página ${pagina}`;
+  const descricao = `Artigos sobre gestão de estacionamento, tecnologia de pátio e controle financeiro — página ${pagina}.`;
+
+  return {
+    title: titulo,
+    description: descricao,
+    alternates: { canonical: urlSite(`/blog/pagina/${pagina}`) },
+    openGraph: {
+      type: "website",
+      locale: "pt_BR",
+      siteName: "NuvemPark",
+      url: urlSite(`/blog/pagina/${pagina}`),
+      title: titulo,
+      description: descricao,
+    },
+    twitter: { card: "summary_large_image", title: titulo, description: descricao },
+  };
 }
 
 export default async function BlogPaginaPage({ params }: Props) {
@@ -62,6 +90,22 @@ export default async function BlogPaginaPage({ params }: Props) {
           />
         </div>
       </div>
+
+      <JsonLd
+        dados={schemaMigalhas([
+          { nome: "Início", caminho: "/" },
+          { nome: "Blog", caminho: "/blog" },
+          { nome: `Página ${pagina}`, caminho: `/blog/pagina/${pagina}` },
+        ])}
+      />
+      <JsonLd
+        dados={schemaColecao({
+          nome: `Blog NuvemPark — página ${pagina}`,
+          descricao: "Artigos sobre gestão de estacionamento.",
+          caminho: `/blog/pagina/${pagina}`,
+          posts: listagem.posts,
+        })}
+      />
     </div>
   );
 }

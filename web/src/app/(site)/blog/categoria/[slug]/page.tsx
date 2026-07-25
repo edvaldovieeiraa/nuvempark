@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CabecalhoBlog } from "@/components/blog/cabecalho";
+import { JsonLd } from "@/components/blog/jsonld";
 import { ListaPosts } from "@/components/blog/listagem";
 import { PilulasCategoria } from "@/components/blog/navegacao";
 import {
@@ -8,6 +10,8 @@ import {
   obterCategoriaPorSlug,
   POSTS_POR_PAGINA,
 } from "@/lib/blog";
+import { schemaColecao, schemaMigalhas } from "@/lib/blog-seo";
+import { urlSite } from "@/lib/urls";
 
 /** Listagem filtrada por categoria (página 1). ISR de 5 minutos. */
 export const revalidate = 300;
@@ -18,6 +22,33 @@ export function generateStaticParams(): { slug: string }[] {
 }
 
 type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const categoria = await obterCategoriaPorSlug(slug);
+  if (!categoria) return { title: "Categoria não encontrada | Blog NuvemPark" };
+
+  const titulo = `${categoria.nome} | Blog NuvemPark`;
+  const descricao =
+    categoria.descricao ??
+    `Artigos de ${categoria.nome.toLowerCase()} no blog do NuvemPark.`;
+  const url = urlSite(`/blog/categoria/${categoria.slug}`);
+
+  return {
+    title: titulo,
+    description: descricao,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      locale: "pt_BR",
+      siteName: "NuvemPark",
+      url,
+      title: titulo,
+      description: descricao,
+    },
+    twitter: { card: "summary_large_image", title: titulo, description: descricao },
+  };
+}
 
 export default async function CategoriaPage({ params }: Props) {
   const { slug } = await params;
@@ -64,6 +95,23 @@ export default async function CategoriaPage({ params }: Props) {
           />
         </div>
       </div>
+
+      <JsonLd
+        dados={schemaMigalhas([
+          { nome: "Início", caminho: "/" },
+          { nome: "Blog", caminho: "/blog" },
+          { nome: categoria.nome, caminho: base },
+        ])}
+      />
+      <JsonLd
+        dados={schemaColecao({
+          nome: categoria.nome,
+          descricao:
+            categoria.descricao ?? `Artigos de ${categoria.nome} no blog do NuvemPark.`,
+          caminho: base,
+          posts: listagem.posts,
+        })}
+      />
     </div>
   );
 }

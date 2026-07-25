@@ -1,13 +1,22 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight, Clock } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
 import { Marca } from "@/components/marca";
+import { JsonLd } from "@/components/blog/jsonld";
 import { ConteudoMarkdown } from "@/components/blog/markdown";
 import { PostCard } from "@/components/blog/post-card";
 import { obterPostPorSlug, postsRelacionados } from "@/lib/blog";
 import { dataAtributo, dataLonga, dataRelativa } from "@/lib/blog-datas";
+import {
+  imagemSocialDoPost,
+  schemaArtigo,
+  schemaFaq,
+  schemaMigalhas,
+} from "@/lib/blog-seo";
+import { urlSite } from "@/lib/urls";
 
 /**
  * Página do post.
@@ -33,12 +42,54 @@ export function generateStaticParams(): { slug: string }[] {
 
 type Props = { params: Promise<{ slug: string }> };
 
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await obterPostPorSlug(slug);
+  if (!post) return { title: "Artigo não encontrado | Blog NuvemPark" };
+
+  const titulo = `${post.seo_titulo ?? post.titulo} | Blog NuvemPark`;
+  const url = urlSite(`/blog/${post.slug}`);
+  const imagem = imagemSocialDoPost(post);
+
+  return {
+    title: titulo,
+    description: post.resumo,
+    ...(post.palavras_chave.length > 0 ? { keywords: post.palavras_chave } : {}),
+    authors: [{ name: post.autor?.nome ?? "Equipe NuvemPark" }],
+    alternates: {
+      canonical: url,
+      types: { "application/rss+xml": urlSite("/blog/rss.xml") },
+    },
+    openGraph: {
+      type: "article",
+      locale: "pt_BR",
+      siteName: "NuvemPark",
+      url,
+      title: titulo,
+      description: post.resumo,
+      publishedTime: post.publicado_em,
+      modifiedTime: post.atualizado_em,
+      authors: [post.autor?.nome ?? "Equipe NuvemPark"],
+      section: post.categoria?.nome,
+      tags: post.palavras_chave,
+      images: [{ url: imagem, width: 1200, height: 630, alt: post.titulo }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: titulo,
+      description: post.resumo,
+      images: [imagem],
+    },
+  };
+}
+
 export default async function PostPage({ params }: Props) {
   const { slug } = await params;
   const post = await obterPostPorSlug(slug);
   if (!post) notFound();
 
   const relacionados = await postsRelacionados(post, 3);
+  const faqSchema = schemaFaq(post.faq);
 
   return (
     <div className="pt-16">
@@ -173,6 +224,24 @@ export default async function PostPage({ params }: Props) {
           </div>
         </section>
       ) : null}
+
+      <JsonLd dados={schemaArtigo(post)} />
+      <JsonLd
+        dados={schemaMigalhas([
+          { nome: "Início", caminho: "/" },
+          { nome: "Blog", caminho: "/blog" },
+          ...(post.categoria
+            ? [
+                {
+                  nome: post.categoria.nome,
+                  caminho: `/blog/categoria/${post.categoria.slug}`,
+                },
+              ]
+            : []),
+          { nome: post.titulo, caminho: `/blog/${post.slug}` },
+        ])}
+      />
+      {faqSchema ? <JsonLd dados={faqSchema} /> : null}
     </div>
   );
 }
