@@ -105,6 +105,12 @@ export function BlogEditorClient({
   const jaPublicou = status === "publicado" || !!inicial?.publicadoEm;
   const slugMudou = !!inicial && slugify(slug) !== inicial.slug;
 
+  /**
+   * Só fica preenchido depois que o SERVIDOR recusou a troca de slug. É ele —
+   * e não `slugMudou` — que autoriza o segundo envio: passar `slugMudou` como
+   * confirmação faria o primeiro clique já auto-confirmar, e a guarda de URL
+   * indexada nunca dispararia.
+   */
   const [avisoSlug, setAvisoSlug] = useState<string | null>(null);
 
   // Aviso de saída com alterações não salvas — o editor perde texto longo fácil.
@@ -237,7 +243,7 @@ export function BlogEditorClient({
             variante="fantasma"
             type="button"
             carregando={salvando}
-            onClick={() => enviar("salvar", slugMudou)}
+            onClick={() => enviar("salvar", !!avisoSlug)}
           >
             <Save className="h-4 w-4" />
             {publicado ? "Salvar alterações" : "Salvar rascunho"}
@@ -247,7 +253,7 @@ export function BlogEditorClient({
             <Botao
               type="button"
               carregando={salvando}
-              onClick={() => enviar("publicar", slugMudou)}
+              onClick={() => enviar("publicar", !!avisoSlug)}
             >
               <Send className="h-4 w-4" />
               Publicar
@@ -305,6 +311,9 @@ export function BlogEditorClient({
                     setSujo(true);
                     setSlugTocado(true);
                     setSlug(e.target.value);
+                    // Editar o slug de novo invalida a confirmação anterior:
+                    // o servidor volta a perguntar para o novo valor.
+                    setAvisoSlug(null);
                   }}
                   placeholder="como-controlar-o-faturamento"
                   className="font-mono text-[13px]"
