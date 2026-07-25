@@ -10,6 +10,7 @@ import {
   Wallet,
   Landmark,
   Smartphone,
+  Newspaper,
   type LucideIcon,
 } from "lucide-react";
 
@@ -20,6 +21,7 @@ const ITENS: { href: string; label: string; Icone: LucideIcon }[] = [
   { href: "/master/assinaturas", label: "Assinaturas", Icone: CreditCard },
   { href: "/master/pagamentos", label: "Pagamentos (gateway)", Icone: Landmark },
   { href: "/master/financeiro", label: "Financeiro", Icone: Wallet },
+  { href: "/master/blog", label: "Blog", Icone: Newspaper },
 ];
 
 export function MasterNav() {

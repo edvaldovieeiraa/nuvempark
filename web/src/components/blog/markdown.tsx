@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { slugify } from "@/lib/slug";
 
 /**
  * Renderização do Markdown dos posts — 100% no servidor (Server Component).
@@ -46,20 +47,6 @@ function textoDe(node: React.ReactNode): string {
     return textoDe(props?.children);
   }
   return "";
-}
-
-/** Marcas de acento soltas pelo NFD (combining diacritical marks). */
-const RE_ACENTOS = /[̀-ͯ]/g;
-
-/** "Como fechar o caixa" -> "como-fechar-o-caixa". */
-export function slugificar(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(RE_ACENTOS, "") // tira os acentos separados pelo NFD
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
 }
 
 /**
@@ -123,7 +110,7 @@ function Titulo({
   nivel: 2 | 3;
   children: React.ReactNode;
 }) {
-  const id = slugificar(textoDe(children));
+  const id = slugify(textoDe(children));
   const Tag = nivel === 2 ? "h2" : "h3";
   const classe =
     nivel === 2
