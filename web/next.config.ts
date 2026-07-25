@@ -16,6 +16,14 @@ function hostSupabase(): string | null {
 const host = hostSupabase();
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // O padrão é 1 MB, e o upload de capa do blog (Server Action com
+      // multipart) vai até 5 MB — o mesmo limite do bucket `blog-assets`.
+      // 6 MB deixa folga para o overhead do multipart.
+      bodySizeLimit: "6mb",
+    },
+  },
   images: {
     // Só os arquivos públicos do Storage. `next/image` recusa qualquer outro
     // host — é o que impede uma capa apontando para fora de virar proxy de

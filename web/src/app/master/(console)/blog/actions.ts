@@ -19,12 +19,22 @@ export type Resultado =
   | { ok: false; msg: string }
   | null;
 
+/** Resultado do salvamento: devolve id/slug para o editor seguir a navegação. */
+export type ResultadoSalvar =
+  | { ok: true; msg: string; id: string; slug: string; status: string }
+  | { ok: false; msg: string; precisaConfirmarSlug?: true }
+  | null;
+
 const ROTA = "/master/blog";
 const ROTA_TAXONOMIA = "/master/blog/categorias";
 const UNIQUE_VIOLATION = "23505";
 
-/** Guarda comum. Devolve `null` quando pode seguir, ou o erro pronto. */
-async function bloqueado(): Promise<Resultado> {
+/**
+ * Guarda comum. Devolve `null` quando pode seguir, ou o erro pronto.
+ * O retorno é só o ramo de ERRO (nunca `{ok:true}`) para servir tanto a
+ * `Resultado` quanto a `ResultadoSalvar`, que têm sucessos diferentes.
+ */
+async function bloqueado(): Promise<{ ok: false; msg: string } | null> {
   if (!(await sessaoMasterAtiva())) {
     return { ok: false, msg: "Sessão master expirada. Entre de novo." };
   }
@@ -38,6 +48,231 @@ function texto(fd: FormData, campo: string): string {
 function inteiro(fd: FormData, campo: string): number {
   const n = Number(texto(fd, campo));
   return Number.isFinite(n) ? Math.trunc(n) : 0;
+}
+
+// ═════════════════════════════════════════════════════════ Salvar um post ══
+
+export type FaqItem = { pergunta: string; resposta: string };
+
+/**
+ * O que o editor manda. É um objeto (não FormData) de propósito: `faq` e
+ * `palavras_chave` são listas, e serializar lista em FormData vira gambiarra.
+ */
+export type PostPayload = {
+  /** Ausente = criando. */
+  id?: string;
+  titulo: string;
+  slug: string;
+  resumo: string;
+  conteudoMd: string;
+  capaUrl: string | null;
+  categoriaId: string | null;
+  autorId: string | null;
+  destaque: boolean;
+  faq: FaqItem[];
+  seoTitulo: string | null;
+  palavrasChave: string[];
+  /**
+   * `salvar` mantém o status atual (post novo nasce rascunho). As outras três
+   * são transições explícitas — nenhuma delas acontece por efeito colateral
+   * de salvar.
+   */
+  acao: "salvar" | "publicar" | "despublicar" | "arquivar";
+  /** Autorização explícita para trocar o slug de um post já publicado. */
+  confirmarTrocaSlug?: boolean;
+};
+
+/** Só o que interessa do post atual para decidir status, slug e publicado_em. */
+type PostAtual = {
+  slug: string;
+  status: string;
+  publicado_em: string | null;
+};
+
+/**
+ * Cria ou atualiza um post e aplica a transição de status pedida.
+ *
+ * Duas regras que moram AQUI e não na tela:
+ *
+ * 1. `publicado_em` é gravado só na PRIMEIRA publicação
+ *    (`coalesce(publicado_em, now())`). Republicar não reescreve a data — ela
+ *    é o `datePublished` do schema Article e a ordenação do blog inteiro.
+ *
+ * 2. Trocar o slug de um post publicado exige `confirmarTrocaSlug`. A URL
+ *    antiga já pode estar indexada no Google e linkada por terceiros; a troca
+ *    a quebra sem redirect. O servidor recusa e devolve
+ *    `precisaConfirmarSlug` para a tela perguntar.
+ */
+export async function salvarPost(
+  payload: PostPayload,
+): Promise<ResultadoSalvar> {
+  const barrado = await bloqueado();
+  if (barrado) return barrado;
+
+  const titulo = payload.titulo.trim();
+  const resumo = payload.resumo.trim();
+  const conteudo = payload.conteudoMd.trim();
+
+  if (!titulo) return { ok: false, msg: "O título é obrigatório." };
+  if (!resumo) return { ok: false, msg: "O resumo é obrigatório — ele vira a meta description." };
+  if (!conteudo) return { ok: false, msg: "O conteúdo do post está vazio." };
+
+  const slug = slugify(payload.slug || titulo);
+  if (!slugValido(slug)) {
+    return { ok: false, msg: "Slug inválido — use letras, números e hífens." };
+  }
+  // Rotas irmãs de /blog vencem a rota dinâmica [slug]: um post com um desses
+  // slugs ficaria inalcançável no site.
+  if (["categoria", "pagina", "busca", "rss.xml", "preview"].includes(slug)) {
+    return { ok: false, msg: `"${slug}" é uma rota reservada do blog. Escolha outro slug.` };
+  }
+
+  const sb = createAdminClient();
+
+  let atual: PostAtual | null = null;
+  if (payload.id) {
+    const { data } = await sb
+      .from("blog_posts")
+      .select("slug, status, publicado_em")
+      .eq("id", payload.id)
+      .maybeSingle<PostAtual>();
+    if (!data) return { ok: false, msg: "Post não encontrado." };
+    atual = data;
+  }
+
+  // Guarda da URL indexada.
+  const jaPublicou = !!atual && (atual.status === "publicado" || !!atual.publicado_em);
+  if (atual && slug !== atual.slug && jaPublicou && !payload.confirmarTrocaSlug) {
+    return {
+      ok: false,
+      precisaConfirmarSlug: true,
+      msg: `Este post já foi publicado como /blog/${atual.slug}. Trocar o slug quebra a URL que o Google indexou e os links que apontam para ela.`,
+    };
+  }
+
+  // Status resultante.
+  const statusAtual = atual?.status ?? "rascunho";
+  const status =
+    payload.acao === "publicar"
+      ? "publicado"
+      : payload.acao === "despublicar"
+        ? "rascunho"
+        : payload.acao === "arquivar"
+          ? "arquivado"
+          : statusAtual;
+
+  const faq = payload.faq
+    .map((f) => ({ pergunta: f.pergunta.trim(), resposta: f.resposta.trim() }))
+    .filter((f) => f.pergunta && f.resposta);
+
+  const palavrasChave = Array.from(
+    new Set(payload.palavrasChave.map((p) => p.trim()).filter(Boolean)),
+  );
+
+  const linha = {
+    titulo,
+    slug,
+    resumo,
+    conteudo_md: conteudo,
+    capa_url: payload.capaUrl?.trim() || null,
+    categoria_id: payload.categoriaId || null,
+    autor_id: payload.autorId || null,
+    destaque: payload.destaque,
+    faq,
+    seo_titulo: payload.seoTitulo?.trim() || null,
+    palavras_chave: palavrasChave,
+    status,
+    // Primeira publicação carimba a data; as seguintes preservam a original.
+    publicado_em:
+      status === "publicado"
+        ? (atual?.publicado_em ?? new Date().toISOString())
+        : (atual?.publicado_em ?? null),
+  };
+
+  const { data, error } = payload.id
+    ? await sb
+        .from("blog_posts")
+        .update(linha)
+        .eq("id", payload.id)
+        .select("id, slug, status")
+        .single()
+    : await sb.from("blog_posts").insert(linha).select("id, slug, status").single();
+
+  if (error) {
+    if (error.code === UNIQUE_VIOLATION) {
+      return { ok: false, msg: `Já existe um post com o slug "${slug}".` };
+    }
+    console.error("[master/blog] salvarPost:", error);
+    return { ok: false, msg: "Não consegui salvar o post." };
+  }
+
+  revalidatePath(ROTA);
+
+  const msg =
+    payload.acao === "publicar"
+      ? "Post publicado."
+      : payload.acao === "despublicar"
+        ? "Post despublicado — voltou para rascunho."
+        : payload.acao === "arquivar"
+          ? "Post arquivado."
+          : "Alterações salvas.";
+
+  return { ok: true, msg, id: data.id, slug: data.slug, status: data.status };
+}
+
+// ════════════════════════════════════════════════════════ Upload de capa ══
+
+const MIMES_CAPA = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"];
+const TAMANHO_MAX = 5 * 1024 * 1024; // casa com o file_size_limit do bucket
+
+export type ResultadoUpload =
+  | { ok: true; url: string }
+  | { ok: false; msg: string };
+
+/**
+ * Sobe a capa para o bucket `blog-assets` com o admin client.
+ *
+ * O bucket é público para leitura e NÃO tem policy de escrita (db/29) — este
+ * é o único caminho de upload que existe. As validações abaixo são a primeira
+ * barreira; o bucket repete o limite de tamanho e a lista de mime como rede.
+ */
+export async function enviarCapa(fd: FormData): Promise<ResultadoUpload> {
+  if (!(await sessaoMasterAtiva())) {
+    return { ok: false, msg: "Sessão master expirada. Entre de novo." };
+  }
+
+  const arquivo = fd.get("arquivo");
+  if (!(arquivo instanceof File) || arquivo.size === 0) {
+    return { ok: false, msg: "Nenhum arquivo recebido." };
+  }
+  if (!MIMES_CAPA.includes(arquivo.type)) {
+    return { ok: false, msg: "Formato não aceito. Use JPG, PNG, WebP, AVIF ou GIF." };
+  }
+  if (arquivo.size > TAMANHO_MAX) {
+    return { ok: false, msg: "Imagem acima de 5 MB. Comprima antes de subir." };
+  }
+
+  // Nome final: uuid + nome higienizado. O uuid evita colisão e impede que
+  // alguém sobrescreva a capa de outro post adivinhando o nome do arquivo.
+  const extensao = (arquivo.name.split(".").pop() ?? "jpg").toLowerCase();
+  const base = slugify(arquivo.name.replace(/\.[^.]+$/, ""), 40) || "capa";
+  const caminho = `capas/${crypto.randomUUID()}-${base}.${extensao.replace(/[^a-z0-9]/g, "")}`;
+
+  const sb = createAdminClient();
+  const { error } = await sb.storage
+    .from("blog-assets")
+    .upload(caminho, arquivo, { contentType: arquivo.type, upsert: false });
+
+  if (error) {
+    console.error("[master/blog] enviarCapa:", error);
+    return {
+      ok: false,
+      msg: `Falha no upload: ${error.message}. O bucket "blog-assets" existe? (db/29)`,
+    };
+  }
+
+  const { data } = sb.storage.from("blog-assets").getPublicUrl(caminho);
+  return { ok: true, url: data.publicUrl };
 }
 
 // ═══════════════════════════════════════════════════ Ciclo de vida do post ══
