@@ -96,8 +96,14 @@ export function BlogPostsClient({
     comecar(async () => {
       const r = await acao();
       if (!r) return;
-      if (r.ok) toast.sucesso(r.msg);
-      else toast.erro(r.msg);
+      if (r.ok) {
+        toast.sucesso(r.msg);
+        // Revalidação que caiu na rede local não é falha, mas o operador
+        // precisa saber — senão descobre pelo cache velho do site.
+        if (r.aviso) toast.info("Revalidação parcial", r.aviso);
+      } else {
+        toast.erro(r.msg);
+      }
     });
   }
 
@@ -294,8 +300,12 @@ export function BlogPostsClient({
                             rotuloConfirmar="Arquivar"
                             aoConfirmar={async () => {
                               const r = await arquivarPost(p.id);
-                              if (r?.ok) toast.sucesso(r.msg);
-                              else if (r) toast.erro(r.msg);
+                              if (r?.ok) {
+                                toast.sucesso(r.msg);
+                                if (r.aviso) toast.info("Revalidação parcial", r.aviso);
+                              } else if (r) {
+                                toast.erro(r.msg);
+                              }
                             }}
                           >
                             {(abrir) => (

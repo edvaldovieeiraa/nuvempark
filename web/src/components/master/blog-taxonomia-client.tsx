@@ -65,6 +65,7 @@ function FormCategoria({
     if (!estado) return;
     if (estado.ok) {
       toast.sucesso(estado.msg);
+      if (estado.aviso) toast.info("Revalidação parcial", estado.aviso);
       aoFechar();
     } else {
       toast.erro(estado.msg);
@@ -156,6 +157,7 @@ function FormAutor({
     if (!estado) return;
     if (estado.ok) {
       toast.sucesso(estado.msg);
+      if (estado.aviso) toast.info("Revalidação parcial", estado.aviso);
       aoFechar();
     } else {
       toast.erro(estado.msg);
@@ -341,8 +343,12 @@ export function BlogTaxonomiaClient({
                   rotuloConfirmar="Excluir"
                   aoConfirmar={async () => {
                     const r = await excluirCategoria(c.id);
-                    if (r?.ok) toast.sucesso(r.msg);
-                    else if (r) toast.erro(r.msg);
+                    if (r?.ok) {
+                      toast.sucesso(r.msg);
+                      if (r.aviso) toast.info("Revalidação parcial", r.aviso);
+                    } else if (r) {
+                      toast.erro(r.msg);
+                    }
                   }}
                 >
                   {(abrir) => (

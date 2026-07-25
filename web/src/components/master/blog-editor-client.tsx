@@ -163,6 +163,9 @@ export function BlogEditorClient({
       setSujo(false);
       setAvisoSlug(null);
       toast.sucesso(r.msg);
+      // A revalidação HTTP não passou; o cache local foi derrubado. O post
+      // está salvo de qualquer jeito — isto é informação, não erro.
+      if (r.aviso) toast.info("Revalidação parcial", r.aviso);
 
       if (!inicial) {
         // Post novo: sai da rota /novo e passa a editar o registro criado.

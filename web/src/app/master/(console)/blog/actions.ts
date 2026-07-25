@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sessaoMasterAtiva } from "@/lib/master-auth";
+import { revalidarBlog } from "@/lib/blog-revalidar";
 import { slugify, slugValido } from "@/lib/slug";
 
 /**
@@ -14,14 +15,19 @@ import { slugify, slugValido } from "@/lib/slug";
  * alcançável do site público.
  */
 
+/**
+ * `aviso` carrega um problema NÃO-fatal — hoje só um: a revalidação do blog
+ * público caiu na rede local em vez de passar pela rota HTTP. A ação deu certo,
+ * mas a tela precisa dizer isso em vez de fingir que está tudo redondo.
+ */
 export type Resultado =
-  | { ok: true; msg: string }
+  | { ok: true; msg: string; aviso?: string }
   | { ok: false; msg: string }
   | null;
 
 /** Resultado do salvamento: devolve id/slug para o editor seguir a navegação. */
 export type ResultadoSalvar =
-  | { ok: true; msg: string; id: string; slug: string; status: string }
+  | { ok: true; msg: string; id: string; slug: string; status: string; aviso?: string }
   | { ok: false; msg: string; precisaConfirmarSlug?: true }
   | null;
 
@@ -217,7 +223,24 @@ export async function salvarPost(
           ? "Post arquivado."
           : "Alterações salvas.";
 
-  return { ok: true, msg, id: data.id, slug: data.slug, status: data.status };
+  // Só mexe no cache público quando a mudança é visível de fora: publicar,
+  // despublicar, arquivar, ou salvar um post que ESTÁ no ar. Editar rascunho
+  // não muda nada no /blog e não precisa derrubar cache de ninguém.
+  const afetaPublico =
+    payload.acao !== "salvar" || status === "publicado" || jaPublicou;
+
+  let aviso: string | undefined;
+  if (afetaPublico) {
+    // Slug trocado: a URL ANTIGA também precisa sair do cache, senão o post
+    // continua respondendo no endereço velho até a revalidação por tempo.
+    if (atual && atual.slug !== slug) {
+      await revalidarBlog(atual.slug);
+    }
+    const r = await revalidarBlog(slug);
+    if (r.via === "local") aviso = r.motivo;
+  }
+
+  return { ok: true, msg, id: data.id, slug: data.slug, status: data.status, aviso };
 }
 
 // ════════════════════════════════════════════════════════ Upload de capa ══
@@ -287,10 +310,12 @@ export async function arquivarPost(postId: string): Promise<Resultado> {
   if (barrado) return barrado;
 
   const sb = createAdminClient();
-  const { error } = await sb
+  const { data, error } = await sb
     .from("blog_posts")
     .update({ status: "arquivado" })
-    .eq("id", postId);
+    .eq("id", postId)
+    .select("slug, status")
+    .single();
 
   if (error) {
     console.error("[master/blog] arquivarPost:", error);
@@ -298,7 +323,14 @@ export async function arquivarPost(postId: string): Promise<Resultado> {
   }
 
   revalidatePath(ROTA);
-  return { ok: true, msg: "Post arquivado — saiu do ar." };
+  // Sem isto o post arquivado continuaria servido do cache ISR até 5 min.
+  const r = await revalidarBlog(data.slug);
+
+  return {
+    ok: true,
+    msg: "Post arquivado — saiu do ar.",
+    aviso: r.via === "local" ? r.motivo : undefined,
+  };
 }
 
 /**
@@ -311,10 +343,12 @@ export async function restaurarPost(postId: string): Promise<Resultado> {
   if (barrado) return barrado;
 
   const sb = createAdminClient();
-  const { error } = await sb
+  const { data, error } = await sb
     .from("blog_posts")
     .update({ status: "rascunho" })
-    .eq("id", postId);
+    .eq("id", postId)
+    .select("slug")
+    .single();
 
   if (error) {
     console.error("[master/blog] restaurarPost:", error);
@@ -322,7 +356,13 @@ export async function restaurarPost(postId: string): Promise<Resultado> {
   }
 
   revalidatePath(ROTA);
-  return { ok: true, msg: "Post restaurado como rascunho." };
+  const r = await revalidarBlog(data.slug);
+
+  return {
+    ok: true,
+    msg: "Post restaurado como rascunho.",
+    aviso: r.via === "local" ? r.motivo : undefined,
+  };
 }
 
 // ═════════════════════════════════════════════════════════════ Categorias ══
@@ -370,7 +410,15 @@ export async function salvarCategoria(
 
   revalidatePath(ROTA_TAXONOMIA);
   revalidatePath(ROTA);
-  return { ok: true, msg: id ? "Categoria atualizada." : "Categoria criada." };
+  // A categoria aparece nas pílulas do /blog, tem página própria e entra no
+  // sitemap — mexer nela é mudança visível no site.
+  const rev = await revalidarBlog();
+
+  return {
+    ok: true,
+    msg: id ? "Categoria atualizada." : "Categoria criada.",
+    aviso: rev.via === "local" ? rev.motivo : undefined,
+  };
 }
 
 /**
@@ -395,12 +443,15 @@ export async function excluirCategoria(id: string): Promise<Resultado> {
 
   revalidatePath(ROTA_TAXONOMIA);
   revalidatePath(ROTA);
+  const rev = await revalidarBlog();
+
   return {
     ok: true,
     msg:
       count && count > 0
         ? `Categoria excluída. ${count} ${count === 1 ? "post ficou" : "posts ficaram"} sem categoria.`
         : "Categoria excluída.",
+    aviso: rev.via === "local" ? rev.motivo : undefined,
   };
 }
 
