@@ -69,10 +69,14 @@ export function slugificar(texto: string): string {
  * Respeita blocos de código: uma linha `## isto é comentário` dentro de ```…```
  * não conta como título. Devolve `null` quando o post é curto demais para
  * valer um corte.
+ *
+ * 450 palavras ≈ 2 min de leitura. Acima disso já existe "meio do post" para
+ * o CTA ocupar; abaixo, ele interromperia um texto que o leitor termina numa
+ * sentada. O limite era 600 e deixava de fora posts de 3 min inteiros.
  */
 export function dividirMarkdown(
   markdown: string,
-  minimoPalavras = 600,
+  minimoPalavras = 450,
 ): [string, string] | null {
   const palavras = markdown.trim().split(/\s+/).filter(Boolean).length;
   if (palavras < minimoPalavras) return null;

@@ -23,9 +23,12 @@ function Capa({
   className?: string;
 }) {
   if (!post.capa_url) {
+    // `absolute inset-0` porque o container é `relative` e dimensionado por
+    // aspect-ratio: sem isso o placeholder colapsa na altura do ícone (o
+    // <Image fill> abaixo se posiciona sozinho, este div não).
     return (
       <div
-        className={`grid place-items-center bg-gradient-to-br from-brand-600 via-brand-700 to-noite-2 ${className}`}
+        className={`absolute inset-0 grid place-items-center bg-gradient-to-br from-brand-600 via-brand-700 to-noite-2 ${className}`}
         aria-hidden
       >
         <Marca className="h-12 w-12 opacity-90" corP="#065F46" />

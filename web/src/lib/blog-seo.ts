@@ -36,9 +36,14 @@ export function schemaOrganizacaoRaiz(): Schema {
   return { "@context": "https://schema.org", ...schemaOrganizacao() };
 }
 
-/** URL absoluta da imagem social do post (a OG dinâmica, quando não há capa). */
+/**
+ * URL absoluta da imagem social do post: a capa quando existe, senão a OG
+ * gerada em /blog/[slug]/og — caminho FIXO justamente para poder ser citado
+ * aqui e no metadata (ver o comentário no route handler sobre o hash de build
+ * da convenção `opengraph-image`).
+ */
 export function imagemSocialDoPost(post: BlogPostResumo): string {
-  return post.capa_url ?? urlSite(`/blog/${post.slug}/opengraph-image`);
+  return post.capa_url ?? urlSite(`/blog/${post.slug}/og`);
 }
 
 export function schemaArtigo(post: BlogPost): Schema {

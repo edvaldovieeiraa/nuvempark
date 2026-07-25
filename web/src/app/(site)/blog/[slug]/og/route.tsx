@@ -2,7 +2,14 @@ import { ImageResponse } from "next/og";
 import { obterPostPorSlug } from "@/lib/blog";
 
 /**
- * Imagem social (Open Graph / Twitter) gerada por post.
+ * GET /blog/[slug]/og — imagem social (Open Graph / Twitter) gerada por post.
+ *
+ * Por que um route handler e NÃO o arquivo `opengraph-image.tsx`: a convenção
+ * de arquivo do Next serve a imagem num caminho com HASH de build
+ * (`/opengraph-image-fx5gi7`), que não é conhecido em tempo de código. Como a
+ * mesma URL precisa aparecer no `og:image`, no `twitter:image` E no `image` do
+ * JSON-LD (Article), ela tem de ser estável e previsível — daí o caminho fixo
+ * `/og`.
  *
  * Sem fonte customizada de propósito: carregar uma .ttf exigiria rede no
  * build/runtime, e o layout raiz já documenta que a máquina de build não
@@ -11,16 +18,12 @@ import { obterPostPorSlug } from "@/lib/blog";
  *
  * Em Next 16, `params` chega como Promise (Async Request APIs).
  */
+export const revalidate = 3600;
 
-export const alt = "Blog NuvemPark";
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
-
-export default async function OpenGraphImage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ slug: string }> },
+) {
   const { slug } = await params;
   const post = await obterPostPorSlug(slug);
 
@@ -123,6 +126,13 @@ export default async function OpenGraphImage({
         </div>
       </div>
     ),
-    size,
+    {
+      width: 1200,
+      height: 630,
+      headers: {
+        "Cache-Control":
+          "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    },
   );
 }
