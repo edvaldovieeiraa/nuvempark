@@ -22,8 +22,10 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [aberto, setAberto] = useState(false);
 
-  // No topo da home o header flutua sobre a hero escura → texto claro.
-  const escuro = pathname === "/" && !scrolled && !aberto;
+  // No topo da home e do BLOG o header flutua sobre hero escura → texto claro.
+  // (Todas as rotas /blog/* abrem com a faixa escura editorial.)
+  const escuro =
+    (pathname === "/" || pathname.startsWith("/blog")) && !scrolled && !aberto;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);

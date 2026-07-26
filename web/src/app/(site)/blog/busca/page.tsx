@@ -37,7 +37,7 @@ export default async function BuscaPage({ searchParams }: Props) {
     : "Digite o que você procura — tarifa, caixa, mensalista, leitura de placa.";
 
   return (
-    <div className="pt-16">
+    <div>
       <CabecalhoBlog
         chip="Busca"
         titulo={termo ? `Resultados para “${termo}”` : "Buscar no blog"}

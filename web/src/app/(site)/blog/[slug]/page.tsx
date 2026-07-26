@@ -2,13 +2,17 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, Clock } from "lucide-react";
+import { ChevronRight, Clock, List } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
 import { Marca } from "@/components/marca";
 import { CtaFimDePost, CtaInline } from "@/components/blog/cta";
 import { FaqPost } from "@/components/blog/faq";
 import { JsonLd } from "@/components/blog/jsonld";
-import { ConteudoMarkdown, dividirMarkdown } from "@/components/blog/markdown";
+import {
+  ConteudoMarkdown,
+  dividirMarkdown,
+  extrairTitulos,
+} from "@/components/blog/markdown";
 import { CapturaEmail } from "@/components/blog/newsletter";
 import { PostCard } from "@/components/blog/post-card";
 import { ProgressoLeitura } from "@/components/blog/progresso-leitura";
@@ -98,24 +102,52 @@ export default async function PostPage({ params }: Props) {
   const partes = dividirMarkdown(post.conteudo_md);
   const faqSchema = schemaFaq(post.faq);
 
+  // Sumário só quando há navegação de verdade: 1 título não é um índice.
+  const titulos = extrairTitulos(post.conteudo_md).slice(0, 12);
+  const temSumario = titulos.length >= 2;
+
   return (
-    <div className="pt-16">
+    <div>
       <ProgressoLeitura />
 
       <article>
-        {/* ── Cabeçalho ───────────────────────────────────────────────── */}
-        <header className="fundo-mesh border-b border-borda pt-10 pb-12">
-          <div className="mx-auto max-w-3xl px-5">
+        {/* ── Cabeçalho — faixa escura editorial, sobe até o topo (o header
+            fixo flutua transparente por cima; site-header trata /blog como
+            rota escura). ─────────────────────────────────────────────── */}
+        <header
+          className="relative overflow-hidden pt-28 pb-12 sm:pt-32"
+          style={{
+            background:
+              "linear-gradient(165deg, #0B1220 0%, #10201A 55%, #0B1512 100%)",
+          }}
+        >
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.05]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)",
+              backgroundSize: "44px 44px",
+              maskImage:
+                "radial-gradient(ellipse 75% 70% at 50% 10%, black 30%, transparent 75%)",
+            }}
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-brand-500/15 blur-3xl"
+            aria-hidden
+          />
+
+          <div className="relative mx-auto max-w-3xl px-5">
             <nav aria-label="Você está aqui">
-              <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-texto-3">
+              <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-white/50">
                 <li>
-                  <Link href="/" className="transition-colors hover:text-brand-700">
+                  <Link href="/" className="transition-colors hover:text-brand-300">
                     Início
                   </Link>
                 </li>
                 <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                 <li>
-                  <Link href="/blog" className="transition-colors hover:text-brand-700">
+                  <Link href="/blog" className="transition-colors hover:text-brand-300">
                     Blog
                   </Link>
                 </li>
@@ -125,7 +157,7 @@ export default async function PostPage({ params }: Props) {
                     <li>
                       <Link
                         href={`/blog/categoria/${post.categoria.slug}`}
-                        className="transition-colors hover:text-brand-700"
+                        className="transition-colors hover:text-brand-300"
                       >
                         {post.categoria.nome}
                       </Link>
@@ -135,11 +167,11 @@ export default async function PostPage({ params }: Props) {
               </ol>
             </nav>
 
-            <h1 className="mt-5 text-3xl leading-[1.12] font-black tracking-tight text-texto sm:text-[2.75rem]">
+            <h1 className="mt-5 text-3xl leading-[1.12] font-black tracking-tight text-white sm:text-[2.75rem]">
               {post.titulo}
             </h1>
 
-            <p className="mt-5 text-lg leading-relaxed text-texto-2">
+            <p className="mt-5 text-lg leading-relaxed text-white/70">
               {post.resumo}
             </p>
 
@@ -151,7 +183,7 @@ export default async function PostPage({ params }: Props) {
                     alt=""
                     width={36}
                     height={36}
-                    className="h-9 w-9 rounded-full border border-borda object-cover"
+                    className="h-9 w-9 rounded-full border border-white/20 object-cover"
                   />
                 ) : (
                   <span
@@ -161,24 +193,24 @@ export default async function PostPage({ params }: Props) {
                     <Marca className="h-4.5 w-4.5" corP="#065F46" />
                   </span>
                 )}
-                <span className="text-sm font-bold text-texto">
+                <span className="text-sm font-bold text-white">
                   {post.autor?.nome ?? "Equipe NuvemPark"}
                 </span>
               </div>
 
-              <span className="h-4 w-px bg-borda" aria-hidden />
+              <span className="h-4 w-px bg-white/15" aria-hidden />
 
               <time
                 dateTime={dataAtributo(post.publicado_em)}
-                className="text-sm text-texto-2"
+                className="text-sm text-white/60"
                 title={dataLonga(post.publicado_em)}
               >
                 {dataRelativa(post.publicado_em)}
               </time>
 
-              <span className="h-4 w-px bg-borda" aria-hidden />
+              <span className="h-4 w-px bg-white/15" aria-hidden />
 
-              <span className="inline-flex items-center gap-1.5 text-sm text-texto-2">
+              <span className="inline-flex items-center gap-1.5 text-sm text-white/60">
                 <Clock className="h-4 w-4" aria-hidden />
                 {post.minutosLeitura} min de leitura
               </span>
@@ -204,29 +236,90 @@ export default async function PostPage({ params }: Props) {
           </div>
         ) : null}
 
-        {/* ── Conteúdo ────────────────────────────────────────────────── */}
-        <div className="mx-auto max-w-3xl px-5 pt-10 pb-16">
-          {partes ? (
-            <>
-              <ConteudoMarkdown markdown={partes[0]} />
-              <CtaInline />
-              <ConteudoMarkdown markdown={partes[1]} />
-            </>
-          ) : (
-            <ConteudoMarkdown markdown={post.conteudo_md} />
-          )}
+        {/* ── Conteúdo + sumário ─────────────────────────────────────── */}
+        <div
+          className={`mx-auto px-5 pt-10 pb-16 ${
+            temSumario
+              ? "max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-12"
+              : "max-w-3xl"
+          }`}
+        >
+          <div className={temSumario ? "mx-auto w-full max-w-3xl lg:mx-0" : ""}>
+            {/* Sumário mobile: acordeão fechado, não rouba a dobra do texto. */}
+            {temSumario ? (
+              <details className="group mb-8 overflow-hidden rounded-2xl border border-borda bg-fundo/60 lg:hidden">
+                <summary className="flex cursor-pointer list-none items-center gap-2.5 px-5 py-3.5 text-sm font-bold text-texto marker:content-none [&::-webkit-details-marker]:hidden">
+                  <List className="h-4 w-4 text-brand-600" aria-hidden />
+                  Neste artigo
+                </summary>
+                <ol className="space-y-1 px-5 pt-0 pb-4">
+                  {titulos.map((t) => (
+                    <li key={t.id}>
+                      <a
+                        href={`#${t.id}`}
+                        className="block rounded-lg px-2 py-1.5 text-[13px] font-semibold text-texto-2 transition-colors hover:bg-superficie hover:text-brand-700"
+                      >
+                        {t.texto}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            ) : null}
 
-          <div className="mt-12 border-t border-borda pt-6">
-            <Compartilhar url={url} titulo={post.titulo} />
+            {partes ? (
+              <>
+                <ConteudoMarkdown markdown={partes[0]} />
+                <CtaInline />
+                <ConteudoMarkdown markdown={partes[1]} />
+              </>
+            ) : (
+              <ConteudoMarkdown markdown={post.conteudo_md} />
+            )}
+
+            <div className="mt-12 border-t border-borda pt-6">
+              <Compartilhar url={url} titulo={post.titulo} />
+            </div>
+
+            <FaqPost itens={post.faq} />
+
+            <CtaFimDePost />
+
+            <div className="mt-12">
+              <CapturaEmail compacto />
+            </div>
           </div>
 
-          <FaqPost itens={post.faq} />
+          {/* Sumário desktop: fixo na rolagem, com share junto — os dois
+              pontos de ação ficam sempre à vista sem interromper a leitura. */}
+          {temSumario ? (
+            <aside className="hidden lg:block" aria-label="Sumário do artigo">
+              <div className="sticky top-24 space-y-5">
+                <nav className="rounded-2xl border border-borda bg-superficie p-5">
+                  <p className="flex items-center gap-2 text-[11px] font-black tracking-[0.14em] text-texto-3 uppercase">
+                    <List className="h-3.5 w-3.5 text-brand-600" aria-hidden />
+                    Neste artigo
+                  </p>
+                  <ol className="mt-3 space-y-0.5">
+                    {titulos.map((t) => (
+                      <li key={t.id}>
+                        <a
+                          href={`#${t.id}`}
+                          className="block border-l-2 border-borda py-1.5 pl-3 text-[13px] leading-snug font-semibold text-texto-2 transition-colors hover:border-brand-500 hover:text-brand-700"
+                        >
+                          {t.texto}
+                        </a>
+                      </li>
+                    ))}
+                  </ol>
+                </nav>
 
-          <CtaFimDePost />
-
-          <div className="mt-12">
-            <CapturaEmail compacto />
-          </div>
+                <div className="rounded-2xl border border-borda bg-superficie p-5">
+                  <Compartilhar url={url} titulo={post.titulo} />
+                </div>
+              </div>
+            </aside>
+          ) : null}
         </div>
       </article>
 

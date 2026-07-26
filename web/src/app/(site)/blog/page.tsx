@@ -67,9 +67,7 @@ export default async function BlogHomePage() {
   const daGrade = listagem.posts.filter((p) => p.slug !== destaque?.slug);
 
   return (
-    <div className="pt-16">
-      <BarraTrial />
-
+    <div>
       <CabecalhoBlog
         chip="Blog"
         titulo={
@@ -80,6 +78,9 @@ export default async function BlogHomePage() {
         }
         descricao={DESCRICAO}
       />
+
+      {/* Abaixo do hero: sobre o fundo escuro a faixa verde-claro sumiria. */}
+      <BarraTrial />
 
       <div className="mx-auto max-w-6xl px-5 py-14">
         <PilulasCategoria categorias={categorias} />

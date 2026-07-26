@@ -72,7 +72,7 @@ export default async function BlogPaginaPage({ params }: Props) {
   if (pagina > listagem.totalPaginas) notFound();
 
   return (
-    <div className="pt-16">
+    <div>
       <CabecalhoBlog
         chip={`Página ${pagina}`}
         titulo="Todos os artigos"

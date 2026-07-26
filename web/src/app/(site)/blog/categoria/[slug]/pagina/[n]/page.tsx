@@ -79,7 +79,7 @@ export default async function CategoriaPaginaPage({ params }: Props) {
   const base = `/blog/categoria/${categoria.slug}`;
 
   return (
-    <div className="pt-16">
+    <div>
       <CabecalhoBlog
         chip={`${categoria.nome} · página ${pagina}`}
         titulo={categoria.nome}

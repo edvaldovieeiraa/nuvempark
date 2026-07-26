@@ -25,20 +25,24 @@ export function ListaPosts({
 }) {
   if (posts.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-borda bg-superficie px-6 py-16 text-center">
-        <span className="inline-grid h-12 w-12 place-items-center rounded-2xl bg-fundo">
-          <FileQuestion className="h-5 w-5 text-texto-3" aria-hidden />
+      <div className="relative overflow-hidden rounded-3xl border border-borda bg-superficie px-6 py-20 text-center shadow-card">
+        <div
+          className="pointer-events-none absolute -top-24 left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full bg-brand-500/10 blur-3xl"
+          aria-hidden
+        />
+        <span className="relative inline-grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-acento-teal shadow-brand">
+          <FileQuestion className="h-6 w-6 text-white" aria-hidden />
         </span>
-        <p className="mt-4 text-lg font-extrabold text-texto">
-          {vazio?.titulo ?? "Ainda não há artigos por aqui"}
+        <p className="relative mt-5 text-xl font-black tracking-tight text-texto">
+          {vazio?.titulo ?? "Os primeiros artigos estão a caminho"}
         </p>
-        <p className="mx-auto mt-2 max-w-md text-[15px] leading-relaxed text-texto-2">
+        <p className="relative mx-auto mt-2 max-w-md text-[15px] leading-relaxed text-texto-2">
           {vazio?.descricao ??
-            "Estamos escrevendo. Enquanto isso, veja tudo o que já publicamos."}
+            "Estamos escrevendo guias práticos de gestão de pátio. Assine abaixo para receber quando saírem."}
         </p>
         <Link
           href="/blog"
-          className="mt-6 inline-flex h-11 items-center rounded-xl bg-brand-600 px-6 text-sm font-bold text-white shadow-brand transition-all hover:brightness-110"
+          className="relative mt-7 inline-flex h-11 cursor-pointer items-center rounded-xl bg-brand-600 px-6 text-sm font-bold text-white shadow-brand transition-all hover:brightness-110"
         >
           Ver todos os artigos
         </Link>

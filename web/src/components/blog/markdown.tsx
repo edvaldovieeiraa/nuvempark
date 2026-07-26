@@ -99,6 +99,36 @@ export function dividirMarkdown(
   ];
 }
 
+/**
+ * H2s do post (fora de blocos de código) — alimentam o sumário "Neste artigo".
+ * O id sai do MESMO slugify que o renderizador usa nas âncoras dos títulos,
+ * então cada link do sumário aponta para um id que existe de fato na página.
+ */
+export function extrairTitulos(
+  markdown: string,
+): { id: string; texto: string }[] {
+  const titulos: { id: string; texto: string }[] = [];
+  let dentroDeCodigo = false;
+
+  for (const linha of markdown.split("\n")) {
+    if (/^\s{0,3}(```|~~~)/.test(linha)) {
+      dentroDeCodigo = !dentroDeCodigo;
+      continue;
+    }
+    if (dentroDeCodigo) continue;
+
+    const m = linha.match(/^\s{0,3}##\s+(.+?)\s*$/);
+    if (!m) continue;
+    // Tira a marcação inline (negrito/itálico/código) para casar com o texto
+    // renderizado, que é o que a âncora do título usa.
+    const texto = m[1].replace(/[*_`]/g, "").trim();
+    const id = slugify(texto);
+    if (id) titulos.push({ id, texto });
+  }
+
+  return titulos;
+}
+
 // ── Estilos de prosa ────────────────────────────────────────────────────────
 
 const CLS_TEXTO = "text-[17px] leading-[1.75] text-texto-2";
