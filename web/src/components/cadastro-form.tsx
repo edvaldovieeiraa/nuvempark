@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, Loader2, AlertCircle, MailCheck, Check } from "lucide-react";
 import { criarContaTrial, type ResultadoCadastro } from "@/app/cadastro/actions";
 import { formatarTelefone, telefoneValido } from "@/lib/telefone";
+import { BotaoGoogle } from "@/components/botao-google";
 
 /* Cores literais do protótipo Claude Design (NÃO usar tokens brand-* do app). */
 const VERDE = {
@@ -63,6 +64,7 @@ function CircleCheck({ size = 20 }: { size?: number }) {
 export function CadastroForm() {
   const [verSenha, setVerSenha] = useState(false);
   const [telefone, setTelefone] = useState("");
+  const [erroGoogle, setErroGoogle] = useState<string | null>(null);
   const [estado, agir, pendente] = useActionState<ResultadoCadastro, FormData>(
     criarContaTrial,
     null,
@@ -350,6 +352,52 @@ export function CadastroForm() {
               aria-hidden="true"
               style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
             />
+
+            <BotaoGoogle
+              texto="Criar conta com Google"
+              onErro={setErroGoogle}
+              style={{
+                width: "100%",
+                height: 48,
+                borderRadius: 12,
+                border: "1px solid #E5E7EB",
+                background: "#fff",
+                color: "#111827",
+                fontSize: 15,
+                fontWeight: 700,
+                fontFamily: "inherit",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+              }}
+            />
+
+            {erroGoogle && (
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#B91C1C",
+                }}
+              >
+                {erroGoogle}
+              </p>
+            )}
+
+            {/* separador "ou" */}
+            <div
+              aria-hidden
+              style={{ display: "flex", alignItems: "center", gap: 12 }}
+            >
+              <span style={{ flex: 1, height: 1, background: "#E5E7EB" }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#9CA3AF" }}>
+                ou
+              </span>
+              <span style={{ flex: 1, height: 1, background: "#E5E7EB" }} />
+            </div>
 
             <div>
               <label htmlFor="nome_rede" style={labelStyle}>

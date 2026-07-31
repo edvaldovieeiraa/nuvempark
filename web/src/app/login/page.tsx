@@ -7,6 +7,7 @@ import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
 import { Marca } from "@/components/marca";
+import { BotaoGoogle } from "@/components/botao-google";
 
 export default function LoginPage() {
   return (
@@ -24,7 +25,13 @@ function LoginConteudo() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [verSenha, setVerSenha] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(
+    // O /auth/google devolve ?erro=google quando a troca do code falha ou o
+    // usuário cancela no consentimento.
+    searchParams.get("erro") === "google"
+      ? "Não foi possível entrar com o Google. Tente de novo."
+      : null,
+  );
   const [carregando, setCarregando] = useState(false);
 
   async function entrar(e: React.FormEvent) {
@@ -91,6 +98,18 @@ function LoginConteudo() {
               E-mail confirmado! Agora é só entrar.
             </div>
           )}
+          <BotaoGoogle
+            texto="Entrar com Google"
+            onErro={setErro}
+            className="w-full h-12 rounded-xl border border-borda bg-superficie text-sm font-bold hover:bg-fundo transition-colors disabled:opacity-60 inline-flex items-center justify-center gap-2.5"
+          />
+
+          <div aria-hidden className="flex items-center gap-3">
+            <span className="flex-1 h-px bg-borda" />
+            <span className="text-xs font-bold text-texto-3">ou</span>
+            <span className="flex-1 h-px bg-borda" />
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-texto-2 mb-1.5">
               E-mail

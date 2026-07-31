@@ -4,15 +4,13 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enviarEmail, emailConfigurado } from "@/lib/email";
 import { emailConfirmacao } from "@/lib/email-templates";
-import { garantirFaturaTrial } from "@/lib/faturas-trial";
+import { criarTenantComTrial, desfazerTenant } from "@/lib/criar-conta";
 import { soDigitosTelefone, telefoneValido } from "@/lib/telefone";
 
 export type ResultadoCadastro =
   | { ok: true; email: string }
   | { ok: false; msg: string }
   | null;
-
-const TRIAL_DIAS = 15;
 
 // Rate-limit simples em memória por IP (best-effort; reinicia com o processo).
 const tentativasPorIp = new Map<string, { n: number; janela: number }>();
@@ -73,34 +71,26 @@ export async function criarContaTrial(
 
   const sb = createAdminClient();
 
-  // 1) código de rede único (função do banco)
-  const { data: codigoData, error: erroCodigo } = await sb.rpc(
-    "fn_gerar_codigo_tenant",
-  );
-  if (erroCodigo || !codigoData)
-    return { ok: false, msg: "Não foi possível iniciar o cadastro. Tente de novo." };
-  const codigo = String(codigoData);
-
-  // 2) tenant (código no mesmo insert — a coluna é NOT NULL)
-  const { data: tenant, error: erroTenant } = await sb
-    .from("tenants")
-    .insert({ nome: nomeRede, codigo, telefone })
-    .select("id")
-    .single();
-  if (erroTenant || !tenant)
+  // 1) tenant + assinatura em trial (mesma rotina usada pelo login com Google)
+  const conta = await criarTenantComTrial(sb, {
+    nomeRede,
+    telefone,
+    emailCobranca: email,
+  });
+  if (!conta.ok)
     return { ok: false, msg: "Não foi possível criar sua conta. Tente de novo." };
 
-  // 3) gestor no Supabase Auth — e-mail NÃO confirmado (exige verificação)
+  // 2) gestor no Supabase Auth — e-mail NÃO confirmado (exige verificação)
   const { error: erroUser } = await sb.auth.admin.createUser({
     email,
     password: senha,
     email_confirm: false,
     user_metadata: { nome: nomeResp || nomeRede, telefone },
-    app_metadata: { tenant_id: tenant.id },
+    app_metadata: { tenant_id: conta.tenantId },
   });
   if (erroUser) {
-    // rollback do tenant para não deixar órfão
-    await sb.from("tenants").delete().eq("id", tenant.id);
+    // rollback do tenant para não deixar órfão (assinatura sai por cascade)
+    await desfazerTenant(sb, conta.tenantId);
     return {
       ok: false,
       msg: erroUser.message.includes("already")
@@ -109,7 +99,7 @@ export async function criarContaTrial(
     };
   }
 
-  // 4) e-mail de confirmação. Geramos o link no Supabase e o enviamos por
+  // 3) e-mail de confirmação. Geramos o link no Supabase e o enviamos por
   //    Resend (não depende do SMTP do Supabase estar configurado).
   const site = process.env.NEXT_PUBLIC_SITE_URL || "https://nuvempark.com";
   const { data: linkData } = await sb.auth.admin.generateLink({
@@ -127,21 +117,6 @@ export async function criarContaTrial(
     });
     await enviarEmail({ para: email, assunto, html });
   }
-
-  // 5) assinatura em TRIAL de 15 dias
-  const expira = new Date(Date.now() + TRIAL_DIAS * 24 * 60 * 60 * 1000);
-  await sb.from("assinaturas").insert({
-    tenant_id: tenant.id,
-    valor_por_patio: 129.9,
-    estado: "trial",
-    trial_expira_em: expira.toISOString(),
-    origem: "signup",
-    email_cobranca: email,
-  });
-
-  // Tenta já deixar a "próxima fatura" pronta (no-op enquanto não houver
-  // pátio ativo — nesse momento do signup normalmente ainda não há).
-  await garantirFaturaTrial(sb, tenant.id);
 
   return { ok: true, email };
 }
