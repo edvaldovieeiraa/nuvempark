@@ -32,8 +32,12 @@ export default function RootLayout({
             (Também não usamos next/font: ele baixa a fonte em BUILD, e o build
             roda no VPS — uma indisponibilidade do Google derrubaria o deploy.)
 
-            Só os dois pesos que aparecem acima da dobra são pré-carregados;
-            os demais o navegador busca quando a regra @font-face casar. */}
+            Pré-carregamos os três pesos dominantes de Poppins. O 800 é o mais
+            importante: é o do título do hero, o elemento de LCP no celular.
+            Sem o preload ele só era descoberto DEPOIS do CSS (HTML → CSS →
+            fonte) e chegava aos 2,3 s, trocando o texto já depois do LCP.
+            Os pesos 300/500/600 ficam de fora de propósito — juntos são
+            8 elementos na página inteira e não pagam o custo de 3 preloads. */}
         <link
           rel="preload"
           as="font"
@@ -46,6 +50,13 @@ export default function RootLayout({
           as="font"
           type="font/woff2"
           href="/fonts/Poppins-700.woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href="/fonts/Poppins-800.woff2"
           crossOrigin="anonymous"
         />
       </head>
