@@ -26,19 +26,27 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="h-full antialiased">
       <head>
-        {/* Fontes do redesign, carregadas em runtime pelo navegador (Poppins nos
-            componentes migrados; o resto usa a stack sans do sistema). NÃO usar
-            next/font/google aqui: ele baixa a fonte em BUILD e, sem rede pro
-            Google Fonts na máquina de build, o deploy inteiro quebra. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* Fontes: os @font-face vivem em globals.css e apontam para
+            /fonts/*.woff2 no NOSSO domínio. O <link> para fonts.googleapis.com
+            que ficava aqui bloqueava a renderização por 750 ms no celular.
+            (Também não usamos next/font: ele baixa a fonte em BUILD, e o build
+            roda no VPS — uma indisponibilidade do Google derrubaria o deploy.)
+
+            Só os dois pesos que aparecem acima da dobra são pré-carregados;
+            os demais o navegador busca quando a regra @font-face casar. */}
         <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href="/fonts/Poppins-400.woff2"
+          crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Geist+Mono:wght@400;500;700&display=swap"
-          rel="stylesheet"
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href="/fonts/Poppins-700.woff2"
+          crossOrigin="anonymous"
         />
       </head>
       <body className="min-h-full flex flex-col font-sans">

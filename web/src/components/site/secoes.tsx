@@ -218,7 +218,7 @@ export function SiteFooter() {
                 Nuvem<span style={{ fontWeight: 800, color: "#15803D" }}>Park</span>
               </span>
             </div>
-            <p style={{ margin: "12px 0 0", fontSize: 14, color: "#94A3B8", maxWidth: 280, lineHeight: 1.6 }}>
+            <p style={{ margin: "12px 0 0", fontSize: 14, color: "#4B5563", maxWidth: 280, lineHeight: 1.6 }}>
               O sistema que cabe no bolso do operador — e coloca o faturamento do
               pátio na sua mão.
             </p>
@@ -226,7 +226,7 @@ export function SiteFooter() {
 
           {colunas.map((c) => (
             <div key={c.titulo}>
-              <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "#94A3B8" }}>{c.titulo}</p>
+              <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "#4B5563" }}>{c.titulo}</p>
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
                 {c.links.map((l) => (
                   <li key={l.label}>
@@ -242,7 +242,7 @@ export function SiteFooter() {
           ))}
         </div>
 
-        <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid #E5E7EB", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, color: "#94A3B8" }}>
+        <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid #E5E7EB", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, color: "#4B5563" }}>
           <span>© 2026 NuvemPark. Todos os direitos reservados.</span>
           <span style={{ fontFamily: MONO }}>nuvempark.com</span>
         </div>

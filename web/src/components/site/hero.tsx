@@ -7,6 +7,7 @@ import {
   Car,
   RefreshCw,
 } from "lucide-react";
+import Image from "next/image";
 import { urlApp } from "@/lib/urls";
 import { MONO, WHATSAPP, btnPrimary, btnGhostDark } from "@/components/site/tokens";
 
@@ -496,10 +497,16 @@ export function PhoneShot({
         boxShadow: "0 32px 64px -16px rgba(0,0,0,.8)",
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      {/* 720x1604 é o tamanho real de TODAS as capturas em /uploads (conferido
+          arquivo por arquivo). Declarar reserva o espaço antes do download —
+          sem isso o quadro crescia ao carregar e empurrava o mockup do painel,
+          que era a maior causa de CLS do relatório (0,080 de 0,1). */}
+      <Image
         src={src}
         alt={alt}
+        width={720}
+        height={1604}
+        sizes="(max-width: 900px) 45vw, 240px"
         style={{ display: "block", width: "100%", height: "auto", borderRadius: imgRadius }}
       />
       <span

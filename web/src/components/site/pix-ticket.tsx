@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { QrCode, CheckCircle2 } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
 import { pill, listItem } from "@/components/site/tokens";
@@ -45,10 +46,16 @@ export function PixTicket() {
           <div style={{ position: "relative" }}>
             <div style={{ position: "absolute", inset: -24, borderRadius: 32, background: "radial-gradient(60% 60% at 50% 45%,rgba(22,163,74,.14),transparent 70%)", pointerEvents: "none" }} />
             <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", border: "1px solid #E5E7EB", boxShadow: "0 30px 80px -28px rgba(11,18,32,.3)" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              {/* width/height = tamanho real do arquivo: reservam o espaço
+                  antes do download (CLS) e deixam o next/image entregar uma
+                  versão do tamanho certo — o PageSpeed acusou 1400x1045 sendo
+                  exibida a 648x483, 55 KiB jogados fora só aqui. */}
+              <Image
                 src="/uploads/pix-ticket-hero.webp"
                 alt="Cliente escaneia o QR do ticket NuvemPark e paga com Pix no celular"
+                width={1400}
+                height={1045}
+                sizes="(max-width: 900px) 100vw, 548px"
                 style={{ display: "block", width: "100%", height: "auto" }}
               />
             </div>

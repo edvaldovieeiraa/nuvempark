@@ -45,7 +45,7 @@ export function Faq() {
                   </span>
                 </button>
                 {open && (
-                  <div style={{ padding: "0 24px 20px", fontSize: 15, lineHeight: 1.65, color: "#6B7280" }}>
+                  <div style={{ padding: "0 24px 20px", fontSize: 15, lineHeight: 1.65, color: "#4B5563" }}>
                     {item.a}
                   </div>
                 )}

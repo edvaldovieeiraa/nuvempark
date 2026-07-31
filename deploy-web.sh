@@ -14,8 +14,12 @@ die(){ echo "❌ $*" >&2; exit 1; }
 echo "== 1/6 push =="
 git -C "$ROOT" push origin main || die "push falhou"
 
-echo "== 2/6 scp src =="
-( cd "$ROOT/web" && scp -o StrictHostKeyChecking=no -i "$SSH_KEY" -r src "$HOST:/root/nuvempark-web/" ) \
+echo "== 2/6 scp src + public =="
+# `public/` entrou na cópia em 31/07/2026: as fontes passaram a ser servidas do
+# próprio domínio (public/fonts/*.woff2) e, sem isto, o build subia sem elas e
+# o site caía na fonte do sistema. Vale para qualquer asset público — antes,
+# mudar algo em public/ simplesmente não ia para produção, em silêncio.
+( cd "$ROOT/web" && scp -o StrictHostKeyChecking=no -i "$SSH_KEY" -r src public "$HOST:/root/nuvempark-web/" ) \
   || die "scp falhou"
 
 echo "== 3/6 env vars na VPS (copia do .env da API, sem duplicar) =="

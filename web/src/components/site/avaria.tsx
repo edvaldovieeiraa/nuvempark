@@ -6,6 +6,7 @@ import {
   Clock,
   MapPin,
 } from "lucide-react";
+import Image from "next/image";
 import { Reveal } from "@/components/site/reveal";
 
 /* =========================================================
@@ -133,11 +134,15 @@ function FichaEvidencia() {
 
         {/* foto real do registro de avaria na entrada */}
         <div className="relative rounded-xl overflow-hidden border border-white/8 aspect-[16/10] bg-noite-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          {/* `fill` porque quem manda no tamanho é o contêiner (aspect-[16/10]
+              + object-cover). Servida crua, esta imagem eram 84 KiB com cache
+              de 4 h; pelo next/image vai redimensionada e com cache imutável. */}
+          <Image
             src="/uploads/avaria-hero.webp"
             alt="Operadora registrando avarias do veículo pelo tablet na entrada"
-            className="block w-full h-full object-cover"
+            fill
+            sizes="(max-width: 900px) 100vw, 560px"
+            className="block object-cover"
           />
           <div
             className="absolute inset-0 pointer-events-none"

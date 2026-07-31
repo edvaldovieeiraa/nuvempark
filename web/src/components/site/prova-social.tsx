@@ -101,7 +101,7 @@ export function ProvaSocial() {
                     <Avatar />
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 800, color: "#1F2937" }}>{d.nome}</div>
-                      <div style={{ fontSize: 13, color: "#94A3B8" }}>{d.negocio}</div>
+                      <div style={{ fontSize: 13, color: "#4B5563" }}>{d.negocio}</div>
                     </div>
                   </div>
                 </div>
@@ -109,7 +109,7 @@ export function ProvaSocial() {
             ))}
           </div>
           {ILUSTRATIVO && (
-            <p style={{ margin: "16px 0 0", textAlign: "center", fontSize: 13, color: "#94A3B8" }}>
+            <p style={{ margin: "16px 0 0", textAlign: "center", fontSize: 13, color: "#4B5563" }}>
               Depoimentos ilustrativos — pessoas e estabelecimentos fictícios,
               criados para demonstrar o formato da seção.
             </p>
@@ -154,7 +154,7 @@ export function ProvaSocial() {
                 </div>
               </div>
             </Reveal>
-            <p style={{ margin: "16px 0 0", textAlign: "center", fontSize: 13, color: "#94A3B8" }}>
+            <p style={{ margin: "16px 0 0", textAlign: "center", fontSize: 13, color: "#4B5563" }}>
               Números e depoimento ilustrativos — troque pelos reais quando tiver.
             </p>
           </>
