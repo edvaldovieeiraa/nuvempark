@@ -18,6 +18,11 @@ import {
   atualizarRede,
 } from "@/app/painel/configuracoes/actions";
 import { soDigitos, formatarCnpj, cnpjValido } from "@/lib/cnpj";
+import {
+  soDigitosTelefone,
+  formatarTelefone,
+  telefoneValido,
+} from "@/lib/telefone";
 import { labelAssinaturaEstado } from "@/lib/status-labels";
 import { formatarData, formatarDataHora } from "@/lib/format-data";
 import { useToast } from "@/components/ui/toast";
@@ -28,6 +33,7 @@ type Tenant = {
   codigo: string;
   cnpj: string | null;
   razao_social: string | null;
+  telefone: string | null;
 };
 type Assinatura = {
   estado: string;
@@ -452,13 +458,22 @@ function FormRede({ tenant }: { tenant: Tenant | null }) {
   const [cnpj, setCnpj] = useState(
     tenant?.cnpj ? formatarCnpj(tenant.cnpj) : "",
   );
+  const [telefone, setTelefone] = useState(
+    tenant?.telefone ? formatarTelefone(tenant.telefone) : "",
+  );
   const [salvando, setSalvando] = useState(false);
 
   const cnpjDigitos = soDigitos(cnpj);
   const cnpjIncompleto = cnpjDigitos.length > 0 && cnpjDigitos.length < 14;
   const cnpjInvalido = cnpjDigitos.length === 14 && !cnpjValido(cnpjDigitos);
+  const telDigitos = soDigitosTelefone(telefone);
+  const telInvalido = telDigitos.length > 0 && !telefoneValido(telDigitos);
   const podeSalvar =
-    nome.trim().length >= 2 && !cnpjIncompleto && !cnpjInvalido && !salvando;
+    nome.trim().length >= 2 &&
+    !cnpjIncompleto &&
+    !cnpjInvalido &&
+    !telInvalido &&
+    !salvando;
 
   async function salvar() {
     if (!podeSalvar) return;
@@ -467,6 +482,7 @@ function FormRede({ tenant }: { tenant: Tenant | null }) {
       nome: nome.trim(),
       razaoSocial: razao.trim() || null,
       cnpj: cnpjDigitos || null,
+      telefone: telDigitos || null,
     });
     setSalvando(false);
     if (r?.ok) {
@@ -514,6 +530,29 @@ function FormRede({ tenant }: { tenant: Tenant | null }) {
           placeholder="Ex.: Estacionar Serviços Ltda"
           style={inputBase}
         />
+      </div>
+      <div>
+        <label style={labelStyle}>Telefone / WhatsApp</label>
+        <input
+          value={telefone}
+          onChange={(e) => setTelefone(formatarTelefone(e.target.value))}
+          inputMode="numeric"
+          placeholder="(81) 90000-0000"
+          style={telInvalido ? { ...inputBase, ...inputErro } : inputBase}
+        />
+        {telInvalido && (
+          <p
+            style={{
+              marginTop: 6,
+              marginBottom: 0,
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#E11D48",
+            }}
+          >
+            Informe o DDD + número (10 ou 11 dígitos).
+          </p>
+        )}
       </div>
       <div>
         <label style={labelStyle}>CNPJ (opcional)</label>

@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { enviarEmail, emailConfigurado } from "@/lib/email";
 import { emailConfirmacao } from "@/lib/email-templates";
 import { garantirFaturaTrial } from "@/lib/faturas-trial";
+import { soDigitosTelefone, telefoneValido } from "@/lib/telefone";
 
 export type ResultadoCadastro =
   | { ok: true; email: string }
@@ -61,8 +62,11 @@ export async function criarContaTrial(
   const nomeResp = String(formData.get("nome") || "").trim();
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const senha = String(formData.get("senha") || "");
+  const telefone = soDigitosTelefone(String(formData.get("telefone") || ""));
 
   if (nomeRede.length < 2) return { ok: false, msg: "Informe o nome do seu negócio." };
+  if (!telefoneValido(telefone))
+    return { ok: false, msg: "Informe um telefone válido com DDD." };
   if (!email.includes("@")) return { ok: false, msg: "Informe um e-mail válido." };
   if (senha.length < 6)
     return { ok: false, msg: "A senha precisa de ao menos 6 caracteres." };
@@ -80,7 +84,7 @@ export async function criarContaTrial(
   // 2) tenant (código no mesmo insert — a coluna é NOT NULL)
   const { data: tenant, error: erroTenant } = await sb
     .from("tenants")
-    .insert({ nome: nomeRede, codigo })
+    .insert({ nome: nomeRede, codigo, telefone })
     .select("id")
     .single();
   if (erroTenant || !tenant)
@@ -91,7 +95,7 @@ export async function criarContaTrial(
     email,
     password: senha,
     email_confirm: false,
-    user_metadata: { nome: nomeResp || nomeRede },
+    user_metadata: { nome: nomeResp || nomeRede, telefone },
     app_metadata: { tenant_id: tenant.id },
   });
   if (erroUser) {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Loader2, AlertCircle, MailCheck, Check } from "lucide-react";
 import { criarContaTrial, type ResultadoCadastro } from "@/app/cadastro/actions";
+import { formatarTelefone, telefoneValido } from "@/lib/telefone";
 
 /* Cores literais do protótipo Claude Design (NÃO usar tokens brand-* do app). */
 const VERDE = {
@@ -61,6 +62,7 @@ function CircleCheck({ size = 20 }: { size?: number }) {
 
 export function CadastroForm() {
   const [verSenha, setVerSenha] = useState(false);
+  const [telefone, setTelefone] = useState("");
   const [estado, agir, pendente] = useActionState<ResultadoCadastro, FormData>(
     criarContaTrial,
     null,
@@ -160,6 +162,9 @@ export function CadastroForm() {
     color: "#6B7280",
     marginBottom: 6,
   };
+
+  /* telefone: só acusa erro depois que o usuário digitou algo */
+  const telInvalido = telefone.length > 0 && !telefoneValido(telefone);
 
   /* ---------- Estado padrão: split-screen ---------- */
   return (
@@ -374,6 +379,42 @@ export function CadastroForm() {
             </div>
 
             <div>
+              <label htmlFor="telefone" style={labelStyle}>
+                Telefone / WhatsApp
+              </label>
+              <input
+                id="telefone"
+                name="telefone"
+                type="tel"
+                required
+                inputMode="numeric"
+                autoComplete="tel"
+                value={telefone}
+                onChange={(e) => setTelefone(formatarTelefone(e.target.value))}
+                placeholder="(81) 90000-0000"
+                className="cad-input"
+                style={
+                  telInvalido
+                    ? { ...inputStyle, border: "1px solid rgba(185,28,28,.5)" }
+                    : inputStyle
+                }
+              />
+              {telInvalido && (
+                <p
+                  style={{
+                    marginTop: 6,
+                    marginBottom: 0,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#B91C1C",
+                  }}
+                >
+                  Informe o DDD + número (10 ou 11 dígitos).
+                </p>
+              )}
+            </div>
+
+            <div>
               <label htmlFor="email" style={labelStyle}>
                 E-mail
               </label>
@@ -450,7 +491,7 @@ export function CadastroForm() {
             <motion.button
               whileTap={{ scale: 0.97 }}
               type="submit"
-              disabled={pendente}
+              disabled={pendente || telInvalido}
               style={{
                 width: "100%",
                 height: 48,
@@ -460,8 +501,8 @@ export function CadastroForm() {
                 color: "#fff",
                 fontWeight: 700,
                 fontSize: 15,
-                cursor: pendente ? "default" : "pointer",
-                opacity: pendente ? 0.7 : 1,
+                cursor: pendente || telInvalido ? "default" : "pointer",
+                opacity: pendente || telInvalido ? 0.7 : 1,
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",

@@ -10,7 +10,7 @@ export default async function TenantsPage() {
     await Promise.all([
       sb
         .from("tenants")
-        .select("id, nome, codigo, ativo, criado_em")
+        .select("id, nome, codigo, ativo, criado_em, telefone")
         .order("criado_em", { ascending: false }),
       sb.from("patios").select("tenant_id, ativo"),
       sb
@@ -56,6 +56,7 @@ export default async function TenantsPage() {
       codigo: t.codigo,
       ativo: t.ativo,
       criadoEm: t.criado_em,
+      telefone: t.telefone ?? null,
       patiosAtivos: p.ativos,
       patiosTotal: p.total,
       valorPorPatio: a?.valor_por_patio ?? 0,

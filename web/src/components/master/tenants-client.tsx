@@ -13,6 +13,7 @@ import {
   Sparkles,
   Clock,
   Rocket,
+  Phone,
 } from "lucide-react";
 import {
   criarTenant,
@@ -26,6 +27,7 @@ import { useToast } from "@/components/ui/toast";
 import { Botao } from "@/components/ui/botao";
 import { Campo, Input } from "@/components/ui/campos";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
+import { formatarTelefone } from "@/lib/telefone";
 
 export type TenantRow = {
   id: string;
@@ -40,6 +42,7 @@ export type TenantRow = {
   mensalidade: number;
   trialExpiraEm: string | null;
   origem: string;
+  telefone: string | null;
 };
 
 function trialDiasRestantes(iso: string | null): number | null {
@@ -194,6 +197,15 @@ function LinhaTenant({ tenant }: { tenant: TenantRow }) {
                 </span>
               )}
             </div>
+            {tenant.telefone && (
+              <a
+                href={`tel:+55${tenant.telefone}`}
+                className="text-[11px] text-texto-3 hover:text-brand-700 inline-flex items-center gap-1"
+              >
+                <Phone className="w-3 h-3" />
+                {formatarTelefone(tenant.telefone)}
+              </a>
+            )}
             {tenant.estadoAssinatura === "trial" && (
               <div className="text-[11px] font-bold text-info flex items-center gap-1">
                 <Clock className="w-3 h-3" />

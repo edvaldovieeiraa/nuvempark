@@ -4,18 +4,21 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { registrarAuditoria } from "@/lib/auditoria";
 import { soDigitos, cnpjValido } from "@/lib/cnpj";
+import { soDigitosTelefone, telefoneValido } from "@/lib/telefone";
 
 export type Resultado = { ok: boolean; msg: string } | null;
 
 /**
- * Edita os dados da rede (tenant): nome, razão social e CNPJ. Roda com a SESSÃO
- * do gestor — a policy tenant_self_update isola a própria linha (sem service_role).
- * CNPJ é validado (DV) e persistido só com dígitos.
+ * Edita os dados da rede (tenant): nome, razão social, CNPJ e telefone. Roda com
+ * a SESSÃO do gestor — a policy tenant_self_update isola a própria linha (sem
+ * service_role). CNPJ (DV) e telefone (DDD) são validados e persistidos só com
+ * dígitos.
  */
 export async function atualizarRede(input: {
   nome: string;
   razaoSocial: string | null;
   cnpj: string | null;
+  telefone: string | null;
 }): Promise<Resultado> {
   const sb = await createClient();
   const {
@@ -32,12 +35,17 @@ export async function atualizarRede(input: {
   if (cnpjDigitos && !cnpjValido(cnpjDigitos))
     return { ok: false, msg: "CNPJ inválido — confira os dígitos." };
 
+  const telDigitos = input.telefone ? soDigitosTelefone(input.telefone) : "";
+  if (telDigitos && !telefoneValido(telDigitos))
+    return { ok: false, msg: "Telefone inválido — informe DDD + número." };
+
   const { error } = await sb
     .from("tenants")
     .update({
       nome,
       razao_social: input.razaoSocial?.trim() || null,
       cnpj: cnpjDigitos || null,
+      telefone: telDigitos || null,
     })
     .eq("id", tenantId);
   if (error)
@@ -51,6 +59,7 @@ export async function atualizarRede(input: {
       nome,
       razao_social: input.razaoSocial?.trim() || null,
       cnpj: cnpjDigitos || null,
+      telefone: telDigitos || null,
     },
   });
 
