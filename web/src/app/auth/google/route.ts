@@ -18,33 +18,46 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export const dynamic = "force-dynamic";
 
-function paraLogin(origin: string, erro: string) {
-  return NextResponse.redirect(new URL(`/login?erro=${erro}`, origin));
+/**
+ * Redirect com Location RELATIVO — de propósito.
+ *
+ * Atrás do nginx, o origin que o Next monta aqui é o do bind interno
+ * (`localhost:8092`), não o público: um `NextResponse.redirect(new URL(p,
+ * origin))` mandaria o usuário para https://localhost:8092/… . O caminho
+ * relativo é resolvido pelo browser contra a URL que ele pediu, então funciona
+ * em produção, em dev e sem depender de header de proxy.
+ */
+function irPara(caminho: string) {
+  return new NextResponse(null, { status: 307, headers: { Location: caminho } });
+}
+
+function paraLogin(erro: string) {
+  return irPara(`/login?erro=${erro}`);
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = request.nextUrl;
+  const { searchParams } = request.nextUrl;
 
   // O Google/Supabase devolve erro na query quando o usuário cancela ou o
   // provider recusa (`access_denied`, `server_error`…).
   if (searchParams.get("error") || searchParams.get("error_description")) {
-    return paraLogin(origin, "google");
+    return paraLogin("google");
   }
 
   const code = searchParams.get("code");
-  if (!code) return paraLogin(origin, "google");
+  if (!code) return paraLogin("google");
 
   const sb = await createClient();
   const { error: erroTroca } = await sb.auth.exchangeCodeForSession(code);
-  if (erroTroca) return paraLogin(origin, "google");
+  if (erroTroca) return paraLogin("google");
 
   const {
     data: { user },
   } = await sb.auth.getUser();
-  if (!user) return paraLogin(origin, "google");
+  if (!user) return paraLogin("google");
 
   const tenantAtual = (user.app_metadata as { tenant_id?: string })?.tenant_id;
-  if (tenantAtual) return NextResponse.redirect(new URL("/painel", origin));
+  if (tenantAtual) return irPara("/painel");
 
   // Sem tenant: ou é uma conta antiga entrando pelo Google pela primeira vez,
   // ou é gente nova. Só aceitamos casar por e-mail se o provedor VERIFICOU
@@ -68,14 +81,14 @@ export async function GET(request: NextRequest) {
         user.id,
         { app_metadata: { tenant_id: assinatura.tenant_id } },
       );
-      if (erroVinculo) return paraLogin(origin, "google");
+      if (erroVinculo) return paraLogin("google");
 
       // O `app_metadata` só entra no JWT no próximo token. Sem este refresh o
       // middleware ainda leria uma sessão sem tenant e mandaria pro bloqueado.
       await sb.auth.refreshSession();
-      return NextResponse.redirect(new URL("/painel", origin));
+      return irPara("/painel");
     }
   }
 
-  return NextResponse.redirect(new URL("/cadastro/completar", origin));
+  return irPara("/cadastro/completar");
 }
