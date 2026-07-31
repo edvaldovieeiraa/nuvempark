@@ -221,7 +221,6 @@ export function Hero() {
             <PhoneShot
               src="/uploads/Screenshot_20260720-204441.png"
               alt="Tela de nova entrada do app NuvemPark: fotografar placa, tipo de veículo e registrar entrada"
-              prioridade
             />
           </div>
         </div>
@@ -477,7 +476,6 @@ export function PhoneShot({
   notchW = 62,
   notchH = 18,
   notchTop = 13,
-  prioridade = false,
 }: {
   src: string;
   alt: string;
@@ -487,8 +485,6 @@ export function PhoneShot({
   notchW?: number;
   notchH?: number;
   notchTop?: number;
-  /** Só para a moldura ACIMA DA DOBRA — ver comentário no <Image>. */
-  prioridade?: boolean;
 }) {
   return (
     <div
@@ -505,17 +501,11 @@ export function PhoneShot({
           arquivo por arquivo). Declarar reserva o espaço antes do download —
           sem isso o quadro crescia ao carregar e empurrava o mockup do painel,
           que era a maior causa de CLS do relatório (0,080 de 0,1). */}
-      {/* `priority` é obrigatório na moldura do hero: o next/image faz lazy
-          loading por PADRÃO, e ao migrar do <img> cru (que era eager) a foto
-          acima da dobra passou a ser adiada — LCP no celular ficou em 2,7 s
-          mesmo com o FCP caindo para 1,7 s. Nas molduras abaixo da dobra o
-          lazy é o comportamento certo, por isso é opt-in. */}
       <Image
         src={src}
         alt={alt}
         width={720}
         height={1604}
-        priority={prioridade}
         sizes="(max-width: 900px) 45vw, 240px"
         style={{ display: "block", width: "100%", height: "auto", borderRadius: imgRadius }}
       />
