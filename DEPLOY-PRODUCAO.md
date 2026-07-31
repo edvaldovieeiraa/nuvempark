@@ -156,6 +156,30 @@ Se o deploy publicar algo quebrado:
 
 ---
 
+## 5.1 Configuração de nginx que o app depende (não vive no repo)
+
+O bloco `location /` de `/etc/nginx/sites-available/nuvempark-web` precisa dos
+buffers ampliados:
+
+```nginx
+proxy_buffer_size 16k;
+proxy_buffers 8 16k;
+proxy_busy_buffers_size 32k;
+```
+
+**Por quê:** quando o servidor grava a sessão do Supabase (login com Google em
+`/auth/google`, e qualquer renovação de token feita pelo middleware), a resposta
+sai com o JWT de acesso + refresh fatiados em vários `Set-Cookie`. Isso passa do
+`proxy_buffer_size` padrão de 4k, e o nginx responde **502** com
+`upstream sent too big header` — o app respondeu certo, o proxy é que não
+repassou. Aconteceu em produção em 31/07/2026, no primeiro teste do login Google.
+
+Num servidor novo (ou se alguém regenerar esse arquivo pelo Certbot), reaplique
+antes de considerar o deploy pronto. Backup do arquivo pré-mudança:
+`/etc/nginx/sites-available/nuvempark-web.bak-google-20260731`.
+
+---
+
 ## 6. Comandos de diagnóstico úteis (VPS)
 
 ```bash
