@@ -6,7 +6,9 @@ set -uo pipefail
 SSH="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i $HOME/.ssh/id_ed25519 root@dashboard.levemobilidade.com.br"
 SSH_KEY="$HOME/.ssh/id_ed25519"
 HOST="root@dashboard.levemobilidade.com.br"
-ROOT="/c/VibeCoding/NuvemPark"
+# Raiz do repo: por padrão a pasta do próprio script (funciona em qualquer
+# máquina). Dá para forçar outra com ROOT=/caminho ./deploy-web.sh
+ROOT="${ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 die(){ echo "❌ $*" >&2; exit 1; }
 
 echo "== 1/6 push =="
