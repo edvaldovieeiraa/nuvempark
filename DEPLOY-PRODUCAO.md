@@ -180,6 +180,61 @@ antes de considerar o deploy pronto. Backup do arquivo pré-mudança:
 
 ---
 
+## 5.2 Cloudflare — cache de borda (configurado em 31/07/2026)
+
+O HTML do site institucional é cacheado na borda. Isso derruba o TTFB e foi
+parte do ganho de PageSpeed (ver `web/PERFORMANCE.md`).
+
+**Cache Rule** (Caching → Cache Rules), com esta expressão:
+
+```
+(http.host eq "nuvempark.com" and not starts_with(http.request.uri.path, "/api/") and not http.cookie contains "sb-")
+```
+
+| Campo | Valor |
+|---|---|
+| Cache eligibility | Eligible for cache |
+| Edge TTL | Ignore cache-control header and use this TTL → **1 hour** |
+| Browser TTL | Respect origin |
+
+⚠️ **O `http.host eq "nuvempark.com"` é a parte crítica.** Se a regra pegar
+`dashboard.nuvempark.com`, a Cloudflare passa a guardar páginas de usuário
+logado e servir a página de um cliente para outro. Nunca use `zone` nem
+`*.nuvempark.com` aqui. O `not http.cookie contains "sb-"` é a rede de
+segurança: quem tem sessão do Supabase nunca recebe resposta cacheada.
+
+O Edge TTL é fixado em 1 hora **de propósito**: o Next manda
+`s-maxage=31536000` (um ano), o que funciona na Vercel — que limpa o cache a
+cada deploy — mas na Cloudflare congelaria o site por um ano.
+
+### ⚠️ Depois de cada deploy: limpar o cache
+
+**Enquanto não houver limpeza automática, todo deploy exige um purge manual**,
+senão os visitantes continuam vendo a versão anterior por até 1 hora (já
+aconteceu: o deploy subiu, a origem tinha o código novo e a borda seguia
+servindo o antigo).
+
+Caching → Configuration → Purge Cache → *Custom Purge* → URL →
+`https://nuvempark.com/`
+
+Para conferir se o que está no ar é o que você publicou:
+
+```bash
+curl -sI https://nuvempark.com/ | grep -i cf-cache-status   # HIT = vindo da borda
+curl -s "https://nuvempark.com/?nocache=$RANDOM" | head -c 400   # dribla o cache, mostra a origem
+```
+
+**Melhoria pendente:** fazer o `deploy-web.sh` chamar a API de purge da
+Cloudflare no fim. Exige um token de API guardado no VPS (nunca no repositório).
+
+### Web Analytics desligado
+
+O beacon (`static.cloudflareinsights.com/beacon.min.js`) foi desativado em
+Analytics & Logs → Web Analytics: eram 11 KiB e o caminho crítico mais longo
+do relatório. Se alguém reativar o "Automatic Setup", ele volta ao HTML.
+
+---
+
 ## 6. Comandos de diagnóstico úteis (VPS)
 
 ```bash
