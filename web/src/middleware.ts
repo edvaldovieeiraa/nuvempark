@@ -163,6 +163,28 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+/**
+ * Escopo do middleware — só quais rotas ele PROCESSA. A lógica de autorização
+ * (gate de sessão do /painel, senha mestra do /master) está na função acima e
+ * não muda: nada que exija sessão sai desta lista.
+ *
+ * O que sai daqui e por quê:
+ * - `_next/static`, `_next/image` e qualquer arquivo com extensão de imagem
+ *   (inclui `/og-image.png`, `/icon.png`, `/apple-icon.png`) — assets públicos.
+ *   Um crawler de rede social que recebe 307 numa og:image simplesmente desiste
+ *   e mostra o cartão sem miniatura.
+ * - `robots.txt` e `sitemap.xml` — arquivos de bot. Passavam por aqui e faziam
+ *   um `supabase.auth.getUser()` (round-trip de rede) a cada visita de crawler,
+ *   sem nenhum efeito útil.
+ * - `blog/<slug>/og` — a imagem social gerada por post. É rota de IMAGEM sem
+ *   extensão no caminho, então era a única que continuava caindo no middleware.
+ * - `opengraph-image` / `twitter-image` / `icon` / `apple-icon` — convenções de
+ *   arquivo do Next. Hoje não usamos as três primeiras (a social do site é o
+ *   PNG estático), mas se alguém adicionar um `opengraph-image.tsx` amanhã ele
+ *   já nasce fora do middleware — que é onde precisa estar.
+ */
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|opengraph-image|twitter-image|apple-icon|icon|blog/[^/]+/og$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif)$).*)',
+  ],
 };

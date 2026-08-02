@@ -12,6 +12,7 @@ import {
   POSTS_POR_PAGINA,
 } from "@/lib/blog";
 import { schemaColecao, schemaMigalhas } from "@/lib/blog-seo";
+import { IMAGEM_SOCIAL } from "@/lib/og";
 import { urlSite } from "@/lib/urls";
 
 /** Páginas 2, 3, … de uma categoria. Mesma regra da paginação da home. */
@@ -55,8 +56,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       title: titulo,
       description: descricao,
+      // Repetida porque `openGraph` substitui a do layout raiz inteira.
+      images: [IMAGEM_SOCIAL],
     },
-    twitter: { card: "summary_large_image", title: titulo, description: descricao },
+    twitter: {
+      card: "summary_large_image",
+      title: titulo,
+      description: descricao,
+      images: [IMAGEM_SOCIAL.url],
+    },
   };
 }
 

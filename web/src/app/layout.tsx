@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { ToastProvider } from "@/components/ui/toast";
+import { IMAGEM_SOCIAL } from "@/lib/og";
 import { SITE_URL } from "@/lib/urls";
 import "./globals.css";
 
@@ -9,7 +10,31 @@ export const metadata: Metadata = {
   // as og:image do blog saem quebradas em produção.
   metadataBase: new URL(SITE_URL),
   title: "NuvemPark — Painel do Gestor",
-  description: "Gestão de estacionamento na nuvem",
+  description:
+    "Sistema de gestão de estacionamento na nuvem: seus operadores registram cada carro pelo celular, mesmo sem internet, e você acompanha o caixa ao vivo.",
+
+  // ── Preview de link (Open Graph / Twitter Card) ────────────────────────────
+  // Base HERDADA por todas as páginas. O Next preenche `og:title`/`og:description`
+  // com o title/description de CADA página quando elas não declaram os seus
+  // (`inheritFromMetadata`, em next/dist/lib/metadata/resolve-metadata.js) — por
+  // isso não fixamos título aqui: fixar faria `/precos` anunciar o texto da home.
+  //
+  // O bloco só vale para quem NÃO declara `openGraph` próprio: a chave é
+  // substituída inteira, não mesclada. O blog declara o seu (com a imagem por
+  // post) e continua intacto.
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "NuvemPark",
+    // `'./'` é resolvido contra o pathname da requisição (`resolveRelativeUrl`),
+    // então cada rota anuncia a SUA própria URL absoluta. Um valor fixo aqui
+    // faria toda página do site dizer que é a home.
+    url: "./",
+    images: [IMAGEM_SOCIAL],
+  },
+  // `title`, `description` e `images` são copiados do openGraph acima pelo
+  // `postProcessMetadata` do Next. Só o formato do cartão precisa ser dito.
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

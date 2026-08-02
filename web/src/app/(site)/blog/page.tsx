@@ -15,6 +15,7 @@ import {
   POSTS_POR_PAGINA,
 } from "@/lib/blog";
 import { schemaBlog, schemaOrganizacaoRaiz } from "@/lib/blog-seo";
+import { IMAGEM_SOCIAL } from "@/lib/og";
 import { urlSite } from "@/lib/urls";
 
 /**
@@ -46,11 +47,15 @@ export const metadata: Metadata = {
     url: urlSite("/blog"),
     title: TITULO,
     description: DESCRICAO,
+    // A chave `openGraph` substitui a do layout raiz inteira — sem repetir a
+    // imagem aqui, a capa do blog vai para o WhatsApp sem miniatura.
+    images: [IMAGEM_SOCIAL],
   },
   twitter: {
     card: "summary_large_image",
     title: TITULO,
     description: DESCRICAO,
+    images: [IMAGEM_SOCIAL.url],
   },
 };
 

@@ -1,0 +1,173 @@
+<!doctype html>
+<!--
+  FONTE da imagem social do site — `public/og-image.png` (1200x630).
+
+  Não é servido em produção: mora fora de `public/` de propósito. É só o molde
+  para REGERAR o PNG quando a mensagem ou a marca mudarem:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
+      --allow-file-access-from-files --virtual-time-budget=4000 \
+      --window-size=1200,630 --screenshot=public/og-image.png \
+      "file://$PWD/scripts/og-image.html"
+
+  Por que PNG estático e não `opengraph-image.tsx` com `ImageResponse`:
+  1. `.png` já está FORA do matcher do middleware (`src/middleware.ts`), então a
+     imagem responde 200 direto, sem passar por `supabase.auth.getUser()`. A
+     convenção do Next serve em `/opengraph-image-<hash>` — sem extensão, ou
+     seja, DENTRO do middleware. Crawler de rede social não perdoa latência nem
+     redirect.
+  2. Satori (o motor do `ImageResponse`) não lê woff2, e todas as nossas fontes
+     em `public/fonts/` são woff2. A máquina de build não alcança o Google Fonts
+     — ver o comentário em `src/app/layout.tsx`. Foi exatamente por isso que a OG
+     do blog ficou sem fonte customizada. Aqui, com o Chrome, temos Poppins de
+     verdade.
+
+  Limites que o arquivo precisa respeitar (o WhatsApp é o cliente mais estrito):
+  1200x630 exatos, PNG ou JPEG, abaixo de 300 KB, e 60px de margem de segurança
+  nas bordas — alguns clientes cortam as laterais.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: "Poppins"; font-weight: 300; font-style: normal; font-display: block;
+    src: url("../public/fonts/Poppins-300.woff2") format("woff2"); }
+  @font-face { font-family: "Poppins"; font-weight: 400; font-style: normal; font-display: block;
+    src: url("../public/fonts/Poppins-400.woff2") format("woff2"); }
+  @font-face { font-family: "Poppins"; font-weight: 600; font-style: normal; font-display: block;
+    src: url("../public/fonts/Poppins-600.woff2") format("woff2"); }
+  @font-face { font-family: "Poppins"; font-weight: 700; font-style: normal; font-display: block;
+    src: url("../public/fonts/Poppins-700.woff2") format("woff2"); }
+  @font-face { font-family: "Poppins"; font-weight: 800; font-style: normal; font-display: block;
+    src: url("../public/fonts/Poppins-800.woff2") format("woff2"); }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+
+  /* Palco escuro do hero da landing: #0B1220 -> #10201A -> #0B1220. */
+  .palco {
+    position: relative;
+    width: 1200px; height: 630px;
+    background: linear-gradient(180deg, #0B1220 0%, #10201A 55%, #0B1220 100%);
+    font-family: "Poppins", sans-serif;
+    color: #fff;
+    overflow: hidden;
+  }
+  /* Halos do hero (verde da marca à esquerda, azul frio à direita). */
+  .halo { position: absolute; border-radius: 9999px; filter: blur(64px); }
+  .halo-verde { top: -180px; left: 18%; width: 620px; height: 620px; background: rgba(22,163,74,.20); }
+  .halo-azul  { bottom: -220px; right: -140px; width: 520px; height: 520px; background: rgba(14,165,233,.12); }
+  /* Grade sutil, como .np-grid do site. */
+  .grade {
+    position: absolute; inset: 0; opacity: .05;
+    background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+    background-size: 48px 48px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 40%, transparent 100%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 40%, transparent 100%);
+  }
+
+  /* Margem de segurança de 60px em todas as bordas — clientes que cortam as
+     laterais não comem nada de conteúdo. */
+  .conteudo {
+    position: relative;
+    height: 100%;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .marca { display: flex; align-items: center; gap: 14px; }
+  .selo {
+    width: 62px; height: 62px; border-radius: 18px;
+    background: linear-gradient(135deg, #16A34A, #166534);
+    box-shadow: 0 12px 32px -8px rgba(21,128,61,.6);
+    display: grid; place-items: center;
+  }
+  .selo svg { width: 36px; height: 36px; }
+  .nome { font-size: 38px; letter-spacing: -.6px; line-height: 1; }
+  .nome .leve { font-weight: 300; color: #fff; }
+  .nome .forte { font-weight: 800; color: #22C55E; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 10px;
+    border-radius: 9999px;
+    border: 1px solid rgba(34,197,94,.28);
+    background: rgba(22,163,74,.10);
+    padding: 9px 20px;
+    font-size: 18px; font-weight: 700; color: #86EFAC;
+    align-self: flex-start;
+  }
+  .ponto { width: 8px; height: 8px; border-radius: 9999px; background: #22C55E; }
+
+  h1 {
+    margin-top: 26px;
+    font-size: 72px; font-weight: 800; line-height: 1.08; letter-spacing: -2.2px;
+    max-width: 1000px;
+  }
+  h1 .verde {
+    background: linear-gradient(90deg, #22C55E, #4ADE80);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub {
+    margin-top: 22px;
+    font-size: 27px; font-weight: 400; line-height: 1.4;
+    color: rgba(255,255,255,.72);
+    max-width: 940px;
+  }
+
+  .rodape {
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid rgba(255,255,255,.14);
+    padding-top: 26px;
+    font-size: 22px; color: rgba(255,255,255,.66);
+  }
+  .rodape .dominio { font-weight: 600; color: rgba(255,255,255,.86); }
+  .selos { display: flex; align-items: center; gap: 28px; }
+  .selos span { display: flex; align-items: center; gap: 9px; }
+  .tick { width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+  <div class="palco">
+    <div class="halo halo-verde"></div>
+    <div class="halo halo-azul"></div>
+    <div class="grade"></div>
+
+    <div class="conteudo">
+      <div class="marca">
+        <span class="selo">
+          <!-- Mesma marca do site (src/components/marca.tsx): nuvem branca, P escuro. -->
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M7 18a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.83-1.02A4.5 4.5 0 0 1 16.5 18H7Z" fill="#fff"/>
+            <path d="M10.6 15.5v-5h2.2a1.7 1.7 0 1 1 0 3.4h-2.2" stroke="#166534"
+                  stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="nome"><span class="leve">Nuvem</span><span class="forte">Park</span></span>
+      </div>
+
+      <div>
+        <div class="chip"><span class="ponto"></span>15 dias grátis, sem cartão</div>
+        <h1>Cada carro registrado.<br/><span class="verde">Cada real no seu bolso.</span></h1>
+        <p class="sub">Gestão de estacionamento na nuvem: o operador registra tudo pelo celular — até sem internet — e você acompanha o caixa ao vivo.</p>
+      </div>
+
+      <div class="rodape">
+        <span class="dominio">nuvempark.com</span>
+        <span class="selos">
+          <span>
+            <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            Funciona offline
+          </span>
+          <span>
+            <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            Caixa em tempo real
+          </span>
+        </span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
