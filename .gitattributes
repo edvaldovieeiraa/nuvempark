@@ -1,0 +1,28 @@
+# Fim de linha do repositório: LF, sempre, em qualquer máquina.
+#
+# Existe por um estrago concreto: uma passagem pelo Windows converteu 58
+# arquivos para CRLF sem mudar UMA linha de conteúdo. Cada um deles aparecia no
+# `git status` como modificado e no diff como reescrito por inteiro — o ruído
+# enterrava as mudanças reais, que estavam em 14 arquivos. Revisar virou
+# impossível e o risco de commitar algo sem ver, real.
+#
+# `text=auto eol=lf`: o git guarda LF no repositório e entrega LF no disco.
+* text=auto eol=lf
+
+# Binários — nunca converter, sob risco de corromper o arquivo.
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.webp   binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.otf    binary
+*.jks    binary
+*.keystore binary
+*.apk    binary
+*.aab    binary
+*.pdf    binary
+*.mobileprovision binary
