@@ -14,13 +14,28 @@ die(){ echo "❌ $*" >&2; exit 1; }
 echo "== 1/6 push =="
 git -C "$ROOT" push origin main || die "push falhou"
 
-echo "== 2/6 scp src + public =="
+echo "== 2/6 sync src + public + configs =="
 # `public/` entrou na cópia em 31/07/2026: as fontes passaram a ser servidas do
 # próprio domínio (public/fonts/*.woff2) e, sem isto, o build subia sem elas e
 # o site caía na fonte do sistema. Vale para qualquer asset público — antes,
 # mudar algo em public/ simplesmente não ia para produção, em silêncio.
-( cd "$ROOT/web" && scp -o StrictHostKeyChecking=no -i "$SSH_KEY" -r src public "$HOST:/root/nuvempark-web/" ) \
-  || die "scp falhou"
+#
+# rsync --delete no lugar de `scp -r` (03/08/2026). O scp só SOBRESCREVE: um
+# arquivo apagado aqui continuava vivo na VPS para sempre. Quando o site virou
+# onepage, as cinco páginas removidas seguiram sendo buildadas e servindo 200 —
+# a home nova no ar e as páginas velhas junto. Silencioso e difícil de perceber.
+#
+# Os arquivos de config vão junto pelo mesmo motivo: `next.config.ts` mudou
+# (redirects) e ficava só na máquina local, então o build remoto era de uma
+# configuração diferente da testada. `postcss` e `tsconfig` entram por
+# coerência — são entrada do build tanto quanto o src.
+( cd "$ROOT/web" && rsync -az --delete \
+    -e "ssh -o StrictHostKeyChecking=no -i $SSH_KEY" \
+    src public "$HOST:/root/nuvempark-web/" ) || die "rsync de src/public falhou"
+( cd "$ROOT/web" && rsync -az \
+    -e "ssh -o StrictHostKeyChecking=no -i $SSH_KEY" \
+    next.config.ts postcss.config.mjs tsconfig.json "$HOST:/root/nuvempark-web/" ) \
+  || die "rsync das configs falhou"
 
 echo "== 3/6 env vars na VPS (copia do .env da API, sem duplicar) =="
 $SSH 'cd /root/nuvempark-web && for V in NUVEMPARK_CRYPTO_KEY ASAAS_BASE_URL; do \
