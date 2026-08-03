@@ -147,7 +147,10 @@ class _MainShellState extends ConsumerState<MainShell>
                     onVerCaixa: () => _irPara(2),
                   ),
                   const PatioTab(),
-                  const CaixaScreen(),
+                  // `embutida`: aqui a nav do shell dá a navegação e precisa da
+                  // folga embaixo. Empilhada por `/caixa`, a tela monta o
+                  // próprio cabeçalho — ver [CaixaScreen.embutida].
+                  const CaixaScreen(embutida: true),
                   const MenuGeralScreen(),
                 ],
               ),

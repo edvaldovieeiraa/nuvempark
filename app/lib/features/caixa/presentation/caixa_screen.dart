@@ -17,7 +17,23 @@ import 'providers/caixa_provider.dart';
 
 /// Caixa: abre sessão (fundo), mostra saldo e permite fechar (conferência).
 class CaixaScreen extends ConsumerWidget {
-  const CaixaScreen({super.key});
+  const CaixaScreen({super.key, this.embutida = false});
+
+  /// Esta tela vive de DUAS formas, e elas pedem cabeçalhos opostos.
+  ///
+  /// `true` — corpo da aba Caixa do [MainShell]. Quem dá navegação é a barra
+  /// flutuante do shell, então a tela não tem (nem deve ter) voltar próprio, e
+  /// a lista soma [alturaNavBrisa] embaixo para o último item não parar atrás
+  /// do vidro da barra.
+  ///
+  /// `false` — EMPILHADA pela rota `/caixa`, que é como se chega aqui a partir
+  /// de uma saída com o caixa fechado (o botão "Abrir caixa" da saida_screen).
+  /// Aí o shell não está na árvore: sem cabeçalho próprio a tela vira beco sem
+  /// saída, e o padding da nav só deixaria uma faixa morta no fim da lista.
+  ///
+  /// O padrão é `false` porque quem empilha é o roteador, que constrói sem
+  /// argumento; quem sabe que é aba é o shell, e é ele que marca.
+  final bool embutida;
 
   static final _moeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   static final _hora = DateFormat('HH:mm');
@@ -29,21 +45,29 @@ class CaixaScreen extends ConsumerWidget {
     final temCaixaAberto = sessaoAsync.value != null;
 
     return Scaffold(
+      // Empilhada, ganha o cabeçalho das outras telas de pilha (entrada,
+      // mensalistas, movimentos): chip de voltar + título. Como ele já traz o
+      // título, o da página sai — senão "Caixa" apareceria duas vezes.
+      appBar: embutida ? null : appBarBrisa(context, 'Caixa'),
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24 + alturaNavBrisa),
+          padding: EdgeInsets.fromLTRB(
+              20, 8, 20, 24 + (embutida ? alturaNavBrisa : 0)),
           children: [
             Row(
               children: [
-                const Expanded(
-                  child: Text('Caixa',
-                      style: TextStyle(
-                          fontSize: 24,
-                          height: 1.15,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.onSurface)),
-                ),
+                if (embutida)
+                  const Expanded(
+                    child: Text('Caixa',
+                        style: TextStyle(
+                            fontSize: 24,
+                            height: 1.15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.onSurface)),
+                  )
+                else
+                  const Spacer(),
                 if (temCaixaAberto)
                   _chipBotao(
                     icone: Icons.receipt_long_outlined,
