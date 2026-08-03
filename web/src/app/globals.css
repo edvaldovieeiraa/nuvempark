@@ -31,6 +31,17 @@
 @font-face{font-family:'Geist Mono';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/GeistMono-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
 @font-face{font-family:'Geist Mono';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/GeistMono-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
 @font-face{font-family:'Geist Mono';font-style:normal;font-weight:700;font-display:optional;src:url('/fonts/GeistMono-700.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+/* Archivo + Instrument Sans: usadas SO na /cadastro (protótipo Claude Design).
+   Baixadas do Google e servidas daqui como todas as outras — o <link> para o
+   fonts.googleapis.com esta proibido (bloqueava 750 ms no celular) e o next/font
+   baixaria no BUILD, que roda no VPS.
+   Sao VARIAVEIS: um arquivo por familia cobre toda a faixa de pesos, por isso
+   `font-weight` e um intervalo. Archivo 35 KB (100-900) + Instrument Sans 30 KB
+   (400-700) = 65 KB para 6 pesos — menos que 6 estaticos.
+   `swap` porque a /cadastro nao entra no PageSpeed do site e o texto precisa
+   aparecer; `optional` aqui deixaria o formulario na fonte do sistema. */
+@font-face{font-family:'Archivo';font-style:normal;font-weight:100 900;font-display:swap;src:url('/fonts/Archivo-var.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Instrument Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url('/fonts/InstrumentSans-var.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
 /* ============================================================
    NuvemPark — Design System v2 (vibrante, moderno, light-first)
    ============================================================ */
