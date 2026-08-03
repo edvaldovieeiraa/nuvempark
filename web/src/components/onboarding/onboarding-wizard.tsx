@@ -28,15 +28,15 @@ import {
   type ResultadoOnboarding,
 } from "@/app/painel/onboarding/actions";
 import { useToast } from "@/components/ui/toast";
-import { PlayBadge } from "@/components/site/play-badge";
 
 const CHAVE_ADIADO = "np-onboarding-adiado";
 
 /* =========================================================
    ONBOARDING — primeiro acesso do gestor (rede sem pátios).
-   4 passos com envio único no final: o gestor pode voltar e
-   revisar tudo antes de criar. Termina no momento-chave: o
-   código do pátio + instruções de login no app.
+   Passos 1-4 são formulário, com envio único no final: o gestor
+   pode voltar e revisar tudo antes de criar. O passo 5 ("App")
+   vem depois do envio e é o momento-chave — baixar o APK e as
+   credenciais que o operador usa para entrar.
    ========================================================= */
 
 /** Monta o estado vazio + o portão de exibição (dispensável por sessão). */
@@ -87,11 +87,18 @@ export function OnboardingGate() {
 /* ---------- o wizard em si ---------- */
 
 type Tela = "boasvindas" | 1 | 2 | 3 | 4 | "sucesso";
+/**
+ * O passo 5 ("App") é o único que roda DEPOIS do envio: código do pátio e
+ * usuário do operador só existem quando o servidor cria tudo, então não há o
+ * que mostrar antes. Ele aparece na barra desde o início de propósito — é o
+ * que o gestor veio buscar, e antes ficava escondido como surpresa no fim.
+ */
 const PASSOS = [
   { n: 1, rotulo: "Pátio" },
   { n: 2, rotulo: "Preços" },
   { n: 3, rotulo: "Ticket" },
   { n: 4, rotulo: "Operador" },
+  { n: 5, rotulo: "App" },
 ] as const;
 
 function Wizard({ aoAdiar }: { aoAdiar: () => void }) {
@@ -209,7 +216,7 @@ function Wizard({ aoAdiar }: { aoAdiar: () => void }) {
     transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const },
   };
 
-  const passoAtual = typeof tela === "number" ? tela : tela === "sucesso" ? 4 : 0;
+  const passoAtual = typeof tela === "number" ? tela : tela === "sucesso" ? 5 : 0;
 
   return (
     <motion.div
@@ -225,8 +232,9 @@ function Wizard({ aoAdiar }: { aoAdiar: () => void }) {
         transition={{ type: "spring", stiffness: 340, damping: 30 }}
         className="w-full max-w-lg max-h-[85dvh] overflow-y-auto rounded-3xl bg-superficie shadow-[var(--shadow-pop)]"
       >
-        {/* progresso — some na boas-vindas e no sucesso */}
-        {typeof tela === "number" && (
+        {/* progresso — some só na boas-vindas. No sucesso ele FICA, marcando o
+            passo 5 concluído: é o que fecha a promessa feita na abertura. */}
+        {(typeof tela === "number" || tela === "sucesso") && (
           <div className="px-7 pt-6">
             <div className="flex items-center gap-1.5">
               {PASSOS.map((p) => (
@@ -264,8 +272,8 @@ function Wizard({ aoAdiar }: { aoAdiar: () => void }) {
                 </h2>
                 <p className="mt-2 text-sm text-texto-2 leading-relaxed">
                   Vamos deixar seu estacionamento pronto pra operar. São{" "}
-                  <b className="text-texto">4 passos rápidos</b> — uns 2 minutos —
-                  e no final você sai com o código do app na mão.
+                  <b className="text-texto">5 passos rápidos</b> — uns 2 minutos —
+                  e no final você sai com o app instalado e o operador entrando.
                 </p>
 
                 <ul className="mt-5 space-y-3">
@@ -274,6 +282,7 @@ function Wizard({ aoAdiar }: { aoAdiar: () => void }) {
                     { Icone: CircleDollarSign, t: "Tabela de preço", d: "Quanto custa a hora — refina depois." },
                     { Icone: Printer, t: "Ticket impresso", d: "O que sai no cupom do cliente." },
                     { Icone: Smartphone, t: "Operador do app", d: "O login de quem trabalha no pátio." },
+                    { Icone: Download, t: "O app no celular", d: "Baixar e entrar — com o código e a senha na mão." },
                   ].map((i) => (
                     <li key={i.t} className="flex items-start gap-3">
                       <span className="mt-0.5 w-9 h-9 rounded-xl bg-brand-50 grid place-items-center shrink-0">
@@ -512,23 +521,14 @@ function Wizard({ aoAdiar }: { aoAdiar: () => void }) {
                 <h2 className="mt-4 text-2xl font-black tracking-tight">
                   {resultado.patioNome} está no ar! 🎉
                 </h2>
+                {/* O código gigante que ficava aqui saiu: ele repetia a linha
+                    "Código do estacionamento" do quadro abaixo — que é a versão
+                    útil (agrupada com usuário e senha, copiável, e dentro do
+                    "copiar tudo"). Eram ~130px de duplicata que empurravam o
+                    "Abrir meu painel" para fora do modal. */}
                 <p className="mt-1.5 text-sm text-texto-2">
-                  Este é o código que o operador usa pra entrar no app:
+                  Agora é só pôr o app no celular de quem opera:
                 </p>
-
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(resultado.codigo);
-                    toast.sucesso("Copiado!", `Código do pátio: ${resultado.codigo}`);
-                  }}
-                  className="mt-4 inline-flex items-center gap-3 rounded-2xl border-2 border-brand-200 bg-brand-50 px-6 py-3 hover:border-brand-300 hover:bg-brand-100 transition-colors"
-                  title="Copiar código"
-                >
-                  <span className="font-mono font-black text-4xl tracking-[0.3em] text-brand-700">
-                    {resultado.codigo}
-                  </span>
-                  <Copy className="w-5 h-5 text-brand-600" />
-                </button>
 
                 <PassarParaOperador
                   patioNome={resultado.patioNome}
@@ -759,46 +759,48 @@ function PassarParaOperador({
             <span>
               Instale o app <b>NuvemPark</b> no Android
             </span>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <a
-                href={APK_URL}
-                className="h-9 px-3 rounded-lg bg-brand-600 text-white text-xs font-bold inline-flex items-center gap-1.5 hover:brightness-110 transition-all"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Baixar APK
-              </a>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(APK_URL);
-                  toast.sucesso("Link copiado!", "Cole no navegador do celular.");
-                }}
-                className="h-9 px-3 rounded-lg border border-borda text-xs font-bold text-texto-2 inline-flex items-center gap-1.5 hover:border-brand-300 hover:text-brand-700 transition-all"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                Copiar link
-              </button>
-              <Link
-                href="/painel/download"
-                className="text-xs font-bold text-brand-700 hover:underline"
-              >
-                Como instalar →
-              </Link>
-            </div>
-            {qr && (
-              <div className="mt-2.5 flex items-center gap-2.5">
-                {/* eslint-disable-next-line @next/next/no-img-element -- data: URI gerado no cliente */}
+            {/* QR ao LADO dos botões, não embaixo: empilhado ele custava ~100px
+                e empurrava o "Abrir meu painel" para fora do modal. */}
+            <div className="mt-2 flex items-start gap-3">
+              <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
+                <a
+                  href={APK_URL}
+                  className="h-9 px-3 rounded-lg bg-brand-600 text-white text-xs font-bold inline-flex items-center gap-1.5 hover:brightness-110 transition-all"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Baixar APK
+                </a>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(APK_URL);
+                    toast.sucesso("Link copiado!", "Cole no navegador do celular.");
+                  }}
+                  className="h-9 px-3 rounded-lg border border-borda text-xs font-bold text-texto-2 inline-flex items-center gap-1.5 hover:border-brand-300 hover:text-brand-700 transition-all"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copiar link
+                </button>
+                <Link
+                  href="/painel/download"
+                  className="text-xs font-bold text-brand-700 hover:underline"
+                >
+                  Como instalar →
+                </Link>
+                {qr && (
+                  <span className="w-full text-[11px] text-texto-3 leading-snug">
+                    Ou aponte a câmera do celular para o QR →
+                  </span>
+                )}
+              </div>
+              {qr && (
+                /* eslint-disable-next-line @next/next/no-img-element -- data: URI gerado no cliente */
                 <img
                   src={qr}
                   alt="QR code para baixar o app NuvemPark"
-                  className="w-20 h-20 rounded-lg border border-borda bg-white"
+                  className="w-[72px] h-[72px] shrink-0 rounded-lg border border-borda bg-white"
                 />
-                <span className="text-[11px] text-texto-3 leading-snug">
-                  Ou aponte a câmera
-                  <br />
-                  do celular para o QR.
-                </span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </li>
 
@@ -809,7 +811,7 @@ function PassarParaOperador({
             <span>Abra o app e entre com estes dados:</span>
 
             <div className="mt-2 rounded-xl border border-borda bg-superficie divide-y divide-borda">
-              <Credencial rotulo="Código do estacionamento" valor={codigo} mono />
+              <Credencial rotulo="Código do estacionamento" valor={codigo} mono destaque />
               {temOperador && usuario ? (
                 <>
                   <Credencial rotulo="Usuário" valor={usuario} mono />
@@ -854,10 +856,6 @@ function PassarParaOperador({
           </div>
         </li>
       </ol>
-
-      <div className="mt-3">
-        <PlayBadge />
-      </div>
     </div>
   );
 }
@@ -867,12 +865,15 @@ function Credencial({
   rotulo,
   valor,
   mono,
+  destaque,
   oculto,
   aoAlternar,
 }: {
   rotulo: string;
   valor: string;
   mono?: boolean;
+  /** O código do pátio: é o número que o gestor dita para o operador. */
+  destaque?: boolean;
   oculto?: boolean;
   aoAlternar?: () => void;
 }) {
@@ -883,9 +884,11 @@ function Credencial({
         {rotulo}
       </span>
       <span
-        className={`flex-1 min-w-0 truncate text-sm font-black text-texto ${
-          mono ? "font-mono tracking-wider" : ""
-        }`}
+        className={`flex-1 min-w-0 truncate font-black ${
+          destaque
+            ? "text-2xl tracking-[0.2em] text-brand-700"
+            : "text-sm text-texto"
+        } ${mono ? "font-mono" : ""} ${destaque ? "" : mono ? "tracking-wider" : ""}`}
       >
         {oculto ? "•".repeat(Math.max(valor.length, 6)) : valor}
       </span>
