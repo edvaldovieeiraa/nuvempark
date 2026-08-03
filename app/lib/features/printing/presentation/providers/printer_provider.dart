@@ -139,11 +139,17 @@ class PrinterNotifier extends AsyncNotifier<PrinterState> {
     }
   }
 
+  /// "Remover": esquece a impressora configurada.
+  ///
+  /// O resultado do disconnect nativo não decide nada. Com a impressora
+  /// desligada ou fora de alcance ele falha — e é justamente aí que o operador
+  /// quer removê-la. Amarrar a limpeza ao sucesso prendia a configuração a uma
+  /// impressora que não existe mais, sem saída pela interface.
   Future<bool> disconnect() async {
     try {
       await ref.read(printerServiceProvider).disconnect();
     } catch (_) {
-      return false;
+      // best-effort — o socket pode já estar morto.
     }
     await ref.read(printerStorageProvider).clear();
     state = AsyncData(_current.copyWith(
