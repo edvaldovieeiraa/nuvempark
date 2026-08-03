@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nuvempark_core/nuvempark_core.dart';
@@ -42,7 +44,22 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen>
     }
   }
 
+  /// No iOS não existe permissão a pedir ANTES de varrer: `bluetoothScan` e
+  /// `bluetoothConnect` são do Android 12+, e o permission_handler devolve
+  /// "negado" para permissão que não existe na plataforma. O efeito era esta
+  /// tela parar no cartão de permissão e nunca chamar `scan()` — e, como quem
+  /// dispara o alerta de Bluetooth do iOS é o CoreBluetooth ao ser criado
+  /// (dentro do plugin, na varredura), o alerta também nunca aparecia.
+  /// Aqui seguimos direto para a busca; o sistema pede a autorização sozinho.
   Future<void> _checkPerms() async {
+    if (Platform.isIOS) {
+      setState(() => _perm = _PermState.granted);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(printerNotifierProvider.notifier).scan();
+      });
+      return;
+    }
+
     final scan = await Permission.bluetoothScan.status;
     final connect = await Permission.bluetoothConnect.status;
     setState(() {
@@ -62,6 +79,14 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen>
   }
 
   Future<void> _requestPerms() async {
+    // Inalcançável no iOS (lá `_checkPerms` já entra como granted), mas o
+    // guarda evita que uma mudança futura reintroduza o pedido inválido.
+    if (Platform.isIOS) {
+      setState(() => _perm = _PermState.granted);
+      ref.read(printerNotifierProvider.notifier).scan();
+      return;
+    }
+
     final res = await [
       Permission.bluetoothScan,
       Permission.bluetoothConnect,

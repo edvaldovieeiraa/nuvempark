@@ -3,6 +3,7 @@ import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
 import '../../../../core/di/providers.dart';
 import '../../data/print_templates.dart';
+import '../../data/printer_service.dart';
 
 // ── State ────────────────────────────────────────────────────────────────────
 class PrinterState {
@@ -70,6 +71,14 @@ class PrinterNotifier extends AsyncNotifier<PrinterState> {
     final name = await storage.readName();
     final cols = await storage.readCols() ?? PrintTemplates.cols58mm;
     final avanco = await storage.readAvanco() ?? PrinterState.avancoPadrao;
+    // Endereço guardado numa plataforma não vale na outra (MAC no Android,
+    // UUID no iOS). Um valor do formato errado é DESCARTADO aqui, e não levado
+    // ao connect: no iOS aquilo mataria o app. O operador refaz a busca.
+    if (mac != null && !PrinterService.enderecoValido(mac)) {
+      await storage.clear();
+      return PrinterState(cols: cols, avancoFinal: avanco);
+    }
+
     if (mac != null) {
       // connect() pode lançar (Bluetooth desligado no boot). Sem try/catch, o
       // provider caía em AsyncError e escondia o MAC salvo.

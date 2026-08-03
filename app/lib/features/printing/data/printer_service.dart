@@ -2,12 +2,30 @@ import 'dart:io';
 
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
+final _regexUuid = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
 class PrinterService {
+  /// O endereço da impressora NÃO é intercambiável entre plataformas: no
+  /// Android é o MAC do aparelho; no iOS, um UUID que o próprio sistema gera
+  /// para o periférico.
+  ///
+  /// Validar antes de conectar não é zelo: no iOS o plugin faz
+  /// `UUID(uuidString: endereco)!`, com desempacotamento forçado. Um MAC ali
+  /// — vindo de uma configuração feita no Android, por exemplo — **derruba o
+  /// app na hora**, e não adianta `try/catch`: é um crash nativo, o processo
+  /// morre antes de o Dart ver qualquer coisa.
+  static bool enderecoValido(String endereco) => Platform.isIOS
+      ? _regexUuid.hasMatch(endereco)
+      : endereco.trim().isNotEmpty;
+
   Future<List<BluetoothInfo>> pairedDevices() =>
       PrintBluetoothThermal.pairedBluetooths;
 
-  Future<bool> connect(String mac) =>
-      PrintBluetoothThermal.connect(macPrinterAddress: mac);
+  Future<bool> connect(String mac) {
+    if (!enderecoValido(mac)) return Future.value(false);
+    return PrintBluetoothThermal.connect(macPrinterAddress: mac);
+  }
 
   Future<bool> get isConnected => PrintBluetoothThermal.connectionStatus;
 
