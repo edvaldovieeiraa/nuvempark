@@ -98,7 +98,16 @@ flutter:
 # Branding NuvemPark — verde
 flutter_launcher_icons:
   android: true
-  ios: false
+  # iOS ligado em 31/07/2026, junto da primeira compilação para iPhone — até
+  # então o app carregava o ícone padrão do Flutter no aparelho.
+  #
+  # `remove_alpha_ios` + `background_color_ios` existem porque o iOS REJEITA
+  # ícone com transparência, e o nosso tem: os cantos arredondados do
+  # app_icon.png são transparentes. O verde da marca preenche esses cantos, e o
+  # próprio iOS aplica a máscara arredondada por cima.
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#16A34A"
   image_path: "assets/icon/app_icon.png"
   min_sdk_android: 23
   adaptive_icon_background: "#16A34A"
