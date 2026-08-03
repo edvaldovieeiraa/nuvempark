@@ -8,6 +8,13 @@ const CSS = `
 .np-grid-mask{-webkit-mask-image:radial-gradient(ellipse 75% 60% at 50% 18%,black 30%,transparent 75%);mask-image:radial-gradient(ellipse 75% 60% at 50% 18%,black 30%,transparent 75%)}
 .np-grid-mask-cta{-webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 30%,black 30%,transparent 80%);mask-image:radial-gradient(ellipse 80% 80% at 50% 30%,black 30%,transparent 80%)}
 [data-balance]{text-wrap:balance}
+
+/* ── Onepage ────────────────────────────────────────────────────────────────
+   O header é fixed com 64px de altura. Sem scroll-margin-top a âncora encosta
+   o título da seção embaixo dele e some. 84px = 64 do header + respiro. */
+[data-sec]{scroll-margin-top:84px}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 @keyframes np-pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes np-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 @keyframes np-scan{0%{left:-12%;opacity:0}12%{opacity:1}88%{opacity:1}100%{left:100%;opacity:0}}
@@ -19,12 +26,14 @@ const CSS = `
   [data-steps],[data-garantias],[data-prova-grid]{gap:16px!important}
   [data-bento]{grid-template-columns:1fr!important}
   [data-bento] > [data-bento-wide]{grid-column:auto!important}
-  [data-num-grid],[data-mock-kpis]{grid-template-columns:repeat(2,1fr)!important}
+  [data-num-grid],[data-mock-kpis],[data-valores]{grid-template-columns:repeat(2,1fr)!important}
+  [data-contato]{grid-template-columns:1fr!important}
   [data-footer]{grid-template-columns:1fr 1fr!important;gap:32px!important}
   [data-flip] > [data-flip-media]{order:2}
 }
 @media (max-width:560px){
   [data-num-grid],[data-mock-kpis]{grid-template-columns:1fr 1fr!important}
+  [data-valores]{grid-template-columns:1fr!important}
   [data-footer]{grid-template-columns:1fr!important}
 }
 `;

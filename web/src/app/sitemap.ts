@@ -20,13 +20,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const atualizadoBlog =
     posts.length > 0 ? new Date(posts[0].atualizado_em) : new Date();
 
+  // O site institucional é ONEPAGE: recursos, preços, novidades, sobre e
+  // contato são seções da home (as rotas antigas respondem 301 para a âncora).
+  // Âncoras NÃO entram no sitemap — `/#precos` é a mesma URL que `/` para o
+  // Google, e listar as duas seria pedir para ele escolher uma.
   const institucionais: MetadataRoute.Sitemap = [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
-    { url: `${SITE_URL}/recursos`, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${SITE_URL}/precos`, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${SITE_URL}/novidades`, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${SITE_URL}/sobre`, changeFrequency: "yearly", priority: 0.5 },
-    { url: `${SITE_URL}/contato`, changeFrequency: "yearly", priority: 0.5 },
   ];
 
   const blog: MetadataRoute.Sitemap = [

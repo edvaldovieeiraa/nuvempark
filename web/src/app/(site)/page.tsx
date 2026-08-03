@@ -5,6 +5,8 @@ import {
   ComoFunciona,
   Roadmap,
   Precos,
+  Sobre,
+  Contato,
   CtaFinal,
 } from "@/components/site/secoes";
 import { PixTicket } from "@/components/site/pix-ticket";
@@ -34,6 +36,8 @@ export default function HomePage() {
       <Roadmap />
       <Precos />
       <Faq />
+      <Sobre />
+      <Contato />
       <CtaFinal />
     </div>
   );

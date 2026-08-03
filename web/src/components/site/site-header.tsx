@@ -8,19 +8,39 @@ import { Menu, X } from "lucide-react";
 import { urlApp } from "@/lib/urls";
 import { Marca } from "@/components/marca";
 
+/**
+ * O site é ONEPAGE: tudo vive na home, em seções ancoradas. As antigas rotas
+ * (/recursos, /precos, /novidades, /sobre, /contato) respondem 301 para a
+ * âncora correspondente — ver `redirects()` em next.config.ts.
+ *
+ * O blog é a exceção e continua rota: é sistema de conteúdo (Supabase,
+ * categorias, paginação, RSS, OG por post), não cabe como seção.
+ *
+ * Os hrefs começam com `/` de propósito, para funcionarem também a partir do
+ * blog — de lá, `#precos` sozinho não sairia do lugar.
+ */
 const LINKS = [
-  { href: "/recursos", label: "Recursos" },
-  { href: "/precos", label: "Preços" },
-  { href: "/blog", label: "Blog" },
-  { href: "/novidades", label: "Novidades" },
-  { href: "/sobre", label: "Sobre" },
-  { href: "/contato", label: "Contato" },
-];
+  { href: "/#recursos", id: "recursos", label: "Recursos" },
+  { href: "/#precos", id: "precos", label: "Preços" },
+  { href: "/blog", id: null, label: "Blog" },
+  { href: "/#novidades", id: "novidades", label: "Novidades" },
+  { href: "/#sobre", id: "sobre", label: "Sobre" },
+  { href: "/#contato", id: "contato", label: "Contato" },
+] as const;
+
+/** Ordem das seções na página — usada pelo scroll-spy. */
+const SECOES: readonly string[] = LINKS.flatMap((l) => (l.id ? [l.id] : []));
 
 export function SiteHeader() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [aberto, setAberto] = useState(false);
+  /** Seção visível agora (scroll-spy). Só faz sentido na home. */
+  const [secaoAtiva, setSecaoAtiva] = useState<string | null>(null);
+  /** 0→1 do quanto da página já foi percorrido, para o trilho de progresso. */
+  const [progresso, setProgresso] = useState(0);
+
+  const naHome = pathname === "/";
 
   // No topo da home e do BLOG o header flutua sobre hero escura → texto claro.
   // (Todas as rotas /blog/* abrem com a faixa escura editorial.)
@@ -28,11 +48,48 @@ export function SiteHeader() {
     (pathname === "/" || pathname.startsWith("/blog")) && !scrolled && !aberto;
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 12);
+      // Só na home: quanto do documento rolável já passou.
+      const rolavel =
+        document.documentElement.scrollHeight - window.innerHeight;
+      setProgresso(rolavel > 0 ? Math.min(1, window.scrollY / rolavel) : 0);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  /**
+   * Scroll-spy. Num onepage o menu precisa dizer onde você está, senão vira
+   * uma lista de links que nunca "acende".
+   *
+   * A faixa de detecção é a parte de cima da janela (`-45% 0px -50%`): assim a
+   * seção só assume quando o topo dela cruza mais ou menos o terço superior —
+   * é onde o olho está lendo. Sem isso, seções altas ficariam ativas cedo
+   * demais e o menu piscaria entre duas.
+   */
+  useEffect(() => {
+    // Fora da home não há o que observar. Não precisa zerar `secaoAtiva`: todo
+    // uso dela já exige `naHome`, então um valor velho nunca aparece.
+    if (!naHome) return;
+    const alvos = SECOES.map((id) => document.getElementById(id)).filter(
+      (el): el is HTMLElement => el !== null,
+    );
+    if (alvos.length === 0) return;
+
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        const visiveis = entradas
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visiveis.length > 0) setSecaoAtiva(visiveis[0].target.id);
+      },
+      { rootMargin: "-45% 0px -50% 0px", threshold: 0 },
+    );
+    alvos.forEach((el) => observador.observe(el));
+    return () => observador.disconnect();
+  }, [naHome]);
 
   return (
     <motion.header
@@ -45,6 +102,17 @@ export function SiteHeader() {
           : "bg-transparent border-b border-transparent"
       }`}
     >
+      {/* Trilho de progresso: num onepage longo ele é a única pista de "quanto
+          falta". Fica na borda inferior do header, some no topo (largura 0) e
+          só existe na home — no blog o scroll é de um artigo, não do site. */}
+      {naHome && (
+        <span
+          aria-hidden
+          className="absolute bottom-0 left-0 h-[2px] origin-left bg-gradient-to-r from-[#16A34A] to-[#22C55E]"
+          style={{ width: `${progresso * 100}%`, transition: "width .1s linear" }}
+        />
+      )}
+
       <div className="mx-auto max-w-6xl px-5">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2.5">
@@ -66,21 +134,41 @@ export function SiteHeader() {
 
           <nav className="hidden md:flex items-center gap-1">
             {LINKS.map((l) => {
-              const ativo = pathname.startsWith(l.href);
+              const ativo = l.id
+                ? naHome && secaoAtiva === l.id
+                : pathname.startsWith("/blog");
+              /* Âncoras são <a> puro de propósito: navegação por fragmento é
+                 nativa, previsível e não depende do roteador. O blog, por ser
+                 rota de verdade, continua com <Link> para não perder o SPA. */
+              const Tag = l.id ? "a" : Link;
               return (
-                <Link
+                <Tag
                   key={l.href}
                   href={l.href}
-                  className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  className={`relative px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
                     ativo
-                      ? "text-brand-700 bg-brand-50"
+                      ? escuro
+                        ? "text-white"
+                        : "text-brand-700"
                       : escuro
                         ? "text-white/70 hover:text-white hover:bg-white/10"
                         : "text-texto-2 hover:text-texto hover:bg-fundo"
                   }`}
                 >
                   {l.label}
-                </Link>
+                  {/* Marca da seção atual: um traço curto sob o rótulo. Um
+                      fundo cheio brigaria com o header translúcido sobre o
+                      hero escuro. */}
+                  {ativo && (
+                    <motion.span
+                      layoutId="nav-ativo"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                      className={`absolute left-3.5 right-3.5 -bottom-0.5 h-0.5 rounded-full ${
+                        escuro ? "bg-[#22C55E]" : "bg-brand-600"
+                      }`}
+                    />
+                  )}
+                </Tag>
               );
             })}
           </nav>
@@ -121,16 +209,31 @@ export function SiteHeader() {
             animate={{ opacity: 1, height: "auto" }}
             className="md:hidden overflow-hidden border-t border-borda py-3 space-y-1 bg-white"
           >
-            {LINKS.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setAberto(false)}
-                className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-texto-2 hover:text-texto hover:bg-fundo transition-colors"
-              >
-                {l.label}
-              </Link>
-            ))}
+            {LINKS.map((l) => {
+              const ativo = l.id
+                ? naHome && secaoAtiva === l.id
+                : pathname.startsWith("/blog");
+              const Tag = l.id ? "a" : Link;
+              return (
+                <Tag
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setAberto(false)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                    ativo
+                      ? "text-brand-700 bg-brand-50"
+                      : "text-texto-2 hover:text-texto hover:bg-fundo"
+                  }`}
+                >
+                  <span
+                    className={`w-1 h-4 rounded-full transition-colors ${
+                      ativo ? "bg-brand-600" : "bg-transparent"
+                    }`}
+                  />
+                  {l.label}
+                </Tag>
+              );
+            })}
             <div className="flex gap-2 pt-2">
               <a
                 href={urlApp("/login")}

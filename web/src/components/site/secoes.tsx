@@ -1,5 +1,17 @@
 import Link from "next/link";
-import { ArrowRight, UserPlus, Smartphone, RefreshCw } from "lucide-react";
+import {
+  ArrowRight,
+  UserPlus,
+  Smartphone,
+  RefreshCw,
+  Zap,
+  ShieldCheck,
+  Target,
+  HeartHandshake,
+  MessageCircle,
+  Mail,
+  Clock,
+} from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
 import { urlApp } from "@/lib/urls";
 import { MONO, WHATSAPP, eyebrow, h2, btnPrimary, btnGhostDark } from "@/components/site/tokens";
@@ -97,7 +109,9 @@ export function ComoFunciona() {
 export function Roadmap() {
   const proximas = ["Conciliação bancária", "App para o cliente", "Exportar relatórios", "Integrações via API"];
   return (
-    <section style={{ background: "#fff", padding: "80px 0" }}>
+    // `id="novidades"`: é o destino do item "Novidades" do menu, que antes
+    // apontava para a página /novidades (agora 301 para cá).
+    <section id="novidades" data-sec style={{ background: "#fff", padding: "80px 0" }}>
       <div style={{ maxWidth: 1152, margin: "0 auto", padding: "0 20px" }}>
         <Reveal>
           <div data-roadmap style={{ borderRadius: 24, border: "1px solid #E5E7EB", background: "#F3F4F6", padding: 48, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "center" }}>
@@ -119,6 +133,159 @@ export function Roadmap() {
                 </div>
               ))}
             </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   SOBRE — versão enxuta da antiga /sobre.
+   O site virou onepage: a página dedicada foi para /#sobre.
+   Quatro valores em faixa, sem herói próprio.
+   ========================================================= */
+export function Sobre() {
+  const valores = [
+    {
+      Icone: Zap,
+      titulo: "Simplicidade primeiro",
+      texto:
+        "Se o operador precisa de treinamento longo, erramos. Cada tela é pensada para o ritmo real de um pátio cheio.",
+      cor: "#F59E0B",
+      fundo: "rgba(245,158,11,.1)",
+    },
+    {
+      Icone: ShieldCheck,
+      titulo: "Confiabilidade",
+      texto:
+        "Estacionamento não pode parar. Por isso o app funciona offline e cada centavo é registrado e auditável.",
+      cor: "#16A34A",
+      fundo: "rgba(22,163,74,.1)",
+    },
+    {
+      Icone: Target,
+      titulo: "Feito por quem opera",
+      texto:
+        "Não somos uma software house distante — a plataforma nasceu dentro de uma operação real de pátios.",
+      cor: "#0EA5E9",
+      fundo: "rgba(14,165,233,.1)",
+    },
+    {
+      Icone: HeartHandshake,
+      titulo: "Parceria de verdade",
+      texto:
+        "Seu sucesso é o nosso. O roadmap é guiado pelo que nossos clientes precisam no dia a dia.",
+      cor: "#8B5CF6",
+      fundo: "rgba(139,92,246,.1)",
+    },
+  ];
+  return (
+    <section id="sobre" data-sec style={{ background: "#F3F4F6", padding: "96px 0", borderTop: "1px solid #E5E7EB" }}>
+      <div style={{ maxWidth: 1152, margin: "0 auto", padding: "0 20px" }}>
+        <Reveal>
+          <div style={{ maxWidth: 620 }}>
+            <span style={eyebrow}>Quem faz</span>
+            <h2 style={h2}>
+              Nascemos dentro da operação,<br />não de uma reunião
+            </h2>
+            <p style={{ margin: "16px 0 0", fontSize: 16, lineHeight: 1.6, color: "#6B7280" }}>
+              O NuvemPark é a tecnologia que construímos para o nosso próprio
+              dia a dia de pátio — e que hoje está disponível para o seu.
+            </p>
+          </div>
+        </Reveal>
+        <div data-valores style={{ marginTop: 40, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
+          {valores.map((v, i) => (
+            <Reveal key={v.titulo} delay={i * 0.07}>
+              <div style={{ height: "100%", borderRadius: 20, border: "1px solid #E5E7EB", background: "#fff", padding: 24 }}>
+                <span style={{ display: "grid", placeItems: "center", width: 44, height: 44, borderRadius: 14, background: v.fundo, color: v.cor }}>
+                  <v.Icone size={22} strokeWidth={2.2} />
+                </span>
+                <h3 style={{ margin: "16px 0 0", fontSize: 16, fontWeight: 800, color: "#1F2937" }}>{v.titulo}</h3>
+                <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.55, color: "#6B7280" }}>{v.texto}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   CONTATO — versão enxuta da antiga /contato.
+   Fica colado no CTA final de propósito: quem rolou o site
+   inteiro está pronto para falar com alguém ou criar a conta.
+   ========================================================= */
+export function Contato() {
+  return (
+    <section id="contato" data-sec style={{ background: "#fff", padding: "96px 0 56px" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 20px" }}>
+        <Reveal>
+          <div style={{ maxWidth: 620 }}>
+            <span style={eyebrow}>Falar com a gente</span>
+            <h2 style={h2}>
+              Sem robô, sem script<br />de vendas
+            </h2>
+            <p style={{ margin: "16px 0 0", fontSize: 16, lineHeight: 1.6, color: "#6B7280" }}>
+              Você conta como opera hoje, a gente mostra funcionando — e você
+              decide.
+            </p>
+          </div>
+        </Reveal>
+
+        <div data-contato style={{ marginTop: 32, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <Reveal>
+            <a
+              href={WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: "block", height: "100%", borderRadius: 20, border: "1px solid #E5E7EB", background: "#fff", padding: 28, textDecoration: "none", transition: "border-color .15s, box-shadow .15s" }}
+            >
+              <span style={{ display: "grid", placeItems: "center", width: 48, height: 48, borderRadius: 16, background: "rgba(22,163,74,.1)", color: "#16A34A" }}>
+                <MessageCircle size={24} strokeWidth={2.2} />
+              </span>
+              <h3 style={{ margin: "18px 0 0", fontSize: 19, fontWeight: 800, color: "#1F2937" }}>WhatsApp</h3>
+              <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.55, color: "#6B7280" }}>
+                O caminho mais rápido. Fale direto com quem entende do produto —
+                sem robô, sem fila.
+              </p>
+              <span style={{ marginTop: 18, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "#15803D" }}>
+                (81) 99614-2120
+                <ArrowRight size={16} strokeWidth={2.4} />
+              </span>
+            </a>
+          </Reveal>
+
+          <Reveal delay={0.08}>
+            <a
+              href="mailto:contato@nuvempark.com"
+              style={{ display: "block", height: "100%", borderRadius: 20, border: "1px solid #E5E7EB", background: "#fff", padding: 28, textDecoration: "none", transition: "border-color .15s, box-shadow .15s" }}
+            >
+              <span style={{ display: "grid", placeItems: "center", width: 48, height: 48, borderRadius: 16, background: "rgba(14,165,233,.1)", color: "#0EA5E9" }}>
+                <Mail size={24} strokeWidth={2.2} />
+              </span>
+              <h3 style={{ margin: "18px 0 0", fontSize: 19, fontWeight: 800, color: "#1F2937" }}>E-mail</h3>
+              <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.55, color: "#6B7280" }}>
+                Prefere escrever com calma? Envie sua dúvida ou pedido de
+                proposta por e-mail.
+              </p>
+              <span style={{ marginTop: 18, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "#0284C7" }}>
+                contato@nuvempark.com
+                <ArrowRight size={16} strokeWidth={2.4} />
+              </span>
+            </a>
+          </Reveal>
+        </div>
+
+        <Reveal delay={0.14}>
+          <div style={{ marginTop: 20, borderRadius: 16, border: "1px solid #E5E7EB", background: "#F3F4F6", padding: "18px 22px", display: "flex", alignItems: "center", gap: 12 }}>
+            <Clock size={20} strokeWidth={2.2} color="#9CA3AF" style={{ flex: "none" }} />
+            <p style={{ margin: 0, fontSize: 14, color: "#6B7280" }}>
+              Atendemos de <b style={{ color: "#1F2937" }}>segunda a sexta, das 8h às 18h</b>.
+              Mensagens fora do horário são respondidas no próximo dia útil.
+            </p>
           </div>
         </Reveal>
       </div>
@@ -177,20 +344,22 @@ export function SiteFooter() {
     titulo: string;
     links: { href: string; label: string; externo?: boolean; app?: boolean; interno?: boolean }[];
   }[] = [
+    // Onepage: só o blog continua sendo rota. O resto são âncoras da home,
+    // com o `/` na frente para funcionarem também a partir do blog.
     {
       titulo: "Produto",
       links: [
-        { href: "/recursos", label: "Recursos", interno: true },
-        { href: "/precos", label: "Preços", interno: true },
+        { href: "/#recursos", label: "Recursos" },
+        { href: "/#precos", label: "Preços" },
         { href: "/blog", label: "Blog", interno: true },
-        { href: "/novidades", label: "Novidades", interno: true },
+        { href: "/#novidades", label: "Novidades" },
       ],
     },
     {
       titulo: "Empresa",
       links: [
-        { href: "/sobre", label: "Sobre nós", interno: true },
-        { href: "/contato", label: "Contato", interno: true },
+        { href: "/#sobre", label: "Sobre nós" },
+        { href: "/#contato", label: "Contato" },
       ],
     },
     {
