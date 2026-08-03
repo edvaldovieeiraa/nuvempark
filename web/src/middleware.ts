@@ -182,9 +182,17 @@ export async function middleware(request: NextRequest) {
  *   arquivo do Next. Hoje não usamos as três primeiras (a social do site é o
  *   PNG estático), mas se alguém adicionar um `opengraph-image.tsx` amanhã ele
  *   já nasce fora do middleware — que é onde precisa estar.
+ * - `fonts/` e qualquer .woff2/.woff/.ttf/.otf — CRÍTICO, e estava quebrado.
+ *   Fonte NÃO é um asset qualquer: o navegador sempre a busca em modo CORS.
+ *   Como `/fonts/x.woff2` não é rota de app, no host do painel o
+ *   `redirecionaPorHost` mandava um 307 para nuvempark.com — outra origem, sem
+ *   `Access-Control-Allow-Origin` — e o carregamento MORRIA. Resultado:
+ *   /cadastro, /login e todo o /painel renderizavam na fonte do sistema, em
+ *   silêncio (`document.fonts` acusava status "error"). Servindo do próprio
+ *   host o problema some, sem precisar de header de CORS em lugar nenhum.
  */
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|opengraph-image|twitter-image|apple-icon|icon|blog/[^/]+/og$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif)$).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|opengraph-image|twitter-image|apple-icon|icon|fonts/|blog/[^/]+/og$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2|woff|ttf|otf)$).*)',
   ],
 };
