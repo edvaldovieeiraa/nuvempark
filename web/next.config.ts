@@ -15,7 +15,92 @@ function hostSupabase(): string | null {
 
 const host = hostSupabase();
 
+/**
+ * ── DESCOBERTA POR AGENTES ───────────────────────────────────────────────────
+ *
+ * Um agente que chega no site não deveria ter que adivinhar onde estão o índice
+ * em texto, a descrição da API ou o sitemap. Estes `Link` de resposta (RFC 8288)
+ * anunciam tudo isso já no cabeçalho, antes de qualquer HTML ser baixado.
+ *
+ * URLs relativas de propósito: resolvem contra a URL da requisição, então o
+ * mesmo cabeçalho vale em produção, em preview e em localhost.
+ *
+ * Só os `rel` que existem de fato: `describedby` e `sitemap` são registrados no
+ * IANA, `api-catalog` vem da RFC 9727 e `service-desc` da RFC 8631. O
+ * `llms-txt` é convenção emergente (llmstxt.org) e vai junto do `describedby`
+ * para o mesmo alvo — quem entende um, entende.
+ */
+const DESCOBERTA_AGENTE = [
+  '</llms.txt>; rel="describedby"; type="text/plain"',
+  '</llms.txt>; rel="llms-txt"; type="text/plain"',
+  '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
+  '</openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"',
+  '</sitemap.xml>; rel="sitemap"; type="application/xml"',
+  '</blog/rss.xml>; rel="alternate"; type="application/rss+xml"',
+];
+
+/**
+ * Páginas do site que têm versão em Markdown.
+ *
+ * ⚠️ Esta lista é espelhada em DOIS outros lugares e as três têm de andar
+ * juntas: `src/lib/agentes/paginas.ts` (o conteúdo) e `src/middleware.ts` (quem
+ * decide reescrever). O middleware não importa daqui porque roda no Edge e não
+ * deve carregar o Markdown inteiro do site no bundle.
+ *
+ * Encolheu de 7 para 2 quando o site virou ONEPAGE: recursos, preços,
+ * novidades, sobre e contato deixaram de ser páginas (viraram seções da home,
+ * com 301 das rotas antigas). O conteúdo delas não se perdeu — foi absorvido
+ * pelo documento da home em `agentes/paginas.ts`, que agora descreve o site
+ * inteiro. Um agente continua tendo tudo, só que num documento só.
+ */
+const PAGINAS_MARKDOWN = ["/", "/blog"];
+
+/** `/precos` → `/precos.md`; a home vira `/index.md`. */
+function alternadoMarkdown(caminho: string): string {
+  const md = caminho === "/" ? "/index.md" : `${caminho}.md`;
+  return `<${md}>; rel="alternate"; type="text/markdown"`;
+}
+
+/**
+ * `Vary: Accept` não é decoração: a mesma URL devolve HTML ou Markdown conforme
+ * o `Accept`, e sem este cabeçalho um cache compartilhado (Cloudflare, na nossa
+ * frente) serviria Markdown para um navegador.
+ */
+function cabecalhosDescoberta(caminho: string) {
+  return [
+    {
+      key: "Link",
+      value: [...DESCOBERTA_AGENTE, alternadoMarkdown(caminho)].join(", "),
+    },
+    { key: "Vary", value: "Accept" },
+  ];
+}
+
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      ...PAGINAS_MARKDOWN.map((caminho) => ({
+        source: caminho,
+        headers: cabecalhosDescoberta(caminho),
+      })),
+      {
+        // Um segmento só, sem ponto: pega `/blog/meu-post` e deixa de fora
+        // `/blog/rss.xml`, `/blog/categoria/x` e `/blog/pagina/2`.
+        source: "/blog/:slug([a-z0-9-]+)",
+        headers: [
+          {
+            key: "Link",
+            value: [
+              ...DESCOBERTA_AGENTE,
+              '</blog/:slug.md>; rel="alternate"; type="text/markdown"',
+            ].join(", "),
+          },
+          { key: "Vary", value: "Accept" },
+        ],
+      },
+    ];
+  },
+
   /**
    * As páginas que viraram seção da home.
    *
@@ -54,6 +139,18 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  async rewrites() {
+    // O App Router ignora diretórios que começam com ponto, então não existe
+    // `app/.well-known/`. Os handlers moram em `app/api/agentes/*` e a URL
+    // pública é a canônica de cada spec.
+    return [
+      {
+        source: "/.well-known/api-catalog",
+        destination: "/api/agentes/api-catalog",
+      },
+      { source: "/.well-known/agents.md", destination: "/api/agentes/guia" },
+    ];
+  },
 
   experimental: {
     serverActions: {

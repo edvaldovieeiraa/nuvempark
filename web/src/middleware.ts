@@ -26,6 +26,53 @@ function ehRotaApp(pathname: string) {
   );
 }
 
+// ── Markdown para agentes ────────────────────────────────────────────────────
+// Toda página pública do site também existe em Markdown, servida na MESMA URL
+// via `Accept: text/markdown` (negociação de conteúdo) ou pelo sufixo `.md`.
+// Quem monta o documento é `app/api/agentes/md`; aqui só decidimos reescrever.
+//
+// ⚠️ Lista espelhada em `next.config.ts` (que anuncia o `rel="alternate"`) e em
+// `lib/agentes/paginas.ts` (que tem o conteúdo). As três andam juntas. A
+// duplicação é deliberada: este arquivo roda no Edge e não deve arrastar o
+// Markdown do site inteiro para o bundle.
+// Encolheu quando o site virou onepage: as outras cinco viraram seções da home
+// e o conteúdo delas foi absorvido pelo documento da home.
+const PAGINAS_MARKDOWN = new Set(["/", "/blog"]);
+
+/** Páginas fixas + `/blog/<slug>` (um segmento). Navegação do blog fica fora. */
+function temMarkdown(caminho: string): boolean {
+  if (PAGINAS_MARKDOWN.has(caminho)) return true;
+  const m = /^\/blog\/([a-z0-9-]+)$/.exec(caminho);
+  return !!m && !["categoria", "pagina", "busca"].includes(m[1]);
+}
+
+/** Reescreve para a versão em Markdown quando o cliente pede. `null` = segue. */
+function markdownPedido(request: NextRequest): NextResponse | null {
+  if (request.method !== "GET") return null;
+
+  const { pathname } = request.nextUrl;
+  const sufixo = pathname.endsWith(".md");
+  // `q=` e listas são aceitos: basta o tipo aparecer no Accept. Navegador manda
+  // `text/html,application/xhtml+xml,...` e nunca cai aqui.
+  const negociado = /(^|[,\s])text\/markdown\b/i.test(
+    request.headers.get("accept") ?? "",
+  );
+  if (!sufixo && !negociado) return null;
+
+  // `/index.md` é o nome canônico da home em Markdown.
+  const limpo = sufixo
+    ? pathname === "/index.md"
+      ? "/"
+      : pathname.slice(0, -3)
+    : pathname;
+
+  if (!temMarkdown(limpo)) return null;
+
+  const url = request.nextUrl.clone();
+  url.pathname = `/api/agentes/md${limpo === "/" ? "" : limpo}`;
+  return NextResponse.rewrite(url);
+}
+
 /** Redireciona painel↔site pro host correto. null = nada a fazer. */
 function redirecionaPorHost(request: NextRequest): NextResponse | null {
   if (!HOST_APP || !HOST_SITE) return null; // separação desligada
@@ -71,6 +118,12 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/master";
     return NextResponse.redirect(url);
   }
+
+  // 0.3) Versão em Markdown do site (agentes de IA). Depois da separação de
+  // hosts — para `/precos.md` no host do painel ir primeiro para o site — e
+  // antes do Supabase: conteúdo público não precisa de sessão.
+  const markdown = markdownPedido(request);
+  if (markdown) return markdown;
 
   // Rotas /master têm gate próprio (senha mestra) — não passam pelo auth do gestor.
   if (request.nextUrl.pathname.startsWith("/master")) {

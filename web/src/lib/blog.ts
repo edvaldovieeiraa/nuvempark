@@ -406,6 +406,33 @@ export async function listarPostsParaFeed(
   }
 }
 
+/**
+ * Posts publicados COM o Markdown — exceção deliberada à regra 3 do topo.
+ *
+ * Só o `/llms-full.txt` usa: ele é, por definição, o site inteiro em texto para
+ * agentes de IA, e buscar 20 posts um a um seriam 20 idas ao banco a cada
+ * revalidação. Nenhuma tela do site deve chamar esta função — para listagem,
+ * `listarPostsParaFeed`.
+ */
+export async function listarPostsCompletos(limite = 20): Promise<BlogPost[]> {
+  try {
+    const { data, error } = await supa()
+      .from("blog_posts")
+      .select(COLS_COMPLETO)
+      .eq("status", "publicado")
+      .not("publicado_em", "is", null)
+      .order("publicado_em", { ascending: false })
+      .limit(limite)
+      .returns<PostCruCompleto[]>();
+
+    if (error) throw error;
+    return (data ?? []).map(paraCompleto);
+  } catch (erro) {
+    console.error("[blog] listarPostsCompletos falhou:", erro);
+    return [];
+  }
+}
+
 /** O post em destaque mais recente; cai no mais recente publicado se não houver. */
 export async function obterPostDestaque(): Promise<BlogPostResumo | null> {
   try {
