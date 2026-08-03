@@ -13,8 +13,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
-
-const APK_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/v1/object/public/downloads/nuvempark.apk`;
+import { APK_URL } from "@/lib/apk";
 
 const PASSOS: { Icone: typeof ShieldQuestion; titulo: string; texto: string }[] = [
   {

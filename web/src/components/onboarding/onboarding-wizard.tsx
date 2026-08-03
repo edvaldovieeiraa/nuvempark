@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import QRCode from "qrcode";
 import {
   ParkingSquare,
   CircleDollarSign,
@@ -12,12 +14,14 @@ import {
   ArrowLeft,
   CheckCircle2,
   Copy,
+  Download,
   Eye,
   EyeOff,
   Loader2,
   Sparkles,
   AlertTriangle,
 } from "lucide-react";
+import { APK_URL, textoCredenciais } from "@/lib/apk";
 import {
   concluirOnboarding,
   type DadosOnboarding,
@@ -526,46 +530,12 @@ function Wizard({ aoAdiar }: { aoAdiar: () => void }) {
                   <Copy className="w-5 h-5 text-brand-600" />
                 </button>
 
-                <div className="mt-6 rounded-2xl border border-borda bg-fundo/60 p-4 text-left">
-                  <p className="text-[11px] font-black uppercase tracking-wider text-texto-3 mb-3">
-                    No celular de quem opera
-                  </p>
-                  <ol className="space-y-2.5 text-sm">
-                    <li className="flex items-start gap-2.5">
-                      <Num n={1} />
-                      <span>
-                        Baixe o app <b>NuvemPark</b> no Android —{" "}
-                        <span className="text-texto-2">em breve na Play Store</span>
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <Num n={2} />
-                      <span>
-                        Código do estacionamento:{" "}
-                        <b className="font-mono tracking-widest">{resultado.codigo}</b>
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <Num n={3} />
-                      <span>
-                        {resultado.operadorUsuario ? (
-                          <>
-                            Usuário <b>{resultado.operadorUsuario}</b> e a senha
-                            que você acabou de criar
-                          </>
-                        ) : (
-                          <>
-                            Crie o login do operador em{" "}
-                            <b>Cadastros → Operadores</b>
-                          </>
-                        )}
-                      </span>
-                    </li>
-                  </ol>
-                  <div className="mt-3">
-                    <PlayBadge />
-                  </div>
-                </div>
+                <PassarParaOperador
+                  patioNome={resultado.patioNome}
+                  codigo={resultado.codigo}
+                  usuario={resultado.operadorUsuario}
+                  senha={opSenha}
+                />
 
                 {resultado.avisos.length > 0 && (
                   <div className="mt-4 rounded-xl border border-aviso/25 bg-aviso-bg px-4 py-3 text-left">
@@ -727,5 +697,217 @@ function Num({ n }: { n: number }) {
     <span className="mt-0.5 w-5 h-5 rounded-full bg-brand-600 text-white text-[11px] font-black grid place-items-center shrink-0">
       {n}
     </span>
+  );
+}
+
+/**
+ * Fim do onboarding: o que o gestor precisa levar até o celular do operador.
+ *
+ * A senha vem do estado do PRÓPRIO wizard (o gestor acabou de digitá-la no
+ * passo 4). Ela nunca é buscada do servidor porque não dá: o banco guarda só o
+ * hash bcrypt. Este é literalmente o único instante em que ela existe em texto
+ * — daí o aviso e o botão de copiar tudo de uma vez.
+ *
+ * O QR aponta para o APK e é gerado no cliente, como no ticket público: o
+ * gestor costuma estar no desktop e quem instala é o operador, no celular.
+ */
+function PassarParaOperador({
+  patioNome,
+  codigo,
+  usuario,
+  senha,
+}: {
+  patioNome: string;
+  codigo: string;
+  usuario: string | null;
+  senha: string;
+}) {
+  const toast = useToast();
+  const [qr, setQr] = useState<string | null>(null);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+
+  useEffect(() => {
+    QRCode.toDataURL(APK_URL, { width: 480, margin: 1 })
+      .then(setQr)
+      .catch(() => setQr(null));
+  }, []);
+
+  const temOperador = !!usuario && senha.length > 0;
+
+  const copiarTudo = () => {
+    if (!usuario) return;
+    navigator.clipboard.writeText(
+      textoCredenciais({ patioNome, codigo, usuario, senha }),
+    );
+    toast.sucesso(
+      "Copiado!",
+      "Cole no WhatsApp do operador — link do app, código, usuário e senha.",
+    );
+  };
+
+  return (
+    <div className="mt-6 rounded-2xl border border-borda bg-fundo/60 p-4 text-left">
+      <p className="text-[11px] font-black uppercase tracking-wider text-texto-3 mb-3">
+        No celular de quem opera
+      </p>
+
+      <ol className="space-y-3 text-sm">
+        {/* 1 — baixar o app */}
+        <li className="flex items-start gap-2.5">
+          <Num n={1} />
+          <div className="min-w-0 flex-1">
+            <span>
+              Instale o app <b>NuvemPark</b> no Android
+            </span>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <a
+                href={APK_URL}
+                className="h-9 px-3 rounded-lg bg-brand-600 text-white text-xs font-bold inline-flex items-center gap-1.5 hover:brightness-110 transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Baixar APK
+              </a>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(APK_URL);
+                  toast.sucesso("Link copiado!", "Cole no navegador do celular.");
+                }}
+                className="h-9 px-3 rounded-lg border border-borda text-xs font-bold text-texto-2 inline-flex items-center gap-1.5 hover:border-brand-300 hover:text-brand-700 transition-all"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                Copiar link
+              </button>
+              <Link
+                href="/painel/download"
+                className="text-xs font-bold text-brand-700 hover:underline"
+              >
+                Como instalar →
+              </Link>
+            </div>
+            {qr && (
+              <div className="mt-2.5 flex items-center gap-2.5">
+                {/* eslint-disable-next-line @next/next/no-img-element -- data: URI gerado no cliente */}
+                <img
+                  src={qr}
+                  alt="QR code para baixar o app NuvemPark"
+                  className="w-20 h-20 rounded-lg border border-borda bg-white"
+                />
+                <span className="text-[11px] text-texto-3 leading-snug">
+                  Ou aponte a câmera
+                  <br />
+                  do celular para o QR.
+                </span>
+              </div>
+            )}
+          </div>
+        </li>
+
+        {/* 2 — entrar */}
+        <li className="flex items-start gap-2.5">
+          <Num n={2} />
+          <div className="min-w-0 flex-1">
+            <span>Abra o app e entre com estes dados:</span>
+
+            <div className="mt-2 rounded-xl border border-borda bg-superficie divide-y divide-borda">
+              <Credencial rotulo="Código do estacionamento" valor={codigo} mono />
+              {temOperador && usuario ? (
+                <>
+                  <Credencial rotulo="Usuário" valor={usuario} mono />
+                  <Credencial
+                    rotulo="Senha"
+                    valor={senha}
+                    mono
+                    oculto={!mostrarSenha}
+                    aoAlternar={() => setMostrarSenha((v) => !v)}
+                  />
+                </>
+              ) : (
+                <p className="px-3 py-2.5 text-xs text-texto-2">
+                  Você pulou a criação do operador. Crie o login em{" "}
+                  <Link
+                    href="/painel/operadores"
+                    className="font-bold text-brand-700 hover:underline"
+                  >
+                    Cadastros → Operadores
+                  </Link>
+                  .
+                </p>
+              )}
+            </div>
+
+            {temOperador && (
+              <>
+                <button
+                  onClick={copiarTudo}
+                  className="mt-2.5 w-full h-10 rounded-xl border-2 border-brand-200 bg-brand-50 text-xs font-black text-brand-700 inline-flex items-center justify-center gap-2 hover:border-brand-300 hover:bg-brand-100 transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copiar tudo para mandar ao operador
+                </button>
+                <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-snug text-aviso font-semibold">
+                  <AlertTriangle className="w-3.5 h-3.5 mt-px shrink-0" />
+                  Anote a senha agora — ela não aparece de novo. Se perder, dá
+                  para definir outra em Cadastros → Operadores.
+                </p>
+              </>
+            )}
+          </div>
+        </li>
+      </ol>
+
+      <div className="mt-3">
+        <PlayBadge />
+      </div>
+    </div>
+  );
+}
+
+/** Uma linha do quadro de credenciais, com botão de copiar (e de revelar). */
+function Credencial({
+  rotulo,
+  valor,
+  mono,
+  oculto,
+  aoAlternar,
+}: {
+  rotulo: string;
+  valor: string;
+  mono?: boolean;
+  oculto?: boolean;
+  aoAlternar?: () => void;
+}) {
+  const toast = useToast();
+  return (
+    <div className="flex items-center gap-2 px-3 py-2.5">
+      <span className="text-[11px] font-bold text-texto-3 w-40 shrink-0">
+        {rotulo}
+      </span>
+      <span
+        className={`flex-1 min-w-0 truncate text-sm font-black text-texto ${
+          mono ? "font-mono tracking-wider" : ""
+        }`}
+      >
+        {oculto ? "•".repeat(Math.max(valor.length, 6)) : valor}
+      </span>
+      {aoAlternar && (
+        <button
+          onClick={aoAlternar}
+          aria-label={oculto ? "Mostrar senha" : "Ocultar senha"}
+          className="p-1.5 rounded-lg text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors shrink-0"
+        >
+          {oculto ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+        </button>
+      )}
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(valor);
+          toast.sucesso("Copiado!", rotulo);
+        }}
+        aria-label={`Copiar ${rotulo}`}
+        className="p-1.5 rounded-lg text-texto-3 hover:text-brand-700 hover:bg-brand-50 transition-colors shrink-0"
+      >
+        <Copy className="w-4 h-4" />
+      </button>
+    </div>
   );
 }
