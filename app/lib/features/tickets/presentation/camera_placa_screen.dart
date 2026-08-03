@@ -7,6 +7,8 @@ import 'package:permission_handler/permission_handler.dart';
 import '../data/foto_entrada_service.dart';
 import '../data/placa_captura_processor.dart';
 import '../data/placa_ocr_service.dart';
+import '../data/quadro_ocr.dart';
+import '../domain/roi_mapper.dart';
 import 'widgets/plate_frame_overlay.dart';
 
 /// Resultado da tela de captura de placa. Selado para o chamador tratar cada
@@ -62,6 +64,33 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   // moldura desta mesma área para a imagem capturada.
   Size _previewSize = Size.zero;
 
+  // ── Leitura ao vivo ─────────────────────────────────────────────────────
+  // O fluxo entrega quadros muito mais rápido do que o OCR consegue processar.
+  // `_lendo` descarta os que chegam durante uma leitura, e o intervalo evita
+  // ocupar a CPU sem parar — a resolução aqui é alta (escolha do produto), o
+  // que torna cada leitura mais cara e o ritmo mais folgado, obrigatório.
+  static const Duration _intervaloLeitura = Duration(milliseconds: 400);
+
+  // Uma leitura só oscila entre quadros. Exigir a MESMA placa algumas vezes
+  // dentro de uma janela curta é o que separa "achou algo" de "leu direito".
+  static const int _repeticoesParaEstavel = 3;
+  static const int _janelaHistorico = 5;
+
+  // Folga ao redor da moldura ao filtrar candidatos (mesma da foto): a placa
+  // pode encostar na borda do guia sem estar fora dele.
+  static const double _margemRoi = 0.15;
+
+  CameraDescription? _camera;
+  bool _lendo = false;
+  DateTime _ultimaLeitura = DateTime.fromMillisecondsSinceEpoch(0);
+  final List<String> _historico = [];
+  /// Última placa reconhecida — mostrada ao vivo, ainda sem confiança.
+  String? _placaAoVivo;
+  /// Placa travada: repetiu o bastante e a leitura PAUSOU, aguardando o
+  /// operador confirmar ou corrigir. Sem disparo automático — o valor não pode
+  /// mudar debaixo do dedo dele enquanto decide.
+  String? _placaTravada;
+
   // Zoom (pinça + botões) e foco por toque.
   double _zoom = 1;
   double _zoomMin = 1;
@@ -81,6 +110,7 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _focoTimer?.cancel();
+    // `dispose` do controller já encerra o fluxo de quadros.
     _controller?.dispose();
     super.dispose();
   }
@@ -114,11 +144,15 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
 
       // veryHigh (~1920px) preserva/ultrapassa os 1600px da foto atual — não
       // regride qualidade da foto nem do OCR.
+      //
+      // O formato NÃO é mais JPEG: a leitura ao vivo consome os bytes crus do
+      // fluxo, e o ML Kit só aceita NV21 (Android) ou BGRA8888 (iOS). Isso não
+      // afeta a foto — `takePicture` continua devolvendo JPEG.
       final controller = CameraController(
         cam,
         ResolutionPreset.veryHigh,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
+        imageFormatGroup: formatoDeLeituraAoVivo,
       );
       await controller.initialize();
       if (!mounted) {
@@ -131,8 +165,15 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
       _zoom = _zoomBase = _zoomMin;
       setState(() {
         _controller = controller;
+        _camera = cam;
         _iniciando = false;
       });
+
+      // Leitura ao vivo. Falhar aqui não pode derrubar a tela: sem o fluxo, a
+      // captura manual continua funcionando exatamente como antes.
+      try {
+        await controller.startImageStream(_processarQuadro);
+      } catch (_) {/* segue no modo manual */}
     } catch (_) {
       // Sem hardware, permissão revogada em runtime, device ocupado, etc.:
       // não trava o operador — cai no fluxo antigo.
@@ -144,16 +185,103 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
     if (mounted) Navigator.of(context).pop(saida);
   }
 
-  Future<void> _capturar() async {
+  // ── Leitura ao vivo ─────────────────────────────────────────────────────
+
+  /// Chamado a cada quadro do fluxo — muitos por segundo. Tudo aqui é
+  /// deliberadamente barato até passar pelos dois filtros (ocupado / intervalo),
+  /// porque o custo real é o OCR.
+  Future<void> _processarQuadro(CameraImage quadro) async {
+    if (_lendo || _capturando || _placaTravada != null) return;
+    final agora = DateTime.now();
+    if (agora.difference(_ultimaLeitura) < _intervaloLeitura) return;
+
+    final c = _controller;
+    final cam = _camera;
+    if (c == null || cam == null || _previewSize.isEmpty) return;
+
+    _lendo = true;
+    _ultimaLeitura = agora;
+    try {
+      // A MESMA moldura que o operador vê, levada para os pixels da imagem. O
+      // quadro é RECORTADO nela antes do OCR — não basta filtrar candidatos por
+      // posição: sem o recorte, o ML Kit analisa a cena inteira reduzida e erra
+      // caracteres (acerta o formato, troca letras), que foi o que apareceu no
+      // teste em campo.
+      final preparado = prepararQuadro(
+        quadro: quadro,
+        camera: cam,
+        orientacao: c.value.deviceOrientation,
+        roi: (tamanho) => rectComMargem(
+          mapPreviewRectToImage(
+            plateGuideRect(_previewSize),
+            _previewSize,
+            tamanho,
+            BoxFit.cover,
+          ),
+          _margemRoi,
+          tamanho,
+        ),
+      );
+      if (preparado == null) return; // formato inesperado: descarta o quadro
+
+      // Sem `roi` aqui: a imagem JÁ é a moldura.
+      final placa = await widget.ocrService.lerPlacaDeQuadro(preparado.entrada);
+      if (placa != null && mounted) _registrarLeitura(placa);
+    } catch (_) {
+      // Um quadro ruim não pode matar a leitura contínua.
+    } finally {
+      _lendo = false;
+    }
+  }
+
+  /// Guarda a leitura e trava quando ela se repete. A janela é curta de
+  /// propósito: ao mover a câmera para outro carro, as leituras antigas saem
+  /// rápido e não contaminam a placa nova.
+  void _registrarLeitura(String placa) {
+    _historico.add(placa);
+    if (_historico.length > _janelaHistorico) _historico.removeAt(0);
+
+    final repeticoes = _historico.where((p) => p == placa).length;
+    setState(() {
+      _placaAoVivo = placa;
+      if (repeticoes >= _repeticoesParaEstavel) _placaTravada = placa;
+    });
+  }
+
+  /// Operador recusou a placa travada: descarta o histórico para ela não travar
+  /// de novo no quadro seguinte e volta a ler.
+  void _corrigir() {
+    setState(() {
+      _placaTravada = null;
+      _placaAoVivo = null;
+      _historico.clear();
+    });
+  }
+
+  Future<void> _pararFluxo(CameraController c) async {
+    if (!c.value.isStreamingImages) return;
+    try {
+      await c.stopImageStream();
+    } catch (_) {/* já parado ou controller morrendo */}
+  }
+
+  Future<void> _capturar({String? placaJaLida}) async {
     final c = _controller;
     if (c == null || !c.value.isInitialized || _capturando) return;
     setState(() => _capturando = true);
     try {
+      // O fluxo precisa parar ANTES da foto: as duas coisas disputam a câmera,
+      // e em alguns aparelhos `takePicture` falha com o stream ativo.
+      await _pararFluxo(c);
       final shot = await c.takePicture();
       final processado = await PlacaCapturaProcessor(
         widget.fotoService,
         widget.ocrService,
-      ).processar(arquivoBruto: shot.path, previewSize: _previewSize);
+      ).processar(
+        arquivoBruto: shot.path,
+        previewSize: _previewSize,
+        placaJaLida: placaJaLida,
+      );
       _sair(CapturaOk(
         fotoPath: processado.fotoPath,
         placa: processado.placa,
@@ -237,7 +365,12 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
                   ),
                 ),
               if (pronto)
-                const PlateFrameOverlay(legenda: 'Enquadre a placa na moldura'),
+                PlateFrameOverlay(
+                  legenda: _placaTravada != null
+                      ? 'Placa reconhecida — confirme a foto'
+                      : 'Enquadre a placa na moldura',
+                ),
+              if (pronto) _leituraAoVivo(),
               if (_focoPonto != null) _reticuloFoco(_focoPonto!),
               _barraSuperior(),
               if (pronto && _zoomMax > _zoomMin) _controlesZoom(),
@@ -271,6 +404,96 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
             child: CameraPreview(c),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Painel da leitura contínua, logo abaixo da moldura.
+  ///
+  /// Enquanto lê, mostra a placa em cinza — é o retorno que permite ao operador
+  /// se aproximar quando está saindo errada. Ao travar, fica verde e conta os
+  /// segundos até a captura, com "Corrigir" para abortar.
+  Widget _leituraAoVivo() {
+    final travada = _placaTravada;
+    final texto = travada ?? _placaAoVivo;
+    if (texto == null) return const SizedBox.shrink();
+
+    final verde = travada != null;
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 148,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IgnorePointer(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              decoration: BoxDecoration(
+                color: verde ? const Color(0xFF16A34A) : Colors.black54,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: verde ? Colors.white : Colors.white24,
+                  width: verde ? 2 : 1,
+                ),
+              ),
+              child: Text(
+                texto,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 3,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (verde)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton.icon(
+                  onPressed: _corrigir,
+                  icon: const Icon(Icons.refresh, color: Colors.white, size: 19),
+                  label: const Text('Corrigir',
+                      style: TextStyle(color: Colors.white, fontSize: 15)),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                FilledButton.icon(
+                  onPressed: _capturando
+                      ? null
+                      : () => _capturar(placaJaLida: travada),
+                  icon: const Icon(Icons.check, size: 20),
+                  label: const Text('Confirmar',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF15803D),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 26, vertical: 12),
+                  ),
+                ),
+              ],
+            )
+          else
+            IgnorePointer(
+              child: Text(
+                'Lendo… aproxime a câmera',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -360,15 +583,25 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
         alignment: Alignment.bottomCenter,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 32),
+          // A captura é sempre do operador. Quando a leitura ao vivo já tem uma
+          // placa estável, ela vai junto e o OCR da foto é dispensado; sem ela,
+          // o fluxo é exatamente o de antes (foto → OCR).
           child: GestureDetector(
-            onTap: _capturando ? null : _capturar,
+            onTap: _capturando
+                ? null
+                : () => _capturar(placaJaLida: _placaTravada),
             child: Container(
               width: 76,
               height: 76,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
-                border: Border.all(color: const Color(0xFF34D399), width: 4),
+                border: Border.all(
+                  color: _placaTravada != null
+                      ? const Color(0xFF16A34A)
+                      : const Color(0xFF34D399),
+                  width: _placaTravada != null ? 6 : 4,
+                ),
               ),
               child: const Icon(Icons.photo_camera,
                   color: Color(0xFF059669), size: 34),

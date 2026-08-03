@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show Rect;
 
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
@@ -42,22 +43,42 @@ class PlacaOcrService {
 
   /// Roda o OCR na imagem [file] e retorna a placa reconhecida (7 chars,
   /// maiúscula) ou `null`.
-  Future<String?> lerPlaca(File file) async {
-    final result = await _recognizer.processImage(InputImage.fromFile(file));
+  Future<String?> lerPlaca(File file) => _lerDe(InputImage.fromFile(file));
+
+  /// Mesma leitura, a partir de um quadro do fluxo da câmera (leitura ao vivo).
+  ///
+  /// Recebe o [InputImage] já montado porque a conversão depende de metadados
+  /// que só a tela da câmera conhece (rotação do sensor, formato do quadro) —
+  /// ver `quadro_ocr.dart`. A análise é idêntica à da foto: mesmas máscaras,
+  /// mesmo teto de correção. Uma leitura ao vivo não é mais permissiva.
+  ///
+  /// [roi] é a moldura-guia em coordenadas de PIXEL da imagem já rotacionada.
+  /// Com várias placas no enquadramento (fila de carros, pátio cheio), sem esse
+  /// filtro vence o candidato "mais bem lido" — que costuma ser a placa maior
+  /// ou mais nítida, não a que o operador mirou. Com ele, só entram os textos
+  /// cujo centro cai dentro da moldura.
+  Future<String?> lerPlacaDeQuadro(InputImage quadro, {Rect? roi}) =>
+      _lerDe(quadro, roi: roi);
+
+  Future<String?> _lerDe(InputImage entrada, {Rect? roi}) async {
+    final result = await _recognizer.processImage(entrada);
 
     _Candidato? melhor;
-    void considerar(String texto, double altura) {
+    void considerar(String texto, Rect caixa) {
+      // Centro (e não interseção) de propósito: a caixa de uma linha pode
+      // extrapolar a moldura sem que a placa esteja fora dela.
+      if (roi != null && !roi.contains(caixa.center)) return;
       final m = _melhorMatch(texto);
       if (m == null) return;
-      final c = _Candidato(m.placa, m.correcoes, altura);
+      final c = _Candidato(m.placa, m.correcoes, caixa.height);
       if (melhor == null || c.melhorQue(melhor!)) melhor = c;
     }
 
     for (final block in result.blocks) {
       for (final line in block.lines) {
-        considerar(line.text, line.boundingBox.height);
+        considerar(line.text, line.boundingBox);
         for (final el in line.elements) {
-          considerar(el.text, el.boundingBox.height);
+          considerar(el.text, el.boundingBox);
         }
       }
     }

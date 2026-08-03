@@ -42,9 +42,15 @@ class PlacaCapturaProcessor {
   // Folga ao redor da moldura para não cortar a borda da placa (15%).
   static const double _margemRoi = 0.15;
 
+  /// [placaJaLida] vem da leitura ao vivo: quando a tela já travou numa placa,
+  /// repetir o OCR aqui só gastaria tempo com o operador esperando — e poderia
+  /// devolver um resultado DIFERENTE do que ele acabou de ver confirmado na
+  /// tela, que é pior que não ler nada. A foto continua sendo processada e
+  /// salva normalmente; só o reconhecimento é pulado.
   Future<CapturaProcessada> processar({
     required String arquivoBruto,
     required Size previewSize,
+    String? placaJaLida,
   }) async {
     img.Image? decodificada;
     try {
@@ -57,7 +63,7 @@ class PlacaCapturaProcessor {
     // Não deu para decodificar em Dart: salva o bruto e OCR na imagem inteira.
     if (decodificada == null) {
       final fotoPath = await _fotoService.persistirCaptura(arquivoBruto);
-      final placa = await _ocrOuNull(fotoPath);
+      final placa = placaJaLida ?? await _ocrOuNull(fotoPath);
       return CapturaProcessada(fotoPath: fotoPath, placa: placa);
     }
 
@@ -71,8 +77,12 @@ class PlacaCapturaProcessor {
         await _fotoService.salvarBytes(img.encodeJpg(paraSalvar, quality: 85));
 
     // OCR: tenta na ROI (full-res, mais pixels na placa); senão, imagem inteira.
-    var placa = await _ocrNaRoi(baked, previewSize);
-    placa ??= await _ocrOuNull(fotoPath);
+    // Pulado por inteiro quando a leitura ao vivo já travou numa placa.
+    var placa = placaJaLida;
+    if (placa == null) {
+      placa = await _ocrNaRoi(baked, previewSize);
+      placa ??= await _ocrOuNull(fotoPath);
+    }
 
     return CapturaProcessada(fotoPath: fotoPath, placa: placa);
   }

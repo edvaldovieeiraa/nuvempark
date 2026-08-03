@@ -435,6 +435,20 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                           fontWeight: FontWeight.w800,
                           letterSpacing: 3,
                           color: AppColors.outline),
+                      // Atalho para a leitura ao vivo AQUI, no campo de placa:
+                      // é onde o operador está olhando quando pensa "preciso da
+                      // placa". Antes, o único caminho era o cartão de foto lá
+                      // embaixo — a leitura ficava escondida dentro de uma ação
+                      // que se anunciava como "fotografar".
+                      suffixIcon: IconButton(
+                        tooltip: 'Ler placa com a câmera',
+                        onPressed: _capturandoFoto ? null : _capturarFoto,
+                        icon: const Icon(Icons.center_focus_strong,
+                            color: AppColors.primaryFill, size: 26),
+                      ),
+                      // Espelha a largura do botão para o texto continuar
+                      // centralizado no campo.
+                      prefixIcon: const SizedBox(width: 48),
                       filled: true,
                       fillColor: AppColors.surface,
                       contentPadding:
@@ -623,7 +637,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    temFoto ? 'Foto capturada' : 'Fotografar placa',
+                    temFoto ? 'Placa lida e foto capturada' : 'Ler placa com a câmera',
                     style: TextStyle(
                       fontSize: 17,
                       height: 1.25,
@@ -634,7 +648,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                   Text(
                     temFoto
                         ? 'toque para refazer'
-                        : 'a câmera lê e preenche pra você',
+                        : 'reconhece ao vivo e já tira a foto da entrada',
                     style: TextStyle(
                       fontSize: 12,
                       height: 1.35,
