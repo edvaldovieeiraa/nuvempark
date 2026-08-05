@@ -36,20 +36,26 @@ function ehRotaApp(pathname: string) {
 // duplicação é deliberada: este arquivo roda no Edge e não deve arrastar o
 // Markdown do site inteiro para o bundle.
 // Encolheu quando o site virou onepage: as outras cinco viraram seções da home
-// e o conteúdo delas foi absorvido pelo documento da home. Voltou a crescer com
-// as quatro páginas do silo de busca, que são rotas com conteúdo próprio.
-const PAGINAS_MARKDOWN = new Set([
-  "/",
-  "/blog",
-  "/sistema-para-estacionamento",
-  "/gestao-de-estacionamento",
-  "/controle-de-estacionamento",
-  "/aplicativo-para-estacionamento",
-]);
+// e o conteúdo delas foi absorvido pelo documento da home.
+const PAGINAS_MARKDOWN = new Set(["/", "/blog"]);
 
-/** Páginas fixas + `/blog/<slug>` (um segmento). Navegação do blog fica fora. */
+/**
+ * O silo de busca: as páginas de assunto e, sob o pilar, as de cidade
+ * (`/sistema-para-estacionamento/recife`).
+ *
+ * Uma expressão em vez da lista de cidades enumerada: importar `lib/cidades.ts`
+ * aqui arrastaria o texto de todas elas para o bundle do Edge — que é
+ * exatamente o que o aviso acima manda evitar. Slug inexistente não é problema:
+ * o handler em `api/agentes/md` responde 404 em Markdown para caminho sem
+ * conteúdo.
+ */
+const SILO_MARKDOWN =
+  /^\/(?:sistema-para|gestao-de|controle-de|aplicativo-para|cancela-para)-estacionamento(?:\/[a-z0-9-]+)?$/;
+
+/** Páginas fixas + o silo + `/blog/<slug>`. Navegação do blog fica fora. */
 function temMarkdown(caminho: string): boolean {
   if (PAGINAS_MARKDOWN.has(caminho)) return true;
+  if (SILO_MARKDOWN.test(caminho)) return true;
   const m = /^\/blog\/([a-z0-9-]+)$/.exec(caminho);
   return !!m && !["categoria", "pagina", "busca"].includes(m[1]);
 }

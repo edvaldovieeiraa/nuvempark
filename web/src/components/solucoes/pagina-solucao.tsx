@@ -277,6 +277,57 @@ function Secao({ secao, claro }: { secao: SecaoSolucao; claro: boolean }) {
 
         {secao.tabela ? <Tabela tabela={secao.tabela} /> : null}
 
+        {secao.links ? (
+          <Reveal>
+            <ul
+              style={{
+                margin: "24px 0 0",
+                padding: 0,
+                listStyle: "none",
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              {secao.links.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      borderRadius: 14,
+                      border: "1px solid #E5E7EB",
+                      background: claro ? "#fff" : "#FAFBFA",
+                      padding: "14px 18px",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: "#1F2937",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 9999,
+                        background: "#16A34A",
+                        flex: "none",
+                      }}
+                    />
+                    {l.texto}
+                    <ArrowRight
+                      size={16}
+                      strokeWidth={2.4}
+                      color="#94A3B8"
+                      style={{ marginLeft: "auto", flex: "none" }}
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        ) : null}
+
         {secao.itens ? (
           <div style={{ marginTop: 36, display: "grid", gap: 20 }}>
             {secao.itens.map((item, i) => (
@@ -572,7 +623,10 @@ function Relacionados({ caminhos }: { caminhos: string[] }) {
           style={{
             marginTop: 28,
             display: "grid",
-            gridTemplateColumns: `repeat(${Math.min(caminhos.length, 3)},1fr)`,
+            // `auto-fit` em vez de um número fixo de colunas: a lista varia de 3
+            // a 4 cartões conforme a página, e um número fixo deixaria o último
+            // sozinho numa linha.
+            gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
             gap: 16,
           }}
         >

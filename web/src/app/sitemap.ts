@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { listarCategorias, listarPostsParaFeed } from "@/lib/blog";
+import { CIDADES } from "@/lib/cidades";
 import { SOLUCOES } from "@/lib/solucoes";
 import { SITE_URL } from "@/lib/urls";
 
@@ -39,6 +40,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: i === 0 ? 0.95 : 0.85,
   }));
 
+  // Páginas de cidade: filhas do pilar, prioridade abaixo das de assunto. São
+  // cauda longa ("sistema para estacionamento em <cidade>"), não termo de
+  // cabeça — dizer o contrário ao rastreador não as faria ranquear melhor.
+  const cidades: MetadataRoute.Sitemap = CIDADES.map((c) => ({
+    url: `${SITE_URL}${c.caminho}`,
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
   const blog: MetadataRoute.Sitemap = [
     {
       url: `${SITE_URL}/blog`,
@@ -60,5 +70,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [...institucionais, ...solucoes, ...blog];
+  return [...institucionais, ...solucoes, ...cidades, ...blog];
 }

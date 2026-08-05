@@ -19,6 +19,7 @@
  * disso — mantê-lo neutro evita surpresa se alguém importar do lugar errado.
  */
 
+import { CIDADES } from "@/lib/cidades";
 import { SOLUCOES, type PaginaSolucao, tituloCurto } from "@/lib/solucoes";
 import { urlSite } from "@/lib/urls";
 
@@ -322,6 +323,12 @@ function markdownDaSolucao(pagina: PaginaSolucao): string {
         "",
       );
     }
+    if (secao.links) {
+      partes.push(
+        ...secao.links.map((l) => `- [${l.texto}](${urlSite(l.href)})`),
+        "",
+      );
+    }
     for (const item of secao.itens ?? []) {
       partes.push(`### ${item.h3}`, "", item.texto, "");
     }
@@ -360,7 +367,7 @@ export const PAGINAS_AGENTE: readonly PaginaAgente[] = [
       "O site inteiro: visão geral, recursos, preços (R$ 129,90/mês por pátio), roadmap, quem somos e contato. App Android offline-first para o operador, painel web em tempo real para o gestor.",
     corpo: HOME,
   },
-  ...SOLUCOES.map((s) => ({
+  ...[...SOLUCOES, ...CIDADES].map((s) => ({
     caminho: s.caminho,
     titulo: s.h1,
     resumo: s.descricao,

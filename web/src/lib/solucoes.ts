@@ -19,6 +19,8 @@
  * prometido numa página de busca é uma venda feita com informação errada.
  */
 
+import { CANCELA } from "@/lib/solucoes-cancela";
+
 export type ItemH3 = { h3: string; texto: string };
 
 export type SecaoSolucao = {
@@ -35,6 +37,8 @@ export type SecaoSolucao = {
   tabela?: { cabecalho: string[]; linhas: string[][] };
   /** Fechamento da seção, depois da lista/tabela. */
   textoFinal?: string;
+  /** Lista de links — usada pelo pilar para apontar às páginas de cidade. */
+  links?: { href: string; texto: string }[];
   /** Link contextual no fim da seção — é assim que a autoridade circula. */
   link?: { href: string; texto: string };
 };
@@ -146,6 +150,18 @@ export const PILAR: PaginaSolucao = {
       ],
     },
     {
+      h2: "Onde o NuvemPark é usado",
+      texto:
+        "O sistema é na nuvem e não exige visita técnica, então funciona em qualquer cidade do país sem diferença de prazo ou de preço. Escrevemos sobre o contexto de operar um pátio nestas:",
+      links: [
+        { href: "/sistema-para-estacionamento/sao-paulo", texto: "Sistema para estacionamento em São Paulo" },
+        { href: "/sistema-para-estacionamento/rio-de-janeiro", texto: "Sistema para estacionamento no Rio de Janeiro" },
+        { href: "/sistema-para-estacionamento/recife", texto: "Sistema para estacionamento em Recife" },
+        { href: "/sistema-para-estacionamento/olinda", texto: "Sistema para estacionamento em Olinda" },
+        { href: "/sistema-para-estacionamento/jaboatao-dos-guararapes", texto: "Sistema para estacionamento em Jaboatão dos Guararapes" },
+      ],
+    },
+    {
       h2: "Para que tipo de estacionamento serve",
       texto:
         "O mesmo sistema atende de um pátio de bairro a uma rede com várias unidades. O que muda é a configuração, não o produto:",
@@ -205,6 +221,7 @@ export const PILAR: PaginaSolucao = {
     "/gestao-de-estacionamento",
     "/controle-de-estacionamento",
     "/aplicativo-para-estacionamento",
+    "/cancela-para-estacionamento",
   ],
   leituras: [
     {
@@ -597,8 +614,25 @@ export const APLICATIVO: PaginaSolucao = {
    REGISTRO
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** Todas as páginas de solução, na ordem em que entram no sitemap. */
-export const SOLUCOES: PaginaSolucao[] = [PILAR, GESTAO, CONTROLE, APLICATIVO];
+/**
+ * Todas as páginas de solução, na ordem em que entram no sitemap.
+ *
+ * `CANCELA` mora em arquivo próprio: é a única página que fala de um produto
+ * que NÃO vendemos, e o aviso no topo daquele arquivo precisa ser lido por quem
+ * for editá-la. Aqui só entra na lista.
+ *
+ * As páginas de CIDADE ficam de fora desta lista de propósito — elas são filhas
+ * do pilar (`/sistema-para-estacionamento/<cidade>`) e entram no sitemap e na
+ * camada de agentes por `lib/cidades.ts`. Empilhar cinco cidades no rodapé
+ * diluiria os links que importam.
+ */
+export const SOLUCOES: PaginaSolucao[] = [
+  PILAR,
+  GESTAO,
+  CONTROLE,
+  APLICATIVO,
+  CANCELA,
+];
 
 const POR_CAMINHO = new Map(SOLUCOES.map((p) => [p.caminho, p]));
 

@@ -64,6 +64,7 @@ const PAGINAS_MARKDOWN = [
   "/gestao-de-estacionamento",
   "/controle-de-estacionamento",
   "/aplicativo-para-estacionamento",
+  "/cancela-para-estacionamento",
 ];
 
 /** `/precos` → `/precos.md`; a home vira `/index.md`. */
@@ -94,6 +95,22 @@ const nextConfig: NextConfig = {
         source: caminho,
         headers: cabecalhosDescoberta(caminho),
       })),
+      {
+        // Páginas de cidade, filhas do pilar. Padrão em vez de uma entrada por
+        // cidade: acrescentar uma cidade em `lib/cidades.ts` não deve exigir
+        // lembrar de mexer aqui também.
+        source: "/sistema-para-estacionamento/:cidade([a-z0-9-]+)",
+        headers: [
+          {
+            key: "Link",
+            value: [
+              ...DESCOBERTA_AGENTE,
+              '</sistema-para-estacionamento/:cidade.md>; rel="alternate"; type="text/markdown"',
+            ].join(", "),
+          },
+          { key: "Vary", value: "Accept" },
+        ],
+      },
       {
         // Um segmento só, sem ponto: pega `/blog/meu-post` e deixa de fora
         // `/blog/rss.xml`, `/blog/categoria/x` e `/blog/pagina/2`.
