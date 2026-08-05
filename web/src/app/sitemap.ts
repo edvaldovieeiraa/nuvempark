@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { listarCategorias, listarPostsParaFeed } from "@/lib/blog";
+import { SOLUCOES } from "@/lib/solucoes";
 import { SITE_URL } from "@/lib/urls";
 
 /**
@@ -28,6 +29,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
   ];
 
+  // As páginas de solução (o silo de busca). Prioridade alta e logo abaixo da
+  // home: são as páginas comerciais que devem receber o tráfego dos termos de
+  // cabeça. O pilar vem primeiro — `priority` não é ranqueamento, mas ordena
+  // para o rastreador o que importa mais dentro do próprio site.
+  const solucoes: MetadataRoute.Sitemap = SOLUCOES.map((p, i) => ({
+    url: `${SITE_URL}${p.caminho}`,
+    changeFrequency: "monthly" as const,
+    priority: i === 0 ? 0.95 : 0.85,
+  }));
+
   const blog: MetadataRoute.Sitemap = [
     {
       url: `${SITE_URL}/blog`,
@@ -49,5 +60,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [...institucionais, ...blog];
+  return [...institucionais, ...solucoes, ...blog];
 }

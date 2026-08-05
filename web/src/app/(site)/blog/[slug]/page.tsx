@@ -7,7 +7,7 @@ import { Reveal } from "@/components/site/reveal";
 import { Marca } from "@/components/marca";
 import { CtaFimDePost, CtaInline } from "@/components/blog/cta";
 import { FaqPost } from "@/components/blog/faq";
-import { JsonLd } from "@/components/blog/jsonld";
+import { JsonLd } from "@/components/jsonld";
 import {
   ConteudoMarkdown,
   dividirMarkdown,
@@ -17,6 +17,7 @@ import { CapturaEmail } from "@/components/blog/newsletter";
 import { PostCard } from "@/components/blog/post-card";
 import { ProgressoLeitura } from "@/components/blog/progresso-leitura";
 import { Compartilhar } from "@/components/blog/share";
+import { SolucoesRelacionadas } from "@/components/blog/solucoes-relacionadas";
 import { obterPostPorSlug, postsRelacionados } from "@/lib/blog";
 import { dataAtributo, dataLonga, dataRelativa } from "@/lib/blog-datas";
 import {
@@ -282,6 +283,8 @@ export default async function PostPage({ params }: Props) {
             </div>
 
             <FaqPost itens={post.faq} />
+
+            <SolucoesRelacionadas />
 
             <CtaFimDePost />
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CabecalhoBlog } from "@/components/blog/cabecalho";
-import { JsonLd } from "@/components/blog/jsonld";
+import { JsonLd } from "@/components/jsonld";
 import { ListaPosts } from "@/components/blog/listagem";
 import { PilulasCategoria } from "@/components/blog/navegacao";
 import { CapturaEmail } from "@/components/blog/newsletter";

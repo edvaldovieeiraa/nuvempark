@@ -20,6 +20,11 @@ import { Marca } from "@/components/marca";
  * blog — de lá, `#precos` sozinho não sairia do lugar.
  */
 const LINKS = [
+  // "O sistema" é rota de verdade: a página pilar do silo de busca. Estar no
+  // cabeçalho — presente em TODAS as páginas — é o link interno mais forte que
+  // o site tem para oferecer, e é ele que diz ao Google qual é a página
+  // principal do assunto.
+  { href: "/sistema-para-estacionamento", id: null, label: "O sistema" },
   { href: "/#recursos", id: "recursos", label: "Recursos" },
   { href: "/#precos", id: "precos", label: "Preços" },
   { href: "/blog", id: null, label: "Blog" },
@@ -30,6 +35,17 @@ const LINKS = [
 
 /** Ordem das seções na página — usada pelo scroll-spy. */
 const SECOES: readonly string[] = LINKS.flatMap((l) => (l.id ? [l.id] : []));
+
+/**
+ * Rotas (não âncoras) que abrem com a mesma faixa escura da home: nelas o
+ * cabeçalho flutua transparente com texto claro. As páginas de solução usam o
+ * mesmo hero escuro do site, então entram aqui junto com o blog.
+ */
+const ROTAS_ESCURAS = ["/blog", "/sistema-para-estacionamento", "/gestao-de-estacionamento", "/controle-de-estacionamento", "/aplicativo-para-estacionamento"];
+
+function dentroDe(pathname: string, base: string): boolean {
+  return pathname === base || pathname.startsWith(`${base}/`);
+}
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -42,10 +58,11 @@ export function SiteHeader() {
 
   const naHome = pathname === "/";
 
-  // No topo da home e do BLOG o header flutua sobre hero escura → texto claro.
-  // (Todas as rotas /blog/* abrem com a faixa escura editorial.)
-  const escuro =
-    (pathname === "/" || pathname.startsWith("/blog")) && !scrolled && !aberto;
+  // No topo da home, do BLOG e das páginas de solução o header flutua sobre
+  // hero escura → texto claro.
+  const sobreHeroEscura =
+    naHome || ROTAS_ESCURAS.some((base) => dentroDe(pathname, base));
+  const escuro = sobreHeroEscura && !scrolled && !aberto;
 
   useEffect(() => {
     const onScroll = () => {
@@ -132,11 +149,14 @@ export function SiteHeader() {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          {/* Ponto de virada em `lg` e não `md`: com sete itens mais a marca e
+              os dois botões, a barra não cabe em 768 px — o menu sanduíche
+              assume até 1024. */}
+          <nav className="hidden lg:flex items-center gap-1">
             {LINKS.map((l) => {
               const ativo = l.id
                 ? naHome && secaoAtiva === l.id
-                : pathname.startsWith("/blog");
+                : dentroDe(pathname, l.href);
               /* Âncoras são <a> puro de propósito: navegação por fragmento é
                  nativa, previsível e não depende do roteador. O blog, por ser
                  rota de verdade, continua com <Link> para não perder o SPA. */
@@ -173,7 +193,7 @@ export function SiteHeader() {
             })}
           </nav>
 
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2">
             <a
               href={urlApp("/login")}
               className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
@@ -194,7 +214,7 @@ export function SiteHeader() {
 
           <button
             onClick={() => setAberto((a) => !a)}
-            className={`md:hidden w-10 h-10 grid place-items-center rounded-lg transition-colors ${
+            className={`lg:hidden w-10 h-10 grid place-items-center rounded-lg transition-colors ${
               escuro ? "text-white hover:bg-white/10" : "text-texto hover:bg-fundo"
             }`}
             aria-label={aberto ? "Fechar menu" : "Abrir menu"}
@@ -207,12 +227,12 @@ export function SiteHeader() {
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="md:hidden overflow-hidden border-t border-borda py-3 space-y-1 bg-white"
+            className="lg:hidden overflow-hidden border-t border-borda py-3 space-y-1 bg-white"
           >
             {LINKS.map((l) => {
               const ativo = l.id
                 ? naHome && secaoAtiva === l.id
-                : pathname.startsWith("/blog");
+                : dentroDe(pathname, l.href);
               const Tag = l.id ? "a" : Link;
               return (
                 <Tag

@@ -52,8 +52,19 @@ const DESCOBERTA_AGENTE = [
  * com 301 das rotas antigas). O conteúdo delas não se perdeu — foi absorvido
  * pelo documento da home em `agentes/paginas.ts`, que agora descreve o site
  * inteiro. Um agente continua tendo tudo, só que num documento só.
+ *
+ * Voltou a crescer com o SILO DE BUSCA: as quatro páginas de solução são rotas
+ * de verdade, com conteúdo próprio, e o Markdown delas é gerado a partir de
+ * `lib/solucoes.ts` — a mesma fonte do HTML.
  */
-const PAGINAS_MARKDOWN = ["/", "/blog"];
+const PAGINAS_MARKDOWN = [
+  "/",
+  "/blog",
+  "/sistema-para-estacionamento",
+  "/gestao-de-estacionamento",
+  "/controle-de-estacionamento",
+  "/aplicativo-para-estacionamento",
+];
 
 /** `/precos` → `/precos.md`; a home vira `/index.md`. */
 function alternadoMarkdown(caminho: string): string {

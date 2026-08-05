@@ -3,11 +3,29 @@
  * portado fielmente do <style> do protótipo. Escopado por data-* usados
  * apenas nas seções da home — não afeta o painel.
  */
-const CSS = `
+/**
+ * A base que a home compartilha com as páginas de solução: a grade do fundo
+ * escuro, as máscaras e o balanceamento de título. Exportada em vez de
+ * duplicada — as duas telas usam o mesmo hero escuro.
+ */
+export const CSS_BASE = `
 .np-grid{background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);background-size:44px 44px}
 .np-grid-mask{-webkit-mask-image:radial-gradient(ellipse 75% 60% at 50% 18%,black 30%,transparent 75%);mask-image:radial-gradient(ellipse 75% 60% at 50% 18%,black 30%,transparent 75%)}
 .np-grid-mask-cta{-webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 30%,black 30%,transparent 80%);mask-image:radial-gradient(ellipse 80% 80% at 50% 30%,black 30%,transparent 80%)}
 [data-balance]{text-wrap:balance}
+
+/* Acordeão de FAQ em <details> nativo (home e páginas de solução). O marcador
+   próprio do navegador some e fica só o nosso chevron. Estes seletores não têm
+   equivalente em estilo inline: são pseudo-elemento e estado. */
+.np-faq-sumario::-webkit-details-marker{display:none}
+.np-faq-sumario::marker{content:""}
+details[open] > .np-faq-sumario svg{transform:rotate(180deg)}
+.np-faq-sumario svg{transition:transform .25s}
+@media (prefers-reduced-motion:reduce){.np-faq-sumario svg{transition:none}}
+`;
+
+const CSS = `
+${CSS_BASE}
 
 /* ── Onepage ────────────────────────────────────────────────────────────────
    O header é fixed com 64px de altura. Sem scroll-margin-top a âncora encosta

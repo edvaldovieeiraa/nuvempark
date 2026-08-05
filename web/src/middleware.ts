@@ -36,8 +36,16 @@ function ehRotaApp(pathname: string) {
 // duplicação é deliberada: este arquivo roda no Edge e não deve arrastar o
 // Markdown do site inteiro para o bundle.
 // Encolheu quando o site virou onepage: as outras cinco viraram seções da home
-// e o conteúdo delas foi absorvido pelo documento da home.
-const PAGINAS_MARKDOWN = new Set(["/", "/blog"]);
+// e o conteúdo delas foi absorvido pelo documento da home. Voltou a crescer com
+// as quatro páginas do silo de busca, que são rotas com conteúdo próprio.
+const PAGINAS_MARKDOWN = new Set([
+  "/",
+  "/blog",
+  "/sistema-para-estacionamento",
+  "/gestao-de-estacionamento",
+  "/controle-de-estacionamento",
+  "/aplicativo-para-estacionamento",
+]);
 
 /** Páginas fixas + `/blog/<slug>` (um segmento). Navegação do blog fica fora. */
 function temMarkdown(caminho: string): boolean {

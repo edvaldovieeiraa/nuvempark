@@ -3,7 +3,7 @@ import { Reveal } from "@/components/site/reveal";
 import { CtaFinal } from "@/components/site/secoes";
 import { BarraTrial } from "@/components/blog/cta";
 import { CabecalhoBlog } from "@/components/blog/cabecalho";
-import { JsonLd } from "@/components/blog/jsonld";
+import { JsonLd } from "@/components/jsonld";
 import { ListaPosts } from "@/components/blog/listagem";
 import { PilulasCategoria } from "@/components/blog/navegacao";
 import { PostDestaque } from "@/components/blog/post-card";

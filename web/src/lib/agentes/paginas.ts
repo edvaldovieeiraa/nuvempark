@@ -19,6 +19,7 @@
  * disso — mantê-lo neutro evita surpresa se alguém importar do lugar errado.
  */
 
+import { SOLUCOES, type PaginaSolucao, tituloCurto } from "@/lib/solucoes";
 import { urlSite } from "@/lib/urls";
 
 export type PaginaAgente = {
@@ -296,8 +297,60 @@ const HOME = [
 ].join("\n\n---\n\n");
 
 /**
- * Páginas institucionais. Hoje é uma só — o site é onepage. O blog não entra
- * aqui: o Markdown dele é montado a partir do banco, em `agentes/markdown.ts`.
+ * Serializa uma página de solução em Markdown.
+ *
+ * GERADO, não escrito à mão: o texto do documento e o texto do HTML saem da
+ * MESMA fonte (`lib/solucoes.ts`). Uma segunda cópia manual divergiria na
+ * primeira correção de preço — que é exatamente o cenário que o comentário no
+ * topo deste arquivo manda evitar.
+ */
+function markdownDaSolucao(pagina: PaginaSolucao): string {
+  const partes: string[] = [pagina.resposta, ""];
+
+  for (const secao of pagina.secoes) {
+    partes.push(`## ${secao.h2}`, "");
+    if (secao.texto) partes.push(secao.texto, "");
+    if (secao.lista) {
+      partes.push(...secao.lista.map((i) => `- ${i}`), "");
+    }
+    if (secao.tabela) {
+      const { cabecalho, linhas } = secao.tabela;
+      partes.push(
+        `| ${cabecalho.map((c) => c || " ").join(" | ")} |`,
+        `| ${cabecalho.map(() => "---").join(" | ")} |`,
+        ...linhas.map((l) => `| ${l.join(" | ")} |`),
+        "",
+      );
+    }
+    for (const item of secao.itens ?? []) {
+      partes.push(`### ${item.h3}`, "", item.texto, "");
+    }
+    if (secao.textoFinal) partes.push(secao.textoFinal, "");
+    if (secao.link) {
+      partes.push(`Veja também: [${secao.link.texto}](${urlSite(secao.link.href)})`, "");
+    }
+  }
+
+  partes.push("## Perguntas frequentes", "");
+  for (const item of pagina.faq) {
+    partes.push(`### ${item.pergunta}`, "", item.resposta, "");
+  }
+
+  if (pagina.relacionados.length > 0) {
+    partes.push("## Páginas relacionadas", "");
+    partes.push(
+      ...pagina.relacionados.map((c) => `- [${tituloCurto(c)}](${urlSite(c)})`),
+      "",
+    );
+  }
+
+  return partes.join("\n").trim();
+}
+
+/**
+ * Páginas institucionais: a home (o site onepage inteiro) e o silo de páginas
+ * de solução. O blog não entra aqui — o Markdown dele é montado a partir do
+ * banco, em `agentes/markdown.ts`.
  */
 export const PAGINAS_AGENTE: readonly PaginaAgente[] = [
   {
@@ -307,6 +360,12 @@ export const PAGINAS_AGENTE: readonly PaginaAgente[] = [
       "O site inteiro: visão geral, recursos, preços (R$ 129,90/mês por pátio), roadmap, quem somos e contato. App Android offline-first para o operador, painel web em tempo real para o gestor.",
     corpo: HOME,
   },
+  ...SOLUCOES.map((s) => ({
+    caminho: s.caminho,
+    titulo: s.h1,
+    resumo: s.descricao,
+    corpo: markdownDaSolucao(s),
+  })),
 ] as const;
 
 /** Busca por caminho normalizado ("/precos"). `null` quando não é página do site. */

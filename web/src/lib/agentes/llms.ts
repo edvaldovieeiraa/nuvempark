@@ -68,8 +68,9 @@ a 500 vagas, com uma ou mais unidades.
 ## Comercial
 
 - Teste grátis de 15 dias, sem cartão de crédito: ${CADASTRO}
-- Preço: R$ 129,90 por mês, por pátio, tudo incluso — ${urlSite("/precos")}
-- Recursos: ${urlSite("/recursos")}
+- Preço: R$ 129,90 por mês, por pátio, tudo incluso — ${urlSite("/#precos")}
+- Visão geral do produto: ${urlSite("/sistema-para-estacionamento")}
+- Recursos: ${urlSite("/#recursos")}
 - Contato humano: contato@nuvempark.com · WhatsApp (81) 99614-2120 (seg–sex, 8h–18h)
 
 ## Como ler este site em Markdown
@@ -77,7 +78,7 @@ a 500 vagas, com uma ou mais unidades.
 Toda página pública responde em Markdown, sem HTML no meio:
 
 - Negociação de conteúdo: \`Accept: text/markdown\` na própria URL.
-- Ou o sufixo \`.md\` no caminho — ex.: ${urlSite("/precos.md")}, ${urlSite("/blog/algum-post.md")}.`;
+- Ou o sufixo \`.md\` no caminho — ex.: ${urlSite("/sistema-para-estacionamento.md")}, ${urlSite("/blog/algum-post.md")}.`;
 }
 
 /** Índice: páginas, blog e os recursos de máquina. */

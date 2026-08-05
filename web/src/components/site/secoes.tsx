@@ -344,8 +344,9 @@ export function SiteFooter() {
     titulo: string;
     links: { href: string; label: string; externo?: boolean; app?: boolean; interno?: boolean }[];
   }[] = [
-    // Onepage: só o blog continua sendo rota. O resto são âncoras da home,
-    // com o `/` na frente para funcionarem também a partir do blog.
+    // Onepage: as âncoras levam para seções da home, com o `/` na frente para
+    // funcionarem também a partir do blog. O blog e as páginas de solução são
+    // rotas de verdade e usam <Link>.
     {
       titulo: "Produto",
       links: [
@@ -353,6 +354,19 @@ export function SiteFooter() {
         { href: "/#precos", label: "Preços" },
         { href: "/blog", label: "Blog", interno: true },
         { href: "/#novidades", label: "Novidades" },
+      ],
+    },
+    // O silo de busca. Estar no rodapé põe estas quatro páginas em TODAS as
+    // URLs do site — inclusive em cada post do blog, que é de onde vem a maior
+    // parte do tráfego de descoberta. É o caminho pelo qual a autoridade do
+    // conteúdo chega às páginas comerciais.
+    {
+      titulo: "Soluções",
+      links: [
+        { href: "/sistema-para-estacionamento", label: "Sistema para estacionamento", interno: true },
+        { href: "/gestao-de-estacionamento", label: "Gestão de estacionamento", interno: true },
+        { href: "/controle-de-estacionamento", label: "Controle de estacionamento", interno: true },
+        { href: "/aplicativo-para-estacionamento", label: "Aplicativo para estacionamento", interno: true },
       ],
     },
     {
@@ -377,7 +391,7 @@ export function SiteFooter() {
   return (
     <footer style={{ background: "#fff", borderTop: "1px solid #E5E7EB" }}>
       <div style={{ maxWidth: 1152, margin: "0 auto", padding: "56px 20px" }}>
-        <div data-footer style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 40 }}>
+        <div data-footer style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1.15fr 1fr 1fr", gap: 32 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg,#16A34A,#166534)", display: "grid", placeItems: "center" }}>
