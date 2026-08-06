@@ -214,6 +214,24 @@ senão os visitantes continuam vendo a versão anterior por até 1 hora (já
 aconteceu: o deploy subiu, a origem tinha o código novo e a borda seguia
 servindo o antigo).
 
+> 🔴 **06/08/2026 — o TTL não está se comportando como 1 hora.** Depois de um
+> deploy, a home estava sendo servida com `age: 145915` (~40 horas), portanto
+> anterior à publicação. O JSON-LD novo e uma correção de HTML subiram para a
+> origem e **não chegaram nem ao visitante nem ao Googlebot** até o purge
+> manual.
+>
+> Confira a Cache Rule. Se o Edge TTL tiver voltado a "Respect origin", vale o
+> `s-maxage=31536000` do Next e o site congela por um ano entre purges — que é
+> exatamente o que a fixação em 1 hora existia para evitar.
+>
+> Diagnóstico rápido (compara borda com origem):
+> ```bash
+> curl -sI https://nuvempark.com/ | grep -iE '^age|^cf-cache-status'
+> curl -s  https://nuvempark.com/         | grep -c 'ld+json'   # borda
+> curl -s "https://nuvempark.com/?cb=$$"  | grep -c 'ld+json'   # origem
+> ```
+> Números diferentes = a borda está velha.
+
 Caching → Configuration → Purge Cache → *Custom Purge* → URL →
 `https://nuvempark.com/`
 

@@ -18,7 +18,7 @@ interpretar componentes React com estilo inline.
 | Site inteiro em texto | `/llms-full.txt` | `app/llms-full.txt/route.ts` |
 | Guia em `text/markdown` | `/.well-known/agents.md` | `app/api/agentes/guia/route.ts` (rewrite) |
 | Negociação de Markdown | qualquer página pública | `middleware.ts` → `app/api/agentes/md/` |
-| Sufixo `.md` | `/precos.md`, `/blog/<slug>.md`, `/index.md` | idem |
+| Sufixo `.md` | `/sistema-para-estacionamento.md`, `/blog/<slug>.md`, `/index.md` | idem |
 | `Link` de descoberta | cabeçalho de resposta | `next.config.ts` |
 | Catálogo de APIs (RFC 9727) | `/.well-known/api-catalog` | `app/api/agentes/api-catalog/route.ts` (rewrite) |
 | Descrição OpenAPI 3.1 | `/openapi.json` | `app/openapi.json/route.ts` |
@@ -35,36 +35,59 @@ Três caminhos, um handler só (`app/api/agentes/md/[[...caminho]]/route.ts`):
 3. `/index.md` para a home.
 
 O middleware reescreve internamente; o agente nunca vê `/api/` na URL. O
-conteúdo em Markdown das páginas institucionais é escrito à mão em
-`lib/agentes/paginas.ts`; os posts do blog saem do `conteudo_md` do banco, que
-já é Markdown.
+Markdown vem de três origens, todas em `lib/agentes/paginas.ts`:
+
+- a **home** é escrita à mão (é o site onepage inteiro num documento só);
+- as **páginas do silo de busca** e as de **cidade** são geradas a partir de
+  `lib/solucoes*.ts` e `lib/cidades.ts` — a mesma fonte que produz o HTML, para
+  as duas versões não divergirem na primeira correção de preço (ver `SEO.md`);
+- os **posts do blog** saem do `conteudo_md` do banco, que já é Markdown.
 
 > ⚠️ **A lista de páginas com Markdown aparece em três arquivos** e as três têm
 > de andar juntas: `lib/agentes/paginas.ts` (conteúdo), `middleware.ts` (quem
 > reescreve) e `next.config.ts` (quem anuncia o `rel="alternate"`). O middleware
 > não importa a lista porque roda no Edge e não deve carregar o Markdown do site
 > inteiro no bundle.
+>
+> Atualizado em 06/08/2026: no middleware, o silo de páginas comerciais
+> (`/sistema-para-estacionamento` e irmãs, mais as filhas de cidade) é casado
+> por **expressão regular** (`SILO_MARKDOWN`) em vez de enumerado. Acrescentar
+> uma cidade em `lib/cidades.ts` não deve exigir lembrar de editar o Edge. Slug
+> inexistente não é problema: o handler responde 404 em Markdown para caminho
+> sem conteúdo. Ver `SEO.md`.
 
 ### Cloudflare
 
-Todas as respostas negociadas levam `Vary: Accept`. Isso basta hoje porque o
-Cloudflare não cacheia HTML por padrão — mas se algum dia entrar uma Cache Rule
-para HTML, **confira o comportamento de `Vary`** antes: o Cloudflare ignora
-`Vary` (exceto `Accept-Encoding`), e uma regra de cache mal posta passaria a
-servir Markdown para navegador. Nesse cenário, a saída é excluir do cache as
-requisições com `Accept: text/markdown`.
+Todas as respostas negociadas levam `Vary: Accept`. Isso bastava enquanto o
+Cloudflare não cacheava HTML — mas se algum dia entrasse uma Cache Rule para
+HTML, avisamos aqui que seria preciso **conferir o comportamento de `Vary`**.
+
+> 🔴 **A Cache Rule entrou em 31/07/2026** (`DEPLOY-PRODUCAO.md`, seção 5.2) e o
+> cenário previsto **aconteceu**. Confirmado em produção em 06/08/2026:
+> `Accept: text/markdown` numa URL do site devolve o HTML cacheado, porque o
+> `Vary` da resposta não inclui `Accept` — o Next sobrescreve o cabeçalho
+> declarado no `next.config.ts`, e as rotas são servidas do cache de prerender,
+> então o middleware também não consegue corrigir.
+>
+> **Impacto real: baixo.** O sufixo `.md` tem URL própria, não é afetado, e é
+> ele que o `rel="alternate"` anuncia — agentes continuam servidos. O que se
+> perde é a negociação de conteúdo na URL canônica.
+>
+> Saída, quando alguém for resolver: Transform Rule no Cloudflare acrescentando
+> `Vary: Accept`, ou bypass de cache para requisições com
+> `Accept: text/markdown`. Detalhes em `SEO.md`, seção 9.1.
 
 ### Verificação
 
 ```bash
 # Markdown por negociação de conteúdo (deve vir text/markdown + Vary: Accept)
-curl -sI -H 'Accept: text/markdown' https://nuvempark.com/precos
+curl -sI -H 'Accept: text/markdown' https://nuvempark.com/sistema-para-estacionamento
 
 # Markdown por sufixo
-curl -s https://nuvempark.com/precos.md | head -20
+curl -s https://nuvempark.com/sistema-para-estacionamento.md | head -20
 
 # HTML continua HTML (nada de Markdown para navegador)
-curl -sI https://nuvempark.com/precos | grep -i content-type
+curl -sI https://nuvempark.com/sistema-para-estacionamento | grep -i content-type
 
 # Link de descoberta
 curl -sI https://nuvempark.com/ | grep -i '^link'
