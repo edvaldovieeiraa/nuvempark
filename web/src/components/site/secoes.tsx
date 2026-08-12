@@ -13,6 +13,7 @@ import {
   Clock,
 } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
+import { SOLUCOES } from "@/lib/solucoes";
 import { urlApp } from "@/lib/urls";
 import { MONO, WHATSAPP, eyebrow, h2, btnPrimary, btnGhostDark } from "@/components/site/tokens";
 import { Marca } from "@/components/marca";
@@ -356,18 +357,22 @@ export function SiteFooter() {
         { href: "/#novidades", label: "Novidades" },
       ],
     },
-    // O silo de busca. Estar no rodapé põe estas quatro páginas em TODAS as
-    // URLs do site — inclusive em cada post do blog, que é de onde vem a maior
-    // parte do tráfego de descoberta. É o caminho pelo qual a autoridade do
-    // conteúdo chega às páginas comerciais.
+    // O silo de busca. Estar no rodapé põe estas páginas em TODAS as URLs do
+    // site — inclusive em cada post do blog, que é de onde vem a maior parte do
+    // tráfego de descoberta. É o caminho pelo qual a autoridade do conteúdo
+    // chega às páginas comerciais.
+    //
+    // Derivado de `SOLUCOES`, não escrito à mão: a lista fixa que existia aqui
+    // ficou com quatro itens quando a página de cancela entrou, e ela passou
+    // semanas sem nenhum link site-wide. O SEO.md 7 já prometia que acrescentar
+    // uma página ao array bastava — agora basta de verdade.
     {
       titulo: "Soluções",
-      links: [
-        { href: "/sistema-para-estacionamento", label: "Sistema para estacionamento", interno: true },
-        { href: "/gestao-de-estacionamento", label: "Gestão de estacionamento", interno: true },
-        { href: "/controle-de-estacionamento", label: "Controle de estacionamento", interno: true },
-        { href: "/aplicativo-para-estacionamento", label: "Aplicativo para estacionamento", interno: true },
-      ],
+      links: SOLUCOES.map((p) => ({
+        href: p.caminho,
+        label: p.h1,
+        interno: true,
+      })),
     },
     {
       titulo: "Empresa",

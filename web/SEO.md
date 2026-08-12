@@ -209,6 +209,9 @@ Cada página do silo publica `WebPage` + `BreadcrumbList` + `FAQPage`.
    existe.
 2. **Rodapé** (`components/site/secoes.tsx`) — coluna "Soluções" com as cinco
    páginas de assunto. Também site-wide, inclusive em cada post do blog.
+   A lista sai de `SOLUCOES` (`.map`), não é escrita à mão: a versão manual
+   ficou em quatro itens quando a página de cancela entrou, e ela passou dias
+   sem nenhum link site-wide apesar de estar no sitemap.
 3. **Corpo dos posts** (`components/blog/solucoes-relacionadas.tsx`) — bloco
    depois do artigo. Link no corpo passa mais autoridade do que link de rodapé,
    e quem leu o artigo inteiro é quem vale mandar para a página de produto.
@@ -308,18 +311,42 @@ continuam servidos. O que se perde é a negociação de conteúdo na URL canôni
 acrescentando `Vary: Accept`, ou uma regra de bypass de cache para requisições
 com `Accept: text/markdown`.
 
-### 9.2 O cache de borda está muito mais velho do que o documentado
+### 9.2 O cache de borda congelou a home por 8 dias e o Google notou
 
 O `DEPLOY-PRODUCAO.md` (5.2) diz que o Edge TTL foi fixado em **1 hora**,
 justamente para o `s-maxage=31536000` do Next não congelar o site. Em
 06/08/2026, depois de um deploy, a home estava sendo servida com
 `age: 145915` — **cerca de 40 horas**, portanto anterior ao deploy.
 
-Consequência: o JSON-LD da home e a correção do FAQ subiram para a origem e
-**não chegaram ao visitante nem ao Googlebot** até o purge manual.
+Em 11/08/2026 o mesmo defeito apareceu com um custo concreto. A home vinha da
+borda com `age: 699834` — **8 dias**, HTML anterior ao deploy do silo. Aquela
+cópia congelada:
 
-Confira a Cache Rule. Se o TTL estiver mesmo no `s-maxage` do Next, todo deploy
-futuro fica invisível até alguém lembrar de purgar.
+- **não tinha `<link rel="canonical">`** (a tag entrou em 738710d, junto com o
+  silo) — e o Search Console abriu *"Cópia sem página canônica selecionada pelo
+  usuário"*, 1 página, detectada em 05/08;
+- **não tinha os links internos** para `/sistema-para-estacionamento` e irmãs,
+  porque o rodapé com a coluna "Soluções" também é dessa mesma leva. As 22 URLs
+  do sitemap ficaram em *"Detectada, mas não indexada"* com último rastreamento
+  `N/D`: o Google as conhecia pelo sitemap e não tinha nenhum link para chegar
+  até elas.
+
+A origem estava certa o tempo todo — foi só a borda:
+
+```bash
+curl -s  https://nuvempark.com/           | grep -c 'rel="canonical"'   # 0 (borda)
+curl -s "https://nuvempark.com/?cb=$$"    | grep -c 'rel="canonical"'   # 1 (origem)
+```
+
+**Correção (11/08/2026):** `app/(site)/layout.tsx` passou a declarar
+`export const revalidate = 3600`. Sem ele, uma página estática do Next responde
+`s-maxage=31536000` e a Cloudflare guarda o HTML por um ano; com ele, a origem
+manda `s-maxage=3600` e a borda não consegue congelar, mesmo que a Cache Rule
+esteja em "Respect origin". O menor `revalidate` da árvore vence, então as rotas
+do blog que declaram 300 continuam em 5 minutos.
+
+Isso limita o estrago a uma hora — **não substitui o purge depois do deploy**, e
+não conserta a Cache Rule. Confira o Edge TTL na Cloudflare.
 
 > **Depois de todo deploy que mexa na home: purgue.**
 > Caching → Configuration → Purge Cache → Custom Purge → URL →

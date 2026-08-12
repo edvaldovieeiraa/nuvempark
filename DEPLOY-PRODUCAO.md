@@ -203,9 +203,16 @@ logado e servir a página de um cliente para outro. Nunca use `zone` nem
 `*.nuvempark.com` aqui. O `not http.cookie contains "sb-"` é a rede de
 segurança: quem tem sessão do Supabase nunca recebe resposta cacheada.
 
-O Edge TTL é fixado em 1 hora **de propósito**: o Next manda
-`s-maxage=31536000` (um ano), o que funciona na Vercel — que limpa o cache a
-cada deploy — mas na Cloudflare congelaria o site por um ano.
+O Edge TTL é fixado em 1 hora **de propósito**: uma página estática do Next
+manda `s-maxage=31536000` (um ano), o que funciona na Vercel — que limpa o
+cache a cada deploy — mas na Cloudflare congelaria o site por um ano.
+
+> ✅ **11/08/2026 — a origem deixou de mandar um ano.**
+> `web/src/app/(site)/layout.tsx` declara `export const revalidate = 3600`, e o
+> site inteiro passou a responder `s-maxage=3600`. Agora as duas pontas dizem
+> uma hora: mesmo que a Cache Rule esteja em "Respect origin", a borda não
+> consegue mais congelar. **Isso não substitui o purge** — uma hora de atraso
+> continua sendo uma hora.
 
 ### ⚠️ Depois de cada deploy: limpar o cache
 
@@ -214,15 +221,17 @@ senão os visitantes continuam vendo a versão anterior por até 1 hora (já
 aconteceu: o deploy subiu, a origem tinha o código novo e a borda seguia
 servindo o antigo).
 
-> 🔴 **06/08/2026 — o TTL não está se comportando como 1 hora.** Depois de um
-> deploy, a home estava sendo servida com `age: 145915` (~40 horas), portanto
-> anterior à publicação. O JSON-LD novo e uma correção de HTML subiram para a
-> origem e **não chegaram nem ao visitante nem ao Googlebot** até o purge
-> manual.
+> 🔴 **06/08 → 11/08/2026 — o TTL não estava se comportando como 1 hora, e
+> custou uma página no índice do Google.** Em 06/08 a home vinha com
+> `age: 145915` (~40 horas). Em 11/08, com `age: 699834` — **8 dias**, HTML
+> anterior ao deploy do silo de busca. O Googlebot leu essa cópia congelada: ela
+> não tinha o `<link rel="canonical">` nem os links internos para as páginas de
+> solução, e o Search Console abriu "Cópia sem página canônica selecionada pelo
+> usuário" (1 página, detectada em 05/08).
 >
-> Confira a Cache Rule. Se o Edge TTL tiver voltado a "Respect origin", vale o
-> `s-maxage=31536000` do Next e o site congela por um ano entre purges — que é
-> exatamente o que a fixação em 1 hora existia para evitar.
+> Confira a Cache Rule. Se o Edge TTL tiver voltado a "Respect origin", é ela
+> que está errada — o `revalidate = 3600` do site limita o estrago a uma hora,
+> mas a regra deveria estar fixando o TTL do mesmo jeito.
 >
 > Diagnóstico rápido (compara borda com origem):
 > ```bash
