@@ -6995,6 +6995,546 @@ class MensalidadePagamentosCompanion
   }
 }
 
+class $LiberacoesCacheTable extends LiberacoesCache
+    with TableInfo<$LiberacoesCacheTable, LiberacoesCacheData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LiberacoesCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ticketIdMeta = const VerificationMeta(
+    'ticketId',
+  );
+  @override
+  late final GeneratedColumn<String> ticketId = GeneratedColumn<String>(
+    'ticket_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operacaoIdMeta = const VerificationMeta(
+    'operacaoId',
+  );
+  @override
+  late final GeneratedColumn<String> operacaoId = GeneratedColumn<String>(
+    'operacao_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _parceiroNomeMeta = const VerificationMeta(
+    'parceiroNome',
+  );
+  @override
+  late final GeneratedColumn<String> parceiroNome = GeneratedColumn<String>(
+    'parceiro_nome',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _regraNomeMeta = const VerificationMeta(
+    'regraNome',
+  );
+  @override
+  late final GeneratedColumn<String> regraNome = GeneratedColumn<String>(
+    'regra_nome',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _abaterMinutosMeta = const VerificationMeta(
+    'abaterMinutos',
+  );
+  @override
+  late final GeneratedColumn<int> abaterMinutos = GeneratedColumn<int>(
+    'abater_minutos',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _descontoPercentualMeta =
+      const VerificationMeta('descontoPercentual');
+  @override
+  late final GeneratedColumn<int> descontoPercentual = GeneratedColumn<int>(
+    'desconto_percentual',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _descontoValorMeta = const VerificationMeta(
+    'descontoValor',
+  );
+  @override
+  late final GeneratedColumn<double> descontoValor = GeneratedColumn<double>(
+    'desconto_valor',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _liberadoEmEpochMeta = const VerificationMeta(
+    'liberadoEmEpoch',
+  );
+  @override
+  late final GeneratedColumn<int> liberadoEmEpoch = GeneratedColumn<int>(
+    'liberado_em_epoch',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    ticketId,
+    operacaoId,
+    parceiroNome,
+    regraNome,
+    abaterMinutos,
+    descontoPercentual,
+    descontoValor,
+    liberadoEmEpoch,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'liberacoes_cache';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LiberacoesCacheData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('ticket_id')) {
+      context.handle(
+        _ticketIdMeta,
+        ticketId.isAcceptableOrUnknown(data['ticket_id']!, _ticketIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ticketIdMeta);
+    }
+    if (data.containsKey('operacao_id')) {
+      context.handle(
+        _operacaoIdMeta,
+        operacaoId.isAcceptableOrUnknown(data['operacao_id']!, _operacaoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_operacaoIdMeta);
+    }
+    if (data.containsKey('parceiro_nome')) {
+      context.handle(
+        _parceiroNomeMeta,
+        parceiroNome.isAcceptableOrUnknown(
+          data['parceiro_nome']!,
+          _parceiroNomeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_parceiroNomeMeta);
+    }
+    if (data.containsKey('regra_nome')) {
+      context.handle(
+        _regraNomeMeta,
+        regraNome.isAcceptableOrUnknown(data['regra_nome']!, _regraNomeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_regraNomeMeta);
+    }
+    if (data.containsKey('abater_minutos')) {
+      context.handle(
+        _abaterMinutosMeta,
+        abaterMinutos.isAcceptableOrUnknown(
+          data['abater_minutos']!,
+          _abaterMinutosMeta,
+        ),
+      );
+    }
+    if (data.containsKey('desconto_percentual')) {
+      context.handle(
+        _descontoPercentualMeta,
+        descontoPercentual.isAcceptableOrUnknown(
+          data['desconto_percentual']!,
+          _descontoPercentualMeta,
+        ),
+      );
+    }
+    if (data.containsKey('desconto_valor')) {
+      context.handle(
+        _descontoValorMeta,
+        descontoValor.isAcceptableOrUnknown(
+          data['desconto_valor']!,
+          _descontoValorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('liberado_em_epoch')) {
+      context.handle(
+        _liberadoEmEpochMeta,
+        liberadoEmEpoch.isAcceptableOrUnknown(
+          data['liberado_em_epoch']!,
+          _liberadoEmEpochMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_liberadoEmEpochMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ticketId};
+  @override
+  LiberacoesCacheData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LiberacoesCacheData(
+      ticketId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ticket_id'],
+      )!,
+      operacaoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operacao_id'],
+      )!,
+      parceiroNome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parceiro_nome'],
+      )!,
+      regraNome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}regra_nome'],
+      )!,
+      abaterMinutos: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}abater_minutos'],
+      )!,
+      descontoPercentual: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}desconto_percentual'],
+      )!,
+      descontoValor: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}desconto_valor'],
+      )!,
+      liberadoEmEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}liberado_em_epoch'],
+      )!,
+    );
+  }
+
+  @override
+  $LiberacoesCacheTable createAlias(String alias) {
+    return $LiberacoesCacheTable(attachedDatabase, alias);
+  }
+}
+
+class LiberacoesCacheData extends DataClass
+    implements Insertable<LiberacoesCacheData> {
+  /// Chave: um ticket tem no máximo uma liberação ativa (índice único parcial
+  /// em db/31 garante isso do lado do servidor).
+  final String ticketId;
+  final String operacaoId;
+  final String parceiroNome;
+  final String regraNome;
+  final int abaterMinutos;
+  final int descontoPercentual;
+  final double descontoValor;
+  final int liberadoEmEpoch;
+  const LiberacoesCacheData({
+    required this.ticketId,
+    required this.operacaoId,
+    required this.parceiroNome,
+    required this.regraNome,
+    required this.abaterMinutos,
+    required this.descontoPercentual,
+    required this.descontoValor,
+    required this.liberadoEmEpoch,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['ticket_id'] = Variable<String>(ticketId);
+    map['operacao_id'] = Variable<String>(operacaoId);
+    map['parceiro_nome'] = Variable<String>(parceiroNome);
+    map['regra_nome'] = Variable<String>(regraNome);
+    map['abater_minutos'] = Variable<int>(abaterMinutos);
+    map['desconto_percentual'] = Variable<int>(descontoPercentual);
+    map['desconto_valor'] = Variable<double>(descontoValor);
+    map['liberado_em_epoch'] = Variable<int>(liberadoEmEpoch);
+    return map;
+  }
+
+  LiberacoesCacheCompanion toCompanion(bool nullToAbsent) {
+    return LiberacoesCacheCompanion(
+      ticketId: Value(ticketId),
+      operacaoId: Value(operacaoId),
+      parceiroNome: Value(parceiroNome),
+      regraNome: Value(regraNome),
+      abaterMinutos: Value(abaterMinutos),
+      descontoPercentual: Value(descontoPercentual),
+      descontoValor: Value(descontoValor),
+      liberadoEmEpoch: Value(liberadoEmEpoch),
+    );
+  }
+
+  factory LiberacoesCacheData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LiberacoesCacheData(
+      ticketId: serializer.fromJson<String>(json['ticketId']),
+      operacaoId: serializer.fromJson<String>(json['operacaoId']),
+      parceiroNome: serializer.fromJson<String>(json['parceiroNome']),
+      regraNome: serializer.fromJson<String>(json['regraNome']),
+      abaterMinutos: serializer.fromJson<int>(json['abaterMinutos']),
+      descontoPercentual: serializer.fromJson<int>(json['descontoPercentual']),
+      descontoValor: serializer.fromJson<double>(json['descontoValor']),
+      liberadoEmEpoch: serializer.fromJson<int>(json['liberadoEmEpoch']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ticketId': serializer.toJson<String>(ticketId),
+      'operacaoId': serializer.toJson<String>(operacaoId),
+      'parceiroNome': serializer.toJson<String>(parceiroNome),
+      'regraNome': serializer.toJson<String>(regraNome),
+      'abaterMinutos': serializer.toJson<int>(abaterMinutos),
+      'descontoPercentual': serializer.toJson<int>(descontoPercentual),
+      'descontoValor': serializer.toJson<double>(descontoValor),
+      'liberadoEmEpoch': serializer.toJson<int>(liberadoEmEpoch),
+    };
+  }
+
+  LiberacoesCacheData copyWith({
+    String? ticketId,
+    String? operacaoId,
+    String? parceiroNome,
+    String? regraNome,
+    int? abaterMinutos,
+    int? descontoPercentual,
+    double? descontoValor,
+    int? liberadoEmEpoch,
+  }) => LiberacoesCacheData(
+    ticketId: ticketId ?? this.ticketId,
+    operacaoId: operacaoId ?? this.operacaoId,
+    parceiroNome: parceiroNome ?? this.parceiroNome,
+    regraNome: regraNome ?? this.regraNome,
+    abaterMinutos: abaterMinutos ?? this.abaterMinutos,
+    descontoPercentual: descontoPercentual ?? this.descontoPercentual,
+    descontoValor: descontoValor ?? this.descontoValor,
+    liberadoEmEpoch: liberadoEmEpoch ?? this.liberadoEmEpoch,
+  );
+  LiberacoesCacheData copyWithCompanion(LiberacoesCacheCompanion data) {
+    return LiberacoesCacheData(
+      ticketId: data.ticketId.present ? data.ticketId.value : this.ticketId,
+      operacaoId: data.operacaoId.present
+          ? data.operacaoId.value
+          : this.operacaoId,
+      parceiroNome: data.parceiroNome.present
+          ? data.parceiroNome.value
+          : this.parceiroNome,
+      regraNome: data.regraNome.present ? data.regraNome.value : this.regraNome,
+      abaterMinutos: data.abaterMinutos.present
+          ? data.abaterMinutos.value
+          : this.abaterMinutos,
+      descontoPercentual: data.descontoPercentual.present
+          ? data.descontoPercentual.value
+          : this.descontoPercentual,
+      descontoValor: data.descontoValor.present
+          ? data.descontoValor.value
+          : this.descontoValor,
+      liberadoEmEpoch: data.liberadoEmEpoch.present
+          ? data.liberadoEmEpoch.value
+          : this.liberadoEmEpoch,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LiberacoesCacheData(')
+          ..write('ticketId: $ticketId, ')
+          ..write('operacaoId: $operacaoId, ')
+          ..write('parceiroNome: $parceiroNome, ')
+          ..write('regraNome: $regraNome, ')
+          ..write('abaterMinutos: $abaterMinutos, ')
+          ..write('descontoPercentual: $descontoPercentual, ')
+          ..write('descontoValor: $descontoValor, ')
+          ..write('liberadoEmEpoch: $liberadoEmEpoch')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    ticketId,
+    operacaoId,
+    parceiroNome,
+    regraNome,
+    abaterMinutos,
+    descontoPercentual,
+    descontoValor,
+    liberadoEmEpoch,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LiberacoesCacheData &&
+          other.ticketId == this.ticketId &&
+          other.operacaoId == this.operacaoId &&
+          other.parceiroNome == this.parceiroNome &&
+          other.regraNome == this.regraNome &&
+          other.abaterMinutos == this.abaterMinutos &&
+          other.descontoPercentual == this.descontoPercentual &&
+          other.descontoValor == this.descontoValor &&
+          other.liberadoEmEpoch == this.liberadoEmEpoch);
+}
+
+class LiberacoesCacheCompanion extends UpdateCompanion<LiberacoesCacheData> {
+  final Value<String> ticketId;
+  final Value<String> operacaoId;
+  final Value<String> parceiroNome;
+  final Value<String> regraNome;
+  final Value<int> abaterMinutos;
+  final Value<int> descontoPercentual;
+  final Value<double> descontoValor;
+  final Value<int> liberadoEmEpoch;
+  final Value<int> rowid;
+  const LiberacoesCacheCompanion({
+    this.ticketId = const Value.absent(),
+    this.operacaoId = const Value.absent(),
+    this.parceiroNome = const Value.absent(),
+    this.regraNome = const Value.absent(),
+    this.abaterMinutos = const Value.absent(),
+    this.descontoPercentual = const Value.absent(),
+    this.descontoValor = const Value.absent(),
+    this.liberadoEmEpoch = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LiberacoesCacheCompanion.insert({
+    required String ticketId,
+    required String operacaoId,
+    required String parceiroNome,
+    required String regraNome,
+    this.abaterMinutos = const Value.absent(),
+    this.descontoPercentual = const Value.absent(),
+    this.descontoValor = const Value.absent(),
+    required int liberadoEmEpoch,
+    this.rowid = const Value.absent(),
+  }) : ticketId = Value(ticketId),
+       operacaoId = Value(operacaoId),
+       parceiroNome = Value(parceiroNome),
+       regraNome = Value(regraNome),
+       liberadoEmEpoch = Value(liberadoEmEpoch);
+  static Insertable<LiberacoesCacheData> custom({
+    Expression<String>? ticketId,
+    Expression<String>? operacaoId,
+    Expression<String>? parceiroNome,
+    Expression<String>? regraNome,
+    Expression<int>? abaterMinutos,
+    Expression<int>? descontoPercentual,
+    Expression<double>? descontoValor,
+    Expression<int>? liberadoEmEpoch,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ticketId != null) 'ticket_id': ticketId,
+      if (operacaoId != null) 'operacao_id': operacaoId,
+      if (parceiroNome != null) 'parceiro_nome': parceiroNome,
+      if (regraNome != null) 'regra_nome': regraNome,
+      if (abaterMinutos != null) 'abater_minutos': abaterMinutos,
+      if (descontoPercentual != null) 'desconto_percentual': descontoPercentual,
+      if (descontoValor != null) 'desconto_valor': descontoValor,
+      if (liberadoEmEpoch != null) 'liberado_em_epoch': liberadoEmEpoch,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LiberacoesCacheCompanion copyWith({
+    Value<String>? ticketId,
+    Value<String>? operacaoId,
+    Value<String>? parceiroNome,
+    Value<String>? regraNome,
+    Value<int>? abaterMinutos,
+    Value<int>? descontoPercentual,
+    Value<double>? descontoValor,
+    Value<int>? liberadoEmEpoch,
+    Value<int>? rowid,
+  }) {
+    return LiberacoesCacheCompanion(
+      ticketId: ticketId ?? this.ticketId,
+      operacaoId: operacaoId ?? this.operacaoId,
+      parceiroNome: parceiroNome ?? this.parceiroNome,
+      regraNome: regraNome ?? this.regraNome,
+      abaterMinutos: abaterMinutos ?? this.abaterMinutos,
+      descontoPercentual: descontoPercentual ?? this.descontoPercentual,
+      descontoValor: descontoValor ?? this.descontoValor,
+      liberadoEmEpoch: liberadoEmEpoch ?? this.liberadoEmEpoch,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ticketId.present) {
+      map['ticket_id'] = Variable<String>(ticketId.value);
+    }
+    if (operacaoId.present) {
+      map['operacao_id'] = Variable<String>(operacaoId.value);
+    }
+    if (parceiroNome.present) {
+      map['parceiro_nome'] = Variable<String>(parceiroNome.value);
+    }
+    if (regraNome.present) {
+      map['regra_nome'] = Variable<String>(regraNome.value);
+    }
+    if (abaterMinutos.present) {
+      map['abater_minutos'] = Variable<int>(abaterMinutos.value);
+    }
+    if (descontoPercentual.present) {
+      map['desconto_percentual'] = Variable<int>(descontoPercentual.value);
+    }
+    if (descontoValor.present) {
+      map['desconto_valor'] = Variable<double>(descontoValor.value);
+    }
+    if (liberadoEmEpoch.present) {
+      map['liberado_em_epoch'] = Variable<int>(liberadoEmEpoch.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LiberacoesCacheCompanion(')
+          ..write('ticketId: $ticketId, ')
+          ..write('operacaoId: $operacaoId, ')
+          ..write('parceiroNome: $parceiroNome, ')
+          ..write('regraNome: $regraNome, ')
+          ..write('abaterMinutos: $abaterMinutos, ')
+          ..write('descontoPercentual: $descontoPercentual, ')
+          ..write('descontoValor: $descontoValor, ')
+          ..write('liberadoEmEpoch: $liberadoEmEpoch, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7011,6 +7551,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $PatioClientePlacasTable(this);
   late final $MensalidadePagamentosTable mensalidadePagamentos =
       $MensalidadePagamentosTable(this);
+  late final $LiberacoesCacheTable liberacoesCache = $LiberacoesCacheTable(
+    this,
+  );
   late final OperacaoDao operacaoDao = OperacaoDao(this as AppDatabase);
   late final TicketsDao ticketsDao = TicketsDao(this as AppDatabase);
   late final CaixaDao caixaDao = CaixaDao(this as AppDatabase);
@@ -7018,6 +7561,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final ClientesDao clientesDao = ClientesDao(this as AppDatabase);
   late final MensalidadePagamentosDao mensalidadePagamentosDao =
       MensalidadePagamentosDao(this as AppDatabase);
+  late final LiberacoesDao liberacoesDao = LiberacoesDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7032,6 +7576,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     patioClientes,
     patioClientePlacas,
     mensalidadePagamentos,
+    liberacoesCache,
   ];
 }
 
@@ -10322,6 +10867,285 @@ typedef $$MensalidadePagamentosTableProcessedTableManager =
       MensalidadePagamento,
       PrefetchHooks Function()
     >;
+typedef $$LiberacoesCacheTableCreateCompanionBuilder =
+    LiberacoesCacheCompanion Function({
+      required String ticketId,
+      required String operacaoId,
+      required String parceiroNome,
+      required String regraNome,
+      Value<int> abaterMinutos,
+      Value<int> descontoPercentual,
+      Value<double> descontoValor,
+      required int liberadoEmEpoch,
+      Value<int> rowid,
+    });
+typedef $$LiberacoesCacheTableUpdateCompanionBuilder =
+    LiberacoesCacheCompanion Function({
+      Value<String> ticketId,
+      Value<String> operacaoId,
+      Value<String> parceiroNome,
+      Value<String> regraNome,
+      Value<int> abaterMinutos,
+      Value<int> descontoPercentual,
+      Value<double> descontoValor,
+      Value<int> liberadoEmEpoch,
+      Value<int> rowid,
+    });
+
+class $$LiberacoesCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $LiberacoesCacheTable> {
+  $$LiberacoesCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ticketId => $composableBuilder(
+    column: $table.ticketId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parceiroNome => $composableBuilder(
+    column: $table.parceiroNome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get regraNome => $composableBuilder(
+    column: $table.regraNome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get abaterMinutos => $composableBuilder(
+    column: $table.abaterMinutos,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get descontoPercentual => $composableBuilder(
+    column: $table.descontoPercentual,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get descontoValor => $composableBuilder(
+    column: $table.descontoValor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get liberadoEmEpoch => $composableBuilder(
+    column: $table.liberadoEmEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LiberacoesCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $LiberacoesCacheTable> {
+  $$LiberacoesCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ticketId => $composableBuilder(
+    column: $table.ticketId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parceiroNome => $composableBuilder(
+    column: $table.parceiroNome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get regraNome => $composableBuilder(
+    column: $table.regraNome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get abaterMinutos => $composableBuilder(
+    column: $table.abaterMinutos,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get descontoPercentual => $composableBuilder(
+    column: $table.descontoPercentual,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get descontoValor => $composableBuilder(
+    column: $table.descontoValor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get liberadoEmEpoch => $composableBuilder(
+    column: $table.liberadoEmEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LiberacoesCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LiberacoesCacheTable> {
+  $$LiberacoesCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ticketId =>
+      $composableBuilder(column: $table.ticketId, builder: (column) => column);
+
+  GeneratedColumn<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get parceiroNome => $composableBuilder(
+    column: $table.parceiroNome,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get regraNome =>
+      $composableBuilder(column: $table.regraNome, builder: (column) => column);
+
+  GeneratedColumn<int> get abaterMinutos => $composableBuilder(
+    column: $table.abaterMinutos,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get descontoPercentual => $composableBuilder(
+    column: $table.descontoPercentual,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get descontoValor => $composableBuilder(
+    column: $table.descontoValor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get liberadoEmEpoch => $composableBuilder(
+    column: $table.liberadoEmEpoch,
+    builder: (column) => column,
+  );
+}
+
+class $$LiberacoesCacheTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LiberacoesCacheTable,
+          LiberacoesCacheData,
+          $$LiberacoesCacheTableFilterComposer,
+          $$LiberacoesCacheTableOrderingComposer,
+          $$LiberacoesCacheTableAnnotationComposer,
+          $$LiberacoesCacheTableCreateCompanionBuilder,
+          $$LiberacoesCacheTableUpdateCompanionBuilder,
+          (
+            LiberacoesCacheData,
+            BaseReferences<
+              _$AppDatabase,
+              $LiberacoesCacheTable,
+              LiberacoesCacheData
+            >,
+          ),
+          LiberacoesCacheData,
+          PrefetchHooks Function()
+        > {
+  $$LiberacoesCacheTableTableManager(
+    _$AppDatabase db,
+    $LiberacoesCacheTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LiberacoesCacheTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LiberacoesCacheTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LiberacoesCacheTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> ticketId = const Value.absent(),
+                Value<String> operacaoId = const Value.absent(),
+                Value<String> parceiroNome = const Value.absent(),
+                Value<String> regraNome = const Value.absent(),
+                Value<int> abaterMinutos = const Value.absent(),
+                Value<int> descontoPercentual = const Value.absent(),
+                Value<double> descontoValor = const Value.absent(),
+                Value<int> liberadoEmEpoch = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LiberacoesCacheCompanion(
+                ticketId: ticketId,
+                operacaoId: operacaoId,
+                parceiroNome: parceiroNome,
+                regraNome: regraNome,
+                abaterMinutos: abaterMinutos,
+                descontoPercentual: descontoPercentual,
+                descontoValor: descontoValor,
+                liberadoEmEpoch: liberadoEmEpoch,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ticketId,
+                required String operacaoId,
+                required String parceiroNome,
+                required String regraNome,
+                Value<int> abaterMinutos = const Value.absent(),
+                Value<int> descontoPercentual = const Value.absent(),
+                Value<double> descontoValor = const Value.absent(),
+                required int liberadoEmEpoch,
+                Value<int> rowid = const Value.absent(),
+              }) => LiberacoesCacheCompanion.insert(
+                ticketId: ticketId,
+                operacaoId: operacaoId,
+                parceiroNome: parceiroNome,
+                regraNome: regraNome,
+                abaterMinutos: abaterMinutos,
+                descontoPercentual: descontoPercentual,
+                descontoValor: descontoValor,
+                liberadoEmEpoch: liberadoEmEpoch,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LiberacoesCacheTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LiberacoesCacheTable,
+      LiberacoesCacheData,
+      $$LiberacoesCacheTableFilterComposer,
+      $$LiberacoesCacheTableOrderingComposer,
+      $$LiberacoesCacheTableAnnotationComposer,
+      $$LiberacoesCacheTableCreateCompanionBuilder,
+      $$LiberacoesCacheTableUpdateCompanionBuilder,
+      (
+        LiberacoesCacheData,
+        BaseReferences<
+          _$AppDatabase,
+          $LiberacoesCacheTable,
+          LiberacoesCacheData
+        >,
+      ),
+      LiberacoesCacheData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10344,6 +11168,8 @@ class $AppDatabaseManager {
       $$PatioClientePlacasTableTableManager(_db, _db.patioClientePlacas);
   $$MensalidadePagamentosTableTableManager get mensalidadePagamentos =>
       $$MensalidadePagamentosTableTableManager(_db, _db.mensalidadePagamentos);
+  $$LiberacoesCacheTableTableManager get liberacoesCache =>
+      $$LiberacoesCacheTableTableManager(_db, _db.liberacoesCache);
 }
 
 mixin _$OperacaoDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -10436,5 +11262,20 @@ class MensalidadePagamentosDaoManager {
       $$MensalidadePagamentosTableTableManager(
         _db.attachedDatabase,
         _db.mensalidadePagamentos,
+      );
+}
+
+mixin _$LiberacoesDaoMixin on DatabaseAccessor<AppDatabase> {
+  $LiberacoesCacheTable get liberacoesCache => attachedDatabase.liberacoesCache;
+  LiberacoesDaoManager get managers => LiberacoesDaoManager(this);
+}
+
+class LiberacoesDaoManager {
+  final _$LiberacoesDaoMixin _db;
+  LiberacoesDaoManager(this._db);
+  $$LiberacoesCacheTableTableManager get liberacoesCache =>
+      $$LiberacoesCacheTableTableManager(
+        _db.attachedDatabase,
+        _db.liberacoesCache,
       );
 }

@@ -19,6 +19,8 @@ import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/data/print_templates.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tarifa/domain/fare_result.dart';
+import '../../vouchers/data/liberacao_service.dart';
+import '../../vouchers/domain/voucher_engine.dart';
 import '../../tarifa/domain/tarifa_engine.dart';
 import '../data/pagamento_online_service.dart';
 import '../data/ticket_repository.dart';
@@ -53,10 +55,23 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
   bool _consultandoPagamento = false;
   bool _gerandoPix = false;
 
+  /// Voucher de parceiro. `null` enquanto a consulta corre.
+  ///
+  /// Mesmo espírito do `_pagoOnline`: best-effort, nunca prende o carro. A
+  /// diferença é que aqui o resultado tem TRÊS estados, e `naoConfirmada`
+  /// precisa aparecer na tela — cobrar cheio em silêncio de quem talvez
+  /// tivesse desconto é o erro que ninguém descobre.
+  LiberacaoConsulta? _liberacao;
+  bool _consultandoLiberacao = false;
+
+  /// Guardados no momento do cálculo para o fechamento enviar ao servidor.
+  double _valorAbatido = 0;
+
   @override
   void initState() {
     super.initState();
     _carregarTicket();
+    unawaited(_consultarLiberacao());
     // Pré-aquece a impressora enquanto o operador escolhe a forma de pagamento,
     // para o recibo (impresso em background após a confirmação) não pagar o
     // custo de reconexão Bluetooth.
@@ -75,6 +90,19 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     setState(() {
       _pagoOnline = r;
       _consultandoPagamento = false;
+    });
+  }
+
+  /// Consulta o voucher do parceiro. Nunca lança: o serviço já devolve
+  /// `naoConfirmada` em vez de erro, porque "não sei" é um resultado válido
+  /// aqui e precisa chegar à tela como tal.
+  Future<void> _consultarLiberacao() async {
+    setState(() => _consultandoLiberacao = true);
+    final r = await ref.read(liberacaoServiceProvider).consultar(widget.ticketId);
+    if (!mounted) return;
+    setState(() {
+      _liberacao = r;
+      _consultandoLiberacao = false;
     });
   }
 
@@ -444,6 +472,9 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
             tabelaPrecoId: _tarifaSelecionada!.id,
             caixaSessaoId: caixaSessaoId,
             placa: ticket.placa,
+            // Sobe junto do fechamento, pelo outbox que já existe: o desconto
+            // só tem valor quando existe hora de saída, e é aqui que ela nasce.
+            valorAbatido: _valorAbatido,
           );
 
       if (mounted) {
@@ -594,11 +625,47 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
 
     final tarifaCalculo = _tarifaSelecionada ?? opcoes.first;
     final livre = ticket.isLivrePassagem;
-    final fare = TarifaEngine.calcular(
+    final saidaAgora = DateTime.now();
+    final fareBruto = TarifaEngine.calcular(
       entrada: ticket.entrada,
-      saida: DateTime.now(),
+      saida: saidaAgora,
       tarifa: tarifaCalculo,
     );
+
+    // ── Voucher de parceiro ──────────────────────────────────────────────────
+    // O `fare` que segue daqui para baixo é o EFETIVO. Diálogo de resumo, Pix
+    // dinâmico e confirmação continuam recebendo um FareResult comum e nenhum
+    // deles precisa saber que vouchers existem — foi o que manteve a alteração
+    // longe do caminho do dinheiro.
+    //
+    // Livre-passagem já não paga nada; aplicar desconto ali só produziria um
+    // `valor_abatido` fantasma na fatura do parceiro.
+    final lib = _liberacao;
+    final comVoucher = (!livre &&
+            lib != null &&
+            lib.estado == EstadoLiberacao.encontrada &&
+            lib.regra != null)
+        ? VoucherEngine.aplicar(
+            entrada: ticket.entrada,
+            saida: saidaAgora,
+            tarifa: tarifaCalculo,
+            regra: lib.regra!,
+            parceiroNome: lib.parceiroNome ?? 'Parceiro',
+          )
+        : null;
+
+    // Guardado aqui, e não recalculado no fechamento, para o valor GRAVADO ser
+    // exatamente o que o operador viu na tela: recalcular usaria um `now()`
+    // alguns segundos depois e poderia divergir por uma fração de tarifa.
+    _valorAbatido = comVoucher?.valorAbatido ?? 0;
+
+    final fare = comVoucher == null
+        ? fareBruto
+        : FareResult(
+            valor: comVoucher.valorFinal,
+            duracaoMinutos: fareBruto.duracaoMinutos,
+            motivo: fareBruto.motivo,
+          );
 
     // Pago pelo QR e ainda na carência: não se cobra de novo. Tela própria.
     final pago = _pagoOnline;
@@ -631,6 +698,108 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Mesma razão do aviso de pagamento online logo abaixo: nos ~2s da
+          // consulta o valor na tela é o cheio, e um operador rápido fecharia
+          // a saída antes de o desconto aparecer. O cliente perderia o voucher
+          // e ninguém saberia por quê.
+          if (_consultandoLiberacao) ...[
+            Row(
+              children: [
+                const SizedBox(
+                  width: 13,
+                  height: 13,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 8),
+                Text('Verificando liberação de parceiro…',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onSurfaceVariant)),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          // ── Voucher aplicado ────────────────────────────────────────────
+          // Mostra a ORIGEM, e não só o desconto: o operador precisa saber de
+          // quem veio para responder ao cliente que perguntar.
+          if (comVoucher != null && !comVoucher.semEfeito) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.successBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.local_activity_outlined,
+                      size: 18, color: AppColors.success),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Liberado por ${comVoucher.parceiroNome}',
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.success),
+                        ),
+                        Text(
+                          '${comVoucher.regraNome} · de ${fmtMoeda.format(comVoucher.valorOriginal)} '
+                          'por ${fmtMoeda.format(comVoucher.valorFinal)}',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          // ── Não deu para verificar ──────────────────────────────────────
+          // Cobra cheio (o valor acima já é o cheio) mas NUNCA em silêncio: se
+          // este cliente tinha voucher, alguém precisa poder descobrir depois.
+          // O horário do último sync entra de propósito — "conferido às 14:32"
+          // é informação; um alarme genérico em toda saída offline vira ruído
+          // que o operador aprende a ignorar.
+          if (lib != null && lib.estado == EstadoLiberacao.naoConfirmada) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.saidaBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.saida.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.cloud_off_outlined,
+                      size: 18, color: AppColors.saida),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      lib.conferidoEm == null
+                          ? 'Sem conexão — não deu para verificar se este ticket tem liberação de parceiro.'
+                          : 'Sem conexão — verificado com os dados de '
+                              '${DateFormat('HH:mm').format(lib.conferidoEm!)}.',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.saida),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+
           // Aviso enquanto a consulta corre. Sem ele, o operador poderia cobrar
           // manualmente nos segundos ANTES de o card "pago online" aparecer — e
           // o cliente pagaria duas vezes o mesmo carro.

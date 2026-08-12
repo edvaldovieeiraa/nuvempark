@@ -13,6 +13,7 @@ import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/data/token_storage.dart';
 import '../../features/sync/data/sync_engine.dart';
 import '../../features/printing/data/printer_service.dart';
+import '../../features/vouchers/data/liberacao_service.dart';
 import '../../features/printing/data/printer_storage.dart';
 
 // ── SecureStorage ──────────────────────────────────────────────────────────
@@ -82,3 +83,11 @@ final syncEngineProvider = Provider<SyncEngine>(
     storage: ref.read(tokenStorageProvider),
   ),
 );
+
+/// Consulta de voucher de parceiro na saída. Ver `LiberacaoService`.
+final liberacaoServiceProvider = Provider<LiberacaoService>((ref) {
+  return LiberacaoService(
+    dio: ref.read(dioProvider),
+    db: ref.read(appDatabaseProvider),
+  );
+});

@@ -37,6 +37,8 @@ import {
   LogOut,
   Menu as MenuIcon,
   X,
+  Ticket,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 
@@ -79,6 +81,16 @@ const NAV: Item[] = [
       { href: "/painel/mensalistas", label: "Clientes", Icone: Users },
       { href: "/painel/mensalistas/planos", label: "Planos", Icone: Layers },
       { href: "/painel/mensalistas/credenciados", label: "Credenciados", Icone: BadgeCheck },
+    ],
+  },
+  {
+    // Grupo próprio, e não um filho de "Cadastros": vouchers têm regras,
+    // parceiros externos e faturamento — é um domínio, não um cadastro de apoio.
+    label: "Vouchers",
+    Icone: Ticket,
+    filhos: [
+      { href: "/painel/vouchers/parceiros", label: "Parceiros", Icone: Store },
+      { href: "/painel/vouchers/regras", label: "Regras", Icone: Ticket },
     ],
   },
   {

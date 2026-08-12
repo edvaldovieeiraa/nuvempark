@@ -9,7 +9,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 // painel ele imprime sem a sidebar, e fora do gate de assinatura um cliente
 // suspenso ainda consegue baixar o comprovante do que já pagou — que é
 // exatamente quando ele precisa dele.
-const PREFIXOS_APP = ["/painel", "/master", "/login", "/cadastro", "/auth", "/recibo"];
+// `/parceiro` é o acesso do lojista que libera tickets. Mora no host do app
+// (e não no site) porque é ferramenta de operação, com sessão — mesma natureza
+// de /painel, público diferente.
+const PREFIXOS_APP = ["/painel", "/master", "/login", "/cadastro", "/auth", "/recibo", "/parceiro"];
 // Config vem de env: só ativa a separação quando AMBOS os hosts existem.
 // Enquanto o DNS/nginx do dashboard não estão prontos, fica passivo (não quebra).
 const HOST_APP = process.env.NEXT_PUBLIC_APP_HOST || ""; // ex.: dashboard.nuvempark.com
@@ -174,6 +177,46 @@ export async function middleware(request: NextRequest) {
   const isLogin = pathname.startsWith("/login");
   const isPainel = pathname === "/painel" || pathname.startsWith("/painel/");
   const isBloqueado = pathname === "/painel/bloqueado";
+
+  // ── Acesso do PARCEIRO ────────────────────────────────────────────────────
+  // Gestor e parceiro usam o MESMO Supabase Auth, e é isso que exige separar os
+  // dois mundos aqui. Sem isto, um lojista logado que caísse em /painel passaria
+  // pelo gate de assinatura, que consulta `assinaturas` com RLS — ele não tem
+  // claim de tenant, a consulta volta vazia, e ele acabaria preso na tela de
+  // "assinatura bloqueada", que não tem nada a ver com ele.
+  //
+  // A distinção sai do `app_metadata.parceiro_id`, gravado na criação da conta:
+  // vem no JWT e não custa uma consulta por requisição. Ele decide ROTA, não
+  // permissão — quem autoriza de fato são as policies e as funções do banco,
+  // que conferem `usuarios_parceiro.ativo` a cada chamada. Um metadado velho
+  // manda o lojista para a tela certa e nada mais.
+  const isParceiro = pathname === "/parceiro" || pathname.startsWith("/parceiro/");
+  const isParceiroLogin = pathname === "/parceiro/login";
+  const ehUsuarioParceiro = !!(user?.app_metadata as { parceiro_id?: string })
+    ?.parceiro_id;
+
+  if (!user && isParceiro && !isParceiroLogin) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/parceiro/login";
+    return NextResponse.redirect(url);
+  }
+  // Parceiro logado nunca deve ver as telas do gestor — nem o login dele.
+  if (user && ehUsuarioParceiro && (isPainel || isLogin)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/parceiro";
+    return NextResponse.redirect(url);
+  }
+  if (user && ehUsuarioParceiro && isParceiroLogin) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/parceiro";
+    return NextResponse.redirect(url);
+  }
+  // E o gestor não tem o que fazer na tela do lojista.
+  if (user && !ehUsuarioParceiro && isParceiro && !isParceiroLogin) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/painel";
+    return NextResponse.redirect(url);
+  }
 
   // Só o painel do gestor exige sessão. A landing (/) e demais rotas são públicas.
   if (!user && isPainel) {

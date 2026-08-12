@@ -14,6 +14,7 @@ import 'tables/sync_log_table.dart';
 import 'tables/patio_clientes_table.dart';
 import 'tables/patio_cliente_placas_table.dart';
 import 'tables/mensalidade_pagamentos_table.dart';
+import 'tables/liberacoes_cache_table.dart';
 
 part 'app_database.g.dart';
 part 'daos/operacao_dao.dart';
@@ -22,6 +23,7 @@ part 'daos/caixa_dao.dart';
 part 'daos/sync_dao.dart';
 part 'daos/clientes_dao.dart';
 part 'daos/mensalidade_pagamentos_dao.dart';
+part 'daos/liberacoes_dao.dart';
 
 @DriftDatabase(
   tables: [
@@ -34,6 +36,7 @@ part 'daos/mensalidade_pagamentos_dao.dart';
     PatioClientes,
     PatioClientePlacas,
     MensalidadePagamentos,
+    LiberacoesCache,
   ],
   daos: [
     OperacaoDao,
@@ -42,6 +45,7 @@ part 'daos/mensalidade_pagamentos_dao.dart';
     SyncDao,
     ClientesDao,
     MensalidadePagamentosDao,
+    LiberacoesDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -51,7 +55,9 @@ class AppDatabase extends _$AppDatabase {
   // v2: mensalidade_pagamentos + planos.valor (Entrega 4b).
   // v3: patio_clientes.dia_vencimento (dia fixo de vencimento do mensalista).
   @override
-  int get schemaVersion => 3;
+  // v4: liberacoes_cache — copia local dos vouchers ativos, para a saida
+  // offline honrar um desconto ja sincronizado.
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -67,6 +73,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 3) {
             await m.addColumn(patioClientes, patioClientes.diaVencimento);
+          }
+          if (from < 4) {
+            await m.createTable(liberacoesCache);
           }
         },
       );

@@ -137,6 +137,38 @@ class BootstrapRepository {
     }
     await db.clientesDao.replaceClientes(patioId, clientesComp, placasComp);
 
+    // ── Vouchers ativos dos carros que estão no pátio ────────────────────────
+    // Cópia local para a saída OFFLINE honrar um desconto já sincronizado. Com
+    // rede, quem manda é a consulta pontual do momento do scan — esta lista é
+    // sempre a segunda opção.
+    //
+    // `liberacoes` pode não vir: um servidor anterior a esta versão não conhece
+    // o campo. Nesse caso a lista fica vazia e o app volta ao comportamento de
+    // antes (offline não confirma), em vez de quebrar o bootstrap inteiro.
+    final liberacoesJson = (data['liberacoes'] as List<dynamic>?) ?? const [];
+    final liberacoesComp = <LiberacoesCacheCompanion>[];
+    for (final item in liberacoesJson) {
+      final l = item as Map<String, dynamic>;
+      final regra = l['regra'] as Map<String, dynamic>?;
+      if (regra == null) continue;
+      liberacoesComp.add(LiberacoesCacheCompanion.insert(
+        ticketId: l['ticket_id'] as String,
+        operacaoId: patioId,
+        parceiroNome: l['parceiro_nome'] as String? ?? 'Parceiro',
+        regraNome: regra['nome'] as String? ?? 'Voucher',
+        abaterMinutos: Value((regra['abater_minutos'] as num?)?.toInt() ?? 0),
+        descontoPercentual:
+            Value((regra['desconto_percentual'] as num?)?.toInt() ?? 0),
+        descontoValor:
+            Value((regra['desconto_valor'] as num?)?.toDouble() ?? 0),
+        liberadoEmEpoch:
+            DateTime.tryParse(l['liberado_em'] as String? ?? '')
+                    ?.millisecondsSinceEpoch ??
+                0,
+      ));
+    }
+    await db.liberacoesDao.substituir(patioId, liberacoesComp);
+
     // ── Convergência da Limpeza de Pátio (Camada 2) ──────────────────────────
     // Para cada ticket removido no painel: apaga o ticket local e limpa os itens
     // de outbox dele (foto pendente sai junto, por viver na linha do ticket).

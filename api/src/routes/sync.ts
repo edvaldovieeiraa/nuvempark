@@ -124,6 +124,27 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
                 ...row,
               });
           if (res.error) throw res.error;
+
+          // ── Voucher: quanto o parceiro custeou ──────────────────────────
+          // `valor_abatido` NÃO é campo do ticket: ele vive em `liberacoes`,
+          // porque é a fatura do parceiro que o soma. Chega junto do fechamento
+          // porque só aqui existe hora de saída — na hora da liberação o carro
+          // ainda estava no pátio e o valor não existia.
+          //
+          // Escrita separada e best-effort de propósito: se falhar, o ticket
+          // JÁ está fechado e o dinheiro do cliente conferido. Derrubar o item
+          // de outbox por causa disto faria o app reenviar o fechamento inteiro
+          // — e o buraco resultante (liberação ativa sem valor) é exatamente o
+          // que a tela de divergências do painel existe para pescar.
+          const abatido = num(payload.valor_abatido);
+          if (abatido != null && abatido > 0) {
+            await db
+              .from('liberacoes')
+              .update({ valor_abatido: abatido })
+              .eq('ticket_id', entidadeId)
+              .is('cancelada_em', null)
+              .is('valor_abatido', null);
+          }
           break;
         }
 

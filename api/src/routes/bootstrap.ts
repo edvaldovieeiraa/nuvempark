@@ -143,6 +143,52 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       .gte('removido_em', cutoff)
       .order('removido_em', { ascending: false });
 
+    // Liberações de voucher ativas dos carros que ainda estão no pátio.
+    //
+    // Existe para o caso OFFLINE. A saída consulta
+    // `GET /tickets/:id/liberacao`, que é a fonte fresca e pega a liberação
+    // feita há dez segundos; mas sem rede aquela consulta não responde, e a
+    // regra do produto é cobrar cheio quando não dá para confirmar. Com esta
+    // cópia local, o desconto que já existia no último sync continua valendo —
+    // o operador desconectado deixa de cobrar de quem tinha voucher.
+    //
+    // O volume é limitado pelo próprio pátio: no máximo uma liberação por carro
+    // estacionado, e só as não canceladas. O `!inner` em tickets é o que
+    // garante isso — sem ele viria o histórico inteiro.
+    const { data: liberacoes } = await db
+      .from('liberacoes')
+      .select(
+        'ticket_id, liberado_em, parceiros(nome), voucher_regras(id, nome, abater_minutos, desconto_percentual, desconto_valor), tickets!inner(status)',
+      )
+      .eq('patio_id', patioId)
+      .is('cancelada_em', null)
+      .eq('tickets.status', 'aberto');
+
+    const um = <T>(v: T | T[] | null): T | null =>
+      Array.isArray(v) ? (v[0] ?? null) : v;
+
+    const liberacoesOut = (liberacoes ?? [])
+      .map((l) => {
+        const regra = um(
+          l.voucher_regras as unknown as {
+            id: string;
+            nome: string;
+            abater_minutos: number;
+            desconto_percentual: number;
+            desconto_valor: number;
+          } | null,
+        );
+        if (!regra) return null;
+        const parceiro = um(l.parceiros as unknown as { nome: string } | null);
+        return {
+          ticket_id: l.ticket_id as string,
+          liberado_em: l.liberado_em as string,
+          parceiro_nome: parceiro?.nome ?? 'Parceiro',
+          regra,
+        };
+      })
+      .filter((l): l is NonNullable<typeof l> => l !== null);
+
     return reply.send({
       patio: { id: patio.id, nome: patio.nome, codigo: patio.codigo, qtd_vagas: patio.qtd_vagas },
       config: {
@@ -166,6 +212,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       assinatura: assinaturaStatus,
       dispositivo: dispositivoOut,
       tickets_removidos: (removidos ?? []).map((r) => r.id),
+      liberacoes: liberacoesOut,
     });
   });
 }

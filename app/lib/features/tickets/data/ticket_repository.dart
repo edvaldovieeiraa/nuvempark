@@ -185,6 +185,7 @@ class TicketRepository {
     String? pan,
     int? installments,
     String? paymentProcessor,
+    double valorAbatido = 0,
   }) async {
     final agora = DateTime.now().millisecondsSinceEpoch;
 
@@ -203,6 +204,7 @@ class TicketRepository {
       pan: pan,
       installments: installments,
       paymentProcessor: paymentProcessor,
+      valorAbatido: valorAbatido,
     );
 
     return db.transaction(() async {
@@ -366,6 +368,11 @@ Map<String, dynamic> montarPayloadFechamentoTicket({
   String? pan,
   int? installments,
   String? paymentProcessor,
+  /// Quanto o voucher de parceiro abateu. Vai para `liberacoes.valor_abatido`
+  /// no servidor, e é ele que a competência do parceiro soma — não fica no
+  /// ticket. Zero significa "sem voucher": o campo sai do payload e o servidor
+  /// não tem o que gravar.
+  double valorAbatido = 0,
 }) {
   return <String, dynamic>{
     'saida': agora,
@@ -387,5 +394,6 @@ Map<String, dynamic> montarPayloadFechamentoTicket({
     'pan': ?pan,
     'installments': ?installments,
     'payment_processor': ?paymentProcessor,
+    'valor_abatido': ?(valorAbatido > 0 ? valorAbatido : null),
   };
 }

@@ -13,6 +13,7 @@ import { fotoRoutes } from './routes/foto.js';
 import { webhookAsaasRoutes } from './routes/webhook-asaas.js';
 import { publicoRoutes } from './routes/publico.js';
 import { pagamentoOnlineRoutes } from './routes/pagamento-online.js';
+import { liberacaoRoutes } from './routes/liberacao.js';
 
 /**
  * NuvemPark API — servidor Fastify. Consumido pelo app Flutter.
@@ -41,6 +42,7 @@ await app.register(
     await appConfigRoutes(scope);
     await fotoRoutes(scope);
     await pagamentoOnlineRoutes(scope);
+    await liberacaoRoutes(scope);
   },
   { prefix: PREFIX },
 );
