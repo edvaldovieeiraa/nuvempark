@@ -123,8 +123,8 @@ export default function ScanPage() {
 
       {suportado === false && (
         <p className="rounded-xl bg-fundo border border-borda px-3 py-2 text-sm text-texto-2">
-          Este navegador não lê QR. Digite abaixo o código impresso no cupom —
-          funciona igual.
+          Este navegador não lê QR. Digite abaixo os 8 caracteres impressos no
+          cupom, na linha <strong>ID:</strong> — funciona igual.
         </p>
       )}
 
@@ -137,12 +137,18 @@ export default function ScanPage() {
         }}
         className="rounded-2xl border border-borda bg-superficie p-4 space-y-3"
       >
-        <Campo label="Ou digite o código do cupom">
+        {/* São os 8 caracteres que o cupom imprime como `ID: A1B2C3D4`
+            (ver print_templates.dart). Maiúsculas e minúsculas dão no mesmo —
+            db/36 compara sem caixa. */}
+        <Campo label="Ou digite o código do cupom (8 caracteres)">
           <Input
             value={manual}
-            onChange={(e) => setManual(e.target.value)}
-            placeholder="Código impresso abaixo do QR"
+            onChange={(e) => setManual(e.target.value.toUpperCase())}
+            placeholder="Ex.: A1B2C3D4"
+            maxLength={8}
             autoComplete="off"
+            autoCapitalize="characters"
+            className="tracking-[0.2em] font-mono"
           />
         </Campo>
         <Botao type="submit" className="w-full">
