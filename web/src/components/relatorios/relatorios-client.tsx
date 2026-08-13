@@ -62,9 +62,12 @@ function periodoRotulo(inicio: string, fim: string): string {
 export function RelatoriosClient({
   patioNome,
   porDia,
+  abatidoVouchers = 0,
 }: {
   patioNome: string;
   porDia: Dia[];
+  /** Total custeado por parceiros na janela — ver o comentário na page. */
+  abatidoVouchers?: number;
   porForma: PorForma[];
   porVeiculo: PorVeiculo[];
 }) {
@@ -212,6 +215,14 @@ export function RelatoriosClient({
         <CardKpi rotulo="Veículos" valor={String(saidas30)} />
         <CardKpi rotulo="Ticket médio" valor={moeda.format(ticketMedio)} />
         <CardKpi rotulo="Média/dia" valor={moeda.format(mediaDia)} />
+        {/* Só aparece quando há vouchers: num pátio sem parceiros, um card
+            zerado permanente seria ruído em cima do que importa. */}
+        {abatidoVouchers > 0 && (
+          <CardKpi
+            rotulo="Vouchers de parceiros"
+            valor={moeda.format(abatidoVouchers)}
+          />
+        )}
       </div>
 
       {/* Gráfico + ranking */}

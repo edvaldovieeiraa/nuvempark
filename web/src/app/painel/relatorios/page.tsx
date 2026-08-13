@@ -60,9 +60,31 @@ export default async function RelatoriosPage({
     porVeiculo[t.tipo_veiculo] = (porVeiculo[t.tipo_veiculo] ?? 0) + valor;
   }
 
+  // Quanto os parceiros custearam na mesma janela. Fica ao lado da receita
+  // porque é a contrapartida dela: dinheiro que deixou de entrar pelo caixa
+  // por decisão comercial, e não por falha de cobrança.
+  //
+  // A janela é por SAÍDA (`tickets.saida`), igual à receita acima — não por
+  // data de liberação. É quando o desconto virou dinheiro de verdade, e é o
+  // único recorte em que os dois números falam do mesmo período.
+  const { data: abatidos } = await supabase
+    .from("liberacoes")
+    .select("valor_abatido, tickets!inner(saida)")
+    .eq("patio_id", patioId)
+    .is("cancelada_em", null)
+    .not("valor_abatido", "is", null)
+    .gte("tickets.saida", inicio.toISOString())
+    .limit(10000);
+
+  const abatidoVouchers = (abatidos ?? []).reduce(
+    (soma, l) => soma + (Number(l.valor_abatido) || 0),
+    0,
+  );
+
   return (
     <RelatoriosClient
       patioNome={patioNome ?? ""}
+      abatidoVouchers={abatidoVouchers}
       porDia={porDia}
       porForma={Object.entries(porForma).map(([forma, total]) => ({
         forma,

@@ -39,6 +39,8 @@ import {
   X,
   Ticket,
   Store,
+  Receipt,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -91,6 +93,8 @@ const NAV: Item[] = [
     filhos: [
       { href: "/painel/vouchers/parceiros", label: "Parceiros", Icone: Store },
       { href: "/painel/vouchers/regras", label: "Regras", Icone: Ticket },
+      { href: "/painel/vouchers/faturamento", label: "Faturamento", Icone: Receipt },
+      { href: "/painel/vouchers/divergencias", label: "Divergências", Icone: AlertTriangle },
     ],
   },
   {
