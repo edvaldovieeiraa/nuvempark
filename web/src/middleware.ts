@@ -53,7 +53,7 @@ const PAGINAS_MARKDOWN = new Set(["/", "/blog"]);
  * conteúdo.
  */
 const SILO_MARKDOWN =
-  /^\/(?:sistema-para|gestao-de|controle-de|aplicativo-para|cancela-para)-estacionamento(?:\/[a-z0-9-]+)?$/;
+  /^\/(?:sistema-para|gestao-de|controle-de|aplicativo-para|validacao-de|cancela-para)-estacionamento(?:\/[a-z0-9-]+)?$/;
 
 /** Páginas fixas + o silo + `/blog/<slug>`. Navegação do blog fica fora. */
 function temMarkdown(caminho: string): boolean {

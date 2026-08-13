@@ -41,7 +41,20 @@ const SECOES: readonly string[] = LINKS.flatMap((l) => (l.id ? [l.id] : []));
  * cabeçalho flutua transparente com texto claro. As páginas de solução usam o
  * mesmo hero escuro do site, então entram aqui junto com o blog.
  */
-const ROTAS_ESCURAS = ["/blog", "/sistema-para-estacionamento", "/gestao-de-estacionamento", "/controle-de-estacionamento", "/aplicativo-para-estacionamento"];
+// TODA página do silo entra aqui — todas usam o mesmo `HeroSolucao`. A lista é
+// escrita à mão de propósito: derivar de `SOLUCOES` puxaria o texto inteiro das
+// páginas comerciais para o bundle deste componente de cliente, que é carregado
+// em toda URL do site. O custo de esquecer um caminho é cabeçalho escuro sobre
+// hero escuro (foi o que aconteceu com a página de cancela).
+const ROTAS_ESCURAS = [
+  "/blog",
+  "/sistema-para-estacionamento",
+  "/gestao-de-estacionamento",
+  "/controle-de-estacionamento",
+  "/aplicativo-para-estacionamento",
+  "/validacao-de-estacionamento",
+  "/cancela-para-estacionamento",
+];
 
 function dentroDe(pathname: string, base: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`);

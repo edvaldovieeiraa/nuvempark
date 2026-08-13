@@ -221,6 +221,7 @@ export const PILAR: PaginaSolucao = {
     "/gestao-de-estacionamento",
     "/controle-de-estacionamento",
     "/aplicativo-para-estacionamento",
+    "/validacao-de-estacionamento",
     "/cancela-para-estacionamento",
   ],
   leituras: [
@@ -366,6 +367,7 @@ export const GESTAO: PaginaSolucao = {
     "/sistema-para-estacionamento",
     "/controle-de-estacionamento",
     "/aplicativo-para-estacionamento",
+    "/validacao-de-estacionamento",
   ],
   leituras: [
     {
@@ -610,6 +612,176 @@ export const APLICATIVO: PaginaSolucao = {
   ],
 };
 
+export const VALIDACAO: PaginaSolucao = {
+  caminho: "/validacao-de-estacionamento",
+  h1: "Validação de estacionamento",
+  titulo: "Validação de Estacionamento para Lojistas | NuvemPark",
+  descricao:
+    "Validação de estacionamento para lojistas: o parceiro libera o ticket pelo navegador e o desconto sai aplicado na saída, com cota e fechamento mensal.",
+  subtitulo:
+    "O lojista dá o desconto. Você continua sabendo quem deu, quanto e quem paga a conta.",
+  resposta:
+    "Validação de estacionamento é o desconto que uma loja, um restaurante ou um consultório concede no ticket do cliente que foi até lá. No NuvemPark o parceiro faz a liberação pelo próprio acesso, no navegador, e o desconto já sai aplicado quando o operador registra a saída do veículo.",
+  secoes: [
+    {
+      h2: "Como funciona a validação de estacionamento",
+      texto:
+        "São três momentos, e cada um acontece num lugar diferente — é isso que impede o convênio de virar fila no seu caixa:",
+      itens: [
+        {
+          h3: "O parceiro libera pelo navegador",
+          texto:
+            "Cada loja conveniada recebe um acesso próprio, com login e senha criados por você no painel. Ela abre num navegador comum, do computador do caixa ou do celular, encontra o cliente pela placa ou pelo código impresso no ticket e escolhe a regra do convênio. Não há aplicativo para instalar nem equipamento para comprar.",
+        },
+        {
+          h3: "O operador vê na hora da saída",
+          texto:
+            "Quando o veículo sai, a tela do operador mostra que aquele ticket já foi liberado, por qual parceiro e com qual regra. O valor aparece com o desconto já aplicado — ninguém precisa fazer conta de cabeça nem decidir nada com a fila esperando.",
+        },
+        {
+          h3: "O pátio fecha a conta no fim do mês",
+          texto:
+            "Cada liberação fica registrada com data, parceiro, regra, placa e o valor que deixou de ser cobrado. Fechada a competência, o painel mostra o total de cada parceiro e exporta o extrato em planilha, pronto para a cobrança.",
+        },
+      ],
+    },
+    {
+      h2: "Que descontos dá para criar",
+      texto:
+        "A regra não sai de uma lista fechada. Você monta a sua com três números — minutos abatidos, percentual e valor fixo — do mesmo jeito que monta a tabela de preço. Os casos mais comuns:",
+      tabela: {
+        cabecalho: ["Regra do convênio", "O que acontece na saída"],
+        linhas: [
+          [
+            "Isenção de 2 horas",
+            "As duas primeiras horas não entram na conta; o tempo que passar disso é cobrado pela tabela normal",
+          ],
+          [
+            "Isenção de 12 h ou 24 h",
+            "Mesma lógica com a janela maior — o formato de hotel, hospital e evento",
+          ],
+          ["Isenção total", "O ticket sai zerado, qualquer que seja a permanência"],
+          ["Metade do valor", "Percentual aplicado sobre o valor calculado"],
+          ["R$ 10 de abatimento", "Valor fixo descontado do total, o resto o cliente paga"],
+          [
+            "Combinação",
+            "Duas horas abatidas e ainda 20% no que sobrar, por exemplo",
+          ],
+        ],
+      },
+      textoFinal:
+        "Como o desconto é calculado sobre a mesma tabela de preço do pátio, corrigir a tarifa não obriga a refazer convênio nenhum.",
+    },
+    {
+      h2: "Cortesia do pátio ou convênio pago",
+      texto:
+        "Todo desconto sai do bolso de alguém, e essa é justamente a decisão que falta nos convênios combinados no boca a boca. No cadastro de cada parceiro você define:",
+      lista: [
+        "Cortesia — o desconto corre por conta do pátio e entra só como custo do relacionamento",
+        "Faturado — o valor abatido é somado e cobrado do parceiro no fechamento do mês",
+        "Cota mensal de liberações, para o convênio não virar barril sem fundo",
+        "Cota única, quando o acordo é de um número fechado de liberações",
+        "Sem limite, para o parceiro de confiança",
+      ],
+      textoFinal:
+        "A cota é conferida no instante da liberação: atingido o limite, o parceiro simplesmente não consegue liberar mais — e você não descobre isso pelo extrato no fim do mês.",
+    },
+    {
+      h2: "O controle continua sendo do pátio",
+      itens: [
+        {
+          h3: "Cada liberação tem autor",
+          texto:
+            "Data, hora, parceiro, regra, placa e valor abatido ficam registrados. Uma discussão sobre um desconto que ninguém lembra de ter autorizado passa a ter resposta em vez de versão.",
+        },
+        {
+          h3: "O parceiro vê só o que precisa para liberar",
+          texto:
+            "O acesso do conveniado mostra a placa, o horário de entrada e se aquele ticket já foi liberado. Ele não vê o seu faturamento, a sua tabela de preço, os seus outros clientes nem os outros conveniados.",
+        },
+        {
+          h3: "Liberação errada se cancela",
+          texto:
+            "Liberou o carro trocado? O gestor cancela a liberação: a cota volta para o parceiro e o valor sai da fatura dele. O painel ainda separa numa tela própria as liberações que não chegaram a virar desconto, para você cobrar ou perdoar sabendo o que aconteceu.",
+        },
+      ],
+    },
+    {
+      h2: "Quem usa validação de estacionamento",
+      texto:
+        "O convênio é o que faz o cliente escolher o seu pátio em vez do concorrente da esquina — e quem paga por essa preferência é o comércio da região:",
+      lista: [
+        "Galerias e shoppings de rua, com várias lojas dividindo o mesmo pátio",
+        "Restaurantes e bares, que validam no caixa quando o cliente fecha a conta",
+        "Clínicas e consultórios, com isenção do tempo aproximado da consulta",
+        "Hotéis e pousadas, com liberação de 24 horas por diária",
+        "Escritórios e coworkings, que liberam a visita do cliente",
+        "Eventos, igrejas e feiras, com cota fechada para o dia",
+      ],
+      link: {
+        href: "/gestao-de-estacionamento",
+        texto: "Veja como o convênio aparece no faturamento do pátio",
+      },
+    },
+  ],
+  faq: [
+    {
+      pergunta: "Como funciona a validação de estacionamento para o lojista?",
+      resposta:
+        "O gestor do pátio cria um acesso para a loja no painel e entrega o login e a senha. A loja abre esse acesso num navegador, procura o cliente pela placa ou pelo código do ticket e aplica a regra do convênio. O desconto já vai calculado para a tela do operador na hora da saída.",
+    },
+    {
+      pergunta: "O lojista precisa instalar algum aplicativo?",
+      resposta:
+        "Não. O acesso do parceiro é uma página web, que abre no computador do caixa ou no celular. O aplicativo Android é só do operador do pátio.",
+    },
+    {
+      pergunta: "Dá para limitar quantas liberações cada parceiro pode fazer?",
+      resposta:
+        "Sim. Cada parceiro pode ter cota mensal, cota única (um total fechado de liberações) ou nenhum limite. A cota é conferida no momento da liberação, então o limite nunca é estourado por engano.",
+    },
+    {
+      pergunta: "Como cobrar do lojista os descontos que ele deu?",
+      resposta:
+        "Marque o parceiro como faturado. Cada liberação guarda o valor que deixou de ser cobrado e, no fechamento da competência, o painel mostra o total do mês por parceiro e exporta o extrato em planilha — com data, placa, regra e valor de cada liberação.",
+    },
+    {
+      pergunta: "O parceiro consegue ver o faturamento do meu estacionamento?",
+      resposta:
+        "Não. O acesso do parceiro devolve apenas a placa, o horário de entrada e se o ticket já foi liberado. Faturamento, tarifas, caixa e os demais conveniados ficam fora do alcance dele.",
+    },
+    {
+      pergunta: "E se a internet cair na hora da saída?",
+      resposta:
+        "O aplicativo mantém uma cópia das liberações do pátio e usa essa cópia quando está sem sinal. Se a liberação tiver acabado de ser feita e ainda não tiver chegado ao aparelho, o sistema cobra o valor cheio em vez de adivinhar — e marca o caso numa tela própria do painel, para o gestor resolver com o parceiro.",
+    },
+    {
+      pergunta: "A validação custa a mais na mensalidade?",
+      resposta:
+        "Não. Está inclusa nos R$ 129,90 por mês por pátio, como todo recurso novo — sem módulo extra e sem cobrança por parceiro cadastrado.",
+    },
+  ],
+  migalhas: [
+    { nome: "Início", caminho: "/" },
+    { nome: "Sistema para estacionamento", caminho: "/sistema-para-estacionamento" },
+  ],
+  relacionados: [
+    "/sistema-para-estacionamento",
+    "/gestao-de-estacionamento",
+    "/controle-de-estacionamento",
+  ],
+  leituras: [
+    {
+      href: "/blog/como-montar-a-tabela-de-precos-do-estacionamento",
+      titulo: "Como montar a tabela de preços do estacionamento",
+    },
+    {
+      href: "/blog/como-administrar-um-estacionamento",
+      titulo: "Como administrar um estacionamento",
+    },
+  ],
+};
+
 /* ═══════════════════════════════════════════════════════════════════════════
    REGISTRO
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -631,6 +803,7 @@ export const SOLUCOES: PaginaSolucao[] = [
   GESTAO,
   CONTROLE,
   APLICATIVO,
+  VALIDACAO,
   CANCELA,
 ];
 

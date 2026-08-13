@@ -36,6 +36,7 @@ uma camada**, não desfazer o onepage:
 /gestao-de-estacionamento            ← irmãs, uma intenção de busca cada
 /controle-de-estacionamento
 /aplicativo-para-estacionamento
+/validacao-de-estacionamento
 /cancela-para-estacionamento
 /blog/*                              ← suporte informacional
 ```
@@ -70,6 +71,7 @@ resultado sem disputar o termo no título.
 | `/gestao-de-estacionamento` | gestão de estacionamento(s) | `lib/solucoes.ts` → `GESTAO` |
 | `/controle-de-estacionamento` | controle de estacionamento, entrada e saída de veículos | `lib/solucoes.ts` → `CONTROLE` |
 | `/aplicativo-para-estacionamento` | aplicativo/app para estacionamento | `lib/solucoes.ts` → `APLICATIVO` |
+| `/validacao-de-estacionamento` | validação de estacionamento, convênio/voucher com lojista | `lib/solucoes.ts` → `VALIDACAO` |
 | `/cancela-para-estacionamento` | cancela para estacionamento | `lib/solucoes-cancela.ts` |
 | `/sistema-para-estacionamento/<cidade>` | ...em São Paulo / no Rio / em Recife... | `lib/cidades.ts` |
 
@@ -160,7 +162,18 @@ cidade enquanto não houver caso real e verificável para citar.
 > que autorize ser citado vale mais do que qualquer texto. O lugar dele está
 > marcado no topo de `lib/cidades.ts`.
 
-### 4.5 O dado estruturado tem de bater com o texto visível
+### 4.5 A página de validação não promete liberação instantânea offline
+
+O app carrega uma cópia das liberações do pátio e a usa sem sinal, mas uma
+liberação feita segundos antes da saída pode ainda não ter chegado ao aparelho.
+Nesse caso o sistema **cobra o valor cheio** — decisão de produto, não falha — e
+marca o caso na tela de divergências do painel.
+
+A FAQ da página diz isso com todas as letras. Não troque essa resposta por
+"funciona offline como o resto do app": o resto do app grava local e sobe
+depois; aqui o dado precisa vir de fora, e é o caminho contrário.
+
+### 4.6 O dado estruturado tem de bater com o texto visível
 
 O `FAQPage` de cada página é montado da **mesma lista** que o acordeão renderiza.
 Declarar em JSON-LD uma resposta que não está na página é motivo de ação manual

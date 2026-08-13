@@ -14,6 +14,7 @@ const PLANO = [
   "Painel web em tempo real",
   "Vários pátios na mesma conta",
   "Mensalistas e livre passagem",
+  "Convênio e vouchers de lojista",
   "Operadores e caixa por sessão",
   "Relatórios de faturamento",
   "Suporte no WhatsApp",

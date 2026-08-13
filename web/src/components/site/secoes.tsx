@@ -11,11 +11,14 @@ import {
   MessageCircle,
   Mail,
   Clock,
+  Ticket,
+  Store,
+  CheckCircle2,
 } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
 import { SOLUCOES } from "@/lib/solucoes";
 import { urlApp } from "@/lib/urls";
-import { MONO, WHATSAPP, eyebrow, h2, btnPrimary, btnGhostDark } from "@/components/site/tokens";
+import { MONO, WHATSAPP, eyebrow, h2, pill, listItem, btnPrimary, btnGhostDark } from "@/components/site/tokens";
 import { Marca } from "@/components/marca";
 
 /* Re-exports para as sub-páginas do site continuarem importando de "secoes". */
@@ -101,6 +104,148 @@ export function ComoFunciona() {
         </Reveal>
       </div>
     </section>
+  );
+}
+
+/* =========================================================
+   VOUCHERS / CONVÊNIO COM LOJISTA
+
+   Entra entre a seção escura da avaria e a prova social, e por
+   isso volta ao fundo branco — o ritmo claro/escuro do site.
+
+   A âncora visual é a tela de saída com o desconto já aplicado:
+   é o único jeito de mostrar em um golpe de vista que quem dá o
+   desconto é o lojista e quem continua no controle é o pátio.
+   Os números do exemplo fecham com uma tabela de 1ª hora R$ 9,00
+   + R$ 4,00 por hora adicional (4h = R$ 21,00; com 2h abatidas,
+   2h = R$ 13,00) — mock de produto conferível, não número solto.
+   ========================================================= */
+export function Vouchers() {
+  const bullets = [
+    "O parceiro libera pelo navegador, sem app e sem passar pelo seu operador",
+    "O desconto sai calculado pela sua tabela de preço, não no olho",
+    "Cortesia ou faturado: no fim do mês o painel fecha quanto cobrar de cada um",
+  ];
+  return (
+    // `id` sem item no menu de propósito: o cabeçalho já está no limite de
+    // largura com sete itens (ver SEO.md 6). A âncora existe para link vindo do
+    // blog e das páginas de solução; o scroll-spy só observa os ids de `LINKS`.
+    <section id="vouchers" data-sec style={{ background: "#fff", padding: "96px 0" }}>
+      <div data-voucher style={{ maxWidth: 1152, margin: "0 auto", padding: "0 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 56, alignItems: "center" }}>
+        <Reveal>
+          <div>
+            <span style={pill("#FEF3C7", "#FDE68A", "#B45309")}>
+              <Ticket size={14} strokeWidth={2} />
+              Vouchers e convênios
+            </span>
+            <h3 style={{ margin: "20px 0 0", fontSize: "clamp(1.5rem,2.4vw,2rem)", fontWeight: 800, letterSpacing: "-.01em", lineHeight: 1.12, color: "#1F2937" }}>
+              A loja dá o desconto.<br />Você continua no controle.
+            </h3>
+            <p style={{ margin: "16px 0 0", fontSize: 17, lineHeight: 1.65, color: "#6B7280" }}>
+              Cada lojista, restaurante ou clínica conveniada ganha{" "}
+              <b style={{ color: "#1F2937" }}>um acesso próprio no navegador</b>{" "}
+              para liberar o ticket do cliente dele. Você define a regra — 2
+              horas, 12 horas, isenção total, metade —, quantas liberações cada
+              um tem por mês e se aquilo é cortesia sua ou conta a cobrar dele.
+            </p>
+            <ul style={{ margin: "24px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
+              {bullets.map((b) => (
+                <li key={b} style={listItem}>
+                  <CheckCircle2 size={20} strokeWidth={2.4} color="#16A34A" style={{ flex: "none", marginTop: 1 }} />
+                  {b}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/validacao-de-estacionamento"
+              style={{ marginTop: 24, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: "#15803D" }}
+            >
+              Como funciona a validação de estacionamento
+              <ArrowRight size={16} strokeWidth={2.4} />
+            </Link>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.15}>
+          <div style={{ position: "relative" }}>
+            <div style={{ position: "absolute", inset: -24, borderRadius: 32, background: "radial-gradient(60% 60% at 50% 45%,rgba(245,158,11,.14),transparent 70%)", pointerEvents: "none" }} />
+            <TelaSaidaComVoucher />
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Mock da tela de saída do operador com a liberação já aplicada.
+ *
+ * Desenhado em CSS, não é captura de tela: a tela real tem dado de cliente e
+ * muda a cada versão do app. "Farmácia do Centro" é nome de exemplo — o SEO.md
+ * (4.4) proíbe prova social inventada, e nome de cliente real num mock viraria
+ * exatamente isso.
+ */
+function TelaSaidaComVoucher() {
+  return (
+    <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", border: "1px solid #E5E7EB", background: "#fff", boxShadow: "0 30px 80px -28px rgba(11,18,32,.3)" }}>
+      <div style={{ background: "#0B1220", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".14em", color: "rgba(255,255,255,.6)" }}>
+          SAÍDA
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 700, color: "#fff", letterSpacing: ".06em" }}>
+          ABC1D23
+        </span>
+      </div>
+
+      <div style={{ padding: "22px 20px 24px" }}>
+        <p style={{ margin: 0, fontFamily: MONO, fontSize: 12.5, color: "#6B7280" }}>
+          Entrada 14:03 · Saída 18:03 · 4h00
+        </p>
+
+        <div style={{ marginTop: 16, display: "flex", gap: 12, alignItems: "flex-start", borderRadius: 14, border: "1px solid #BBF7D0", background: "#F0FDF4", padding: "14px 16px" }}>
+          <span style={{ flex: "none", display: "grid", placeItems: "center", width: 36, height: 36, borderRadius: 11, background: "#DCFCE7", color: "#15803D" }}>
+            <Store size={18} strokeWidth={2.2} />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: ".08em", color: "#15803D" }}>
+              TICKET JÁ LIBERADO
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 15, fontWeight: 700, color: "#1F2937" }}>
+              Farmácia do Centro
+            </p>
+            <p style={{ margin: "2px 0 0", fontSize: 13, color: "#4B5563" }}>
+              Isenção de 2 horas · liberado às 17:48
+            </p>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 20, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16 }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#9CA3AF" }}>
+              Sem o convênio
+            </p>
+            <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 700, color: "#9CA3AF", textDecoration: "line-through" }}>
+              R$ 21,00
+            </p>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "#15803D" }}>
+              A COBRAR
+            </p>
+            <p style={{ margin: "2px 0 0", fontSize: 34, fontWeight: 800, lineHeight: 1, color: "#16A34A", fontVariantNumeric: "tabular-nums" }}>
+              R$ 13,00
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ borderTop: "1px dashed #E5E7EB", background: "#FAFBFA", padding: "12px 20px", display: "flex", alignItems: "center", gap: 8 }}>
+        <Ticket size={14} strokeWidth={2.2} color="#B45309" style={{ flex: "none" }} />
+        <span style={{ fontSize: 12.5, color: "#6B7280" }}>
+          R$ 8,00 entram na fatura da loja no fechamento do mês
+        </span>
+      </div>
+    </div>
   );
 }
 

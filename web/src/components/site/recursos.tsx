@@ -11,6 +11,7 @@ import {
   Printer,
   ShieldCheck,
   Building2,
+  Ticket,
 } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
 import { MONO, eyebrow, h2, pill, listItem } from "@/components/site/tokens";
@@ -295,6 +296,9 @@ function VarianteB() {
       <BentoCard icoBg="#DCFCE7" ico={<Printer size={22} strokeWidth={2} color="#16A34A" />} titulo="Ticket profissional na hora" texto="Comprovante com QR Code e o nome do seu pátio, na térmica de bolso." />
       <BentoCard icoBg="#DCFCE7" ico={<ShieldCheck size={22} strokeWidth={2} color="#16A34A" />} titulo="Cada centavo tem dono" texto="Caixa por operador, sangria registrada, fechamento com conferência." />
       <BentoCard wide icoBg="#F5F3FF" ico={<Building2 size={22} strokeWidth={2} color="#8B5CF6" />} titulo="Da primeira vaga à quinta filial" texto="Cada pátio com suas tarifas, operadores e caixa — tudo consolidado numa conta só. Crescer não exige trocar de sistema." />
+      {/* Fecha a última fileira: 4+2 | 2+2+2 | 4+2. Sem este cartão o bento
+          termina com um vão de duas colunas. */}
+      <BentoCard icoBg="#FEF3C7" ico={<Ticket size={22} strokeWidth={2} color="#B45309" />} titulo="Convênio com lojista" texto="O parceiro libera o ticket pelo navegador e o desconto sai aplicado na saída." />
     </div>
   );
 }

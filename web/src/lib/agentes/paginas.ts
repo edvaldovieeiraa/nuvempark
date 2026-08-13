@@ -61,6 +61,11 @@ um painel web.
   consolidado numa conta só.
 - **Pix no ticket.** O cliente escaneia o QR do cupom, vê o valor da estadia e
   paga por Pix; a confirmação chega automaticamente.
+- **Convênio com lojista.** Cada parceiro do pátio (loja, restaurante, clínica)
+  recebe um acesso próprio no navegador para liberar o ticket do cliente dele. A
+  regra de desconto é do pátio — abater horas, percentual ou valor fixo —, o
+  desconto sai aplicado na saída e o valor abatido fecha por mês como cortesia
+  ou como cobrança ao parceiro.
 
 ## Como começar
 
@@ -141,6 +146,8 @@ ou uma rede inteira, consolidados numa conta só.
 - **Cada centavo tem dono** — caixa por operador, sangria registrada,
   fechamento com conferência.
 - **Mensalistas e livre passagem.**
+- **Convênio e vouchers de lojista** — acesso próprio para o parceiro liberar o
+  ticket, com cota por mês e fechamento mensal do valor abatido.
 - **Relatórios de faturamento.**
 - **Pagamento por Pix no ticket**, com confirmação automática.
 - **Foto do veículo na entrada**, para comprovação de avaria.
@@ -174,6 +181,7 @@ Antes disso, **15 dias grátis** com todos os recursos e sem cartão de crédito
 - Painel web em tempo real
 - Vários pátios na mesma conta
 - Mensalistas e livre passagem
+- Convênio e vouchers de lojista
 - Operadores e caixa por sessão
 - Relatórios de faturamento
 - Suporte no WhatsApp

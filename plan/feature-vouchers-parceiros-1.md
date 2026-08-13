@@ -134,12 +134,12 @@ Extras que couberam sem aumentar escopo: `consumo_cota_parceiro()` (a tela "38 d
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-022 | Criar `api/src/routes/liberacao.ts` exportando `liberacaoRoutes` (PAT-002) com `GET /tickets/:id/liberacao`, autenticado como em `api/src/routes/bootstrap.ts` (SEC-005). Responde `{ liberacao: null }` ou `{ liberacao: { parceiroNome, regra: { abaterMinutos, descontoPercentual, descontoValor, nome }, liberadoEm } }`. Montar em `api/src/server.ts`. | | |
-| TASK-023 | Criar `app/lib/features/vouchers/data/liberacao_service.dart`: consulta o endpoint com timeout curto (3s) e devolve `LiberacaoConsulta.encontrada` / `.ausente` / `.naoConfirmada`. Os três estados são explícitos de propósito: `.naoConfirmada` não pode ser confundido com `.ausente`, e é essa distinção que sustenta REQ-010. | | |
-| TASK-024 | Integrar em `app/lib/features/tickets/presentation/saida_screen.dart`: consultar ao abrir a tela; em `.encontrada`, calcular com `VoucherEngine` e exibir a origem (parceiro e regra) junto do valor; em `.ausente`, seguir como hoje. | | |
-| TASK-025 | Implementar o estado `.naoConfirmada` na mesma tela: cobra o valor cheio (REQ-009) e exibe aviso persistente — não um toast — de que não foi possível verificar liberações. Sem nenhum controle que permita ao operador aplicar desconto (REQ-009). | | |
-| TASK-026 | Estender o fechamento da saída para enviar `liberacaoId` e `valorAbatido` no payload do outbox existente (CON-003), e a rota `api/src/routes/sync.ts` para gravá-los em `liberacoes`. Sem alterar envelope, retry ou estratégia do `sync_engine`. | | |
-| TASK-027 | Criar `app/test/features/vouchers/liberacao_saida_test.dart`: `.encontrada` aplica o desconto; `.ausente` cobra normal; `.naoConfirmada` cobra normal **e** marca o aviso; timeout do serviço resolve para `.naoConfirmada` e nunca para `.ausente`. | | |
+| TASK-022 | Criar `api/src/routes/liberacao.ts` exportando `liberacaoRoutes` (PAT-002) com `GET /tickets/:id/liberacao`, autenticado como em `api/src/routes/bootstrap.ts` (SEC-005). Responde `{ liberacao: null }` ou `{ liberacao: { parceiroNome, regra: { abaterMinutos, descontoPercentual, descontoValor, nome }, liberadoEm } }`. Montar em `api/src/server.ts`. | ✅ | 2026-08-10 |
+| TASK-023 | Criar `app/lib/features/vouchers/data/liberacao_service.dart`: consulta o endpoint com timeout curto (3s) e devolve `LiberacaoConsulta.encontrada` / `.ausente` / `.naoConfirmada`. Os três estados são explícitos de propósito: `.naoConfirmada` não pode ser confundido com `.ausente`, e é essa distinção que sustenta REQ-010. | ✅ | 2026-08-10 |
+| TASK-024 | Integrar em `app/lib/features/tickets/presentation/saida_screen.dart`: consultar ao abrir a tela; em `.encontrada`, calcular com `VoucherEngine` e exibir a origem (parceiro e regra) junto do valor; em `.ausente`, seguir como hoje. | ✅ | 2026-08-10 |
+| TASK-025 | Implementar o estado `.naoConfirmada` na mesma tela: cobra o valor cheio (REQ-009) e exibe aviso persistente — não um toast — de que não foi possível verificar liberações. Sem nenhum controle que permita ao operador aplicar desconto (REQ-009). | ✅ | 2026-08-10 |
+| TASK-026 | Estender o fechamento da saída para enviar `liberacaoId` e `valorAbatido` no payload do outbox existente (CON-003), e a rota `api/src/routes/sync.ts` para gravá-los em `liberacoes`. Sem alterar envelope, retry ou estratégia do `sync_engine`. | ✅ | 2026-08-10 |
+| TASK-027 | Criar `app/test/features/vouchers/liberacao_saida_test.dart`: `.encontrada` aplica o desconto; `.ausente` cobra normal; `.naoConfirmada` cobra normal **e** marca o aviso; timeout do serviço resolve para `.naoConfirmada` e nunca para `.ausente`. | ✅ | 2026-08-10 |
 
 ### Implementation Phase 6
 
@@ -147,11 +147,11 @@ Extras que couberam sem aumentar escopo: `consumo_cota_parceiro()` (a tela "38 d
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-028 | Criar `web/src/app/painel/vouchers/divergencias/page.tsx` (REQ-011): tickets com liberação ativa cujo fechamento gravou `valor_abatido` nulo ou zero — ou seja, a saída ocorreu sem a liberação ter sido aplicada. Ação de cancelar a liberação, devolvendo a cota ao parceiro. | | |
-| TASK-029 | Criar `web/src/app/painel/vouchers/faturamento/page.tsx`: por competência, um bloco por parceiro `faturado` com contagem, total abatido e situação (aberta/fechada). Parceiros `cortesia` aparecem numa seção informativa, sem valor a cobrar. | | |
-| TASK-030 | Implementar o fechamento de competência em `web/src/app/painel/vouchers/faturamento/actions.ts`: carimba `competencia` nas liberações do período, grava `parceiro_competencias` e impede novo fechamento do mesmo par (parceiro, competência). Operação idempotente. | | |
-| TASK-031 | Implementar a exportação CSV do extrato por parceiro e competência (REQ-012), com uma linha por liberação: data, ticket, placa, regra, valor abatido. | | |
-| TASK-032 | Adicionar o uso de vouchers aos relatórios existentes em `web/src/app/painel/relatorios/`, para o total abatido aparecer ao lado da receita. | | |
+| TASK-028 | Criar `web/src/app/painel/vouchers/divergencias/page.tsx` (REQ-011): tickets com liberação ativa cujo fechamento gravou `valor_abatido` nulo ou zero — ou seja, a saída ocorreu sem a liberação ter sido aplicada. Ação de cancelar a liberação, devolvendo a cota ao parceiro. | ✅ | 2026-08-13 |
+| TASK-029 | Criar `web/src/app/painel/vouchers/faturamento/page.tsx`: por competência, um bloco por parceiro `faturado` com contagem, total abatido e situação (aberta/fechada). Parceiros `cortesia` aparecem numa seção informativa, sem valor a cobrar. | ✅ | 2026-08-13 |
+| TASK-030 | Implementar o fechamento de competência em `web/src/app/painel/vouchers/faturamento/actions.ts`: carimba `competencia` nas liberações do período, grava `parceiro_competencias` e impede novo fechamento do mesmo par (parceiro, competência). Operação idempotente. | ✅ | 2026-08-13 |
+| TASK-031 | Implementar a exportação CSV do extrato por parceiro e competência (REQ-012), com uma linha por liberação: data, ticket, placa, regra, valor abatido. | ✅ | 2026-08-13 |
+| TASK-032 | Adicionar o uso de vouchers aos relatórios existentes em `web/src/app/painel/relatorios/`, para o total abatido aparecer ao lado da receita. | ✅ | 2026-08-13 |
 
 ### Implementation Phase 7
 
@@ -159,9 +159,9 @@ Extras que couberam sem aumentar escopo: `consumo_cota_parceiro()` (a tela "38 d
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-033 | Adicionar a solução ao catálogo em `web/src/lib/solucoes.ts`, seguindo a estrutura dos itens existentes. | | |
-| TASK-034 | Adicionar a seção de vouchers à home em `web/src/components/site/secoes.tsx`, com `id` e `data-sec` para o scroll-spy do `site-header.tsx` continuar funcionando. | | |
-| TASK-035 | Refletir a novidade no documento em Markdown para agentes, em `web/src/lib/agentes/paginas.ts` — as três listas espelhadas descritas ali continuam tendo de andar juntas. | | |
+| TASK-033 | Adicionar a solução ao catálogo em `web/src/lib/solucoes.ts`, seguindo a estrutura dos itens existentes. | ✅ | 2026-08-13 |
+| TASK-034 | Adicionar a seção de vouchers à home em `web/src/components/site/secoes.tsx`, com `id` e `data-sec` para o scroll-spy do `site-header.tsx` continuar funcionando. | ✅ | 2026-08-13 |
+| TASK-035 | Refletir a novidade no documento em Markdown para agentes, em `web/src/lib/agentes/paginas.ts` — as três listas espelhadas descritas ali continuam tendo de andar juntas. | ✅ | 2026-08-13 |
 
 ## 3. Alternatives
 

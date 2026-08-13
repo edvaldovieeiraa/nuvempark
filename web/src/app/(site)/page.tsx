@@ -4,6 +4,7 @@ import {
   Numeros,
   Recursos,
   ComoFunciona,
+  Vouchers,
   Roadmap,
   Precos,
   Sobre,
@@ -54,6 +55,7 @@ export default function HomePage() {
       <ComoFunciona />
       <PixTicket />
       <Avaria />
+      <Vouchers />
       <ProvaSocial />
       <Roadmap />
       <Precos />

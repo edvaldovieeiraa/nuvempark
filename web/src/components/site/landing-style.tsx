@@ -40,7 +40,7 @@ html{scroll-behavior:smooth}
 @media (max-width:900px){
   [data-sec]{padding-top:64px!important;padding-bottom:64px!important}
   [data-hero-chip],[data-hero-phone]{display:none!important}
-  [data-spot],[data-pix],[data-avaria],[data-prova-feat],[data-roadmap],[data-precos-a],[data-mock-lower],[data-steps],[data-garantias],[data-prova-grid]{grid-template-columns:1fr!important;gap:36px!important}
+  [data-spot],[data-pix],[data-voucher],[data-avaria],[data-prova-feat],[data-roadmap],[data-precos-a],[data-mock-lower],[data-steps],[data-garantias],[data-prova-grid]{grid-template-columns:1fr!important;gap:36px!important}
   [data-steps],[data-garantias],[data-prova-grid]{gap:16px!important}
   [data-bento]{grid-template-columns:1fr!important}
   [data-bento] > [data-bento-wide]{grid-column:auto!important}
