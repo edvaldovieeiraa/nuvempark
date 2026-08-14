@@ -50,7 +50,35 @@ Regras aprendidas na prática. Violar qualquer uma quebra o deploy:
 
 7. **`next start` lê `.env.local` em runtime** (do cwd). Não precisa injetar env no pm2; basta o arquivo estar em `/root/nuvempark-web/.env.local`. Ao reiniciar, usar `--update-env` por garantia.
 
-8. **Env NOVA não chega pelo scp.** O deploy manda só `src/`. Quando uma feature adiciona variável de ambiente, ela tem de ser inserida **à mão** no `/root/nuvempark-web/.env.local` da VPS **antes** do restart. Esquecer isso quebra a feature em produção sem erro de build.
+8. **O processo ANTIGO sobrescreve o build NOVO se você demorar para reiniciar.**
+   Descoberto em 14/08/2026, custou meia hora de investigação. Desde que
+   `app/(site)/layout.tsx` declara `revalidate = 3600` (11/08), as páginas do
+   site são ISR: o `next start` **escreve** a página revalidada de volta em
+   `.next/server/app/<rota>.html`. Entre o fim do build e o `pm2 restart`, o
+   processo velho continua no ar com os módulos ANTIGOS em memória — e qualquer
+   requisição a `/` dispara uma revalidação que grava o HTML velho por cima do
+   artefato recém-buildado.
+
+   Sintoma: o build diz "Compiled successfully", o `src/` no servidor está
+   correto (confira com `md5sum`), o chunk SSR contém o código novo, e mesmo
+   assim `curl http://127.0.0.1:8092/` devolve a versão anterior — só a home,
+   porque as outras rotas não recebem tráfego nesse intervalo.
+
+   **Reinicie o pm2 imediatamente depois do build.** Se já aconteceu, rebuilde e
+   reinicie em seguida, sem intervalo. Para confirmar antes de reiniciar:
+   ```bash
+   grep -c '<marcador do que voce publicou>' /root/nuvempark-web/.next/server/app/index.html
+   ```
+   Um `mtime` de `index.html` posterior ao do `.next/BUILD_ID` é a assinatura do
+   problema: quem escreveu não foi o build.
+
+9. **`pgrep -f` casa com o próprio comando do ssh.** O padrão que você manda
+   aparece na linha de comando do shell remoto, então `pgrep -f 'next build'`
+   sempre acha "um build rodando". Use colchete: `pgrep -f 'next [b]uild'`. E
+   nunca use o padrão curto `node_modules/.bin/next` — ele casa com o
+   `next start` do pm2, que está sempre no ar.
+
+10. **Env NOVA não chega pelo scp.** O deploy manda só `src/`. Quando uma feature adiciona variável de ambiente, ela tem de ser inserida **à mão** no `/root/nuvempark-web/.env.local` da VPS **antes** do restart. Esquecer isso quebra a feature em produção sem erro de build.
    - **Tela `/master/pagamentos` (gateway por tenant)** exige, no `.env.local` do web:
      - `NUVEMPARK_CRYPTO_KEY` — **o MESMO valor** de `/root/nuvempark-api/.env`. É o que permite a API decifrar a chave que a tela cifra. Valor divergente = Pix do tenant não gera.
      - `ASAAS_BASE_URL` — igual ao da API (sandbox × produção), usado para testar a chave ao salvar.
@@ -91,6 +119,15 @@ scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 -r src \
 # Só quando package.json mudou, envie também:
 # scp ... package.json package-lock.json root@...:/root/nuvempark-web/
 ```
+
+> ⚠️ **`next.config.ts` NÃO está em `src/`.** Toda vez que ele mudar — rota nova
+> no `PAGINAS_MARKDOWN`, cabeçalho, redirect — é preciso um segundo scp:
+> ```bash
+> scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 next.config.ts \
+>   root@dashboard.levemobilidade.com.br:/root/nuvempark-web/
+> ```
+> Esquecer não quebra o build: a página sobe funcionando e sem o cabeçalho
+> `Link: rel="alternate"` do Markdown. Falha silenciosa.
 
 > Enviar `src/` inteiro (é pequeno, ~800KB) garante consistência total, melhor que
 > tentar lembrar quais arquivos mudaram. **Nunca** enviar `.env*`, `node_modules`, `.next`.
