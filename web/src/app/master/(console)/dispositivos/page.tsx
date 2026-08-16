@@ -66,15 +66,18 @@ export default async function DispositivosPage() {
     valorExtraPorTenant.set(a.tenant_id, Number(a.valor_dispositivo_extra ?? 39));
   }
 
-  // Extras cobráveis: regra de negócio no banco (fn_contar_dispositivos_cobraveis).
-  const tenantIds = [...new Set(disps.map((d) => d.tenant_id))];
+  // Extras cobráveis: regra de negócio no banco, agora agrupada.
+  //
+  // Era uma chamada de `fn_contar_dispositivos_cobraveis` POR TENANT dentro de
+  // um Promise.all — paralelo, mas com fan-out sem limite no pooler conforme a
+  // base de clientes cresce. `fn_dispositivos_cobraveis_por_tenant` (db/37)
+  // aplica a mesma regra num único `group by`. A função por tenant continua
+  // existindo: `fn_gerar_faturas_mes` usa ela linha a linha.
   const cobraveisPorTenant = new Map<string, number>();
-  await Promise.all(
-    tenantIds.map(async (tid) => {
-      const { data } = await sb.rpc("fn_contar_dispositivos_cobraveis", { p_tenant: tid });
-      cobraveisPorTenant.set(tid, typeof data === "number" ? data : 0);
-    }),
-  );
+  const { data: cobraveis } = await sb.rpc("fn_dispositivos_cobraveis_por_tenant");
+  for (const linha of (cobraveis as { tenant_id: string; cobraveis: number }[] | null) ?? []) {
+    cobraveisPorTenant.set(linha.tenant_id, Number(linha.cobraveis) || 0);
+  }
 
   // codigo_pareamento por (patio, device) para enriquecer a fila comercial.
   const codigoPorDispositivo = new Map<string, string | null>();

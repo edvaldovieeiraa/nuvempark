@@ -13,18 +13,36 @@ import type { createAdminClient } from "@/lib/supabase/admin";
  * vencimento = dia configurado nesse mês, nunca antes do fim do teste;
  * valor = valor_por_patio × pátios ativos. Idempotente por (tenant, competência).
  * Só gera quando há valor a cobrar (valor_por_patio > 0 e ≥ 1 pátio ativo).
+ *
+ * ## Por que isto virou uma casca fina
+ *
+ * A regra acima vive HOJE em `fn_garantir_faturas_trials` (db/37), em SQL.
+ * Antes ela vivia aqui, num laço `for...of` com `await` dentro: para cada rede
+ * em teste eram TRÊS consultas em série (reler a assinatura, contar os pátios,
+ * procurar a fatura). Com 20 trials, 60 idas e voltas ao Supabase antes do
+ * primeiro byte de /master/assinaturas — o motivo de a tela demorar.
+ *
+ * Agora é uma chamada só, e a idempotência é do `on conflict` em vez de um
+ * SELECT-antes-do-INSERT que abria corrida entre duas abas.
+ *
+ * ⚠️ Se mudar a regra de competência/vencimento, mude no SQL — não reintroduza
+ * o cálculo aqui. Ter as duas metades em linguagens diferentes foi o que fez a
+ * versão antiga divergir do motor mensal.
  */
 
 type Admin = ReturnType<typeof createAdminClient>;
 
-type AssinaturaTrial = {
-  tenant_id: string;
-  estado: string;
-  valor_por_patio: number;
-  dia_vencimento: number | null;
-  trial_expira_em: string | null;
-};
-
+/**
+ * Competência e vencimento da primeira fatura paga de um trial — em TypeScript.
+ *
+ * Não é a fonte da verdade: quem grava a fatura é `fn_garantir_faturas_trials`
+ * (db/37), e a regra ali é a mesma, linha por linha. Esta cópia existe só para
+ * PROJEÇÃO na tela: `/painel/assinatura` mostra ao gestor a próxima cobrança de
+ * um trial que ainda não tem fatura gravada. Ela não escreve nada.
+ *
+ * ⚠️ Mudou a regra? Mude nos DOIS lugares, ou o gestor vê uma data e recebe
+ * outra. O SQL manda; este aqui só precisa concordar com ele.
+ */
 export function competenciaEVencimento(trialExpiraEm: string, diaVenc: number) {
   const fim = new Date(trialExpiraEm);
   const ano = fim.getUTCFullYear();
@@ -39,71 +57,35 @@ export function competenciaEVencimento(trialExpiraEm: string, diaVenc: number) {
 }
 
 /**
- * Garante a fatura de um tenant em trial. Retorna true se criou agora.
+ * Garante a fatura de UMA rede em trial. Retorna true se criou agora.
  * Silencioso: qualquer condição que não gere fatura retorna false.
  */
 export async function garantirFaturaTrial(
   sb: Admin,
   tenantId: string,
 ): Promise<boolean> {
-  const { data: assinatura } = await sb
-    .from("assinaturas")
-    .select("tenant_id, estado, valor_por_patio, dia_vencimento, trial_expira_em")
-    .eq("tenant_id", tenantId)
-    .maybeSingle();
-
-  const a = assinatura as AssinaturaTrial | null;
-  if (!a || a.estado !== "trial" || !a.trial_expira_em) return false;
-
-  const valorPorPatio = Number(a.valor_por_patio) || 0;
-  if (valorPorPatio <= 0) return false;
-
-  const { count } = await sb
-    .from("patios")
-    .select("*", { count: "exact", head: true })
-    .eq("tenant_id", tenantId)
-    .eq("ativo", true);
-  const qtd = count ?? 0;
-  if (qtd <= 0) return false;
-
-  const { competencia, vencimento } = competenciaEVencimento(
-    a.trial_expira_em,
-    a.dia_vencimento ?? 10,
-  );
-
-  // idempotência por unique (tenant_id, competencia)
-  const { data: existente } = await sb
-    .from("faturas")
-    .select("id")
-    .eq("tenant_id", tenantId)
-    .eq("competencia", competencia)
-    .maybeSingle();
-  if (existente) return false;
-
-  const { error } = await sb.from("faturas").insert({
-    tenant_id: tenantId,
-    competencia,
-    vencimento,
-    valor: valorPorPatio * qtd,
-    valor_por_patio: valorPorPatio,
-    qtd_patios: qtd,
+  const { data, error } = await sb.rpc("fn_garantir_faturas_trials", {
+    p_tenant: tenantId,
   });
-  return !error;
+  if (error) {
+    console.error("[faturas-trial] garantirFaturaTrial:", error);
+    return false;
+  }
+  return typeof data === "number" && data > 0;
 }
 
 /**
  * Varre todas as assinaturas em trial e garante a fatura de cada uma.
  * Uso oportunista no painel master (backfill de trials existentes).
+ * Retorna quantas faturas foram criadas nesta chamada.
  */
 export async function garantirFaturasTrials(sb: Admin): Promise<number> {
-  const { data: trials } = await sb
-    .from("assinaturas")
-    .select("tenant_id")
-    .eq("estado", "trial");
-
-  let criadas = 0;
-  for (const t of (trials as { tenant_id: string }[] | null) ?? []) {
-    if (await garantirFaturaTrial(sb, t.tenant_id)) criadas++;
+  const { data, error } = await sb.rpc("fn_garantir_faturas_trials", {
+    p_tenant: null,
+  });
+  if (error) {
+    console.error("[faturas-trial] garantirFaturasTrials:", error);
+    return 0;
   }
-  return criadas;
+  return typeof data === "number" ? data : 0;
 }

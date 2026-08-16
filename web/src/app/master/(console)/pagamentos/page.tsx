@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { asaasAmbiente } from "@/lib/asaas";
 import { cryptoGatewayPronto } from "@/lib/crypto-gateway";
 import {
   PagamentosClient,
@@ -46,10 +47,9 @@ export default async function PagamentosPage() {
     };
   });
 
-  const base = process.env.ASAAS_BASE_URL || "https://api-sandbox.asaas.com/v3";
-  const ambiente: "sandbox" | "producao" = base.includes("sandbox")
-    ? "sandbox"
-    : "producao";
+  // Regra única em lib/asaas.ts — esta tela tinha a sua própria cópia, com
+  // default oposto ao do módulo que de fato chama a API. Ver asaasAmbiente().
+  const ambiente = asaasAmbiente();
 
   return (
     <PagamentosClient

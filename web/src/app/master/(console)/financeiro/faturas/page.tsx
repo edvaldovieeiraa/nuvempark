@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FaturasClient, type FaturaRow } from "@/components/master/faturas-client";
 import { emailConfigurado } from "@/lib/email";
@@ -7,7 +8,10 @@ export const dynamic = "force-dynamic";
 
 export default async function FaturasPage() {
   const sb = createAdminClient();
-  await sb.rpc("fn_marcar_faturas_vencidas");
+
+  // Já roda no pg_cron às 03:00 (db/12). Aqui é só para pegar a fatura que
+  // venceu depois disso — não vale segurar a resposta por ela.
+  after(() => createAdminClient().rpc("fn_marcar_faturas_vencidas"));
 
   const { data: faturas } = await sb
     .from("faturas")

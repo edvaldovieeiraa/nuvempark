@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Revelar } from "@/components/ui/revelar";
 import { GraficoBarras } from "@/components/master/grafico-barras";
@@ -16,37 +17,61 @@ import {
 
 export const dynamic = "force-dynamic";
 
-type Fatura = {
-  id: string;
-  tenant_id: string;
-  competencia: string;
-  vencimento: string;
-  valor: number;
-  estado: string;
-  pago_em: string | null;
+type Kpis = {
+  recebido_mes: number;
+  previsto_mes: number;
+  total_vencido: number;
+  redes_vencidas: number;
+  recebido_total: number;
+};
+
+const KPIS_VAZIO: Kpis = {
+  recebido_mes: 0,
+  previsto_mes: 0,
+  total_vencido: 0,
+  redes_vencidas: 0,
+  recebido_total: 0,
 };
 
 export default async function FinanceiroDashboard() {
   const sb = createAdminClient();
 
-  // manutenção oportunista ao abrir: expira trials vencidos (viram 'atrasada'),
-  // gera faturas do mês (inclui os trials recém-expirados) e marca vencidas.
-  await sb.rpc("fn_expirar_trials");
-  await sb.rpc("fn_gerar_faturas_mes");
-  await sb.rpc("fn_marcar_faturas_vencidas");
+  // Manutenção oportunista DEPOIS da resposta.
+  //
+  // As três já rodam encadeadas no pg_cron todo dia às 03:00
+  // (fn_rotina_diaria_faturamento, db/12-cron-faturamento.sql). No caminho de
+  // render elas custavam três idas e voltas em série — e `fn_gerar_faturas_mes`
+  // ESCREVE: percorre todos os tenants fazendo dois count() cada e insere
+  // faturas. Era uma transação de escrita a cada visualização desta página.
+  //
+  // A ordem importa (expira trial → gera fatura → marca vencida), então aqui
+  // continuam em série; só que fora do caminho crítico. Para forçar a geração
+  // na hora existe o botão "Gerar faturas" no cabeçalho.
+  after(async () => {
+    const bg = createAdminClient();
+    await bg.rpc("fn_expirar_trials");
+    await bg.rpc("fn_gerar_faturas_mes");
+    await bg.rpc("fn_marcar_faturas_vencidas");
+  });
 
-  const [{ data: faturas }, { data: assinaturas }, { data: patios }] =
+  // KPIs e série do gráfico agregados NO BANCO (db/37). Antes esta página
+  // puxava `.limit(5000)` de faturas para o Node só para somar quatro números
+  // e montar seis barras.
+  const [{ data: kpisRaw }, { data: serieRaw }, { data: assinaturas }, { data: patios }] =
     await Promise.all([
-      sb
-        .from("faturas")
-        .select("id, tenant_id, competencia, vencimento, valor, estado, pago_em")
-        .order("competencia", { ascending: false })
-        .limit(5000),
+      sb.rpc("fn_master_kpis_financeiro").maybeSingle(),
+      sb.rpc("fn_master_receita_por_mes", { p_meses: 6 }),
       sb.from("assinaturas").select("tenant_id, valor_por_patio, estado"),
       sb.from("patios").select("tenant_id, ativo"),
     ]);
 
-  const fts = (faturas ?? []) as Fatura[];
+  const k = (kpisRaw as Kpis | null) ?? KPIS_VAZIO;
+  const recebidoMes = Number(k.recebido_mes) || 0;
+  const previstoMes = Number(k.previsto_mes) || 0;
+  const totalVencido = Number(k.total_vencido) || 0;
+  const redesVencidas = Number(k.redes_vencidas) || 0;
+  const recebidoTotal = Number(k.recebido_total) || 0;
+  const pct = previstoMes > 0 ? Math.round((recebidoMes / previstoMes) * 100) : 0;
 
   // MRR: soma valor_por_patio × pátios ativos das assinaturas ativas
   const patiosAtivosPorTenant: Record<string, number> = {};
@@ -59,39 +84,12 @@ export default async function FinanceiroDashboard() {
     if (a.estado === "ativa")
       mrr += (Number(a.valor_por_patio) || 0) * (patiosAtivosPorTenant[a.tenant_id] ?? 0);
 
-  // Competência do mês corrente (yyyy-mm)
-  const agora = new Date();
-  const compAtual = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}`;
-  const faturasMes = fts.filter((f) => f.competencia.startsWith(compAtual));
-  const recebidoMes = faturasMes
-    .filter((f) => f.estado === "paga")
-    .reduce((s, f) => s + Number(f.valor), 0);
-  const previstoMes = faturasMes
-    .filter((f) => f.estado !== "cancelada")
-    .reduce((s, f) => s + Number(f.valor), 0);
-  const pct = previstoMes > 0 ? Math.round((recebidoMes / previstoMes) * 100) : 0;
-
-  // Inadimplência: faturas vencidas
-  const vencidas = fts.filter((f) => f.estado === "vencida");
-  const totalVencido = vencidas.reduce((s, f) => s + Number(f.valor), 0);
-  const redesVencidas = new Set(vencidas.map((f) => f.tenant_id)).size;
-
-  // Recebido total (histórico)
-  const recebidoTotal = fts
-    .filter((f) => f.estado === "paga")
-    .reduce((s, f) => s + Number(f.valor), 0);
-
-  // Gráfico: receita recebida por competência (últimos 6 meses)
-  const porComp: Record<string, number> = {};
-  for (const f of fts)
-    if (f.estado === "paga") {
-      const k = f.competencia.slice(0, 7);
-      porComp[k] = (porComp[k] ?? 0) + Number(f.valor);
-    }
-  const ultimos6 = ultimasCompetencias(6);
-  const dadosGrafico = ultimos6.map((k) => ({
-    rotulo: competenciaCurta(k + "-01"),
-    valor: porComp[k] ?? 0,
+  // A função já devolve os 6 meses sem buraco, em ordem — inclusive os zerados.
+  const dadosGrafico = (
+    (serieRaw as { competencia: string; valor: number }[] | null) ?? []
+  ).map((linha) => ({
+    rotulo: competenciaCurta(linha.competencia),
+    valor: Number(linha.valor) || 0,
   }));
 
   return (
@@ -185,17 +183,6 @@ export default async function FinanceiroDashboard() {
       </div>
     </div>
   );
-}
-
-function ultimasCompetencias(n: number): string[] {
-  const arr: string[] = [];
-  const d = new Date();
-  d.setDate(1);
-  for (let i = n - 1; i >= 0; i--) {
-    const dd = new Date(d.getFullYear(), d.getMonth() - i, 1);
-    arr.push(`${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, "0")}`);
-  }
-  return arr;
 }
 
 function ProgressoRecebimento({ pct }: { pct: number }) {

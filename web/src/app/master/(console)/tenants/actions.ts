@@ -53,7 +53,7 @@ export async function criarTenant(
     return { ok: false, msg: "Não foi possível criar a rede." };
 
   // 3) Gestor (Supabase Auth). tenant_id vai em app_metadata → RLS do painel.
-  const { error: erroUser } = await sb.auth.admin.createUser({
+  const { data: usuario, error: erroUser } = await sb.auth.admin.createUser({
     email,
     password: senha,
     email_confirm: true,
@@ -71,11 +71,30 @@ export async function criarTenant(
   }
 
   // 4) Assinatura.
-  await sb.from("assinaturas").insert({
+  //
+  // O erro daqui É checado, ao contrário do que acontecia antes. Sem assinatura
+  // a rede vira um fantasma: /master/assinaturas lista a partir DESTA tabela,
+  // então ela some do painel, fica fora do MRR e nunca é faturada — enquanto o
+  // app do operador funciona normalmente. A action retornava "ok" com o código
+  // de acesso e nada denunciava a falha.
+  const { error: erroAssinatura } = await sb.from("assinaturas").insert({
     tenant_id: tenant.id,
     valor_por_patio: valor,
     estado: "ativa",
   });
+  if (erroAssinatura) {
+    // Desfaz na ordem inversa: o usuário do Auth primeiro (não cai por FK),
+    // depois o tenant (que leva junto o que tiver `on delete cascade`).
+    if (usuario?.user?.id) {
+      await sb.auth.admin.deleteUser(usuario.user.id);
+    }
+    await sb.from("tenants").delete().eq("id", tenant.id);
+    console.error("[master/tenants] criarTenant assinatura:", erroAssinatura);
+    return {
+      ok: false,
+      msg: "Não foi possível criar a assinatura da rede. Nada foi salvo — tente de novo.",
+    };
+  }
 
   revalidatePath("/master/tenants");
   return {

@@ -7,11 +7,18 @@ import { ShieldCheck, Eye, EyeOff, AlertCircle } from "lucide-react";
 export function MasterLoginForm({
   entrar,
   erro,
+  bloqueadoPor = 0,
 }: {
   entrar: (formData: FormData) => Promise<void>;
-  erro: boolean;
+  /** Texto do erro a exibir, ou null. Era um booleano — virou texto para
+   *  poder dizer "tente de novo em N minutos" no bloqueio por tentativas. */
+  erro: string | null;
+  /** Segundos restantes de bloqueio deste IP. > 0 desabilita o formulário. */
+  bloqueadoPor?: number;
 }) {
   const [verSenha, setVerSenha] = useState(false);
+  const bloqueado = bloqueadoPor > 0;
+  const minutosBloqueio = Math.ceil(bloqueadoPor / 60);
 
   return (
     <main className="min-h-screen flex items-center justify-center p-6 bg-noite relative overflow-hidden">
@@ -54,7 +61,8 @@ export function MasterLoginForm({
                 type={verSenha ? "text" : "password"}
                 required
                 autoFocus
-                className="w-full h-12 px-3.5 pr-11 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/20"
+                disabled={bloqueado}
+                className="w-full h-12 px-3.5 pr-11 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
                 placeholder="••••••••••••"
               />
               <button
@@ -72,22 +80,26 @@ export function MasterLoginForm({
             </div>
           </div>
 
-          {erro && (
+          {erro ? (
             <motion.p
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
+              role="alert"
               className="flex items-center gap-2 text-sm font-semibold text-red-300 bg-red-500/10 border border-red-500/20 rounded-xl px-3.5 py-2.5"
             >
               <AlertCircle className="w-4 h-4 shrink-0" />
-              Senha incorreta.
+              {erro}
             </motion.p>
-          )}
+          ) : null}
 
           <button
             type="submit"
-            className="w-full h-12 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
+            disabled={bloqueado}
+            className="w-full h-12 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold shadow-[var(--shadow-brand)] hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
           >
-            Acessar console
+            {bloqueado
+              ? `Bloqueado · ${minutosBloqueio} min`
+              : "Acessar console"}
           </button>
         </motion.form>
 

@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { garantirFaturaTrial } from "@/lib/faturas-trial";
@@ -47,8 +48,12 @@ export default async function AssinaturaTenantPage({
   const { tenantId } = await params;
   const sb = createAdminClient();
 
-  await sb.rpc("fn_marcar_faturas_vencidas");
-  // Se a rede está em teste, garante a próxima fatura antes de ler.
+  // Manutenção diária (pg_cron, db/12) — não segura a resposta.
+  after(() => createAdminClient().rpc("fn_marcar_faturas_vencidas"));
+
+  // Esta continua antes da leitura: a fatura que ela cria aparece na lista
+  // logo abaixo. Custa uma ida e volta (fn_garantir_faturas_trials escopada
+  // ao tenant), não mais três.
   await garantirFaturaTrial(sb, tenantId);
 
   const [{ data: assinaturaRaw }, { count: patiosAtivos }, { data: faturasRaw }] =

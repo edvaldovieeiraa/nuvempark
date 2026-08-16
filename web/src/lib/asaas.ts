@@ -18,8 +18,36 @@ export function asaasConfigurado(): boolean {
   return !!process.env.ASAAS_API_KEY;
 }
 
+/** URL da API do Asaas em uso. Ver [asaasAmbiente] para o porquê do default. */
+export function asaasBaseUrl(): string {
+  return process.env.ASAAS_BASE_URL || SANDBOX;
+}
+
+const SANDBOX = "https://api-sandbox.asaas.com/v3";
+
+/**
+ * Em qual ambiente do Asaas estamos — é o selo que o /master/pagamentos mostra.
+ *
+ * ## Por que o default é SANDBOX
+ *
+ * Sem `ASAAS_BASE_URL` definida, este módulo caía em produção enquanto a tela
+ * de pagamentos, que tinha a sua própria cópia da regra, caía em sandbox. A
+ * divergência não mordia porque a VPS define a variável — mas bastava um
+ * `.env.local` recriado sem ela para o painel exibir o selo "sandbox" enquanto
+ * as cobranças saíam de verdade, com dinheiro real. O selo tranquiliza
+ * exatamente quando não deveria.
+ *
+ * Com o default em sandbox, o mesmo esquecimento falha para o lado que não
+ * movimenta dinheiro: as cobranças param de valer e alguém percebe na hora.
+ *
+ * As duas metades agora leem daqui. Não recrie a regra em outro arquivo.
+ */
+export function asaasAmbiente(): "sandbox" | "producao" {
+  return asaasBaseUrl().includes("sandbox") ? "sandbox" : "producao";
+}
+
 function base(): string {
-  return process.env.ASAAS_BASE_URL || "https://api.asaas.com/v3";
+  return asaasBaseUrl();
 }
 
 async function req<T>(caminho: string, init: RequestInit): Promise<T> {

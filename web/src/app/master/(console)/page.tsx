@@ -146,19 +146,33 @@ async function contarPatiosAtivosPorTenant(
   return mapa;
 }
 
+/**
+ * Movimento e faturamento do dia, somados NO BANCO.
+ *
+ * A versão anterior trazia até 10.000 linhas de `tickets` para o Node só para
+ * contar e somar aqui. Dois problemas: o volume trafegado crescia com o uso da
+ * plataforma, e o filtro `entrada >= hoje` não tinha índice — os índices de
+ * db/01-schema.sql são todos prefixados por patio_id/tenant_id, nenhum serve
+ * para uma varredura global por data, então isto era um Seq Scan na tickets de
+ * TODOS os clientes a cada abertura do painel.
+ *
+ * `fn_master_resumo_hoje` (db/37) devolve uma linha, e o índice
+ * `idx_tickets_entrada` criado junto com ela cobre a leitura com index-only
+ * scan. O corte do dia é em America/Sao_Paulo, dentro da função — "hoje" é o
+ * dia do operador do pátio, não o UTC (o `setHours` local daqui dependia do
+ * fuso do servidor).
+ */
 async function diaHoje(sb: ReturnType<typeof createAdminClient>) {
-  const inicio = new Date();
-  inicio.setHours(0, 0, 0, 0);
-  const { data } = await sb
-    .from("tickets")
-    .select("valor_cobrado, status")
-    .gte("entrada", inicio.toISOString())
-    .limit(10000);
-  const tickets = data?.length ?? 0;
-  const faturamento = (data ?? [])
-    .filter((t) => t.status === "fechado")
-    .reduce((s, t) => s + (Number(t.valor_cobrado) || 0), 0);
-  return { tickets, faturamento };
+  const { data, error } = await sb.rpc("fn_master_resumo_hoje").maybeSingle();
+  if (error) {
+    console.error("[master] fn_master_resumo_hoje:", error);
+    return { tickets: 0, faturamento: 0 };
+  }
+  const linha = data as { tickets: number; faturamento: number } | null;
+  return {
+    tickets: Number(linha?.tickets) || 0,
+    faturamento: Number(linha?.faturamento) || 0,
+  };
 }
 
 function Card({

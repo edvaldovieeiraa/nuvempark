@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   InadimplenciaClient,
@@ -18,7 +19,10 @@ type RawFatura = {
 
 export default async function InadimplenciaPage() {
   const sb = createAdminClient();
-  await sb.rpc("fn_marcar_faturas_vencidas");
+
+  // Cron diário cobre isto (db/12); aqui só a janela desde as 03:00. Fora do
+  // caminho de render — a lista abaixo não espera pela manutenção.
+  after(() => createAdminClient().rpc("fn_marcar_faturas_vencidas"));
 
   const [{ data: vencidas }, { data: assinaturas }] = await Promise.all([
     sb

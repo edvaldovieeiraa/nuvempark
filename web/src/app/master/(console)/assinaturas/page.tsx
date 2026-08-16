@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { garantirFaturasTrials } from "@/lib/faturas-trial";
 import {
@@ -27,10 +28,24 @@ type RawFatura = {
 export default async function AssinaturasPage() {
   const sb = createAdminClient();
 
-  // Manutenção oportunista: mantém estados coerentes ao abrir a gestão.
-  await sb.rpc("fn_expirar_trials");
-  await sb.rpc("fn_marcar_faturas_vencidas");
-  // Garante a "próxima fatura" das assinaturas em teste (backfill idempotente).
+  // Manutenção oportunista: DEPOIS da resposta, não antes.
+  //
+  // Estas duas rotinas já rodam todo dia às 03:00 no pg_cron
+  // (db/12-cron-faturamento.sql). Rodá-las em série no caminho de render
+  // cobrava duas idas e voltas ao banco de toda visualização da página, para
+  // cobrir só a janela entre o cron e o acesso. Com `after` elas continuam
+  // acontecendo a cada abertura, mas sem segurar o primeiro byte.
+  after(async () => {
+    const bg = createAdminClient();
+    await Promise.all([
+      bg.rpc("fn_expirar_trials"),
+      bg.rpc("fn_marcar_faturas_vencidas"),
+    ]);
+  });
+
+  // Esta fica no caminho de render de propósito: a fatura que ela cria é
+  // EXIBIDA nesta tela, então adiá-la mostraria a rede sem a próxima cobrança
+  // até o segundo F5. Hoje custa uma ida e volta (era 3 por rede em teste).
   await garantirFaturasTrials(sb);
 
   const [{ data: assinaturas }, { data: patios }, { data: faturas }] =
