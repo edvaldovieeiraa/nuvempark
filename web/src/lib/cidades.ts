@@ -134,7 +134,7 @@ const SAO_PAULO: PaginaSolucao = {
     {
       h2: "Vários pátios em São Paulo, uma conta só",
       texto:
-        "Cada unidade tem sua tabela de preço, seus operadores e seu caixa — e todas aparecem consolidadas no mesmo painel. Abrir a sexta unidade não exige trocar de sistema, abrir outra conta nem renegociar contrato: a cobrança é por pátio ativo, R$ 129,90 por mês cada, e você adiciona ou remove quando quiser.",
+        "Cada unidade tem sua tabela de preço, seus operadores e seu caixa — e todas aparecem consolidadas no mesmo painel. Abrir a sexta unidade não exige trocar de sistema, abrir outra conta nem renegociar contrato: a cobrança é por pátio ativo, R$ 79,90 por mês cada, e você adiciona ou remove quando quiser.",
       link: {
         href: "/gestao-de-estacionamento",
         texto: "Como a gestão de vários pátios funciona na prática",
@@ -146,7 +146,7 @@ const SAO_PAULO: PaginaSolucao = {
     {
       pergunta: "Dá para gerenciar vários estacionamentos em São Paulo na mesma conta?",
       resposta:
-        "Sim, e é o caso mais comum. Cada pátio mantém suas próprias tarifas, operadores e caixa, e todos ficam consolidados num painel único. A cobrança é de R$ 129,90 por mês por pátio ativo.",
+        "Sim, e é o caso mais comum. Cada pátio mantém suas próprias tarifas, operadores e caixa, e todos ficam consolidados num painel único. A cobrança é de R$ 79,90 por mês por pátio ativo.",
     },
     {
       pergunta: "Funciona em garagem de subsolo, sem sinal de celular?",
@@ -361,7 +361,7 @@ const JABOATAO: PaginaSolucao = {
   h1: "Sistema para estacionamento em Jaboatão dos Guararapes",
   titulo: "Sistema para Estacionamento em Jaboatão | NuvemPark",
   descricao:
-    "Sistema para estacionamento em Jaboatão dos Guararapes: troque o caderno pelo celular, veja o caixa de longe e pague R$ 129,90 por mês, por pátio.",
+    "Sistema para estacionamento em Jaboatão dos Guararapes: troque o caderno pelo celular, veja o caixa de longe e pague R$ 79,90 por mês, por pátio.",
   subtitulo:
     "Para quem não fica no pátio o dia inteiro, o problema não é o movimento — é depender da palavra de quem ficou.",
   resposta:
@@ -392,7 +392,7 @@ const JABOATAO: PaginaSolucao = {
     {
       h2: "Um carro por dia paga o sistema",
       texto:
-        "São R$ 129,90 por mês, por pátio, com tudo incluso — sem taxa de instalação, sem cobrança por operador e sem fidelidade. Não há investimento em equipamento: o aplicativo roda no celular Android que a equipe já tem. Para um pátio de bairro, é a diferença entre um sistema caber no orçamento e não caber.",
+        "São R$ 79,90 por mês, por pátio, com tudo incluso — sem taxa de instalação, sem cobrança por operador e sem fidelidade. Não há investimento em equipamento: o aplicativo roda no celular Android que a equipe já tem. Para um pátio de bairro, é a diferença entre um sistema caber no orçamento e não caber.",
       link: {
         href: "/blog/quanto-fatura-um-estacionamento",
         texto: "Quanto fatura um estacionamento",
@@ -404,7 +404,7 @@ const JABOATAO: PaginaSolucao = {
     {
       pergunta: "Compensa para um pátio pequeno, com um operador só?",
       resposta:
-        "Compensa quando o dono não está no pátio o tempo todo — que é o caso mais comum. O custo é R$ 129,90 por mês, por pátio, sem equipamento e sem instalação, e o retorno vem de deixar de depender da conferência manual no fim do turno.",
+        "Compensa quando o dono não está no pátio o tempo todo — que é o caso mais comum. O custo é R$ 79,90 por mês, por pátio, sem equipamento e sem instalação, e o retorno vem de deixar de depender da conferência manual no fim do turno.",
     },
     {
       pergunta: "Consigo ver o caixa sem ir até o estacionamento?",

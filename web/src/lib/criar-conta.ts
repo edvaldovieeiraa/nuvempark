@@ -17,7 +17,7 @@ import { garantirFaturaTrial } from "@/lib/faturas-trial";
 type Admin = ReturnType<typeof createAdminClient>;
 
 export const TRIAL_DIAS = 15;
-const VALOR_POR_PATIO = 129.9;
+const VALOR_POR_PATIO = 79.9;
 
 export async function criarTenantComTrial(
   sb: Admin,

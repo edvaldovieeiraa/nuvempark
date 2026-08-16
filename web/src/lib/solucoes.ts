@@ -140,9 +140,9 @@ export const PILAR: PaginaSolucao = {
     {
       h2: "Quanto custa um sistema para estacionamento",
       texto:
-        "O modelo tradicional cobra pelo equipamento, pela instalação e depois pela licença — o que empurra o custo de entrada para milhares de reais antes do primeiro carro. O NuvemPark cobra R$ 129,90 por mês, por pátio, com tudo incluso: sem taxa de instalação, sem cobrança por operador e sem fidelidade. O teste são 15 dias completos, sem cartão de crédito.",
+        "O modelo tradicional cobra pelo equipamento, pela instalação e depois pela licença — o que empurra o custo de entrada para milhares de reais antes do primeiro carro. O NuvemPark cobra R$ 79,90 por mês, por pátio, com tudo incluso: sem taxa de instalação, sem cobrança por operador e sem fidelidade. O teste são 15 dias completos, sem cartão de crédito.",
       lista: [
-        "R$ 129,90 por mês, por pátio",
+        "R$ 79,90 por mês, por pátio",
         "15 dias grátis, sem cartão de crédito",
         "Sem taxa de instalação e sem cobrança por operador",
         "Atualizações e suporte no WhatsApp inclusos",
@@ -198,7 +198,7 @@ export const PILAR: PaginaSolucao = {
     {
       pergunta: "Quanto custa o sistema para estacionamento?",
       resposta:
-        "R$ 129,90 por mês, por pátio, com tudo incluso. Não há taxa de instalação, cobrança por operador nem fidelidade. O teste são 15 dias completos, sem cartão de crédito.",
+        "R$ 79,90 por mês, por pátio, com tudo incluso. Não há taxa de instalação, cobrança por operador nem fidelidade. O teste são 15 dias completos, sem cartão de crédito.",
     },
     {
       pergunta: "Quanto tempo leva para começar a usar?",
@@ -346,7 +346,7 @@ export const GESTAO: PaginaSolucao = {
     {
       pergunta: "Dá para gerenciar vários estacionamentos na mesma conta?",
       resposta:
-        "Sim. Cada pátio tem suas próprias tarifas, operadores e caixa, e todos aparecem consolidados num painel só. A cobrança é de R$ 129,90 por mês por pátio ativo.",
+        "Sim. Cada pátio tem suas próprias tarifas, operadores e caixa, e todos aparecem consolidados num painel só. A cobrança é de R$ 79,90 por mês por pátio ativo.",
     },
     {
       pergunta: "Como controlar o caixa de cada operador?",
@@ -758,7 +758,7 @@ export const VALIDACAO: PaginaSolucao = {
     {
       pergunta: "A validação custa a mais na mensalidade?",
       resposta:
-        "Não. Está inclusa nos R$ 129,90 por mês por pátio, como todo recurso novo — sem módulo extra e sem cobrança por parceiro cadastrado.",
+        "Não. Está inclusa nos R$ 79,90 por mês por pátio, como todo recurso novo — sem módulo extra e sem cobrança por parceiro cadastrado.",
     },
   ],
   migalhas: [

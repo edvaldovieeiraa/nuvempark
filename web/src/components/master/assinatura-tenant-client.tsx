@@ -541,7 +541,7 @@ function EditarCobranca({
   const toast = useToast();
   const [aberto, setAberto] = useState(false);
   const [salvando, comecar] = useTransition();
-  // Valor editável como texto (aceita vírgula ou ponto). Ex.: "129,90".
+  // Valor editável como texto (aceita vírgula ou ponto). Ex.: "79,90".
   const [valor, setValor] = useState(
     valorInicial.toFixed(2).replace(".", ","),
   );
@@ -603,7 +603,7 @@ function EditarCobranca({
                     inputMode="decimal"
                     value={valor}
                     onChange={(e) => setValor(e.target.value)}
-                    placeholder="129,90"
+                    placeholder="79,90"
                     className="w-32 h-10 pl-9 pr-3 rounded-lg border border-borda bg-superficie text-sm font-bold tabular-nums focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10"
                   />
                 </div>

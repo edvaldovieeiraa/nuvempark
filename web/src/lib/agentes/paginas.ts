@@ -79,7 +79,7 @@ um painel web.
 
 ## Preço
 
-R$ 129,90 por mês, por pátio, tudo incluso. 15 dias de teste grátis com todos os
+R$ 79,90 por mês, por pátio, tudo incluso. 15 dias de teste grátis com todos os
 recursos, sem cartão de crédito. Sem taxa de instalação, sem cobrança por
 operador, sem fidelidade e sem multa de cancelamento.
 
@@ -98,7 +98,7 @@ sincroniza tudo sozinho quando a conexão volta.
 você decidir ficar.
 
 **Quanto custa depois do teste?**
-R$ 129,90 por mês, por pátio — tudo incluso.
+R$ 79,90 por mês, por pátio — tudo incluso.
 
 **Tenho mais de um pátio. Preciso de contas separadas?**
 Não. Todos os pátios ficam na mesma conta, cada um com suas tarifas, operadores
@@ -163,7 +163,7 @@ ou uma rede inteira, consolidados numa conta só.
 
 const PRECOS = `## Plano único
 
-**R$ 129,90 por mês, por pátio — tudo incluso.**
+**R$ 79,90 por mês, por pátio — tudo incluso.**
 
 Antes disso, **15 dias grátis** com todos os recursos e sem cartão de crédito.
 
@@ -199,7 +199,7 @@ A operação continua normalmente. O app funciona 100% offline e sincroniza tudo
 sozinho quando a conexão volta.
 
 **Tenho mais de um estacionamento. Como funciona?**
-Cada pátio é uma assinatura de R$ 129,90/mês, todos na mesma conta. Você
+Cada pátio é uma assinatura de R$ 79,90/mês, todos na mesma conta. Você
 gerencia a rede inteira em um único painel.
 
 **Existe fidelidade ou multa de cancelamento?**
@@ -372,7 +372,7 @@ export const PAGINAS_AGENTE: readonly PaginaAgente[] = [
     caminho: "/",
     titulo: "NuvemPark — gestão de estacionamento na nuvem",
     resumo:
-      "O site inteiro: visão geral, recursos, preços (R$ 129,90/mês por pátio), roadmap, quem somos e contato. App Android offline-first para o operador, painel web em tempo real para o gestor.",
+      "O site inteiro: visão geral, recursos, preços (R$ 79,90/mês por pátio), roadmap, quem somos e contato. App Android offline-first para o operador, painel web em tempo real para o gestor.",
     corpo: HOME,
   },
   ...[...SOLUCOES, ...CIDADES].map((s) => ({

@@ -29,7 +29,7 @@ export const FAQ_HOME = [
   {
     pergunta: "Quanto custa depois do teste?",
     resposta:
-      "R$ 129,90 por mês, por pátio — tudo incluso. Sem taxa de instalação, sem cobrança por operador, sem fidelidade.",
+      "R$ 79,90 por mês, por pátio — tudo incluso. Sem taxa de instalação, sem cobrança por operador, sem fidelidade.",
   },
   {
     pergunta: "Tenho mais de um pátio. Preciso de contas separadas?",

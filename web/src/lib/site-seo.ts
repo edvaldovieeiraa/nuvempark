@@ -19,7 +19,7 @@ import { SITE_URL, urlSite } from "@/lib/urls";
 type Schema = Record<string, unknown>;
 
 /** Preço público do plano. Espelha `components/site/precos.tsx`. */
-export const PRECO_MENSAL = "129.90";
+export const PRECO_MENSAL = "79.90";
 export const MOEDA = "BRL";
 
 /**
@@ -80,12 +80,12 @@ export function schemaSoftware(): Schema {
       availability: "https://schema.org/InStock",
       url: urlSite("/sistema-para-estacionamento"),
       description:
-        "R$ 129,90 por mês, por pátio, com tudo incluso. 15 dias de teste grátis, sem cartão de crédito e sem fidelidade.",
+        "R$ 79,90 por mês, por pátio, com tudo incluso. 15 dias de teste grátis, sem cartão de crédito e sem fidelidade.",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
         price: PRECO_MENSAL,
         priceCurrency: MOEDA,
-        // `MON` é o código UN/CEFACT de mês — é o que diz que 129,90 é
+        // `MON` é o código UN/CEFACT de mês — é o que diz que 79,90 é
         // mensalidade e não preço de venda única.
         unitCode: "MON",
         unitText: "por pátio, por mês",

@@ -58,7 +58,7 @@ export function Precos() {
         <Reveal>
           <div style={{ textAlign: "center", maxWidth: 640, margin: "0 auto" }}>
             <span style={eyebrow}>Preço</span>
-            <h2 data-balance style={h2}>Teste 15 dias grátis. Depois, R$ 129,90 por pátio.</h2>
+            <h2 data-balance style={h2}>Teste 15 dias grátis. Depois, R$ 79,90 por pátio.</h2>
             <p style={{ margin: "16px 0 0", fontSize: 17, lineHeight: 1.6, color: "#6B7280" }}>
               Um preço só: sem taxa de instalação, sem cobrança por operador, sem
               surpresa no boleto. Um carro por dia paga o sistema.
@@ -96,7 +96,7 @@ function Vitrine() {
             </span>
             <div style={{ marginTop: 20, display: "flex", alignItems: "flex-end", gap: 8 }}>
               <span style={{ fontSize: "clamp(3rem,6vw,3.75rem)", fontWeight: 800, fontVariantNumeric: "tabular-nums", color: "#fff", lineHeight: 1 }}>
-                R$ 129<span style={{ fontSize: "0.6em" }}>,90</span>
+                R$ 79<span style={{ fontSize: "0.6em" }}>,90</span>
               </span>
             </div>
             <p style={{ margin: "6px 0 0", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,.6)" }}>por mês, por pátio — tudo incluso</p>
@@ -134,7 +134,7 @@ function CartaoUnico() {
         <div style={{ padding: 40, textAlign: "center" }}>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 8 }}>
             <span style={{ fontSize: "clamp(3.25rem,7vw,4.5rem)", fontWeight: 800, fontVariantNumeric: "tabular-nums", color: "#1F2937", lineHeight: 1 }}>
-              R$ 129<span style={{ fontSize: "0.5em", color: "#6B7280" }}>,90</span>
+              R$ 79<span style={{ fontSize: "0.5em", color: "#6B7280" }}>,90</span>
             </span>
           </div>
           <p style={{ margin: "6px 0 0", fontSize: 15, fontWeight: 600, color: "#6B7280" }}>por mês, por pátio — tudo incluso</p>
