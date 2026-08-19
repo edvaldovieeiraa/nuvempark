@@ -100,13 +100,17 @@ function redirecionaPorHost(request: NextRequest): NextResponse | null {
   const { pathname, search } = request.nextUrl;
   const rotaApp = ehRotaApp(pathname);
 
-  // rota de app fora do host de app → manda pro dashboard
+  // rota de app fora do host de app → manda pro dashboard. 308 (permanente,
+  // preserva o método): a separação de domínios é definitiva.
   if (rotaApp && host !== HOST_APP) {
-    return NextResponse.redirect(`https://${HOST_APP}${pathname}${search}`);
+    return NextResponse.redirect(`https://${HOST_APP}${pathname}${search}`, 308);
   }
-  // rota de site no host de app → manda pro site
+  // rota de site no host de app → manda pro site. 301 e não o 307 padrão: o
+  // Google só tira dashboard.nuvempark.com do relatório de "página com
+  // redirecionamento" (e consolida a autoridade no site) se o redirect for
+  // permanente. Só chega GET aqui — mesma escolha documentada no next.config.
   if (!rotaApp && host === HOST_APP) {
-    return NextResponse.redirect(`https://${HOST_SITE}${pathname}${search}`);
+    return NextResponse.redirect(`https://${HOST_SITE}${pathname}${search}`, 301);
   }
   return null;
 }
