@@ -9,13 +9,13 @@ import {
   Target,
   HeartHandshake,
   MessageCircle,
-  Mail,
   Clock,
   Ticket,
   Store,
   CheckCircle2,
 } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
+import { ContatoForm } from "@/components/site/contato-form";
 import { SOLUCOES } from "@/lib/solucoes";
 import { urlApp } from "@/lib/urls";
 import { MONO, WHATSAPP, eyebrow, h2, pill, listItem, btnPrimary, btnGhostDark } from "@/components/site/tokens";
@@ -376,13 +376,17 @@ export function Contato() {
             </h2>
             <p style={{ margin: "16px 0 0", fontSize: 16, lineHeight: 1.6, color: "#6B7280" }}>
               Você conta como opera hoje, a gente mostra funcionando — e você
-              decide.
+              decide. Escolha o canal: formulário ou WhatsApp.
             </p>
           </div>
         </Reveal>
 
-        <div data-contato style={{ marginTop: 32, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div data-contato style={{ marginTop: 32, display: "grid", gridTemplateColumns: "1.15fr .85fr", gap: 20, alignItems: "stretch" }}>
           <Reveal>
+            <ContatoForm />
+          </Reveal>
+
+          <Reveal delay={0.08}>
             <a
               href={WHATSAPP}
               target="_blank"
@@ -404,25 +408,6 @@ export function Contato() {
             </a>
           </Reveal>
 
-          <Reveal delay={0.08}>
-            <a
-              href="mailto:contato@nuvempark.com"
-              style={{ display: "block", height: "100%", borderRadius: 20, border: "1px solid #E5E7EB", background: "#fff", padding: 28, textDecoration: "none", transition: "border-color .15s, box-shadow .15s" }}
-            >
-              <span style={{ display: "grid", placeItems: "center", width: 48, height: 48, borderRadius: 16, background: "rgba(14,165,233,.1)", color: "#0EA5E9" }}>
-                <Mail size={24} strokeWidth={2.2} />
-              </span>
-              <h3 style={{ margin: "18px 0 0", fontSize: 19, fontWeight: 800, color: "#1F2937" }}>E-mail</h3>
-              <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.55, color: "#6B7280" }}>
-                Prefere escrever com calma? Envie sua dúvida ou pedido de
-                proposta por e-mail.
-              </p>
-              <span style={{ marginTop: 18, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "#0284C7" }}>
-                contato@nuvempark.com
-                <ArrowRight size={16} strokeWidth={2.4} />
-              </span>
-            </a>
-          </Reveal>
         </div>
 
         <Reveal delay={0.14}>

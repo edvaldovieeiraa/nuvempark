@@ -22,6 +22,13 @@ export const CSS_BASE = `
 details[open] > .np-faq-sumario svg{transform:rotate(180deg)}
 .np-faq-sumario svg{transition:transform .25s}
 @media (prefers-reduced-motion:reduce){.np-faq-sumario svg{transition:none}}
+
+/* Formulário de contato. Fica na BASE (e não no CSS só da home) porque o
+   formulário também pode entrar nas páginas de solução — e o spinner sem
+   keyframe vira um ícone parado, que lê como travado. */
+@keyframes np-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){[style*="np-spin"]{animation:none!important}}
+@media (max-width:560px){[data-contato-linha]{grid-template-columns:1fr!important}}
 `;
 
 const CSS = `

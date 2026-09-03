@@ -71,7 +71,7 @@ a 500 vagas, com uma ou mais unidades.
 - Preço: R$ 79,90 por mês, por pátio, tudo incluso — ${urlSite("/#precos")}
 - Visão geral do produto: ${urlSite("/sistema-para-estacionamento")}
 - Recursos: ${urlSite("/#recursos")}
-- Contato humano: contato@nuvempark.com · WhatsApp (81) 99614-2120 (seg–sex, 8h–18h)
+- Contato humano: WhatsApp (81) 99614-2120 · formulário em ${urlSite("/#contato")} (seg–sex, 8h–18h)
 
 ## Como ler este site em Markdown
 

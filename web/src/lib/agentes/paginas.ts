@@ -240,7 +240,7 @@ equipamento caro.
   dia a dia.`;
 
 const CONTATO = `- **WhatsApp:** (81) 99614-2120 — https://wa.me/5581996142120
-- **E-mail:** contato@nuvempark.com
+- **Formulário:** https://nuvempark.com/#contato (nome, telefone, e-mail e assunto)
 - **Horário de atendimento:** segunda a sexta, das 8h às 18h (America/Recife).
   Mensagens fora do horário são respondidas no próximo dia útil.
 
