@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Building2,
@@ -14,6 +15,7 @@ import {
   Clock,
   Rocket,
   Phone,
+  IdCard,
 } from "lucide-react";
 import {
   criarTenant,
@@ -186,7 +188,12 @@ function LinhaTenant({ tenant }: { tenant: TenantRow }) {
           </span>
           <div className="min-w-0">
             <div className="font-bold flex items-center gap-2">
-              <span className="truncate">{tenant.nome}</span>
+              <Link
+                href={`/master/tenants/${tenant.id}`}
+                className="truncate hover:text-brand-700 hover:underline underline-offset-2 transition-colors"
+              >
+                {tenant.nome}
+              </Link>
               {tenant.origem === "signup" && (
                 <span
                   title="Cadastro pelo site"
@@ -274,6 +281,11 @@ function LinhaTenant({ tenant }: { tenant: TenantRow }) {
                   paraCima ? "bottom-12" : "top-12"
                 }`}
               >
+                <MenuItem onClick={() => setMenu(false)} href={`/master/tenants/${tenant.id}`}>
+                  <IdCard className="w-4 h-4 text-texto-3" />
+                  Ver ficha completa
+                </MenuItem>
+                <div className="h-px bg-borda my-1" />
                 {tenant.estadoAssinatura === "trial" && (
                   <>
                     <MenuTitulo>Teste grátis</MenuTitulo>
@@ -340,21 +352,31 @@ function MenuTitulo({ children }: { children: React.ReactNode }) {
 function MenuItem({
   children,
   onClick,
+  href,
   perigo = false,
 }: {
   children: React.ReactNode;
   onClick: () => void;
+  /** Quando presente, o item navega em vez de disparar uma action. */
+  href?: string;
   perigo?: boolean;
 }) {
+  const cls = `w-full px-3 py-2 rounded-lg flex items-center gap-2.5 text-sm font-semibold transition-colors ${
+    perigo
+      ? "text-perigo hover:bg-perigo-bg"
+      : "text-texto-2 hover:bg-fundo hover:text-texto"
+  }`;
+
+  if (href) {
+    return (
+      <Link href={href} onClick={onClick} className={cls}>
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <button
-      onClick={onClick}
-      className={`w-full px-3 py-2 rounded-lg flex items-center gap-2.5 text-sm font-semibold transition-colors ${
-        perigo
-          ? "text-perigo hover:bg-perigo-bg"
-          : "text-texto-2 hover:bg-fundo hover:text-texto"
-      }`}
-    >
+    <button onClick={onClick} className={cls}>
       {children}
     </button>
   );
