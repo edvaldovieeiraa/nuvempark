@@ -87,6 +87,23 @@ class TicketsDao extends DatabaseAccessor<AppDatabase> with _$TicketsDaoMixin {
       (update(tickets)..where((t) => t.id.equals(id)))
           .write(const TicketsCompanion(fotoEntradaEnviada: Value(true)));
 
+  /// Grava o ticket que veio do servidor só se ele ainda não existe aqui. Se
+  /// existe, a cópia local manda: pode ter uma saída ainda não enviada.
+  Future<void> inserirSeAusente(TicketsCompanion t) =>
+      into(tickets).insert(t, mode: InsertMode.insertOrIgnore);
+
+  /// Abertos deste pátio que o servidor já conhece e que podem ser apagados sem
+  /// perder nada: nenhuma escrita pendente e nenhuma foto por enviar.
+  Future<List<Ticket>> getAbertosSincronizados(String operacaoId) =>
+      (select(tickets)
+            ..where((t) =>
+                t.operacaoId.equals(operacaoId) &
+                t.status.equals('aberto') &
+                t.syncStatus.equals('sincronizado') &
+                (t.fotoEntradaPath.isNull() |
+                    t.fotoEntradaEnviada.equals(true))))
+          .get();
+
   /// Remove um ticket local — usado na convergência da Limpeza de Pátio
   /// (bootstrap ou resposta 'ignorado' do sync). A foto pendente daquele ticket
   /// deixa de existir junto (getFotosPendentes lê a própria tabela de tickets).

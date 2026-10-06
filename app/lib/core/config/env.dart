@@ -24,6 +24,7 @@ abstract final class Env {
 
   static String get authBase => '$_prefix/auth';
   static String get bootstrapUrl => '$_prefix/bootstrap';
+  static String get ticketAbertoUrl => '$_prefix/tickets/aberto';
   static String get syncUrl => '$_prefix/sync';
   static String get fotoUrl => '$_prefix/foto';
   static String get fotoAvariaUrl => '$_prefix/foto-avaria';

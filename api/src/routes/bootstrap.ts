@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
 import { getAssinaturaStatus } from '../lib/assinatura.js';
+import { COLUNAS_TICKET_ABERTO } from './tickets-abertos.js';
 
 /**
  * GET /bootstrap?patio_id=... — hidrata a config offline do app.
@@ -143,6 +144,22 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       .gte('removido_em', cutoff)
       .order('removido_em', { ascending: false });
 
+    // Veículos no pátio agora, entrados por QUALQUER aparelho. Sem isto cada
+    // celular só via as próprias entradas e o caixa não achava o carro que
+    // entrou pelo aparelho do pátio. O app também usa a lista para apagar os
+    // que saíram por outro aparelho — por isso, em erro, o campo vai AUSENTE
+    // (o app não mexe) e nunca vazio (o app apagaria tudo).
+    // Índice: idx_tickets_patio_status. O limite cobre qualquer pátio real.
+    const { data: abertos, error: abertosErr } = await db
+      .from('tickets')
+      .select(COLUNAS_TICKET_ABERTO)
+      .eq('patio_id', patioId)
+      .eq('status', 'aberto')
+      .order('entrada', { ascending: false })
+      .limit(5000);
+    const ticketsAbertos =
+      abertosErr || (abertos ?? []).length >= 5000 ? undefined : (abertos ?? []);
+
     // Liberações de voucher ativas dos carros que ainda estão no pátio.
     //
     // Existe para o caso OFFLINE. A saída consulta
@@ -212,6 +229,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       assinatura: assinaturaStatus,
       dispositivo: dispositivoOut,
       tickets_removidos: (removidos ?? []).map((r) => r.id),
+      tickets_abertos: ticketsAbertos,
       liberacoes: liberacoesOut,
     });
   });

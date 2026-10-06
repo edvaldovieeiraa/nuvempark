@@ -7,7 +7,10 @@ import '../../data/ticket_repository.dart';
 import '../../domain/ticket_model.dart';
 
 final ticketRepositoryProvider = Provider<TicketRepository>(
-  (ref) => TicketRepository(db: ref.read(appDatabaseProvider)),
+  (ref) => TicketRepository(
+    db: ref.read(appDatabaseProvider),
+    dio: ref.read(dioProvider),
+  ),
 );
 
 final pagamentoOnlineServiceProvider = Provider<PagamentoOnlineService>(

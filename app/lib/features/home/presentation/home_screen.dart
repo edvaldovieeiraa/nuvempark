@@ -895,7 +895,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       return;
     }
 
-    final ticket = await ref.read(ticketRepositoryProvider).getById(ticketId);
+    // Com o pátio, um cupom impresso por outro aparelho é buscado no servidor.
+    final patioId = await ref.read(tokenStorageProvider).readPatioId();
+    if (!mounted) return;
+    final ticket = await ref
+        .read(ticketRepositoryProvider)
+        .getById(ticketId, patioId: patioId);
     if (!mounted) return;
     if (ticket == null) {
       messenger.showSnackBar(const SnackBar(

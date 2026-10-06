@@ -1,9 +1,12 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/config/env.dart';
 import '../../../database/app_database.dart';
+import 'ticket_remoto.dart';
 import '../domain/ticket_model.dart';
 import '../domain/reconhecimento_cliente.dart';
 
@@ -32,9 +35,48 @@ class SaidaResult {
 /// As chaves de data são `entrada`/`saida`/`atualizado_em` (epoch-ms) para casar
 /// com o backend (`toIso()` aceita epoch-ms), NÃO `entrada_epoch`.
 class TicketRepository {
-  TicketRepository({required this.db});
+  TicketRepository({required this.db, this.dio});
 
   final AppDatabase db;
+
+  /// Opcional: sem ele as buscas ficam só no Drift (testes antigos, offline).
+  final Dio? dio;
+
+  /// Busca pontual de ticket aberto no servidor quando o Drift não tem.
+  ///
+  /// O ciclo de 30s do bootstrap traz os carros dos outros aparelhos, mas o
+  /// caso mais comum é justamente o que ele perde: o carro entrou pelo aparelho
+  /// do pátio agora há pouco e já está no caixa. Achou → grava localmente, e a
+  /// saída segue pelo caminho de sempre (offline-first).
+  ///
+  /// Qualquer falha de rede vira null: a tela já sabe dizer "não encontrado".
+  Future<Ticket?> _buscarAbertoNoServidor(
+    String patioId, {
+    String? placa,
+    String? id,
+  }) async {
+    final d = dio;
+    if (d == null) return null;
+    try {
+      final resp = await d.get<dynamic>(
+        Env.ticketAbertoUrl,
+        queryParameters: {
+          'patio_id': patioId,
+          'placa': ?placa,
+          'id': ?id,
+        },
+      );
+      final body = resp.data;
+      if (body is! Map || body['ticket'] is! Map) return null;
+      final m = Map<String, dynamic>.from(body['ticket'] as Map);
+      await db.ticketsDao.inserirSeAusente(ticketRemotoParaCompanion(m, patioId));
+      final local = await db.ticketsDao.getById(m['id'] as String);
+      // Já existia aqui fechado (saída local ainda não enviada): não reabre.
+      return local?.status == 'aberto' ? local : null;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Reconhece a placa contra o cache local de clientes de livre passagem.
   Future<ReconhecimentoCliente?> reconhecerPlaca(
@@ -81,8 +123,11 @@ class TicketRepository {
   }
 
   /// Ticket aberto com esta placa (veículo ainda no pátio), se houver.
-  Future<Ticket?> ticketAbertoPorPlaca(String patioId, String placa) =>
-      db.ticketsDao.getAbertoByPlaca(patioId, placa.trim().toUpperCase());
+  Future<Ticket?> ticketAbertoPorPlaca(String patioId, String placa) async {
+    final placaNorm = placa.trim().toUpperCase();
+    return await db.ticketsDao.getAbertoByPlaca(patioId, placaNorm) ??
+        await _buscarAbertoNoServidor(patioId, placa: placaNorm);
+  }
 
   Future<String> registrarEntrada({
     required String placa,
@@ -321,8 +366,13 @@ class TicketRepository {
     return row != null ? _toModel(row) : null;
   }
 
-  Future<TicketModel?> getById(String id) async {
-    final row = await db.ticketsDao.getById(id);
+  /// Com [patioId], um id que este aparelho não conhece (QR impresso por outro
+  /// aparelho) é procurado no servidor.
+  Future<TicketModel?> getById(String id, {String? patioId}) async {
+    final row = await db.ticketsDao.getById(id) ??
+        (patioId != null
+            ? await _buscarAbertoNoServidor(patioId, id: id)
+            : null);
     return row != null ? _toModel(row) : null;
   }
 
