@@ -17,12 +17,14 @@ export default async function RegrasVoucherPage({
   const supabase = await createClient();
   // Inclui as inativas: elas continuam aparecendo no extrato dos parceiros e o
   // gestor precisa conseguir reativar sem recriar.
-  const { data: regras } = await supabase
+  const { data: regras, error } = await supabase
     .from("voucher_regras")
     .select("*")
     .eq("patio_id", patioId)
     .order("ativo", { ascending: false })
     .order("nome");
+  // Lista vazia e erro parecem iguais na tela; no log não.
+  if (error) console.error("[painel/vouchers] listar regras:", error);
 
   return (
     <RegrasClient

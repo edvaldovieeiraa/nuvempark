@@ -55,6 +55,23 @@ void main() {
   }
 
   group('Com o servidor respondendo', () {
+    test('chama a rota sob o prefixo da API do app', () async {
+      // Sem o prefixo a API responde 404, o app lê como "sem rede" e cobra
+      // cheio de quem tinha voucher — foi assim em produção até 07/10.
+      Uri? chamada;
+      final s = LiberacaoService(
+        dio: fakeDio((o) {
+          chamada = o.uri;
+          return jsonResponse({'liberacao': null});
+        }),
+        db: db,
+      );
+
+      await s.consultar('t1');
+
+      expect(chamada!.path, '/api/mobile/v1/patio/tickets/t1/liberacao');
+    });
+
     test('tem voucher → encontrada, e vem FRESCA (sem conferidoEm)', () async {
       final s = LiberacaoService(
         dio: fakeDio((_) => jsonResponse(corpoComVoucher())),

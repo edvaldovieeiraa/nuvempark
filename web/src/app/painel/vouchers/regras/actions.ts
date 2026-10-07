@@ -81,7 +81,12 @@ export async function criarRegra(
     .from("voucher_regras")
     .insert({ ...valores, patio_id: patioId, tenant_id: tenantId });
 
-  if (error) return { ok: false, msg: "Não foi possível criar a regra." };
+  if (error) {
+    // A mensagem ao gestor é genérica; o motivo real (constraint, RLS, tabela
+    // ausente) só existe aqui. Sem este log o erro some e não há o que olhar.
+    console.error("[painel/vouchers] criarRegra:", error);
+    return { ok: false, msg: "Não foi possível criar a regra." };
+  }
 
   await registrarAuditoria({
     modulo: "vouchers",
@@ -110,7 +115,10 @@ export async function salvarRegra(
   if (erro) return { ok: false, msg: erro };
 
   const { error } = await sb.from("voucher_regras").update(valores).eq("id", id);
-  if (error) return { ok: false, msg: "Não foi possível salvar a regra." };
+  if (error) {
+    console.error("[painel/vouchers] salvarRegra:", error);
+    return { ok: false, msg: "Não foi possível salvar a regra." };
+  }
 
   await registrarAuditoria({
     modulo: "vouchers",
@@ -146,7 +154,10 @@ export async function alternarRegra(
     .from("voucher_regras")
     .update({ ativo: !ativo })
     .eq("id", id);
-  if (error) return { ok: false, msg: "Não foi possível alterar a regra." };
+  if (error) {
+    console.error("[painel/vouchers] alternarRegra:", error);
+    return { ok: false, msg: "Não foi possível alterar a regra." };
+  }
 
   await registrarAuditoria({
     modulo: "vouchers",

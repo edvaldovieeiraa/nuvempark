@@ -70,7 +70,7 @@ class LiberacaoService {
   Future<LiberacaoConsulta> consultar(String ticketId) async {
     try {
       final resp = await dio.get<Map<String, dynamic>>(
-        '${Env.apiBaseUrl}/tickets/$ticketId/liberacao',
+        Env.liberacaoUrl(ticketId),
         options: Options(
           receiveTimeout: prazo,
           sendTimeout: prazo,
