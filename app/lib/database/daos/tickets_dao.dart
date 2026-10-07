@@ -92,6 +92,15 @@ class TicketsDao extends DatabaseAccessor<AppDatabase> with _$TicketsDaoMixin {
   Future<void> inserirSeAusente(TicketsCompanion t) =>
       into(tickets).insert(t, mode: InsertMode.insertOrIgnore);
 
+  /// Quais destes ids já existem aqui (qualquer status).
+  Future<Set<String>> idsExistentes(List<String> ids) async {
+    if (ids.isEmpty) return {};
+    final query = selectOnly(tickets)
+      ..addColumns([tickets.id])
+      ..where(tickets.id.isIn(ids));
+    return {for (final r in await query.get()) r.read(tickets.id)!};
+  }
+
   /// Abertos deste pátio que o servidor já conhece e que podem ser apagados sem
   /// perder nada: nenhuma escrita pendente e nenhuma foto por enviar.
   Future<List<Ticket>> getAbertosSincronizados(String operacaoId) =>

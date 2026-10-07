@@ -25,6 +25,7 @@ abstract final class Env {
   static String get authBase => '$_prefix/auth';
   static String get bootstrapUrl => '$_prefix/bootstrap';
   static String get ticketAbertoUrl => '$_prefix/tickets/aberto';
+  static String get ticketsAbertosUrl => '$_prefix/tickets/abertos';
   static String get syncUrl => '$_prefix/sync';
   static String get fotoUrl => '$_prefix/foto';
   static String get fotoAvariaUrl => '$_prefix/foto-avaria';
@@ -55,6 +56,12 @@ abstract final class Env {
   /// está em primeiro plano. O operador não precisa clicar em nada: cadastros
   /// da dashboard chegam sozinhos e a fila local sobe sozinha.
   static const Duration syncInterval = Duration(seconds: 30);
+
+  /// Ciclo rápido com o app ABERTO: envia a fila e lê os veículos no pátio.
+  /// É o que faz o carro registrado num aparelho aparecer no outro em segundos.
+  /// Parado, custa só um cabeçalho (o servidor responde 304). Em segundo plano
+  /// o loop volta para [syncInterval], para poupar bateria.
+  static const Duration syncRapidoInterval = Duration(seconds: 5);
   static const int syncMaxTentativas = 10;
 
   /// Intervalo do heartbeat: "este app está vivo" para o painel do gestor.

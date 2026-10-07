@@ -12,6 +12,7 @@ import '../../database/app_database.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/data/token_storage.dart';
 import '../../features/sync/data/sync_engine.dart';
+import '../../features/sync/data/sync_mutex.dart';
 import '../../features/printing/data/printer_service.dart';
 import '../../features/vouchers/data/liberacao_service.dart';
 import '../../features/printing/data/printer_storage.dart';
@@ -76,11 +77,15 @@ final printerStorageProvider = Provider<PrinterStorage>(
 final printerServiceProvider = Provider<PrinterService>((_) => PrinterService());
 
 // ── SyncEngine ─────────────────────────────────────────────────────────────
+/// Uma única trava para o envio e a leitura dos veículos no pátio.
+final syncMutexProvider = Provider<SyncMutex>((_) => SyncMutex());
+
 final syncEngineProvider = Provider<SyncEngine>(
   (ref) => SyncEngine(
     db: ref.read(appDatabaseProvider),
     dio: ref.read(dioProvider),
     storage: ref.read(tokenStorageProvider),
+    mutex: ref.read(syncMutexProvider),
   ),
 );
 

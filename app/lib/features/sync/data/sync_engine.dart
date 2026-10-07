@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import '../../../core/config/env.dart';
 import '../../../database/app_database.dart';
 import '../../../features/auth/data/token_storage.dart';
+import 'sync_mutex.dart';
 import 'sync_result.dart';
 
 /// Resultado do envio de um item da fila.
@@ -17,16 +18,22 @@ class SyncEngine {
     required this.db,
     required this.dio,
     required this.storage,
-  });
+    SyncMutex? mutex,
+  }) : mutex = mutex ?? SyncMutex();
 
   final AppDatabase db;
   final Dio dio;
   final TokenStorage storage;
 
+  /// Compartilhada com a leitura dos veículos no pátio — ver [SyncMutex].
+  final SyncMutex mutex;
+
   /// Drena todas as entradas devidas do SyncLog. Garantias: nunca descarta um
   /// item sem confirmação explícita do servidor. Após [Env.syncMaxTentativas]
   /// falhas o item vai para 'falhou' em vez de ser deletado.
-  Future<SyncResult> drain() async {
+  Future<SyncResult> drain() => mutex.exclusivo(_drenar);
+
+  Future<SyncResult> _drenar() async {
     final agora = DateTime.now().millisecondsSinceEpoch;
     final pendentes = await db.syncDao.getPendentes(agora);
 

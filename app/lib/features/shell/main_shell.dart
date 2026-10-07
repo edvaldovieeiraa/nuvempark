@@ -73,8 +73,8 @@ class _MainShellState extends ConsumerState<MainShell>
       await _aplicarQuiosque(patio);
     });
 
-    // Sincronização contínua (push + pull a cada 30s) enquanto o app está
-    // aberto. O operador não clica em nada: cadastros da dashboard chegam
+    // Sincronização contínua (veículos a cada 5s, cadastros a cada 30s)
+    // enquanto o app está aberto. O operador não clica em nada: cadastros da dashboard chegam
     // sozinhos e a fila local sobe sozinha. Pausa em background.
     Future.microtask(() => ref.read(syncLoopProvider).iniciar());
 

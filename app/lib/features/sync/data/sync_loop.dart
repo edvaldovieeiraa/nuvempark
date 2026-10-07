@@ -6,12 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/env.dart';
 import '../../../core/di/providers.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
+import '../../tickets/presentation/providers/ticket_provider.dart';
 
 /// Loop de sincronização contínua e bidirecional.
 ///
-/// A cada [Env.syncInterval] (30s) faz:
+/// A cada tick ([Env.syncRapidoInterval] com o app aberto, [Env.syncInterval]
+/// em segundo plano) faz:
 ///   • PUSH — drena a outbox local (entradas, saídas, caixa) pro servidor
-///   • PULL — baixa os cadastros da dashboard (tarifas, tipos, config, cupom)
+///   • VEÍCULOS — lê os tickets abertos do pátio, inclusive os dos OUTROS
+///     aparelhos, e redesenha a lista quando algo mudou
+///   • PULL — no máximo a cada [Env.syncInterval], baixa os cadastros da
+///     dashboard (tarifas, tipos, config, cupom)
 ///
 /// O operador não precisa clicar em nada: o que muda na dashboard aparece
 /// sozinho, e o que ele registra sobe sozinho — inclusive com o app fora da
@@ -29,6 +34,8 @@ class SyncLoop with WidgetsBindingObserver {
   Timer? _timer;
   bool _rodando = false;
   bool _emTick = false;
+  bool _primeiroPlano = true;
+  DateTime? _ultimoBootstrap;
 
   /// Liga o loop: sincroniza uma vez agora e agenda o ciclo.
   void iniciar() {
@@ -42,6 +49,7 @@ class SyncLoop with WidgetsBindingObserver {
   /// Desliga o loop (logout / dispose).
   void parar() {
     _rodando = false;
+    _ultimoBootstrap = null;
     _timer?.cancel();
     _timer = null;
     WidgetsBinding.instance.removeObserver(this);
@@ -49,20 +57,39 @@ class SyncLoop with WidgetsBindingObserver {
 
   void _agendar() {
     _timer?.cancel();
-    _timer = Timer.periodic(Env.syncInterval, (_) => _tick());
+    _timer = Timer.periodic(
+      _primeiroPlano ? Env.syncRapidoInterval : Env.syncInterval,
+      (_) => _tick(),
+    );
   }
 
-  /// Um ciclo: push + pull. Reentrância-safe (não empilha se um tick demora).
+  /// Um ciclo. Reentrância-safe (não empilha se um tick demora).
   Future<void> _tick() async {
     if (_emTick || !_rodando) return;
     _emTick = true;
     try {
-      // PUSH: sobe a fila local. Best-effort — offline não lança.
+      // PUSH: sobe a fila local. Best-effort — offline não lança. Com a fila
+      // vazia é só uma consulta ao Drift.
       await _ref.read(syncEngineProvider).drain();
-      // PULL: baixa os cadastros da dashboard, silencioso (não pisca a tela).
-      await _ref
-          .read(patioNotifierProvider.notifier)
-          .bootstrap(silencioso: true);
+
+      // VEÍCULOS: o que entrou ou saiu pelos outros aparelhos.
+      final patioId = await _ref.read(tokenStorageProvider).readPatioId();
+      if (patioId != null &&
+          await _ref.read(ticketsAbertosSyncProvider).puxar(patioId)) {
+        _ref.invalidate(ticketsAbertosProvider);
+        _ref.invalidate(ticketsMovimentosProvider);
+      }
+
+      // PULL: cadastros da dashboard, silencioso (não pisca a tela). Mudam
+      // pouco — não precisam do ritmo dos veículos.
+      final agora = DateTime.now();
+      final ultimo = _ultimoBootstrap;
+      if (ultimo == null || agora.difference(ultimo) >= Env.syncInterval) {
+        _ultimoBootstrap = agora;
+        await _ref
+            .read(patioNotifierProvider.notifier)
+            .bootstrap(silencioso: true);
+      }
     } catch (_) {
       // Nunca deixa um erro derrubar o loop; o próximo tick tenta de novo.
     } finally {
@@ -76,12 +103,19 @@ class SyncLoop with WidgetsBindingObserver {
   /// tela é o OperacaoService (foreground service) — sem ele o Android 12+
   /// congela o processo e este timer para sozinho.
   ///
+  /// Fora da tela o ritmo cai para [Env.syncInterval]: ninguém está olhando a
+  /// lista, e 5s com a tela apagada só gastaria bateria.
+  ///
   /// No resume ainda sincronizamos na hora: é quando a rede costuma voltar.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!_rodando) return;
     if (state == AppLifecycleState.resumed) {
+      _primeiroPlano = true;
       _tick();
+      _agendar();
+    } else if (state == AppLifecycleState.paused && _primeiroPlano) {
+      _primeiroPlano = false;
       _agendar();
     }
   }

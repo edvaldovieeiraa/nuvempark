@@ -6,7 +6,6 @@ import 'package:drift/drift.dart';
 import '../../../core/config/env.dart';
 import '../../../database/app_database.dart';
 import '../../auth/data/token_storage.dart';
-import '../../tickets/data/ticket_remoto.dart';
 
 /// Baixa a config do pátio (config + tarifas + clientes) e grava no Drift.
 /// O endpoint NuvemPark recebe `patio_id`; internamente o Drift usa a coluna
@@ -38,9 +37,6 @@ class BootstrapRepository {
     final removidosIds = <String>[
       for (final e in (data['tickets_removidos'] as List?) ?? const []) e as String,
     ];
-    // Também aditivo, mas aqui ausente ≠ vazio: lista vazia quer dizer "o pátio
-    // está vazio" e apaga os abertos locais; ausente (backend antigo) não mexe.
-    final abertosJson = data['tickets_abertos'] as List?;
 
     // Info do dispositivo (aditivo) — só exibição, NÃO bloqueia nada aqui (o
     // gate é login/refresh/heartbeat). API antiga omite → não regrava.
@@ -182,32 +178,6 @@ class BootstrapRepository {
         for (final id in removidosIds) {
           await db.ticketsDao.deletar(id);
           await db.syncDao.removerItensDoTicket(id);
-        }
-      });
-    }
-
-    // ── Veículos no pátio, vistos por TODOS os aparelhos ─────────────────────
-    // Sem isto cada celular só enxergava as próprias entradas: o carro que
-    // entrou pelo aparelho do pátio não era encontrado pelo aparelho do caixa.
-    //
-    // Duas direções:
-    //   • aberto no servidor e ausente aqui → grava (entrou por outro aparelho)
-    //   • aberto aqui, já sincronizado, e fora da lista → apaga (saiu por outro
-    //     aparelho, ou foi cancelado no painel)
-    // O que tem escrita pendente nunca é tocado: o SyncLoop roda o push ANTES
-    // deste pull, então o que ainda está pendente é mais novo que a lista.
-    if (abertosJson != null) {
-      final abertos = [for (final e in abertosJson) e as Map<String, dynamic>];
-      final idsServidor = {for (final m in abertos) m['id'] as String};
-      await db.transaction(() async {
-        for (final m in abertos) {
-          await db.ticketsDao
-              .inserirSeAusente(ticketRemotoParaCompanion(m, patioId));
-        }
-        for (final t in await db.ticketsDao.getAbertosSincronizados(patioId)) {
-          if (!idsServidor.contains(t.id)) {
-            await db.ticketsDao.deletar(t.id);
-          }
         }
       });
     }

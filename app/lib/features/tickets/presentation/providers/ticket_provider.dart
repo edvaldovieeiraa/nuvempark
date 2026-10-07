@@ -4,12 +4,23 @@ import '../../../../core/di/providers.dart';
 import '../../data/avaria_service.dart';
 import '../../data/pagamento_online_service.dart';
 import '../../data/ticket_repository.dart';
+import '../../data/tickets_abertos_sync.dart';
 import '../../domain/ticket_model.dart';
 
 final ticketRepositoryProvider = Provider<TicketRepository>(
   (ref) => TicketRepository(
     db: ref.read(appDatabaseProvider),
     dio: ref.read(dioProvider),
+  ),
+);
+
+/// Leitura dos veículos no pátio vindos dos outros aparelhos (ciclo rápido do
+/// SyncLoop). Mantém o ETag da última lista em memória.
+final ticketsAbertosSyncProvider = Provider<TicketsAbertosSync>(
+  (ref) => TicketsAbertosSync(
+    db: ref.read(appDatabaseProvider),
+    dio: ref.read(dioProvider),
+    mutex: ref.read(syncMutexProvider),
   ),
 );
 

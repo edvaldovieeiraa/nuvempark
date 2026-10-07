@@ -111,11 +111,7 @@ Future<void> enqueueTicket(AppDatabase db, String ticketId) {
 
 /// Payload de bootstrap mínimo e válido. Inclui tickets_removidos só quando
 /// [removidos] != null (para testar também o caso do backend antigo).
-Map<String, dynamic> bootstrapPayload({
-  List<String>? removidos,
-  List<Map<String, dynamic>>? abertos,
-}) =>
-    {
+Map<String, dynamic> bootstrapPayload({List<String>? removidos}) => {
       'patio': {
         'id': 'p1',
         'nome': 'Pátio Teste',
@@ -127,5 +123,4 @@ Map<String, dynamic> bootstrapPayload({
       'clientes': <dynamic>[],
       'assinatura_estado': 'ativa',
       'tickets_removidos': ?removidos,
-      'tickets_abertos': ?abertos,
     };
