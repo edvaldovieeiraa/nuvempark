@@ -20,6 +20,7 @@
  */
 
 import { CANCELA } from "@/lib/solucoes-cancela";
+import { LEITURA_PLACA } from "@/lib/solucoes-leitura-placa";
 
 export type ItemH3 = { h3: string; texto: string };
 
@@ -453,6 +454,10 @@ export const CONTROLE: PaginaSolucao = {
             "Histórico, movimentos e veículos removidos ficam no painel, com busca por placa e por período. Localizar uma estadia de três semanas atrás leva segundos.",
         },
       ],
+      link: {
+        href: "/leitura-de-placa-para-estacionamento",
+        texto: "Como funciona a leitura de placa pelo celular",
+      },
     },
     {
       h2: "Controle de ocupação: quantas vagas estão livres agora",
@@ -526,6 +531,10 @@ export const APLICATIVO: PaginaSolucao = {
         "Abre, sangra e fecha o caixa do turno",
         "Funciona offline e sincroniza sozinho depois",
       ],
+      link: {
+        href: "/leitura-de-placa-para-estacionamento",
+        texto: "Leitura de placa: como o app lê e o operador confirma",
+      },
     },
     {
       h2: "Por que “funciona offline” é o requisito que mais importa",
@@ -803,6 +812,7 @@ export const SOLUCOES: PaginaSolucao[] = [
   GESTAO,
   CONTROLE,
   APLICATIVO,
+  LEITURA_PLACA,
   VALIDACAO,
   CANCELA,
 ];

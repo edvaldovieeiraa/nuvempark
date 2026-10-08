@@ -64,6 +64,7 @@ const PAGINAS_MARKDOWN = [
   "/gestao-de-estacionamento",
   "/controle-de-estacionamento",
   "/aplicativo-para-estacionamento",
+  "/leitura-de-placa-para-estacionamento",
   "/validacao-de-estacionamento",
   "/cancela-para-estacionamento",
 ];

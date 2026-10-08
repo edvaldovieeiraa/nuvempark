@@ -36,6 +36,7 @@ uma camada**, não desfazer o onepage:
 /gestao-de-estacionamento            ← irmãs, uma intenção de busca cada
 /controle-de-estacionamento
 /aplicativo-para-estacionamento
+/leitura-de-placa-para-estacionamento
 /validacao-de-estacionamento
 /cancela-para-estacionamento
 /blog/*                              ← suporte informacional
@@ -71,6 +72,7 @@ resultado sem disputar o termo no título.
 | `/gestao-de-estacionamento` | gestão de estacionamento(s) | `lib/solucoes.ts` → `GESTAO` |
 | `/controle-de-estacionamento` | controle de estacionamento, entrada e saída de veículos | `lib/solucoes.ts` → `CONTROLE` |
 | `/aplicativo-para-estacionamento` | aplicativo/app para estacionamento | `lib/solucoes.ts` → `APLICATIVO` |
+| `/leitura-de-placa-para-estacionamento` | leitura de placa / LPR para estacionamento, reconhecimento de placas | `lib/solucoes-leitura-placa.ts` |
 | `/validacao-de-estacionamento` | validação de estacionamento, convênio/voucher com lojista | `lib/solucoes.ts` → `VALIDACAO` |
 | `/cancela-para-estacionamento` | cancela para estacionamento | `lib/solucoes-cancela.ts` |
 | `/sistema-para-estacionamento/<cidade>` | ...em São Paulo / no Rio / em Recife... | `lib/cidades.ts` |
@@ -83,6 +85,7 @@ resultado sem disputar o termo no título.
 | --- | --- |
 | Conteúdo das páginas de assunto | `lib/solucoes.ts` |
 | Conteúdo da página de cancela | `lib/solucoes-cancela.ts` |
+| Conteúdo da página de leitura de placa | `lib/solucoes-leitura-placa.ts` |
 | Conteúdo das páginas de cidade | `lib/cidades.ts` |
 | JSON-LD do site (produto, site, organização) | `lib/site-seo.ts` |
 | JSON-LD genérico (migalhas, FAQ, organização) | `lib/blog-seo.ts` (reaproveitado) |
@@ -173,7 +176,26 @@ A FAQ da página diz isso com todas as letras. Não troque essa resposta por
 "funciona offline como o resto do app": o resto do app grava local e sobe
 depois; aqui o dado precisa vir de fora, e é o caminho contrário.
 
-### 4.6 O dado estruturado tem de bater com o texto visível
+### 4.6 A página de leitura de placa não é LPR de câmera fixa
+
+Entrou em 08/10/2026, quando o Search Console começou a mostrar impressões para
+"leitura de placa para estacionamento", "lpr para estacionamento" e
+"reconhecimento de placas de veículos lpr" sem nenhuma página do site com esse
+assunto. O post `/blog/lpr-leitura-automatica-de-placas-no-app` fica com a
+intenção informativa ("o que é LPR"); a página do silo, com a de compra.
+
+No mercado, "LPR" quer dizer câmera fixa na faixa lendo o carro sem operador.
+O NuvemPark lê pela câmera do celular do operador, no aparelho, e a leitura é
+**sugestão que o operador confirma**. A página diz isso na resposta direta,
+como a de cancela faz com a integração.
+
+O que **não pode** ser escrito ali enquanto não for verdade: taxa de acerto em
+porcentagem, leitura sem operador, integração com câmera fixa ou cancela, app
+de iPhone. Cada afirmação da página aponta para o arquivo do app que a sustenta
+— a lista está no topo de `lib/solucoes-leitura-placa.ts`. Mudou o OCR do app
+(formatos, teto de correção, moldura, saída pela placa), confira a página.
+
+### 4.7 O dado estruturado tem de bater com o texto visível
 
 O `FAQPage` de cada página é montado da **mesma lista** que o acordeão renderiza.
 Declarar em JSON-LD uma resposta que não está na página é motivo de ação manual
@@ -220,7 +242,7 @@ Cada página do silo publica `WebPage` + `BreadcrumbList` + `FAQPage`.
 1. **Cabeçalho** (`components/site/site-header.tsx`) — "O sistema" aponta para o
    pilar. Está em todas as páginas do site; é o link interno mais forte que
    existe.
-2. **Rodapé** (`components/site/secoes.tsx`) — coluna "Soluções" com as cinco
+2. **Rodapé** (`components/site/secoes.tsx`) — coluna "Soluções" com todas as
    páginas de assunto. Também site-wide, inclusive em cada post do blog.
    A lista sai de `SOLUCOES` (`.map`), não é escrita à mão: a versão manual
    ficou em quatro itens quando a página de cancela entrou, e ela passou dias

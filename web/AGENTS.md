@@ -15,7 +15,7 @@ uma derruba Core Web Vitals de forma silenciosa.
 # Antes de mexer nas páginas de busca ou no texto do site público
 
 Leia `SEO.md`. Vale para `lib/solucoes.ts`, `lib/solucoes-cancela.ts`,
-`lib/cidades.ts`, `components/solucoes/` e o `<title>` da home.
+`lib/solucoes-leitura-placa.ts`, `lib/cidades.ts`, `components/solucoes/` e o `<title>` da home.
 
 Três coisas ali são regra, não estilo:
 

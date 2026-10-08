@@ -120,6 +120,10 @@ export const CANCELA: PaginaSolucao = {
         "O pagamento entra em dinheiro, cartão ou Pix, registrado no caixa da sessão",
         "Tudo funciona offline e sobe para o painel quando a conexão volta",
       ],
+      link: {
+        href: "/leitura-de-placa-para-estacionamento",
+        texto: "Leitura de placa pelo celular ou por câmera fixa",
+      },
     },
   ],
   faq: [
