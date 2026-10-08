@@ -3,6 +3,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
 import { toIso, num, str, compact } from '../lib/coerce.js';
 import { proximoVencimento, hojeYmdUtc } from '../lib/vencimento.js';
+import { argsPagamentoEstadia, linhaEstadia } from '../lib/estadia.js';
 
 /**
  * POST /sync — recebe UM item da outbox do app (não batch).
@@ -10,6 +11,8 @@ import { proximoVencimento, hojeYmdUtc } from '../lib/vencimento.js';
  *  - ticket        → read-then-write com fallbacks NOT-NULL no insert
  *  - caixa_sessao  → read-then-write (sem fallbacks extras)
  *  - caixa_movimento → upsert nativo onConflict:id ignoreDuplicates (imutável)
+ *  - estadia       → create-only, mesmo upsert (o vencimento só muda pelo pagamento)
+ *  - estadia_pagamento → fn_estadia_registrar_pagamento (db/41), com trava de linha
  *
  * Autorização dupla: patio_id ∈ token.patio_ids  E  tenant_id do envelope == token.tenant_id.
  * O tenant_id/patio_id são carimbados em toda linha; RLS é a 2ª camada.
@@ -50,6 +53,7 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
     const tenantId = operador.tenant_id;
     const db = await tenantClient(tenantId);
     const agora = new Date().toISOString();
+    const contexto = { patioId, tenantId, operadorSub: operador.sub, agora };
 
     try {
       switch (entidade) {
@@ -81,6 +85,9 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
             cliente_id: str(payload.cliente_id),
             plano_id: str(payload.plano_id),
             origem: str(payload.origem),
+            // Hóspede: liga o ticket à estadia (entrada de hóspede ou conversão
+            // de um ticket avulso em estadia).
+            estadia_id: str(payload.estadia_id),
             foto_entrada_path: str(payload.foto_entrada_path),
             atk: str(payload.atk),
             itk: str(payload.itk),
@@ -279,6 +286,37 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
                 .update({ vencimento: novo })
                 .eq('id', clienteId);
             }
+          }
+          break;
+        }
+
+        // ------------------------------------------------------- ESTADIA
+        case 'estadia': {
+          const linha = linhaEstadia(entidadeId, payload, contexto);
+          if (!linha.ok) return reply.code(422).send({ error: linha.erro });
+          // Create-only: a renovação NÃO passa por aqui — quem estende o
+          // vencimento é o estadia_pagamento, sob trava, no banco. Reenvio é no-op.
+          const res = await db
+            .from('estadias')
+            .upsert(linha.valor, { onConflict: 'id', ignoreDuplicates: true });
+          if (res.error) throw res.error;
+          break;
+        }
+
+        // --------------------------------------------- ESTADIA_PAGAMENTO
+        case 'estadia_pagamento': {
+          const args = argsPagamentoEstadia(entidadeId, payload, contexto);
+          if (!args.ok) return reply.code(422).send({ error: args.erro });
+          const { data: resultado, error: erroRpc } = await db.rpc(
+            'fn_estadia_registrar_pagamento',
+            args.valor,
+          );
+          if (erroRpc) throw erroRpc;
+          // A outbox continua depois de um item que falhou, então uma renovação
+          // pode chegar antes da sua estadia. 503 é transitório para o app
+          // (SyncEngine.isPermanenteHttp): o item fica na fila e volta depois.
+          if (resultado === 'estadia_ausente') {
+            return reply.code(503).send({ error: 'Estadia ainda não sincronizada' });
           }
           break;
         }

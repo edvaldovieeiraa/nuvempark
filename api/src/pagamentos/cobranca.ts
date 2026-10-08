@@ -44,6 +44,9 @@ export async function gerarOuReaproveitarPix(
    */
   origem: 'publico' | 'app' = 'publico',
 ): Promise<ResultadoCobranca> {
+  if (estado.statusPagamento === 'hospede') {
+    return { ok: false, code: 409, error: 'Hóspede: pagamento no balcão' };
+  }
   // Pago e dentro da carência: não há o que cobrar.
   if (estado.statusPagamento === 'pago') {
     return { ok: false, code: 409, error: 'Estadia já paga' };

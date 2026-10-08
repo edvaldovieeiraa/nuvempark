@@ -93,6 +93,8 @@ export interface TicketPublico {
   patio_id: string;
   tenant_id: string;
   tabela_preco_id: string | null;
+  /** Ticket de estadia de hóspede (db/41). Nulo para avulso e mensalista. */
+  estadia_id: string | null;
   pago_online_em: string | null;
   valor_pago_online: number | null;
   patio_nome: string;
@@ -118,30 +120,34 @@ export interface TarifaLinha {
 export async function lerTicketPublico(
   ticketId: string,
 ): Promise<TicketPublico | null> {
-  const { data, error } = await servico
-    .from('tickets')
-    .select(
-      'id, placa, tipo_veiculo, entrada, status, patio_id, tenant_id, tabela_preco_id, pago_online_em, valor_pago_online, patios!inner(nome, ativo)',
-    )
-    .eq('id', ticketId)
-    .maybeSingle();
+  const colunas =
+    'id, placa, tipo_veiculo, entrada, status, patio_id, tenant_id, tabela_preco_id, pago_online_em, valor_pago_online, patios!inner(nome, ativo)';
+  const consulta = (cols: string) =>
+    servico.from('tickets').select(cols).eq('id', ticketId).maybeSingle();
+  // `estadia_id` nasce em db/41. Banco sem ele (API publicada antes do SQL):
+  // repete sem a coluna em vez de derrubar a página pública inteira.
+  let { data, error } = await consulta(`${colunas}, estadia_id`);
+  if (error) ({ data, error } = await consulta(colunas));
 
   if (error) throw error;
   if (!data) return null;
+  // Select montado em runtime: o supabase-js não infere o tipo da linha.
+  const row = data as unknown as Record<string, unknown>;
 
-  const patio = data.patios as unknown as { nome: string; ativo: boolean };
+  const patio = row.patios as unknown as { nome: string; ativo: boolean };
   return {
-    id: data.id as string,
-    placa: data.placa as string,
-    tipo_veiculo: data.tipo_veiculo as string,
-    entrada: data.entrada as string,
-    status: data.status as string,
-    patio_id: data.patio_id as string,
-    tenant_id: data.tenant_id as string,
-    tabela_preco_id: (data.tabela_preco_id as string | null) ?? null,
-    pago_online_em: (data.pago_online_em as string | null) ?? null,
+    id: row.id as string,
+    placa: row.placa as string,
+    tipo_veiculo: row.tipo_veiculo as string,
+    entrada: row.entrada as string,
+    status: row.status as string,
+    patio_id: row.patio_id as string,
+    tenant_id: row.tenant_id as string,
+    tabela_preco_id: (row.tabela_preco_id as string | null) ?? null,
+    estadia_id: (row.estadia_id as string | null | undefined) ?? null,
+    pago_online_em: (row.pago_online_em as string | null) ?? null,
     valor_pago_online:
-      data.valor_pago_online === null ? null : Number(data.valor_pago_online),
+      row.valor_pago_online === null ? null : Number(row.valor_pago_online),
     patio_nome: patio.nome,
     patio_ativo: patio.ativo,
   };
@@ -179,17 +185,21 @@ export async function lerTarifaDoTicket(
   }
 
   const agora = new Date().toISOString();
-  const { data, error } = await servico
-    .from('tarifas')
-    .select(campos)
-    .eq('patio_id', t.patio_id)
-    .in('tipo_veiculo', [t.tipo_veiculo, 'ambos'])
-    .eq('ativo', true)
-    .lte('vigencia_inicio', agora)
-    .or(`vigencia_fim.is.null,vigencia_fim.gte.${agora}`)
-    .order('ordem', { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const reserva = () =>
+    servico
+      .from('tarifas')
+      .select(campos)
+      .eq('patio_id', t.patio_id)
+      .in('tipo_veiculo', [t.tipo_veiculo, 'ambos'])
+      .eq('ativo', true)
+      .lte('vigencia_inicio', agora)
+      .or(`vigencia_fim.is.null,vigencia_fim.gte.${agora}`)
+      .order('ordem', { ascending: true })
+      .limit(1);
+  // A reserva é sempre uma tabela AVULSA: a de hóspede pode ter a menor
+  // `ordem` e não tem frações. Banco sem db/41 não tem a coluna: sem filtro.
+  let { data, error } = await reserva().eq('modalidade', 'avulso').maybeSingle();
+  if (error) ({ data, error } = await reserva().maybeSingle());
 
   if (error) throw error;
   return data ? numerica(data) : null;

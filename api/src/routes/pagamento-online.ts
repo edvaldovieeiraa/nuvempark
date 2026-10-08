@@ -67,7 +67,9 @@ export async function pagamentoOnlineRoutes(app: FastifyInstance): Promise<void>
       const tarifa = await lerTarifaDoTicket(ticket);
       const estado = derivarEstado({ ticket, tarifa, agora: new Date() });
 
-      const pago = estado.statusPagamento !== 'nao_pago';
+      const pago =
+        estado.statusPagamento === 'pago' ||
+        estado.statusPagamento === 'pago_diferenca_pendente';
 
       return reply.send({
         pago,

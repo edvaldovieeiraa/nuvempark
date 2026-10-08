@@ -2,13 +2,20 @@ import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
+import { montarEstadias, type PagamentoResumo } from '../lib/estadia.js';
 
 /**
  * Colunas do ticket aberto que o app precisa para dar a saída de um carro que
  * entrou por OUTRO aparelho. Mesmas colunas na lista e na busca pontual.
  */
 export const COLUNAS_TICKET_ABERTO =
-  'id, placa, tipo_veiculo, entrada, operador_id, caixa_sessao_id, tabela_preco_id, cliente_id, plano_id, origem';
+  'id, placa, tipo_veiculo, entrada, operador_id, caixa_sessao_id, tabela_preco_id, cliente_id, plano_id, origem, estadia_id';
+
+const COLUNAS_ESTADIA =
+  'id, placa, tipo_veiculo, tarifa_id, diaria_valor, diaria_horas, inicio, valida_ate, diarias, valor_total';
+
+/** Estadia vencida continua no aparelho por esta janela (aviso na volta, aba Hóspedes). */
+const JANELA_VENCIDA_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * GET /tickets/aberto?patio_id=...&placa=... (ou &id=...)
@@ -58,7 +65,43 @@ export async function ticketsAbertosRoutes(app: FastifyInstance): Promise<void> 
       return reply.code(502).send({ error: 'consulta indisponível' });
     }
 
-    const corpo = JSON.stringify({ tickets: data ?? [] });
+    // Estadias que o aparelho precisa ter: válidas, vencidas há até 7 dias e
+    // QUALQUER uma ligada a um carro que está dentro — sem esta última, um
+    // hóspede que ficou além da janela cairia no "estadia não encontrada" e a
+    // saída não teria como calcular o atraso. Cada uma leva os pagamentos (a
+    // ficha da estadia precisa deles em qualquer aparelho).
+    const corte = new Date(Date.now() - JANELA_VENCIDA_MS).toISOString();
+    const idsDeCarroDentro = [
+      ...new Set(
+        (data ?? [])
+          .map((t) => (t as { estadia_id?: string | null }).estadia_id)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+    const [recentes, deCarroDentro] = await Promise.all([
+      db.from('estadias').select(COLUNAS_ESTADIA).eq('patio_id', patioId).gte('valida_ate', corte),
+      idsDeCarroDentro.length
+        ? db.from('estadias').select(COLUNAS_ESTADIA).eq('patio_id', patioId).in('id', idsDeCarroDentro)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (recentes.error || deCarroDentro.error) {
+      return reply.code(502).send({ error: 'consulta indisponível' });
+    }
+    const estadias = [...(recentes.data ?? []), ...(deCarroDentro.data ?? [])] as Array<{ id: string }>;
+    let pagamentos: Array<PagamentoResumo & { estadia_id: string }> = [];
+    if (estadias.length) {
+      const pg = await db
+        .from('estadia_pagamentos')
+        .select('id, estadia_id, tipo, diarias, valor, forma_pagamento, pago_em')
+        .in('estadia_id', [...new Set(estadias.map((e) => e.id))]);
+      if (pg.error) return reply.code(502).send({ error: 'consulta indisponível' });
+      pagamentos = (pg.data ?? []) as typeof pagamentos;
+    }
+
+    const corpo = JSON.stringify({
+      tickets: data ?? [],
+      estadias: montarEstadias(estadias, pagamentos),
+    });
     const etag = `"${createHash('sha1').update(corpo).digest('base64url')}"`;
     const recebido = (req.headers['if-none-match'] as string | undefined)
       ?.replace(/^W\//, '')

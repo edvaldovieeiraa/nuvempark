@@ -33,6 +33,7 @@ function ticket(over: Partial<TicketPublico> = {}): TicketPublico {
     patio_id: 'p1',
     tenant_id: 'tn1',
     tabela_preco_id: 'tar1',
+    estadia_id: null,
     pago_online_em: null,
     valor_pago_online: null,
     patio_nome: 'Pátio Centro',
@@ -158,5 +159,25 @@ describe('ticketVisivel', () => {
 
   it('pátio inativo → invisível', () => {
     expect(ticketVisivel(ticket({ patio_ativo: false }))).toBe(false);
+  });
+});
+
+describe('ticket de hóspede (estadia)', () => {
+  it('não é cobrado pela página: estado hospede, sem valor', () => {
+    const e = derivarEstado({
+      ticket: ticket({ estadia_id: 'est-1' }),
+      tarifa,
+      agora: new Date(ENTRADA.getTime() + 5 * 3600_000),
+    });
+    expect(e).toEqual({
+      statusPagamento: 'hospede',
+      valorAtual: null,
+      pago: null,
+      diferenca: null,
+    });
+  });
+
+  it('continua visível enquanto aberto (a página explica o balcão)', () => {
+    expect(ticketVisivel(ticket({ estadia_id: 'est-1' }))).toBe(true);
   });
 });

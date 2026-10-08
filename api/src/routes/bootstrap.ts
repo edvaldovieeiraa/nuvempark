@@ -55,13 +55,31 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Tarifas ativas, ordenadas.
-    const { data: tarifas } = await db
-      .from('tarifas')
-      .select('*')
-      .eq('patio_id', patioId)
-      .eq('ativo', true)
-      .order('ordem', { ascending: true })
-      .order('nome', { ascending: true });
+    //
+    // Tarifa de hóspede só vai para o app que diz entendê-la
+    // (`?modalidades=hospede`). Um app anterior a ela a mostraria como mais
+    // um chip de tabela avulsa e calcularia a saída pelas frações padrão.
+    const aceitaHospede = String(
+      (req.query as Record<string, string | undefined>).modalidades ?? '',
+    )
+      .split(',')
+      .includes('hospede');
+    const consultaTarifas = () =>
+      db
+        .from('tarifas')
+        .select('*')
+        .eq('patio_id', patioId)
+        .eq('ativo', true)
+        .order('ordem', { ascending: true })
+        .order('nome', { ascending: true });
+    let { data: tarifas, error: erroTarifas } = aceitaHospede
+      ? await consultaTarifas()
+      : await consultaTarifas().eq('modalidade', 'avulso');
+    // Banco ainda sem db/41 (API publicada antes do SQL): a coluna não existe e
+    // o filtro falha. Sem este retorno, TODO aparelho ficaria sem tarifa.
+    if (erroTarifas && !aceitaHospede) {
+      ({ data: tarifas, error: erroTarifas } = await consultaTarifas());
+    }
 
     // Clientes livre-passagem (p/ reconhecimento offline de placa).
     const { data: clientes } = await db

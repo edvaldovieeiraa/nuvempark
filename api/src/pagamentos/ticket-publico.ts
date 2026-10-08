@@ -15,7 +15,9 @@ export const EXPIRACAO_COBRANCA_MINUTOS = 30;
 export type StatusPagamentoPublico =
   | 'nao_pago'
   | 'pago'
-  | 'pago_diferenca_pendente';
+  | 'pago_diferenca_pendente'
+  /** Ticket de estadia de hóspede: não se paga pela página, só no balcão. */
+  | 'hospede';
 
 export interface EstadoTicket {
   statusPagamento: StatusPagamentoPublico;
@@ -49,6 +51,13 @@ export function derivarEstado(params: {
   agora: Date;
 }): EstadoTicket {
   const { ticket, tarifa, agora } = params;
+
+  // Hóspede: a estadia já foi paga no balcão e o atraso, se houver, se cobra lá
+  // (diárias + regra de teto que a página não conhece). Calcular aqui pela
+  // tabela avulsa daria um valor errado desde a entrada.
+  if (ticket.estadia_id) {
+    return { statusPagamento: 'hospede', valorAtual: null, pago: null, diferenca: null };
+  }
 
   const valorAtual = calcularValor({ ticket, tarifa, agora });
 
