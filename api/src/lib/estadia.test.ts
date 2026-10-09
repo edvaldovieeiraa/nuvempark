@@ -146,6 +146,14 @@ describe('montarEstadias', () => {
     expect(out[0].pagamentos[0]).not.toHaveProperty('estadia_id');
   });
 
+  it('pagamentos do mesmo instante: ordem estável pelo id (ETag não oscila)', () => {
+    const mesmo = '2026-10-09T10:00:00Z';
+    const a = montarEstadias([e('a')], [pg('z', 'a', mesmo), pg('m', 'a', mesmo)]);
+    const b = montarEstadias([e('a')], [pg('m', 'a', mesmo), pg('z', 'a', mesmo)]);
+    expect(a[0].pagamentos.map((p) => p.id)).toEqual(['m', 'z']);
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+  });
+
   it('estadia repetida (válida e com ticket aberto) aparece uma vez', () => {
     const out = montarEstadias([e('a'), e('a')], []);
     expect(out).toHaveLength(1);

@@ -40,13 +40,19 @@ class EstadiasDao extends DatabaseAccessor<AppDatabase> with _$EstadiasDaoMixin 
             ..orderBy([(p) => OrderingTerm.asc(p.pagoEmEpoch)]))
           .get();
 
-  /// Estadias com pagamento local ainda não enviado: a cópia do servidor
-  /// delas é mais velha que a local e não pode sobrescrevê-la.
-  Future<Set<String>> idsComPagamentoPendente() async {
-    final q = selectOnly(estadiaPagamentos, distinct: true)
+  /// Estadias com escrita local ainda não enviada — a própria estadia ou um
+  /// pagamento dela: a cópia do servidor é mais velha e não pode sobrescrevê-la.
+  Future<Set<String>> idsComEscritaPendente() async {
+    final pagamentos = selectOnly(estadiaPagamentos, distinct: true)
       ..addColumns([estadiaPagamentos.estadiaId])
       ..where(estadiaPagamentos.syncStatus.equals('pendente'));
-    return {for (final r in await q.get()) r.read(estadiaPagamentos.estadiaId)!};
+    final proprias = selectOnly(estadias)
+      ..addColumns([estadias.id])
+      ..where(estadias.syncStatus.equals('pendente'));
+    return {
+      for (final r in await pagamentos.get()) r.read(estadiaPagamentos.estadiaId)!,
+      for (final r in await proprias.get()) r.read(estadias.id)!,
+    };
   }
 
   /// Grava a estadia do servidor. Já existindo, atualiza só o que a renovação

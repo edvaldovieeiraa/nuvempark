@@ -87,7 +87,7 @@ class TicketsAbertosSync {
     List<Map<String, dynamic>> estadias,
   ) =>
       db.transaction(() async {
-        final pendentes = await db.estadiasDao.idsComPagamentoPendente();
+        final pendentes = await db.estadiasDao.idsComEscritaPendente();
         var mudou = false;
         for (final m in estadias) {
           final id = m['id'] as String;

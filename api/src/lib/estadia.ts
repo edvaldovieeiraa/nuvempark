@@ -178,8 +178,12 @@ export function montarEstadias<E extends { id: string }>(
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
     .map((e) => ({
       ...e,
+      // `id` desempata pagamentos do mesmo instante (duas renovações em
+      // aparelhos diferentes): sem ele a ordem oscila e o ETag nunca repete.
       pagamentos: (porEstadia.get(e.id) ?? []).sort((a, b) =>
-        a.pago_em < b.pago_em ? -1 : a.pago_em > b.pago_em ? 1 : 0,
+        a.pago_em !== b.pago_em
+          ? a.pago_em < b.pago_em ? -1 : 1
+          : a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
       ),
     }));
 }
