@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nuvempark_app/core/di/providers.dart';
 import 'package:nuvempark_app/database/app_database.dart';
