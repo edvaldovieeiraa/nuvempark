@@ -28,6 +28,7 @@ import '../data/ticket_repository.dart';
 import '../domain/ticket_model.dart';
 import 'providers/ticket_provider.dart';
 import 'widgets/hero_saida.dart';
+import '../../estadias/presentation/estadia_saida_panel.dart';
 
 /// Saída/cobrança: busca o ticket, calcula a tarifa com o TarifaEngine,
 /// registra a forma de pagamento (manual por ora; gancho Pix na Fase 4) e
@@ -72,8 +73,9 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
   @override
   void initState() {
     super.initState();
+    // A consulta de voucher sai de _carregarTicket: ticket de hóspede não
+    // consulta (Revisão 8), e só se sabe disso depois de ler o ticket.
     _carregarTicket();
-    unawaited(_consultarLiberacao());
     // Pré-aquece a impressora enquanto o operador escolhe a forma de pagamento,
     // para o recibo (impresso em background após a confirmação) não pagar o
     // custo de reconexão Bluetooth.
@@ -168,13 +170,19 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       setState(() {
         _ticket = t;
         _carregando = false;
+        // Mesmo frame que mostra a cobrança: sem isto, um quadro aparece sem
+        // o "Verificando liberação…" antes de a consulta começar.
+        if (t != null && t.status == 'aberto' && !t.isHospede) {
+          _consultandoLiberacao = true;
+        }
         if (t == null) {
           _erro = 'Ticket não encontrado.';
         } else if (t.status != 'aberto') {
           _erro = 'Este ticket já foi fechado.';
         }
       });
-      if (t != null && t.status == 'aberto') {
+      if (t != null && t.status == 'aberto' && !t.isHospede) {
+        unawaited(_consultarLiberacao());
         unawaited(_consultarPagamentoOnline());
       }
     } catch (_) {
@@ -611,7 +619,11 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
                     if (patio == null) {
                       return const ErrorState(mensagem: 'Config do pátio indisponível.');
                     }
-                    return _buildCobranca(patio, _ticket!);
+                    // Hóspede: painel próprio — sem Pix na tela, voucher nem
+                    // pagamento online, que calculariam pelo avulso.
+                    return _ticket!.isHospede
+                        ? EstadiaSaidaPanel(ticket: _ticket!, patio: patio)
+                        : _buildCobranca(patio, _ticket!);
                   },
                 ),
     );
