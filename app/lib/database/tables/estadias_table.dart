@@ -2,7 +2,7 @@ import 'package:drift/drift.dart';
 
 /// Estadia de hóspede (diárias pagas na contratação). Nasce no app e sobe pela
 /// outbox como create-only; o vencimento só muda por pagamento de renovação,
-/// que o servidor aplica sob trava (db/41). A cópia local é atualizada pelo
+/// que o servidor aplica sob trava (db/42). A cópia local é atualizada pelo
 /// ciclo de tickets abertos, que traz o vencimento do servidor.
 /// `operacaoId` mantém o nome de coluna do leve-patio — o VALOR é o patio_id.
 class Estadias extends Table {

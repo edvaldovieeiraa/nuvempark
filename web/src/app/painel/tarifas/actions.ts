@@ -34,7 +34,7 @@ const FMT: Record<string, (v: unknown) => string> = {
 /**
  * Campos da tarifa conforme a modalidade.
  *
- * Hóspede (db/41): valor e duração da diária + tabela avulsa do atraso. As
+ * Hóspede (db/42): valor e duração da diária + tabela avulsa do atraso. As
  * frações NÃO vão — o formulário as esconde nesse modo e o banco mantém os
  * padrões dele (as colunas são NOT NULL). Tipo "Todos os tipos" não vale para
  * hóspede: a tabela do atraso é escolhida entre as avulsas de UM tipo.

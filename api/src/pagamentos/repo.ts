@@ -93,7 +93,7 @@ export interface TicketPublico {
   patio_id: string;
   tenant_id: string;
   tabela_preco_id: string | null;
-  /** Ticket de estadia de hóspede (db/41). Nulo para avulso e mensalista. */
+  /** Ticket de estadia de hóspede (db/42). Nulo para avulso e mensalista. */
   estadia_id: string | null;
   pago_online_em: string | null;
   valor_pago_online: number | null;
@@ -124,7 +124,7 @@ export async function lerTicketPublico(
     'id, placa, tipo_veiculo, entrada, status, patio_id, tenant_id, tabela_preco_id, pago_online_em, valor_pago_online, patios!inner(nome, ativo)';
   const consulta = (cols: string) =>
     servico.from('tickets').select(cols).eq('id', ticketId).maybeSingle();
-  // `estadia_id` nasce em db/41. Banco sem ele (API publicada antes do SQL):
+  // `estadia_id` nasce em db/42. Banco sem ele (API publicada antes do SQL):
   // repete sem a coluna em vez de derrubar a página pública inteira.
   let { data, error } = await consulta(`${colunas}, estadia_id`);
   if (error) ({ data, error } = await consulta(colunas));
@@ -197,7 +197,7 @@ export async function lerTarifaDoTicket(
       .order('ordem', { ascending: true })
       .limit(1);
   // A reserva é sempre uma tabela AVULSA: a de hóspede pode ter a menor
-  // `ordem` e não tem frações. Banco sem db/41 não tem a coluna: sem filtro.
+  // `ordem` e não tem frações. Banco sem db/42 não tem a coluna: sem filtro.
   let { data, error } = await reserva().eq('modalidade', 'avulso').maybeSingle();
   if (error) ({ data, error } = await reserva().maybeSingle());
 

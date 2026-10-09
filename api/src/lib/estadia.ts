@@ -95,7 +95,7 @@ export function linhaEstadia(
   };
 }
 
-/** Argumentos de `fn_estadia_registrar_pagamento` (db/41). */
+/** Argumentos de `fn_estadia_registrar_pagamento` (db/42). */
 export interface ArgsPagamentoEstadia {
   p_id: string;
   p_tenant_id: string;

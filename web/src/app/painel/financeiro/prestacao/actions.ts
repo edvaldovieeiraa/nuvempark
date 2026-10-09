@@ -205,7 +205,7 @@ export type ReceitasResumo = {
   total: number;
   tickets: number;
   mensalidades: number;
-  /** Contratações e renovações de estadia de hóspede (db/41). */
+  /** Contratações e renovações de estadia de hóspede (db/42). */
   estadias: number;
   outras: number;
 };
@@ -224,7 +224,7 @@ export async function gerarReceitas(e: Escopo): Promise<ReceitasResumo> {
     if (ids) q = q.in("caixa_sessao_id", ids.length ? ids : ["__none__"]);
     return q;
   };
-  // `estadia_pagamento_id` nasce em db/41; banco sem ele repete sem a coluna
+  // `estadia_pagamento_id` nasce em db/42; banco sem ele repete sem a coluna
   // (antes isso zeraria a seção inteira em silêncio).
   let { data, error } = await consulta("valor, ticket_id, descricao, estadia_pagamento_id");
   if (error) ({ data, error } = await consulta("valor, ticket_id, descricao"));
@@ -310,7 +310,7 @@ export async function gerarFormasPagamento(e: Escopo): Promise<FormasResumo> {
     .lte("pago_em", e.fimIso);
   if (e.operadorId) qm = qm.eq("registrado_por", e.operadorId);
 
-  // Estadias de hóspede (db/41): contratação e renovação. O atraso cobrado na
+  // Estadias de hóspede (db/42): contratação e renovação. O atraso cobrado na
   // saída já vem pelos tickets. Banco sem a tabela: erro ignorado, sem estadias.
   let qe = sb
     .from("estadia_pagamentos")

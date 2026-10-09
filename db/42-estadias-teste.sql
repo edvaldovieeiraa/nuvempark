@@ -1,6 +1,6 @@
 -- ============================================================================
--- NuvemPark — 41 (teste): regra de pagamento de estadia
--- Rodar no SQL Editor DEPOIS de db/41-estadias.sql.
+-- NuvemPark — 42 (teste): regra de pagamento de estadia
+-- Rodar no SQL Editor DEPOIS de db/42-estadias.sql.
 --
 -- Tudo acontece dentro de BEGIN … ROLLBACK: nenhuma linha fica no banco.
 -- Sucesso = termina com "✅ ESTADIAS OK". Qualquer falha aborta com ❌.

@@ -1,8 +1,8 @@
 -- ============================================================================
--- NuvemPark — 41: Estadia de hóspede (hotéis)
+-- NuvemPark — 42: Estadia de hóspede (hotéis)
 -- Projeto: xrwrsswhoywzzhutzrjx · Idempotente. Aplicar MANUALMENTE no SQL Editor
 -- ANTES do deploy da API (o pipeline não aplica migrations).
--- Teste: db/41-estadias-teste.sql (roda em BEGIN … ROLLBACK).
+-- Teste: db/42-estadias-teste.sql (roda em BEGIN … ROLLBACK).
 --
 -- Spec: .planning/specs/estadia-hospede.md
 --

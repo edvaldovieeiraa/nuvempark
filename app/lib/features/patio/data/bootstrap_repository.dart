@@ -106,7 +106,7 @@ class BootstrapRepository {
         pernoiteHoraFim: Value((m['pernoite_hora_fim'] as num).toInt()),
         vigenciaInicioEpoch: Value(vigInicio.millisecondsSinceEpoch),
         vigenciaFimEpoch: Value(vigFim?.millisecondsSinceEpoch),
-        // Colunas de db/41: API anterior a elas não as manda → avulso.
+        // Colunas de db/42: API anterior a elas não as manda → avulso.
         modalidade: Value(m['modalidade'] as String? ?? 'avulso'),
         diariaValor: Value(_numOuNulo(m['diaria_valor'])?.toDouble()),
         diariaHoras: Value(_numOuNulo(m['diaria_horas'])?.toInt()),

@@ -12,7 +12,7 @@ import { argsPagamentoEstadia, linhaEstadia } from '../lib/estadia.js';
  *  - caixa_sessao  → read-then-write (sem fallbacks extras)
  *  - caixa_movimento → upsert nativo onConflict:id ignoreDuplicates (imutável)
  *  - estadia       → create-only, mesmo upsert (o vencimento só muda pelo pagamento)
- *  - estadia_pagamento → fn_estadia_registrar_pagamento (db/41), com trava de linha
+ *  - estadia_pagamento → fn_estadia_registrar_pagamento (db/42), com trava de linha
  *
  * Autorização dupla: patio_id ∈ token.patio_ids  E  tenant_id do envelope == token.tenant_id.
  * O tenant_id/patio_id são carimbados em toda linha; RLS é a 2ª camada.

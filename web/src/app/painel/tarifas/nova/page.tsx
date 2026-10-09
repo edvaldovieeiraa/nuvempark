@@ -27,7 +27,7 @@ export default async function NovaTarifaPage({
     : ["carro", "moto", "caminhonete", "van"];
 
   // Candidatas a "tabela do atraso" de uma tarifa de hóspede: as avulsas ativas.
-  // Banco sem db/41 não tem `modalidade` — aí todas são avulsas.
+  // Banco sem db/42 não tem `modalidade` — aí todas são avulsas.
   const { data: tarifas, error: erroTarifas } = await supabase
     .from("tarifas")
     .select("id, nome, tipo_veiculo, tolerancia_minutos, modalidade")

@@ -91,7 +91,7 @@ abstract final class EstadiaEngine {
   ///   • vencida com o carro dentro → do vencimento antigo (as diárias novas
   ///     cobrem o atraso; o mínimo é o que cobre até agora);
   ///   • vencida com o carro fora → de agora (o tempo fora não é cobrado).
-  /// O servidor aplica a mesma base com `greatest(valida_ate, base)` (db/41).
+  /// O servidor aplica a mesma base com `greatest(valida_ate, base)` (db/42).
   static RenovacaoResult renovacao({
     required DateTime validaAte,
     required int diariaHoras,

@@ -71,7 +71,7 @@ class TicketsAbertosSync {
             Map<String, dynamic>.from(e as Map),
         ];
 
-        // Estadias (db/41): ausente = API anterior a elas → não mexe.
+        // Estadias (db/42): ausente = API anterior a elas → não mexe.
         final estadias = body['estadias'] is List
             ? [
                 for (final e in body['estadias'] as List)

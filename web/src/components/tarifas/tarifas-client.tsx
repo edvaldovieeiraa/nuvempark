@@ -51,7 +51,7 @@ type Tarifa = {
   pernoite_valor: number;
   pernoite_hora_inicio: number;
   pernoite_hora_fim: number;
-  // db/41 — ausentes num banco anterior à migração.
+  // db/42 — ausentes num banco anterior à migração.
   modalidade?: string;
   diaria_valor?: number | null;
   diaria_horas?: number | null;

@@ -32,7 +32,7 @@ const aceitaHospede = (q: Record<string, string | undefined>) =>
  * deles em qualquer aparelho).
  *
  * Qualquer falha devolve null, e a resposta sai SEM a chave `estadias` — o app
- * entende "ausente = não mexe". Um problema nas estadias (banco sem db/41,
+ * entende "ausente = não mexe". Um problema nas estadias (banco sem db/42,
  * pátio enorme) nunca pode derrubar o sync de veículos com um 502.
  */
 async function carregarEstadias(
@@ -125,7 +125,7 @@ export async function ticketsAbertosRoutes(app: FastifyInstance): Promise<void> 
         .order('entrada', { ascending: false })
         .order('id', { ascending: true })
         .limit(LIMITE);
-    // Banco sem db/41 (API publicada antes do SQL): repete sem `estadia_id`.
+    // Banco sem db/42 (API publicada antes do SQL): repete sem `estadia_id`.
     let { data, error } = await consulta(COLUNAS_TICKET_ABERTO);
     if (error) ({ data, error } = await consulta(COLUNAS_TICKET_BASE));
     if (error || (data ?? []).length >= LIMITE) {

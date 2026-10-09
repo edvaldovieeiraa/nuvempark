@@ -38,7 +38,7 @@ const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /**
- * "Como cobra": avulso (pelo tempo) ou diária de hóspede (db/41). É o primeiro
+ * "Como cobra": avulso (pelo tempo) ou diária de hóspede (db/42). É o primeiro
  * campo do formulário porque decide quais outros aparecem.
  */
 export function ComoCobra({

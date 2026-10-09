@@ -75,7 +75,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
     let { data: tarifas, error: erroTarifas } = aceitaHospede
       ? await consultaTarifas()
       : await consultaTarifas().eq('modalidade', 'avulso');
-    // Banco ainda sem db/41 (API publicada antes do SQL): a coluna não existe e
+    // Banco ainda sem db/42 (API publicada antes do SQL): a coluna não existe e
     // o filtro falha. Sem este retorno, TODO aparelho ficaria sem tarifa.
     if (erroTarifas && !aceitaHospede) {
       ({ data: tarifas, error: erroTarifas } = await consultaTarifas());
