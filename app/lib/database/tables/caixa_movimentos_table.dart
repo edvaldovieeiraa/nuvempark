@@ -8,6 +8,8 @@ class CaixaMovimentos extends Table {
   RealColumn get valor => real()();
   TextColumn get descricao => text()();
   TextColumn get ticketId => text().nullable()();
+  // Movimento de contratação/renovação de estadia (sem ticket). v5.
+  TextColumn get estadiaPagamentoId => text().nullable()();
   TextColumn get formaPagamento => text().nullable()();
   IntColumn get criadoEm => integer()();
   TextColumn get syncStatus => text().withDefault(const Constant('pendente'))();

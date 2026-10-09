@@ -17,7 +17,14 @@ class TarifaConfig {
     required this.pernoiteHoraFim,
     required this.vigenciaInicio,
     this.vigenciaFim,
+    this.modalidade = modalidadeAvulso,
+    this.diariaValor,
+    this.diariaHoras,
+    this.tarifaAtrasoId,
   });
+
+  static const modalidadeAvulso = 'avulso';
+  static const modalidadeHospede = 'hospede';
 
   final String id;
   final String operacaoId;
@@ -36,6 +43,17 @@ class TarifaConfig {
   final int pernoiteHoraFim;
   final DateTime vigenciaInicio;
   final DateTime? vigenciaFim;
+
+  /// 'avulso' (cobra pelo tempo) | 'hospede' (diárias pagas na contratação).
+  final String modalidade;
+
+  /// Só em hóspede: preço e duração de uma diária, e a tabela avulsa do atraso
+  /// (nula = primeira avulsa visível do tipo — ver [PatioModel.tarifaAtraso]).
+  final double? diariaValor;
+  final int? diariaHoras;
+  final String? tarifaAtrasoId;
+
+  bool get isHospede => modalidade == modalidadeHospede;
 
   bool get vigente {
     final now = DateTime.now();

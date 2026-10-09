@@ -618,6 +618,51 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _modalidadeMeta = const VerificationMeta(
+    'modalidade',
+  );
+  @override
+  late final GeneratedColumn<String> modalidade = GeneratedColumn<String>(
+    'modalidade',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('avulso'),
+  );
+  static const VerificationMeta _diariaValorMeta = const VerificationMeta(
+    'diariaValor',
+  );
+  @override
+  late final GeneratedColumn<double> diariaValor = GeneratedColumn<double>(
+    'diaria_valor',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _diariaHorasMeta = const VerificationMeta(
+    'diariaHoras',
+  );
+  @override
+  late final GeneratedColumn<int> diariaHoras = GeneratedColumn<int>(
+    'diaria_horas',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tarifaAtrasoIdMeta = const VerificationMeta(
+    'tarifaAtrasoId',
+  );
+  @override
+  late final GeneratedColumn<String> tarifaAtrasoId = GeneratedColumn<String>(
+    'tarifa_atraso_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -637,6 +682,10 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
     pernoiteHoraFim,
     vigenciaInicioEpoch,
     vigenciaFimEpoch,
+    modalidade,
+    diariaValor,
+    diariaHoras,
+    tarifaAtrasoId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -811,6 +860,39 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
         ),
       );
     }
+    if (data.containsKey('modalidade')) {
+      context.handle(
+        _modalidadeMeta,
+        modalidade.isAcceptableOrUnknown(data['modalidade']!, _modalidadeMeta),
+      );
+    }
+    if (data.containsKey('diaria_valor')) {
+      context.handle(
+        _diariaValorMeta,
+        diariaValor.isAcceptableOrUnknown(
+          data['diaria_valor']!,
+          _diariaValorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('diaria_horas')) {
+      context.handle(
+        _diariaHorasMeta,
+        diariaHoras.isAcceptableOrUnknown(
+          data['diaria_horas']!,
+          _diariaHorasMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tarifa_atraso_id')) {
+      context.handle(
+        _tarifaAtrasoIdMeta,
+        tarifaAtrasoId.isAcceptableOrUnknown(
+          data['tarifa_atraso_id']!,
+          _tarifaAtrasoIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -888,6 +970,22 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
         DriftSqlType.int,
         data['${effectivePrefix}vigencia_fim_epoch'],
       ),
+      modalidade: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}modalidade'],
+      )!,
+      diariaValor: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}diaria_valor'],
+      ),
+      diariaHoras: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}diaria_horas'],
+      ),
+      tarifaAtrasoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tarifa_atraso_id'],
+      ),
     );
   }
 
@@ -915,6 +1013,10 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
   final int pernoiteHoraFim;
   final int vigenciaInicioEpoch;
   final int? vigenciaFimEpoch;
+  final String modalidade;
+  final double? diariaValor;
+  final int? diariaHoras;
+  final String? tarifaAtrasoId;
   const Tarifa({
     required this.id,
     required this.operacaoId,
@@ -933,6 +1035,10 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     required this.pernoiteHoraFim,
     required this.vigenciaInicioEpoch,
     this.vigenciaFimEpoch,
+    required this.modalidade,
+    this.diariaValor,
+    this.diariaHoras,
+    this.tarifaAtrasoId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -955,6 +1061,16 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     map['vigencia_inicio_epoch'] = Variable<int>(vigenciaInicioEpoch);
     if (!nullToAbsent || vigenciaFimEpoch != null) {
       map['vigencia_fim_epoch'] = Variable<int>(vigenciaFimEpoch);
+    }
+    map['modalidade'] = Variable<String>(modalidade);
+    if (!nullToAbsent || diariaValor != null) {
+      map['diaria_valor'] = Variable<double>(diariaValor);
+    }
+    if (!nullToAbsent || diariaHoras != null) {
+      map['diaria_horas'] = Variable<int>(diariaHoras);
+    }
+    if (!nullToAbsent || tarifaAtrasoId != null) {
+      map['tarifa_atraso_id'] = Variable<String>(tarifaAtrasoId);
     }
     return map;
   }
@@ -980,6 +1096,16 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
       vigenciaFimEpoch: vigenciaFimEpoch == null && nullToAbsent
           ? const Value.absent()
           : Value(vigenciaFimEpoch),
+      modalidade: Value(modalidade),
+      diariaValor: diariaValor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(diariaValor),
+      diariaHoras: diariaHoras == null && nullToAbsent
+          ? const Value.absent()
+          : Value(diariaHoras),
+      tarifaAtrasoId: tarifaAtrasoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tarifaAtrasoId),
     );
   }
 
@@ -1016,6 +1142,10 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
         json['vigenciaInicioEpoch'],
       ),
       vigenciaFimEpoch: serializer.fromJson<int?>(json['vigenciaFimEpoch']),
+      modalidade: serializer.fromJson<String>(json['modalidade']),
+      diariaValor: serializer.fromJson<double?>(json['diariaValor']),
+      diariaHoras: serializer.fromJson<int?>(json['diariaHoras']),
+      tarifaAtrasoId: serializer.fromJson<String?>(json['tarifaAtrasoId']),
     );
   }
   @override
@@ -1039,6 +1169,10 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
       'pernoiteHoraFim': serializer.toJson<int>(pernoiteHoraFim),
       'vigenciaInicioEpoch': serializer.toJson<int>(vigenciaInicioEpoch),
       'vigenciaFimEpoch': serializer.toJson<int?>(vigenciaFimEpoch),
+      'modalidade': serializer.toJson<String>(modalidade),
+      'diariaValor': serializer.toJson<double?>(diariaValor),
+      'diariaHoras': serializer.toJson<int?>(diariaHoras),
+      'tarifaAtrasoId': serializer.toJson<String?>(tarifaAtrasoId),
     };
   }
 
@@ -1060,6 +1194,10 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     int? pernoiteHoraFim,
     int? vigenciaInicioEpoch,
     Value<int?> vigenciaFimEpoch = const Value.absent(),
+    String? modalidade,
+    Value<double?> diariaValor = const Value.absent(),
+    Value<int?> diariaHoras = const Value.absent(),
+    Value<String?> tarifaAtrasoId = const Value.absent(),
   }) => Tarifa(
     id: id ?? this.id,
     operacaoId: operacaoId ?? this.operacaoId,
@@ -1081,6 +1219,12 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     vigenciaFimEpoch: vigenciaFimEpoch.present
         ? vigenciaFimEpoch.value
         : this.vigenciaFimEpoch,
+    modalidade: modalidade ?? this.modalidade,
+    diariaValor: diariaValor.present ? diariaValor.value : this.diariaValor,
+    diariaHoras: diariaHoras.present ? diariaHoras.value : this.diariaHoras,
+    tarifaAtrasoId: tarifaAtrasoId.present
+        ? tarifaAtrasoId.value
+        : this.tarifaAtrasoId,
   );
   Tarifa copyWithCompanion(TarifasCompanion data) {
     return Tarifa(
@@ -1129,6 +1273,18 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
       vigenciaFimEpoch: data.vigenciaFimEpoch.present
           ? data.vigenciaFimEpoch.value
           : this.vigenciaFimEpoch,
+      modalidade: data.modalidade.present
+          ? data.modalidade.value
+          : this.modalidade,
+      diariaValor: data.diariaValor.present
+          ? data.diariaValor.value
+          : this.diariaValor,
+      diariaHoras: data.diariaHoras.present
+          ? data.diariaHoras.value
+          : this.diariaHoras,
+      tarifaAtrasoId: data.tarifaAtrasoId.present
+          ? data.tarifaAtrasoId.value
+          : this.tarifaAtrasoId,
     );
   }
 
@@ -1151,13 +1307,17 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
           ..write('pernoiteHoraInicio: $pernoiteHoraInicio, ')
           ..write('pernoiteHoraFim: $pernoiteHoraFim, ')
           ..write('vigenciaInicioEpoch: $vigenciaInicioEpoch, ')
-          ..write('vigenciaFimEpoch: $vigenciaFimEpoch')
+          ..write('vigenciaFimEpoch: $vigenciaFimEpoch, ')
+          ..write('modalidade: $modalidade, ')
+          ..write('diariaValor: $diariaValor, ')
+          ..write('diariaHoras: $diariaHoras, ')
+          ..write('tarifaAtrasoId: $tarifaAtrasoId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     operacaoId,
     nome,
@@ -1175,7 +1335,11 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     pernoiteHoraFim,
     vigenciaInicioEpoch,
     vigenciaFimEpoch,
-  );
+    modalidade,
+    diariaValor,
+    diariaHoras,
+    tarifaAtrasoId,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1196,7 +1360,11 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
           other.pernoiteHoraInicio == this.pernoiteHoraInicio &&
           other.pernoiteHoraFim == this.pernoiteHoraFim &&
           other.vigenciaInicioEpoch == this.vigenciaInicioEpoch &&
-          other.vigenciaFimEpoch == this.vigenciaFimEpoch);
+          other.vigenciaFimEpoch == this.vigenciaFimEpoch &&
+          other.modalidade == this.modalidade &&
+          other.diariaValor == this.diariaValor &&
+          other.diariaHoras == this.diariaHoras &&
+          other.tarifaAtrasoId == this.tarifaAtrasoId);
 }
 
 class TarifasCompanion extends UpdateCompanion<Tarifa> {
@@ -1217,6 +1385,10 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
   final Value<int> pernoiteHoraFim;
   final Value<int> vigenciaInicioEpoch;
   final Value<int?> vigenciaFimEpoch;
+  final Value<String> modalidade;
+  final Value<double?> diariaValor;
+  final Value<int?> diariaHoras;
+  final Value<String?> tarifaAtrasoId;
   final Value<int> rowid;
   const TarifasCompanion({
     this.id = const Value.absent(),
@@ -1236,6 +1408,10 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     this.pernoiteHoraFim = const Value.absent(),
     this.vigenciaInicioEpoch = const Value.absent(),
     this.vigenciaFimEpoch = const Value.absent(),
+    this.modalidade = const Value.absent(),
+    this.diariaValor = const Value.absent(),
+    this.diariaHoras = const Value.absent(),
+    this.tarifaAtrasoId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TarifasCompanion.insert({
@@ -1256,6 +1432,10 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     required int pernoiteHoraFim,
     required int vigenciaInicioEpoch,
     this.vigenciaFimEpoch = const Value.absent(),
+    this.modalidade = const Value.absent(),
+    this.diariaValor = const Value.absent(),
+    this.diariaHoras = const Value.absent(),
+    this.tarifaAtrasoId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        operacaoId = Value(operacaoId),
@@ -1288,6 +1468,10 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     Expression<int>? pernoiteHoraFim,
     Expression<int>? vigenciaInicioEpoch,
     Expression<int>? vigenciaFimEpoch,
+    Expression<String>? modalidade,
+    Expression<double>? diariaValor,
+    Expression<int>? diariaHoras,
+    Expression<String>? tarifaAtrasoId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1314,6 +1498,10 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
       if (vigenciaInicioEpoch != null)
         'vigencia_inicio_epoch': vigenciaInicioEpoch,
       if (vigenciaFimEpoch != null) 'vigencia_fim_epoch': vigenciaFimEpoch,
+      if (modalidade != null) 'modalidade': modalidade,
+      if (diariaValor != null) 'diaria_valor': diariaValor,
+      if (diariaHoras != null) 'diaria_horas': diariaHoras,
+      if (tarifaAtrasoId != null) 'tarifa_atraso_id': tarifaAtrasoId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1336,6 +1524,10 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     Value<int>? pernoiteHoraFim,
     Value<int>? vigenciaInicioEpoch,
     Value<int?>? vigenciaFimEpoch,
+    Value<String>? modalidade,
+    Value<double?>? diariaValor,
+    Value<int?>? diariaHoras,
+    Value<String?>? tarifaAtrasoId,
     Value<int>? rowid,
   }) {
     return TarifasCompanion(
@@ -1357,6 +1549,10 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
       pernoiteHoraFim: pernoiteHoraFim ?? this.pernoiteHoraFim,
       vigenciaInicioEpoch: vigenciaInicioEpoch ?? this.vigenciaInicioEpoch,
       vigenciaFimEpoch: vigenciaFimEpoch ?? this.vigenciaFimEpoch,
+      modalidade: modalidade ?? this.modalidade,
+      diariaValor: diariaValor ?? this.diariaValor,
+      diariaHoras: diariaHoras ?? this.diariaHoras,
+      tarifaAtrasoId: tarifaAtrasoId ?? this.tarifaAtrasoId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1419,6 +1615,18 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     if (vigenciaFimEpoch.present) {
       map['vigencia_fim_epoch'] = Variable<int>(vigenciaFimEpoch.value);
     }
+    if (modalidade.present) {
+      map['modalidade'] = Variable<String>(modalidade.value);
+    }
+    if (diariaValor.present) {
+      map['diaria_valor'] = Variable<double>(diariaValor.value);
+    }
+    if (diariaHoras.present) {
+      map['diaria_horas'] = Variable<int>(diariaHoras.value);
+    }
+    if (tarifaAtrasoId.present) {
+      map['tarifa_atraso_id'] = Variable<String>(tarifaAtrasoId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1445,6 +1653,10 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
           ..write('pernoiteHoraFim: $pernoiteHoraFim, ')
           ..write('vigenciaInicioEpoch: $vigenciaInicioEpoch, ')
           ..write('vigenciaFimEpoch: $vigenciaFimEpoch, ')
+          ..write('modalidade: $modalidade, ')
+          ..write('diariaValor: $diariaValor, ')
+          ..write('diariaHoras: $diariaHoras, ')
+          ..write('tarifaAtrasoId: $tarifaAtrasoId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1637,6 +1849,17 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     requiredDuringInsert: false,
     defaultValue: const Constant('avulso'),
   );
+  static const VerificationMeta _estadiaIdMeta = const VerificationMeta(
+    'estadiaId',
+  );
+  @override
+  late final GeneratedColumn<String> estadiaId = GeneratedColumn<String>(
+    'estadia_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _atkMeta = const VerificationMeta('atk');
   @override
   late final GeneratedColumn<String> atk = GeneratedColumn<String>(
@@ -1787,6 +2010,7 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     clienteId,
     planoId,
     origem,
+    estadiaId,
     atk,
     itk,
     authorizationCode,
@@ -1945,6 +2169,12 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
       context.handle(
         _origemMeta,
         origem.isAcceptableOrUnknown(data['origem']!, _origemMeta),
+      );
+    }
+    if (data.containsKey('estadia_id')) {
+      context.handle(
+        _estadiaIdMeta,
+        estadiaId.isAcceptableOrUnknown(data['estadia_id']!, _estadiaIdMeta),
       );
     }
     if (data.containsKey('atk')) {
@@ -2118,6 +2348,10 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         DriftSqlType.string,
         data['${effectivePrefix}origem'],
       )!,
+      estadiaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estadia_id'],
+      ),
       atk: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}atk'],
@@ -2193,6 +2427,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
   final String? clienteId;
   final String? planoId;
   final String origem;
+  final String? estadiaId;
   final String? atk;
   final String? itk;
   final String? authorizationCode;
@@ -2223,6 +2458,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     this.clienteId,
     this.planoId,
     required this.origem,
+    this.estadiaId,
     this.atk,
     this.itk,
     this.authorizationCode,
@@ -2274,6 +2510,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       map['plano_id'] = Variable<String>(planoId);
     }
     map['origem'] = Variable<String>(origem);
+    if (!nullToAbsent || estadiaId != null) {
+      map['estadia_id'] = Variable<String>(estadiaId);
+    }
     if (!nullToAbsent || atk != null) {
       map['atk'] = Variable<String>(atk);
     }
@@ -2342,6 +2581,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           ? const Value.absent()
           : Value(planoId),
       origem: Value(origem),
+      estadiaId: estadiaId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(estadiaId),
       atk: atk == null && nullToAbsent ? const Value.absent() : Value(atk),
       itk: itk == null && nullToAbsent ? const Value.absent() : Value(itk),
       authorizationCode: authorizationCode == null && nullToAbsent
@@ -2392,6 +2634,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       clienteId: serializer.fromJson<String?>(json['clienteId']),
       planoId: serializer.fromJson<String?>(json['planoId']),
       origem: serializer.fromJson<String>(json['origem']),
+      estadiaId: serializer.fromJson<String?>(json['estadiaId']),
       atk: serializer.fromJson<String?>(json['atk']),
       itk: serializer.fromJson<String?>(json['itk']),
       authorizationCode: serializer.fromJson<String?>(
@@ -2429,6 +2672,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       'clienteId': serializer.toJson<String?>(clienteId),
       'planoId': serializer.toJson<String?>(planoId),
       'origem': serializer.toJson<String>(origem),
+      'estadiaId': serializer.toJson<String?>(estadiaId),
       'atk': serializer.toJson<String?>(atk),
       'itk': serializer.toJson<String?>(itk),
       'authorizationCode': serializer.toJson<String?>(authorizationCode),
@@ -2462,6 +2706,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     Value<String?> clienteId = const Value.absent(),
     Value<String?> planoId = const Value.absent(),
     String? origem,
+    Value<String?> estadiaId = const Value.absent(),
     Value<String?> atk = const Value.absent(),
     Value<String?> itk = const Value.absent(),
     Value<String?> authorizationCode = const Value.absent(),
@@ -2502,6 +2747,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     clienteId: clienteId.present ? clienteId.value : this.clienteId,
     planoId: planoId.present ? planoId.value : this.planoId,
     origem: origem ?? this.origem,
+    estadiaId: estadiaId.present ? estadiaId.value : this.estadiaId,
     atk: atk.present ? atk.value : this.atk,
     itk: itk.present ? itk.value : this.itk,
     authorizationCode: authorizationCode.present
@@ -2562,6 +2808,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
       planoId: data.planoId.present ? data.planoId.value : this.planoId,
       origem: data.origem.present ? data.origem.value : this.origem,
+      estadiaId: data.estadiaId.present ? data.estadiaId.value : this.estadiaId,
       atk: data.atk.present ? data.atk.value : this.atk,
       itk: data.itk.present ? data.itk.value : this.itk,
       authorizationCode: data.authorizationCode.present
@@ -2611,6 +2858,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           ..write('clienteId: $clienteId, ')
           ..write('planoId: $planoId, ')
           ..write('origem: $origem, ')
+          ..write('estadiaId: $estadiaId, ')
           ..write('atk: $atk, ')
           ..write('itk: $itk, ')
           ..write('authorizationCode: $authorizationCode, ')
@@ -2646,6 +2894,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     clienteId,
     planoId,
     origem,
+    estadiaId,
     atk,
     itk,
     authorizationCode,
@@ -2680,6 +2929,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           other.clienteId == this.clienteId &&
           other.planoId == this.planoId &&
           other.origem == this.origem &&
+          other.estadiaId == this.estadiaId &&
           other.atk == this.atk &&
           other.itk == this.itk &&
           other.authorizationCode == this.authorizationCode &&
@@ -2712,6 +2962,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
   final Value<String?> clienteId;
   final Value<String?> planoId;
   final Value<String> origem;
+  final Value<String?> estadiaId;
   final Value<String?> atk;
   final Value<String?> itk;
   final Value<String?> authorizationCode;
@@ -2743,6 +2994,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     this.clienteId = const Value.absent(),
     this.planoId = const Value.absent(),
     this.origem = const Value.absent(),
+    this.estadiaId = const Value.absent(),
     this.atk = const Value.absent(),
     this.itk = const Value.absent(),
     this.authorizationCode = const Value.absent(),
@@ -2775,6 +3027,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     this.clienteId = const Value.absent(),
     this.planoId = const Value.absent(),
     this.origem = const Value.absent(),
+    this.estadiaId = const Value.absent(),
     this.atk = const Value.absent(),
     this.itk = const Value.absent(),
     this.authorizationCode = const Value.absent(),
@@ -2814,6 +3067,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Expression<String>? clienteId,
     Expression<String>? planoId,
     Expression<String>? origem,
+    Expression<String>? estadiaId,
     Expression<String>? atk,
     Expression<String>? itk,
     Expression<String>? authorizationCode,
@@ -2846,6 +3100,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       if (clienteId != null) 'cliente_id': clienteId,
       if (planoId != null) 'plano_id': planoId,
       if (origem != null) 'origem': origem,
+      if (estadiaId != null) 'estadia_id': estadiaId,
       if (atk != null) 'atk': atk,
       if (itk != null) 'itk': itk,
       if (authorizationCode != null) 'authorization_code': authorizationCode,
@@ -2881,6 +3136,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Value<String?>? clienteId,
     Value<String?>? planoId,
     Value<String>? origem,
+    Value<String?>? estadiaId,
     Value<String?>? atk,
     Value<String?>? itk,
     Value<String?>? authorizationCode,
@@ -2913,6 +3169,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       clienteId: clienteId ?? this.clienteId,
       planoId: planoId ?? this.planoId,
       origem: origem ?? this.origem,
+      estadiaId: estadiaId ?? this.estadiaId,
       atk: atk ?? this.atk,
       itk: itk ?? this.itk,
       authorizationCode: authorizationCode ?? this.authorizationCode,
@@ -2983,6 +3240,9 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     if (origem.present) {
       map['origem'] = Variable<String>(origem.value);
     }
+    if (estadiaId.present) {
+      map['estadia_id'] = Variable<String>(estadiaId.value);
+    }
     if (atk.present) {
       map['atk'] = Variable<String>(atk.value);
     }
@@ -3045,6 +3305,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
           ..write('clienteId: $clienteId, ')
           ..write('planoId: $planoId, ')
           ..write('origem: $origem, ')
+          ..write('estadiaId: $estadiaId, ')
           ..write('atk: $atk, ')
           ..write('itk: $itk, ')
           ..write('authorizationCode: $authorizationCode, ')
@@ -3928,6 +4189,17 @@ class $CaixaMovimentosTable extends CaixaMovimentos
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _estadiaPagamentoIdMeta =
+      const VerificationMeta('estadiaPagamentoId');
+  @override
+  late final GeneratedColumn<String> estadiaPagamentoId =
+      GeneratedColumn<String>(
+        'estadia_pagamento_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _formaPagamentoMeta = const VerificationMeta(
     'formaPagamento',
   );
@@ -3970,6 +4242,7 @@ class $CaixaMovimentosTable extends CaixaMovimentos
     valor,
     descricao,
     ticketId,
+    estadiaPagamentoId,
     formaPagamento,
     criadoEm,
     syncStatus,
@@ -4032,6 +4305,15 @@ class $CaixaMovimentosTable extends CaixaMovimentos
         ticketId.isAcceptableOrUnknown(data['ticket_id']!, _ticketIdMeta),
       );
     }
+    if (data.containsKey('estadia_pagamento_id')) {
+      context.handle(
+        _estadiaPagamentoIdMeta,
+        estadiaPagamentoId.isAcceptableOrUnknown(
+          data['estadia_pagamento_id']!,
+          _estadiaPagamentoIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('forma_pagamento')) {
       context.handle(
         _formaPagamentoMeta,
@@ -4088,6 +4370,10 @@ class $CaixaMovimentosTable extends CaixaMovimentos
         DriftSqlType.string,
         data['${effectivePrefix}ticket_id'],
       ),
+      estadiaPagamentoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estadia_pagamento_id'],
+      ),
       formaPagamento: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}forma_pagamento'],
@@ -4116,6 +4402,7 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
   final double valor;
   final String descricao;
   final String? ticketId;
+  final String? estadiaPagamentoId;
   final String? formaPagamento;
   final int criadoEm;
   final String syncStatus;
@@ -4126,6 +4413,7 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
     required this.valor,
     required this.descricao,
     this.ticketId,
+    this.estadiaPagamentoId,
     this.formaPagamento,
     required this.criadoEm,
     required this.syncStatus,
@@ -4140,6 +4428,9 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
     map['descricao'] = Variable<String>(descricao);
     if (!nullToAbsent || ticketId != null) {
       map['ticket_id'] = Variable<String>(ticketId);
+    }
+    if (!nullToAbsent || estadiaPagamentoId != null) {
+      map['estadia_pagamento_id'] = Variable<String>(estadiaPagamentoId);
     }
     if (!nullToAbsent || formaPagamento != null) {
       map['forma_pagamento'] = Variable<String>(formaPagamento);
@@ -4159,6 +4450,9 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
       ticketId: ticketId == null && nullToAbsent
           ? const Value.absent()
           : Value(ticketId),
+      estadiaPagamentoId: estadiaPagamentoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(estadiaPagamentoId),
       formaPagamento: formaPagamento == null && nullToAbsent
           ? const Value.absent()
           : Value(formaPagamento),
@@ -4179,6 +4473,9 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
       valor: serializer.fromJson<double>(json['valor']),
       descricao: serializer.fromJson<String>(json['descricao']),
       ticketId: serializer.fromJson<String?>(json['ticketId']),
+      estadiaPagamentoId: serializer.fromJson<String?>(
+        json['estadiaPagamentoId'],
+      ),
       formaPagamento: serializer.fromJson<String?>(json['formaPagamento']),
       criadoEm: serializer.fromJson<int>(json['criadoEm']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
@@ -4194,6 +4491,7 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
       'valor': serializer.toJson<double>(valor),
       'descricao': serializer.toJson<String>(descricao),
       'ticketId': serializer.toJson<String?>(ticketId),
+      'estadiaPagamentoId': serializer.toJson<String?>(estadiaPagamentoId),
       'formaPagamento': serializer.toJson<String?>(formaPagamento),
       'criadoEm': serializer.toJson<int>(criadoEm),
       'syncStatus': serializer.toJson<String>(syncStatus),
@@ -4207,6 +4505,7 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
     double? valor,
     String? descricao,
     Value<String?> ticketId = const Value.absent(),
+    Value<String?> estadiaPagamentoId = const Value.absent(),
     Value<String?> formaPagamento = const Value.absent(),
     int? criadoEm,
     String? syncStatus,
@@ -4217,6 +4516,9 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
     valor: valor ?? this.valor,
     descricao: descricao ?? this.descricao,
     ticketId: ticketId.present ? ticketId.value : this.ticketId,
+    estadiaPagamentoId: estadiaPagamentoId.present
+        ? estadiaPagamentoId.value
+        : this.estadiaPagamentoId,
     formaPagamento: formaPagamento.present
         ? formaPagamento.value
         : this.formaPagamento,
@@ -4233,6 +4535,9 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
       valor: data.valor.present ? data.valor.value : this.valor,
       descricao: data.descricao.present ? data.descricao.value : this.descricao,
       ticketId: data.ticketId.present ? data.ticketId.value : this.ticketId,
+      estadiaPagamentoId: data.estadiaPagamentoId.present
+          ? data.estadiaPagamentoId.value
+          : this.estadiaPagamentoId,
       formaPagamento: data.formaPagamento.present
           ? data.formaPagamento.value
           : this.formaPagamento,
@@ -4252,6 +4557,7 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
           ..write('valor: $valor, ')
           ..write('descricao: $descricao, ')
           ..write('ticketId: $ticketId, ')
+          ..write('estadiaPagamentoId: $estadiaPagamentoId, ')
           ..write('formaPagamento: $formaPagamento, ')
           ..write('criadoEm: $criadoEm, ')
           ..write('syncStatus: $syncStatus')
@@ -4267,6 +4573,7 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
     valor,
     descricao,
     ticketId,
+    estadiaPagamentoId,
     formaPagamento,
     criadoEm,
     syncStatus,
@@ -4281,6 +4588,7 @@ class CaixaMovimento extends DataClass implements Insertable<CaixaMovimento> {
           other.valor == this.valor &&
           other.descricao == this.descricao &&
           other.ticketId == this.ticketId &&
+          other.estadiaPagamentoId == this.estadiaPagamentoId &&
           other.formaPagamento == this.formaPagamento &&
           other.criadoEm == this.criadoEm &&
           other.syncStatus == this.syncStatus);
@@ -4293,6 +4601,7 @@ class CaixaMovimentosCompanion extends UpdateCompanion<CaixaMovimento> {
   final Value<double> valor;
   final Value<String> descricao;
   final Value<String?> ticketId;
+  final Value<String?> estadiaPagamentoId;
   final Value<String?> formaPagamento;
   final Value<int> criadoEm;
   final Value<String> syncStatus;
@@ -4304,6 +4613,7 @@ class CaixaMovimentosCompanion extends UpdateCompanion<CaixaMovimento> {
     this.valor = const Value.absent(),
     this.descricao = const Value.absent(),
     this.ticketId = const Value.absent(),
+    this.estadiaPagamentoId = const Value.absent(),
     this.formaPagamento = const Value.absent(),
     this.criadoEm = const Value.absent(),
     this.syncStatus = const Value.absent(),
@@ -4316,6 +4626,7 @@ class CaixaMovimentosCompanion extends UpdateCompanion<CaixaMovimento> {
     required double valor,
     required String descricao,
     this.ticketId = const Value.absent(),
+    this.estadiaPagamentoId = const Value.absent(),
     this.formaPagamento = const Value.absent(),
     required int criadoEm,
     this.syncStatus = const Value.absent(),
@@ -4333,6 +4644,7 @@ class CaixaMovimentosCompanion extends UpdateCompanion<CaixaMovimento> {
     Expression<double>? valor,
     Expression<String>? descricao,
     Expression<String>? ticketId,
+    Expression<String>? estadiaPagamentoId,
     Expression<String>? formaPagamento,
     Expression<int>? criadoEm,
     Expression<String>? syncStatus,
@@ -4345,6 +4657,8 @@ class CaixaMovimentosCompanion extends UpdateCompanion<CaixaMovimento> {
       if (valor != null) 'valor': valor,
       if (descricao != null) 'descricao': descricao,
       if (ticketId != null) 'ticket_id': ticketId,
+      if (estadiaPagamentoId != null)
+        'estadia_pagamento_id': estadiaPagamentoId,
       if (formaPagamento != null) 'forma_pagamento': formaPagamento,
       if (criadoEm != null) 'criado_em': criadoEm,
       if (syncStatus != null) 'sync_status': syncStatus,
@@ -4359,6 +4673,7 @@ class CaixaMovimentosCompanion extends UpdateCompanion<CaixaMovimento> {
     Value<double>? valor,
     Value<String>? descricao,
     Value<String?>? ticketId,
+    Value<String?>? estadiaPagamentoId,
     Value<String?>? formaPagamento,
     Value<int>? criadoEm,
     Value<String>? syncStatus,
@@ -4371,6 +4686,7 @@ class CaixaMovimentosCompanion extends UpdateCompanion<CaixaMovimento> {
       valor: valor ?? this.valor,
       descricao: descricao ?? this.descricao,
       ticketId: ticketId ?? this.ticketId,
+      estadiaPagamentoId: estadiaPagamentoId ?? this.estadiaPagamentoId,
       formaPagamento: formaPagamento ?? this.formaPagamento,
       criadoEm: criadoEm ?? this.criadoEm,
       syncStatus: syncStatus ?? this.syncStatus,
@@ -4399,6 +4715,9 @@ class CaixaMovimentosCompanion extends UpdateCompanion<CaixaMovimento> {
     if (ticketId.present) {
       map['ticket_id'] = Variable<String>(ticketId.value);
     }
+    if (estadiaPagamentoId.present) {
+      map['estadia_pagamento_id'] = Variable<String>(estadiaPagamentoId.value);
+    }
     if (formaPagamento.present) {
       map['forma_pagamento'] = Variable<String>(formaPagamento.value);
     }
@@ -4423,6 +4742,7 @@ class CaixaMovimentosCompanion extends UpdateCompanion<CaixaMovimento> {
           ..write('valor: $valor, ')
           ..write('descricao: $descricao, ')
           ..write('ticketId: $ticketId, ')
+          ..write('estadiaPagamentoId: $estadiaPagamentoId, ')
           ..write('formaPagamento: $formaPagamento, ')
           ..write('criadoEm: $criadoEm, ')
           ..write('syncStatus: $syncStatus, ')
@@ -7535,6 +7855,1717 @@ class LiberacoesCacheCompanion extends UpdateCompanion<LiberacoesCacheData> {
   }
 }
 
+class $EstadiasTable extends Estadias with TableInfo<$EstadiasTable, Estadia> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EstadiasTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operacaoIdMeta = const VerificationMeta(
+    'operacaoId',
+  );
+  @override
+  late final GeneratedColumn<String> operacaoId = GeneratedColumn<String>(
+    'operacao_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _placaMeta = const VerificationMeta('placa');
+  @override
+  late final GeneratedColumn<String> placa = GeneratedColumn<String>(
+    'placa',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoVeiculoMeta = const VerificationMeta(
+    'tipoVeiculo',
+  );
+  @override
+  late final GeneratedColumn<String> tipoVeiculo = GeneratedColumn<String>(
+    'tipo_veiculo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tarifaIdMeta = const VerificationMeta(
+    'tarifaId',
+  );
+  @override
+  late final GeneratedColumn<String> tarifaId = GeneratedColumn<String>(
+    'tarifa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _diariaValorMeta = const VerificationMeta(
+    'diariaValor',
+  );
+  @override
+  late final GeneratedColumn<double> diariaValor = GeneratedColumn<double>(
+    'diaria_valor',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _diariaHorasMeta = const VerificationMeta(
+    'diariaHoras',
+  );
+  @override
+  late final GeneratedColumn<int> diariaHoras = GeneratedColumn<int>(
+    'diaria_horas',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _inicioEpochMeta = const VerificationMeta(
+    'inicioEpoch',
+  );
+  @override
+  late final GeneratedColumn<int> inicioEpoch = GeneratedColumn<int>(
+    'inicio_epoch',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _validaAteEpochMeta = const VerificationMeta(
+    'validaAteEpoch',
+  );
+  @override
+  late final GeneratedColumn<int> validaAteEpoch = GeneratedColumn<int>(
+    'valida_ate_epoch',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _diariasMeta = const VerificationMeta(
+    'diarias',
+  );
+  @override
+  late final GeneratedColumn<int> diarias = GeneratedColumn<int>(
+    'diarias',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valorTotalMeta = const VerificationMeta(
+    'valorTotal',
+  );
+  @override
+  late final GeneratedColumn<double> valorTotal = GeneratedColumn<double>(
+    'valor_total',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operadorIdMeta = const VerificationMeta(
+    'operadorId',
+  );
+  @override
+  late final GeneratedColumn<String> operadorId = GeneratedColumn<String>(
+    'operador_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pendente'),
+  );
+  static const VerificationMeta _criadoEmMeta = const VerificationMeta(
+    'criadoEm',
+  );
+  @override
+  late final GeneratedColumn<int> criadoEm = GeneratedColumn<int>(
+    'criado_em',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _atualizadoEmMeta = const VerificationMeta(
+    'atualizadoEm',
+  );
+  @override
+  late final GeneratedColumn<int> atualizadoEm = GeneratedColumn<int>(
+    'atualizado_em',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    operacaoId,
+    placa,
+    tipoVeiculo,
+    tarifaId,
+    diariaValor,
+    diariaHoras,
+    inicioEpoch,
+    validaAteEpoch,
+    diarias,
+    valorTotal,
+    operadorId,
+    syncStatus,
+    criadoEm,
+    atualizadoEm,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'estadias';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Estadia> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('operacao_id')) {
+      context.handle(
+        _operacaoIdMeta,
+        operacaoId.isAcceptableOrUnknown(data['operacao_id']!, _operacaoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_operacaoIdMeta);
+    }
+    if (data.containsKey('placa')) {
+      context.handle(
+        _placaMeta,
+        placa.isAcceptableOrUnknown(data['placa']!, _placaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_placaMeta);
+    }
+    if (data.containsKey('tipo_veiculo')) {
+      context.handle(
+        _tipoVeiculoMeta,
+        tipoVeiculo.isAcceptableOrUnknown(
+          data['tipo_veiculo']!,
+          _tipoVeiculoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoVeiculoMeta);
+    }
+    if (data.containsKey('tarifa_id')) {
+      context.handle(
+        _tarifaIdMeta,
+        tarifaId.isAcceptableOrUnknown(data['tarifa_id']!, _tarifaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tarifaIdMeta);
+    }
+    if (data.containsKey('diaria_valor')) {
+      context.handle(
+        _diariaValorMeta,
+        diariaValor.isAcceptableOrUnknown(
+          data['diaria_valor']!,
+          _diariaValorMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_diariaValorMeta);
+    }
+    if (data.containsKey('diaria_horas')) {
+      context.handle(
+        _diariaHorasMeta,
+        diariaHoras.isAcceptableOrUnknown(
+          data['diaria_horas']!,
+          _diariaHorasMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_diariaHorasMeta);
+    }
+    if (data.containsKey('inicio_epoch')) {
+      context.handle(
+        _inicioEpochMeta,
+        inicioEpoch.isAcceptableOrUnknown(
+          data['inicio_epoch']!,
+          _inicioEpochMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_inicioEpochMeta);
+    }
+    if (data.containsKey('valida_ate_epoch')) {
+      context.handle(
+        _validaAteEpochMeta,
+        validaAteEpoch.isAcceptableOrUnknown(
+          data['valida_ate_epoch']!,
+          _validaAteEpochMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_validaAteEpochMeta);
+    }
+    if (data.containsKey('diarias')) {
+      context.handle(
+        _diariasMeta,
+        diarias.isAcceptableOrUnknown(data['diarias']!, _diariasMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_diariasMeta);
+    }
+    if (data.containsKey('valor_total')) {
+      context.handle(
+        _valorTotalMeta,
+        valorTotal.isAcceptableOrUnknown(data['valor_total']!, _valorTotalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valorTotalMeta);
+    }
+    if (data.containsKey('operador_id')) {
+      context.handle(
+        _operadorIdMeta,
+        operadorId.isAcceptableOrUnknown(data['operador_id']!, _operadorIdMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('criado_em')) {
+      context.handle(
+        _criadoEmMeta,
+        criadoEm.isAcceptableOrUnknown(data['criado_em']!, _criadoEmMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_criadoEmMeta);
+    }
+    if (data.containsKey('atualizado_em')) {
+      context.handle(
+        _atualizadoEmMeta,
+        atualizadoEm.isAcceptableOrUnknown(
+          data['atualizado_em']!,
+          _atualizadoEmMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_atualizadoEmMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Estadia map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Estadia(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      operacaoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operacao_id'],
+      )!,
+      placa: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}placa'],
+      )!,
+      tipoVeiculo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo_veiculo'],
+      )!,
+      tarifaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tarifa_id'],
+      )!,
+      diariaValor: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}diaria_valor'],
+      )!,
+      diariaHoras: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}diaria_horas'],
+      )!,
+      inicioEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}inicio_epoch'],
+      )!,
+      validaAteEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}valida_ate_epoch'],
+      )!,
+      diarias: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}diarias'],
+      )!,
+      valorTotal: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}valor_total'],
+      )!,
+      operadorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operador_id'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      criadoEm: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}criado_em'],
+      )!,
+      atualizadoEm: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}atualizado_em'],
+      )!,
+    );
+  }
+
+  @override
+  $EstadiasTable createAlias(String alias) {
+    return $EstadiasTable(attachedDatabase, alias);
+  }
+}
+
+class Estadia extends DataClass implements Insertable<Estadia> {
+  final String id;
+  final String operacaoId;
+  final String placa;
+  final String tipoVeiculo;
+  final String tarifaId;
+  final double diariaValor;
+  final int diariaHoras;
+  final int inicioEpoch;
+  final int validaAteEpoch;
+  final int diarias;
+  final double valorTotal;
+  final String? operadorId;
+  final String syncStatus;
+  final int criadoEm;
+  final int atualizadoEm;
+  const Estadia({
+    required this.id,
+    required this.operacaoId,
+    required this.placa,
+    required this.tipoVeiculo,
+    required this.tarifaId,
+    required this.diariaValor,
+    required this.diariaHoras,
+    required this.inicioEpoch,
+    required this.validaAteEpoch,
+    required this.diarias,
+    required this.valorTotal,
+    this.operadorId,
+    required this.syncStatus,
+    required this.criadoEm,
+    required this.atualizadoEm,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['operacao_id'] = Variable<String>(operacaoId);
+    map['placa'] = Variable<String>(placa);
+    map['tipo_veiculo'] = Variable<String>(tipoVeiculo);
+    map['tarifa_id'] = Variable<String>(tarifaId);
+    map['diaria_valor'] = Variable<double>(diariaValor);
+    map['diaria_horas'] = Variable<int>(diariaHoras);
+    map['inicio_epoch'] = Variable<int>(inicioEpoch);
+    map['valida_ate_epoch'] = Variable<int>(validaAteEpoch);
+    map['diarias'] = Variable<int>(diarias);
+    map['valor_total'] = Variable<double>(valorTotal);
+    if (!nullToAbsent || operadorId != null) {
+      map['operador_id'] = Variable<String>(operadorId);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['criado_em'] = Variable<int>(criadoEm);
+    map['atualizado_em'] = Variable<int>(atualizadoEm);
+    return map;
+  }
+
+  EstadiasCompanion toCompanion(bool nullToAbsent) {
+    return EstadiasCompanion(
+      id: Value(id),
+      operacaoId: Value(operacaoId),
+      placa: Value(placa),
+      tipoVeiculo: Value(tipoVeiculo),
+      tarifaId: Value(tarifaId),
+      diariaValor: Value(diariaValor),
+      diariaHoras: Value(diariaHoras),
+      inicioEpoch: Value(inicioEpoch),
+      validaAteEpoch: Value(validaAteEpoch),
+      diarias: Value(diarias),
+      valorTotal: Value(valorTotal),
+      operadorId: operadorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(operadorId),
+      syncStatus: Value(syncStatus),
+      criadoEm: Value(criadoEm),
+      atualizadoEm: Value(atualizadoEm),
+    );
+  }
+
+  factory Estadia.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Estadia(
+      id: serializer.fromJson<String>(json['id']),
+      operacaoId: serializer.fromJson<String>(json['operacaoId']),
+      placa: serializer.fromJson<String>(json['placa']),
+      tipoVeiculo: serializer.fromJson<String>(json['tipoVeiculo']),
+      tarifaId: serializer.fromJson<String>(json['tarifaId']),
+      diariaValor: serializer.fromJson<double>(json['diariaValor']),
+      diariaHoras: serializer.fromJson<int>(json['diariaHoras']),
+      inicioEpoch: serializer.fromJson<int>(json['inicioEpoch']),
+      validaAteEpoch: serializer.fromJson<int>(json['validaAteEpoch']),
+      diarias: serializer.fromJson<int>(json['diarias']),
+      valorTotal: serializer.fromJson<double>(json['valorTotal']),
+      operadorId: serializer.fromJson<String?>(json['operadorId']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      criadoEm: serializer.fromJson<int>(json['criadoEm']),
+      atualizadoEm: serializer.fromJson<int>(json['atualizadoEm']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'operacaoId': serializer.toJson<String>(operacaoId),
+      'placa': serializer.toJson<String>(placa),
+      'tipoVeiculo': serializer.toJson<String>(tipoVeiculo),
+      'tarifaId': serializer.toJson<String>(tarifaId),
+      'diariaValor': serializer.toJson<double>(diariaValor),
+      'diariaHoras': serializer.toJson<int>(diariaHoras),
+      'inicioEpoch': serializer.toJson<int>(inicioEpoch),
+      'validaAteEpoch': serializer.toJson<int>(validaAteEpoch),
+      'diarias': serializer.toJson<int>(diarias),
+      'valorTotal': serializer.toJson<double>(valorTotal),
+      'operadorId': serializer.toJson<String?>(operadorId),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'criadoEm': serializer.toJson<int>(criadoEm),
+      'atualizadoEm': serializer.toJson<int>(atualizadoEm),
+    };
+  }
+
+  Estadia copyWith({
+    String? id,
+    String? operacaoId,
+    String? placa,
+    String? tipoVeiculo,
+    String? tarifaId,
+    double? diariaValor,
+    int? diariaHoras,
+    int? inicioEpoch,
+    int? validaAteEpoch,
+    int? diarias,
+    double? valorTotal,
+    Value<String?> operadorId = const Value.absent(),
+    String? syncStatus,
+    int? criadoEm,
+    int? atualizadoEm,
+  }) => Estadia(
+    id: id ?? this.id,
+    operacaoId: operacaoId ?? this.operacaoId,
+    placa: placa ?? this.placa,
+    tipoVeiculo: tipoVeiculo ?? this.tipoVeiculo,
+    tarifaId: tarifaId ?? this.tarifaId,
+    diariaValor: diariaValor ?? this.diariaValor,
+    diariaHoras: diariaHoras ?? this.diariaHoras,
+    inicioEpoch: inicioEpoch ?? this.inicioEpoch,
+    validaAteEpoch: validaAteEpoch ?? this.validaAteEpoch,
+    diarias: diarias ?? this.diarias,
+    valorTotal: valorTotal ?? this.valorTotal,
+    operadorId: operadorId.present ? operadorId.value : this.operadorId,
+    syncStatus: syncStatus ?? this.syncStatus,
+    criadoEm: criadoEm ?? this.criadoEm,
+    atualizadoEm: atualizadoEm ?? this.atualizadoEm,
+  );
+  Estadia copyWithCompanion(EstadiasCompanion data) {
+    return Estadia(
+      id: data.id.present ? data.id.value : this.id,
+      operacaoId: data.operacaoId.present
+          ? data.operacaoId.value
+          : this.operacaoId,
+      placa: data.placa.present ? data.placa.value : this.placa,
+      tipoVeiculo: data.tipoVeiculo.present
+          ? data.tipoVeiculo.value
+          : this.tipoVeiculo,
+      tarifaId: data.tarifaId.present ? data.tarifaId.value : this.tarifaId,
+      diariaValor: data.diariaValor.present
+          ? data.diariaValor.value
+          : this.diariaValor,
+      diariaHoras: data.diariaHoras.present
+          ? data.diariaHoras.value
+          : this.diariaHoras,
+      inicioEpoch: data.inicioEpoch.present
+          ? data.inicioEpoch.value
+          : this.inicioEpoch,
+      validaAteEpoch: data.validaAteEpoch.present
+          ? data.validaAteEpoch.value
+          : this.validaAteEpoch,
+      diarias: data.diarias.present ? data.diarias.value : this.diarias,
+      valorTotal: data.valorTotal.present
+          ? data.valorTotal.value
+          : this.valorTotal,
+      operadorId: data.operadorId.present
+          ? data.operadorId.value
+          : this.operadorId,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      criadoEm: data.criadoEm.present ? data.criadoEm.value : this.criadoEm,
+      atualizadoEm: data.atualizadoEm.present
+          ? data.atualizadoEm.value
+          : this.atualizadoEm,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Estadia(')
+          ..write('id: $id, ')
+          ..write('operacaoId: $operacaoId, ')
+          ..write('placa: $placa, ')
+          ..write('tipoVeiculo: $tipoVeiculo, ')
+          ..write('tarifaId: $tarifaId, ')
+          ..write('diariaValor: $diariaValor, ')
+          ..write('diariaHoras: $diariaHoras, ')
+          ..write('inicioEpoch: $inicioEpoch, ')
+          ..write('validaAteEpoch: $validaAteEpoch, ')
+          ..write('diarias: $diarias, ')
+          ..write('valorTotal: $valorTotal, ')
+          ..write('operadorId: $operadorId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('criadoEm: $criadoEm, ')
+          ..write('atualizadoEm: $atualizadoEm')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    operacaoId,
+    placa,
+    tipoVeiculo,
+    tarifaId,
+    diariaValor,
+    diariaHoras,
+    inicioEpoch,
+    validaAteEpoch,
+    diarias,
+    valorTotal,
+    operadorId,
+    syncStatus,
+    criadoEm,
+    atualizadoEm,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Estadia &&
+          other.id == this.id &&
+          other.operacaoId == this.operacaoId &&
+          other.placa == this.placa &&
+          other.tipoVeiculo == this.tipoVeiculo &&
+          other.tarifaId == this.tarifaId &&
+          other.diariaValor == this.diariaValor &&
+          other.diariaHoras == this.diariaHoras &&
+          other.inicioEpoch == this.inicioEpoch &&
+          other.validaAteEpoch == this.validaAteEpoch &&
+          other.diarias == this.diarias &&
+          other.valorTotal == this.valorTotal &&
+          other.operadorId == this.operadorId &&
+          other.syncStatus == this.syncStatus &&
+          other.criadoEm == this.criadoEm &&
+          other.atualizadoEm == this.atualizadoEm);
+}
+
+class EstadiasCompanion extends UpdateCompanion<Estadia> {
+  final Value<String> id;
+  final Value<String> operacaoId;
+  final Value<String> placa;
+  final Value<String> tipoVeiculo;
+  final Value<String> tarifaId;
+  final Value<double> diariaValor;
+  final Value<int> diariaHoras;
+  final Value<int> inicioEpoch;
+  final Value<int> validaAteEpoch;
+  final Value<int> diarias;
+  final Value<double> valorTotal;
+  final Value<String?> operadorId;
+  final Value<String> syncStatus;
+  final Value<int> criadoEm;
+  final Value<int> atualizadoEm;
+  final Value<int> rowid;
+  const EstadiasCompanion({
+    this.id = const Value.absent(),
+    this.operacaoId = const Value.absent(),
+    this.placa = const Value.absent(),
+    this.tipoVeiculo = const Value.absent(),
+    this.tarifaId = const Value.absent(),
+    this.diariaValor = const Value.absent(),
+    this.diariaHoras = const Value.absent(),
+    this.inicioEpoch = const Value.absent(),
+    this.validaAteEpoch = const Value.absent(),
+    this.diarias = const Value.absent(),
+    this.valorTotal = const Value.absent(),
+    this.operadorId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.criadoEm = const Value.absent(),
+    this.atualizadoEm = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EstadiasCompanion.insert({
+    required String id,
+    required String operacaoId,
+    required String placa,
+    required String tipoVeiculo,
+    required String tarifaId,
+    required double diariaValor,
+    required int diariaHoras,
+    required int inicioEpoch,
+    required int validaAteEpoch,
+    required int diarias,
+    required double valorTotal,
+    this.operadorId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required int criadoEm,
+    required int atualizadoEm,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       operacaoId = Value(operacaoId),
+       placa = Value(placa),
+       tipoVeiculo = Value(tipoVeiculo),
+       tarifaId = Value(tarifaId),
+       diariaValor = Value(diariaValor),
+       diariaHoras = Value(diariaHoras),
+       inicioEpoch = Value(inicioEpoch),
+       validaAteEpoch = Value(validaAteEpoch),
+       diarias = Value(diarias),
+       valorTotal = Value(valorTotal),
+       criadoEm = Value(criadoEm),
+       atualizadoEm = Value(atualizadoEm);
+  static Insertable<Estadia> custom({
+    Expression<String>? id,
+    Expression<String>? operacaoId,
+    Expression<String>? placa,
+    Expression<String>? tipoVeiculo,
+    Expression<String>? tarifaId,
+    Expression<double>? diariaValor,
+    Expression<int>? diariaHoras,
+    Expression<int>? inicioEpoch,
+    Expression<int>? validaAteEpoch,
+    Expression<int>? diarias,
+    Expression<double>? valorTotal,
+    Expression<String>? operadorId,
+    Expression<String>? syncStatus,
+    Expression<int>? criadoEm,
+    Expression<int>? atualizadoEm,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (operacaoId != null) 'operacao_id': operacaoId,
+      if (placa != null) 'placa': placa,
+      if (tipoVeiculo != null) 'tipo_veiculo': tipoVeiculo,
+      if (tarifaId != null) 'tarifa_id': tarifaId,
+      if (diariaValor != null) 'diaria_valor': diariaValor,
+      if (diariaHoras != null) 'diaria_horas': diariaHoras,
+      if (inicioEpoch != null) 'inicio_epoch': inicioEpoch,
+      if (validaAteEpoch != null) 'valida_ate_epoch': validaAteEpoch,
+      if (diarias != null) 'diarias': diarias,
+      if (valorTotal != null) 'valor_total': valorTotal,
+      if (operadorId != null) 'operador_id': operadorId,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (criadoEm != null) 'criado_em': criadoEm,
+      if (atualizadoEm != null) 'atualizado_em': atualizadoEm,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EstadiasCompanion copyWith({
+    Value<String>? id,
+    Value<String>? operacaoId,
+    Value<String>? placa,
+    Value<String>? tipoVeiculo,
+    Value<String>? tarifaId,
+    Value<double>? diariaValor,
+    Value<int>? diariaHoras,
+    Value<int>? inicioEpoch,
+    Value<int>? validaAteEpoch,
+    Value<int>? diarias,
+    Value<double>? valorTotal,
+    Value<String?>? operadorId,
+    Value<String>? syncStatus,
+    Value<int>? criadoEm,
+    Value<int>? atualizadoEm,
+    Value<int>? rowid,
+  }) {
+    return EstadiasCompanion(
+      id: id ?? this.id,
+      operacaoId: operacaoId ?? this.operacaoId,
+      placa: placa ?? this.placa,
+      tipoVeiculo: tipoVeiculo ?? this.tipoVeiculo,
+      tarifaId: tarifaId ?? this.tarifaId,
+      diariaValor: diariaValor ?? this.diariaValor,
+      diariaHoras: diariaHoras ?? this.diariaHoras,
+      inicioEpoch: inicioEpoch ?? this.inicioEpoch,
+      validaAteEpoch: validaAteEpoch ?? this.validaAteEpoch,
+      diarias: diarias ?? this.diarias,
+      valorTotal: valorTotal ?? this.valorTotal,
+      operadorId: operadorId ?? this.operadorId,
+      syncStatus: syncStatus ?? this.syncStatus,
+      criadoEm: criadoEm ?? this.criadoEm,
+      atualizadoEm: atualizadoEm ?? this.atualizadoEm,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (operacaoId.present) {
+      map['operacao_id'] = Variable<String>(operacaoId.value);
+    }
+    if (placa.present) {
+      map['placa'] = Variable<String>(placa.value);
+    }
+    if (tipoVeiculo.present) {
+      map['tipo_veiculo'] = Variable<String>(tipoVeiculo.value);
+    }
+    if (tarifaId.present) {
+      map['tarifa_id'] = Variable<String>(tarifaId.value);
+    }
+    if (diariaValor.present) {
+      map['diaria_valor'] = Variable<double>(diariaValor.value);
+    }
+    if (diariaHoras.present) {
+      map['diaria_horas'] = Variable<int>(diariaHoras.value);
+    }
+    if (inicioEpoch.present) {
+      map['inicio_epoch'] = Variable<int>(inicioEpoch.value);
+    }
+    if (validaAteEpoch.present) {
+      map['valida_ate_epoch'] = Variable<int>(validaAteEpoch.value);
+    }
+    if (diarias.present) {
+      map['diarias'] = Variable<int>(diarias.value);
+    }
+    if (valorTotal.present) {
+      map['valor_total'] = Variable<double>(valorTotal.value);
+    }
+    if (operadorId.present) {
+      map['operador_id'] = Variable<String>(operadorId.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (criadoEm.present) {
+      map['criado_em'] = Variable<int>(criadoEm.value);
+    }
+    if (atualizadoEm.present) {
+      map['atualizado_em'] = Variable<int>(atualizadoEm.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EstadiasCompanion(')
+          ..write('id: $id, ')
+          ..write('operacaoId: $operacaoId, ')
+          ..write('placa: $placa, ')
+          ..write('tipoVeiculo: $tipoVeiculo, ')
+          ..write('tarifaId: $tarifaId, ')
+          ..write('diariaValor: $diariaValor, ')
+          ..write('diariaHoras: $diariaHoras, ')
+          ..write('inicioEpoch: $inicioEpoch, ')
+          ..write('validaAteEpoch: $validaAteEpoch, ')
+          ..write('diarias: $diarias, ')
+          ..write('valorTotal: $valorTotal, ')
+          ..write('operadorId: $operadorId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('criadoEm: $criadoEm, ')
+          ..write('atualizadoEm: $atualizadoEm, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EstadiaPagamentosTable extends EstadiaPagamentos
+    with TableInfo<$EstadiaPagamentosTable, EstadiaPagamento> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EstadiaPagamentosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operacaoIdMeta = const VerificationMeta(
+    'operacaoId',
+  );
+  @override
+  late final GeneratedColumn<String> operacaoId = GeneratedColumn<String>(
+    'operacao_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadiaIdMeta = const VerificationMeta(
+    'estadiaId',
+  );
+  @override
+  late final GeneratedColumn<String> estadiaId = GeneratedColumn<String>(
+    'estadia_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _diariasMeta = const VerificationMeta(
+    'diarias',
+  );
+  @override
+  late final GeneratedColumn<int> diarias = GeneratedColumn<int>(
+    'diarias',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valorMeta = const VerificationMeta('valor');
+  @override
+  late final GeneratedColumn<double> valor = GeneratedColumn<double>(
+    'valor',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _formaPagamentoMeta = const VerificationMeta(
+    'formaPagamento',
+  );
+  @override
+  late final GeneratedColumn<String> formaPagamento = GeneratedColumn<String>(
+    'forma_pagamento',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _baseEpochMeta = const VerificationMeta(
+    'baseEpoch',
+  );
+  @override
+  late final GeneratedColumn<int> baseEpoch = GeneratedColumn<int>(
+    'base_epoch',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _operadorIdMeta = const VerificationMeta(
+    'operadorId',
+  );
+  @override
+  late final GeneratedColumn<String> operadorId = GeneratedColumn<String>(
+    'operador_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _caixaSessaoIdMeta = const VerificationMeta(
+    'caixaSessaoId',
+  );
+  @override
+  late final GeneratedColumn<String> caixaSessaoId = GeneratedColumn<String>(
+    'caixa_sessao_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _caixaMovimentoIdMeta = const VerificationMeta(
+    'caixaMovimentoId',
+  );
+  @override
+  late final GeneratedColumn<String> caixaMovimentoId = GeneratedColumn<String>(
+    'caixa_movimento_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pagoEmEpochMeta = const VerificationMeta(
+    'pagoEmEpoch',
+  );
+  @override
+  late final GeneratedColumn<int> pagoEmEpoch = GeneratedColumn<int>(
+    'pago_em_epoch',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pendente'),
+  );
+  static const VerificationMeta _criadoEmMeta = const VerificationMeta(
+    'criadoEm',
+  );
+  @override
+  late final GeneratedColumn<int> criadoEm = GeneratedColumn<int>(
+    'criado_em',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    operacaoId,
+    estadiaId,
+    tipo,
+    diarias,
+    valor,
+    formaPagamento,
+    baseEpoch,
+    operadorId,
+    caixaSessaoId,
+    caixaMovimentoId,
+    pagoEmEpoch,
+    syncStatus,
+    criadoEm,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'estadia_pagamentos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EstadiaPagamento> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('operacao_id')) {
+      context.handle(
+        _operacaoIdMeta,
+        operacaoId.isAcceptableOrUnknown(data['operacao_id']!, _operacaoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_operacaoIdMeta);
+    }
+    if (data.containsKey('estadia_id')) {
+      context.handle(
+        _estadiaIdMeta,
+        estadiaId.isAcceptableOrUnknown(data['estadia_id']!, _estadiaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_estadiaIdMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
+    if (data.containsKey('diarias')) {
+      context.handle(
+        _diariasMeta,
+        diarias.isAcceptableOrUnknown(data['diarias']!, _diariasMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_diariasMeta);
+    }
+    if (data.containsKey('valor')) {
+      context.handle(
+        _valorMeta,
+        valor.isAcceptableOrUnknown(data['valor']!, _valorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valorMeta);
+    }
+    if (data.containsKey('forma_pagamento')) {
+      context.handle(
+        _formaPagamentoMeta,
+        formaPagamento.isAcceptableOrUnknown(
+          data['forma_pagamento']!,
+          _formaPagamentoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_formaPagamentoMeta);
+    }
+    if (data.containsKey('base_epoch')) {
+      context.handle(
+        _baseEpochMeta,
+        baseEpoch.isAcceptableOrUnknown(data['base_epoch']!, _baseEpochMeta),
+      );
+    }
+    if (data.containsKey('operador_id')) {
+      context.handle(
+        _operadorIdMeta,
+        operadorId.isAcceptableOrUnknown(data['operador_id']!, _operadorIdMeta),
+      );
+    }
+    if (data.containsKey('caixa_sessao_id')) {
+      context.handle(
+        _caixaSessaoIdMeta,
+        caixaSessaoId.isAcceptableOrUnknown(
+          data['caixa_sessao_id']!,
+          _caixaSessaoIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('caixa_movimento_id')) {
+      context.handle(
+        _caixaMovimentoIdMeta,
+        caixaMovimentoId.isAcceptableOrUnknown(
+          data['caixa_movimento_id']!,
+          _caixaMovimentoIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pago_em_epoch')) {
+      context.handle(
+        _pagoEmEpochMeta,
+        pagoEmEpoch.isAcceptableOrUnknown(
+          data['pago_em_epoch']!,
+          _pagoEmEpochMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_pagoEmEpochMeta);
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('criado_em')) {
+      context.handle(
+        _criadoEmMeta,
+        criadoEm.isAcceptableOrUnknown(data['criado_em']!, _criadoEmMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_criadoEmMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EstadiaPagamento map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EstadiaPagamento(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      operacaoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operacao_id'],
+      )!,
+      estadiaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estadia_id'],
+      )!,
+      tipo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo'],
+      )!,
+      diarias: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}diarias'],
+      )!,
+      valor: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}valor'],
+      )!,
+      formaPagamento: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}forma_pagamento'],
+      )!,
+      baseEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}base_epoch'],
+      ),
+      operadorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operador_id'],
+      ),
+      caixaSessaoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caixa_sessao_id'],
+      ),
+      caixaMovimentoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caixa_movimento_id'],
+      ),
+      pagoEmEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pago_em_epoch'],
+      )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      criadoEm: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}criado_em'],
+      )!,
+    );
+  }
+
+  @override
+  $EstadiaPagamentosTable createAlias(String alias) {
+    return $EstadiaPagamentosTable(attachedDatabase, alias);
+  }
+}
+
+class EstadiaPagamento extends DataClass
+    implements Insertable<EstadiaPagamento> {
+  final String id;
+  final String operacaoId;
+  final String estadiaId;
+  final String tipo;
+  final int diarias;
+  final double valor;
+  final String formaPagamento;
+  final int? baseEpoch;
+  final String? operadorId;
+  final String? caixaSessaoId;
+  final String? caixaMovimentoId;
+  final int pagoEmEpoch;
+  final String syncStatus;
+  final int criadoEm;
+  const EstadiaPagamento({
+    required this.id,
+    required this.operacaoId,
+    required this.estadiaId,
+    required this.tipo,
+    required this.diarias,
+    required this.valor,
+    required this.formaPagamento,
+    this.baseEpoch,
+    this.operadorId,
+    this.caixaSessaoId,
+    this.caixaMovimentoId,
+    required this.pagoEmEpoch,
+    required this.syncStatus,
+    required this.criadoEm,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['operacao_id'] = Variable<String>(operacaoId);
+    map['estadia_id'] = Variable<String>(estadiaId);
+    map['tipo'] = Variable<String>(tipo);
+    map['diarias'] = Variable<int>(diarias);
+    map['valor'] = Variable<double>(valor);
+    map['forma_pagamento'] = Variable<String>(formaPagamento);
+    if (!nullToAbsent || baseEpoch != null) {
+      map['base_epoch'] = Variable<int>(baseEpoch);
+    }
+    if (!nullToAbsent || operadorId != null) {
+      map['operador_id'] = Variable<String>(operadorId);
+    }
+    if (!nullToAbsent || caixaSessaoId != null) {
+      map['caixa_sessao_id'] = Variable<String>(caixaSessaoId);
+    }
+    if (!nullToAbsent || caixaMovimentoId != null) {
+      map['caixa_movimento_id'] = Variable<String>(caixaMovimentoId);
+    }
+    map['pago_em_epoch'] = Variable<int>(pagoEmEpoch);
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['criado_em'] = Variable<int>(criadoEm);
+    return map;
+  }
+
+  EstadiaPagamentosCompanion toCompanion(bool nullToAbsent) {
+    return EstadiaPagamentosCompanion(
+      id: Value(id),
+      operacaoId: Value(operacaoId),
+      estadiaId: Value(estadiaId),
+      tipo: Value(tipo),
+      diarias: Value(diarias),
+      valor: Value(valor),
+      formaPagamento: Value(formaPagamento),
+      baseEpoch: baseEpoch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseEpoch),
+      operadorId: operadorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(operadorId),
+      caixaSessaoId: caixaSessaoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(caixaSessaoId),
+      caixaMovimentoId: caixaMovimentoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(caixaMovimentoId),
+      pagoEmEpoch: Value(pagoEmEpoch),
+      syncStatus: Value(syncStatus),
+      criadoEm: Value(criadoEm),
+    );
+  }
+
+  factory EstadiaPagamento.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EstadiaPagamento(
+      id: serializer.fromJson<String>(json['id']),
+      operacaoId: serializer.fromJson<String>(json['operacaoId']),
+      estadiaId: serializer.fromJson<String>(json['estadiaId']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      diarias: serializer.fromJson<int>(json['diarias']),
+      valor: serializer.fromJson<double>(json['valor']),
+      formaPagamento: serializer.fromJson<String>(json['formaPagamento']),
+      baseEpoch: serializer.fromJson<int?>(json['baseEpoch']),
+      operadorId: serializer.fromJson<String?>(json['operadorId']),
+      caixaSessaoId: serializer.fromJson<String?>(json['caixaSessaoId']),
+      caixaMovimentoId: serializer.fromJson<String?>(json['caixaMovimentoId']),
+      pagoEmEpoch: serializer.fromJson<int>(json['pagoEmEpoch']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      criadoEm: serializer.fromJson<int>(json['criadoEm']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'operacaoId': serializer.toJson<String>(operacaoId),
+      'estadiaId': serializer.toJson<String>(estadiaId),
+      'tipo': serializer.toJson<String>(tipo),
+      'diarias': serializer.toJson<int>(diarias),
+      'valor': serializer.toJson<double>(valor),
+      'formaPagamento': serializer.toJson<String>(formaPagamento),
+      'baseEpoch': serializer.toJson<int?>(baseEpoch),
+      'operadorId': serializer.toJson<String?>(operadorId),
+      'caixaSessaoId': serializer.toJson<String?>(caixaSessaoId),
+      'caixaMovimentoId': serializer.toJson<String?>(caixaMovimentoId),
+      'pagoEmEpoch': serializer.toJson<int>(pagoEmEpoch),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'criadoEm': serializer.toJson<int>(criadoEm),
+    };
+  }
+
+  EstadiaPagamento copyWith({
+    String? id,
+    String? operacaoId,
+    String? estadiaId,
+    String? tipo,
+    int? diarias,
+    double? valor,
+    String? formaPagamento,
+    Value<int?> baseEpoch = const Value.absent(),
+    Value<String?> operadorId = const Value.absent(),
+    Value<String?> caixaSessaoId = const Value.absent(),
+    Value<String?> caixaMovimentoId = const Value.absent(),
+    int? pagoEmEpoch,
+    String? syncStatus,
+    int? criadoEm,
+  }) => EstadiaPagamento(
+    id: id ?? this.id,
+    operacaoId: operacaoId ?? this.operacaoId,
+    estadiaId: estadiaId ?? this.estadiaId,
+    tipo: tipo ?? this.tipo,
+    diarias: diarias ?? this.diarias,
+    valor: valor ?? this.valor,
+    formaPagamento: formaPagamento ?? this.formaPagamento,
+    baseEpoch: baseEpoch.present ? baseEpoch.value : this.baseEpoch,
+    operadorId: operadorId.present ? operadorId.value : this.operadorId,
+    caixaSessaoId: caixaSessaoId.present
+        ? caixaSessaoId.value
+        : this.caixaSessaoId,
+    caixaMovimentoId: caixaMovimentoId.present
+        ? caixaMovimentoId.value
+        : this.caixaMovimentoId,
+    pagoEmEpoch: pagoEmEpoch ?? this.pagoEmEpoch,
+    syncStatus: syncStatus ?? this.syncStatus,
+    criadoEm: criadoEm ?? this.criadoEm,
+  );
+  EstadiaPagamento copyWithCompanion(EstadiaPagamentosCompanion data) {
+    return EstadiaPagamento(
+      id: data.id.present ? data.id.value : this.id,
+      operacaoId: data.operacaoId.present
+          ? data.operacaoId.value
+          : this.operacaoId,
+      estadiaId: data.estadiaId.present ? data.estadiaId.value : this.estadiaId,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      diarias: data.diarias.present ? data.diarias.value : this.diarias,
+      valor: data.valor.present ? data.valor.value : this.valor,
+      formaPagamento: data.formaPagamento.present
+          ? data.formaPagamento.value
+          : this.formaPagamento,
+      baseEpoch: data.baseEpoch.present ? data.baseEpoch.value : this.baseEpoch,
+      operadorId: data.operadorId.present
+          ? data.operadorId.value
+          : this.operadorId,
+      caixaSessaoId: data.caixaSessaoId.present
+          ? data.caixaSessaoId.value
+          : this.caixaSessaoId,
+      caixaMovimentoId: data.caixaMovimentoId.present
+          ? data.caixaMovimentoId.value
+          : this.caixaMovimentoId,
+      pagoEmEpoch: data.pagoEmEpoch.present
+          ? data.pagoEmEpoch.value
+          : this.pagoEmEpoch,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      criadoEm: data.criadoEm.present ? data.criadoEm.value : this.criadoEm,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EstadiaPagamento(')
+          ..write('id: $id, ')
+          ..write('operacaoId: $operacaoId, ')
+          ..write('estadiaId: $estadiaId, ')
+          ..write('tipo: $tipo, ')
+          ..write('diarias: $diarias, ')
+          ..write('valor: $valor, ')
+          ..write('formaPagamento: $formaPagamento, ')
+          ..write('baseEpoch: $baseEpoch, ')
+          ..write('operadorId: $operadorId, ')
+          ..write('caixaSessaoId: $caixaSessaoId, ')
+          ..write('caixaMovimentoId: $caixaMovimentoId, ')
+          ..write('pagoEmEpoch: $pagoEmEpoch, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('criadoEm: $criadoEm')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    operacaoId,
+    estadiaId,
+    tipo,
+    diarias,
+    valor,
+    formaPagamento,
+    baseEpoch,
+    operadorId,
+    caixaSessaoId,
+    caixaMovimentoId,
+    pagoEmEpoch,
+    syncStatus,
+    criadoEm,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EstadiaPagamento &&
+          other.id == this.id &&
+          other.operacaoId == this.operacaoId &&
+          other.estadiaId == this.estadiaId &&
+          other.tipo == this.tipo &&
+          other.diarias == this.diarias &&
+          other.valor == this.valor &&
+          other.formaPagamento == this.formaPagamento &&
+          other.baseEpoch == this.baseEpoch &&
+          other.operadorId == this.operadorId &&
+          other.caixaSessaoId == this.caixaSessaoId &&
+          other.caixaMovimentoId == this.caixaMovimentoId &&
+          other.pagoEmEpoch == this.pagoEmEpoch &&
+          other.syncStatus == this.syncStatus &&
+          other.criadoEm == this.criadoEm);
+}
+
+class EstadiaPagamentosCompanion extends UpdateCompanion<EstadiaPagamento> {
+  final Value<String> id;
+  final Value<String> operacaoId;
+  final Value<String> estadiaId;
+  final Value<String> tipo;
+  final Value<int> diarias;
+  final Value<double> valor;
+  final Value<String> formaPagamento;
+  final Value<int?> baseEpoch;
+  final Value<String?> operadorId;
+  final Value<String?> caixaSessaoId;
+  final Value<String?> caixaMovimentoId;
+  final Value<int> pagoEmEpoch;
+  final Value<String> syncStatus;
+  final Value<int> criadoEm;
+  final Value<int> rowid;
+  const EstadiaPagamentosCompanion({
+    this.id = const Value.absent(),
+    this.operacaoId = const Value.absent(),
+    this.estadiaId = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.diarias = const Value.absent(),
+    this.valor = const Value.absent(),
+    this.formaPagamento = const Value.absent(),
+    this.baseEpoch = const Value.absent(),
+    this.operadorId = const Value.absent(),
+    this.caixaSessaoId = const Value.absent(),
+    this.caixaMovimentoId = const Value.absent(),
+    this.pagoEmEpoch = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.criadoEm = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EstadiaPagamentosCompanion.insert({
+    required String id,
+    required String operacaoId,
+    required String estadiaId,
+    required String tipo,
+    required int diarias,
+    required double valor,
+    required String formaPagamento,
+    this.baseEpoch = const Value.absent(),
+    this.operadorId = const Value.absent(),
+    this.caixaSessaoId = const Value.absent(),
+    this.caixaMovimentoId = const Value.absent(),
+    required int pagoEmEpoch,
+    this.syncStatus = const Value.absent(),
+    required int criadoEm,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       operacaoId = Value(operacaoId),
+       estadiaId = Value(estadiaId),
+       tipo = Value(tipo),
+       diarias = Value(diarias),
+       valor = Value(valor),
+       formaPagamento = Value(formaPagamento),
+       pagoEmEpoch = Value(pagoEmEpoch),
+       criadoEm = Value(criadoEm);
+  static Insertable<EstadiaPagamento> custom({
+    Expression<String>? id,
+    Expression<String>? operacaoId,
+    Expression<String>? estadiaId,
+    Expression<String>? tipo,
+    Expression<int>? diarias,
+    Expression<double>? valor,
+    Expression<String>? formaPagamento,
+    Expression<int>? baseEpoch,
+    Expression<String>? operadorId,
+    Expression<String>? caixaSessaoId,
+    Expression<String>? caixaMovimentoId,
+    Expression<int>? pagoEmEpoch,
+    Expression<String>? syncStatus,
+    Expression<int>? criadoEm,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (operacaoId != null) 'operacao_id': operacaoId,
+      if (estadiaId != null) 'estadia_id': estadiaId,
+      if (tipo != null) 'tipo': tipo,
+      if (diarias != null) 'diarias': diarias,
+      if (valor != null) 'valor': valor,
+      if (formaPagamento != null) 'forma_pagamento': formaPagamento,
+      if (baseEpoch != null) 'base_epoch': baseEpoch,
+      if (operadorId != null) 'operador_id': operadorId,
+      if (caixaSessaoId != null) 'caixa_sessao_id': caixaSessaoId,
+      if (caixaMovimentoId != null) 'caixa_movimento_id': caixaMovimentoId,
+      if (pagoEmEpoch != null) 'pago_em_epoch': pagoEmEpoch,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (criadoEm != null) 'criado_em': criadoEm,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EstadiaPagamentosCompanion copyWith({
+    Value<String>? id,
+    Value<String>? operacaoId,
+    Value<String>? estadiaId,
+    Value<String>? tipo,
+    Value<int>? diarias,
+    Value<double>? valor,
+    Value<String>? formaPagamento,
+    Value<int?>? baseEpoch,
+    Value<String?>? operadorId,
+    Value<String?>? caixaSessaoId,
+    Value<String?>? caixaMovimentoId,
+    Value<int>? pagoEmEpoch,
+    Value<String>? syncStatus,
+    Value<int>? criadoEm,
+    Value<int>? rowid,
+  }) {
+    return EstadiaPagamentosCompanion(
+      id: id ?? this.id,
+      operacaoId: operacaoId ?? this.operacaoId,
+      estadiaId: estadiaId ?? this.estadiaId,
+      tipo: tipo ?? this.tipo,
+      diarias: diarias ?? this.diarias,
+      valor: valor ?? this.valor,
+      formaPagamento: formaPagamento ?? this.formaPagamento,
+      baseEpoch: baseEpoch ?? this.baseEpoch,
+      operadorId: operadorId ?? this.operadorId,
+      caixaSessaoId: caixaSessaoId ?? this.caixaSessaoId,
+      caixaMovimentoId: caixaMovimentoId ?? this.caixaMovimentoId,
+      pagoEmEpoch: pagoEmEpoch ?? this.pagoEmEpoch,
+      syncStatus: syncStatus ?? this.syncStatus,
+      criadoEm: criadoEm ?? this.criadoEm,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (operacaoId.present) {
+      map['operacao_id'] = Variable<String>(operacaoId.value);
+    }
+    if (estadiaId.present) {
+      map['estadia_id'] = Variable<String>(estadiaId.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (diarias.present) {
+      map['diarias'] = Variable<int>(diarias.value);
+    }
+    if (valor.present) {
+      map['valor'] = Variable<double>(valor.value);
+    }
+    if (formaPagamento.present) {
+      map['forma_pagamento'] = Variable<String>(formaPagamento.value);
+    }
+    if (baseEpoch.present) {
+      map['base_epoch'] = Variable<int>(baseEpoch.value);
+    }
+    if (operadorId.present) {
+      map['operador_id'] = Variable<String>(operadorId.value);
+    }
+    if (caixaSessaoId.present) {
+      map['caixa_sessao_id'] = Variable<String>(caixaSessaoId.value);
+    }
+    if (caixaMovimentoId.present) {
+      map['caixa_movimento_id'] = Variable<String>(caixaMovimentoId.value);
+    }
+    if (pagoEmEpoch.present) {
+      map['pago_em_epoch'] = Variable<int>(pagoEmEpoch.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (criadoEm.present) {
+      map['criado_em'] = Variable<int>(criadoEm.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EstadiaPagamentosCompanion(')
+          ..write('id: $id, ')
+          ..write('operacaoId: $operacaoId, ')
+          ..write('estadiaId: $estadiaId, ')
+          ..write('tipo: $tipo, ')
+          ..write('diarias: $diarias, ')
+          ..write('valor: $valor, ')
+          ..write('formaPagamento: $formaPagamento, ')
+          ..write('baseEpoch: $baseEpoch, ')
+          ..write('operadorId: $operadorId, ')
+          ..write('caixaSessaoId: $caixaSessaoId, ')
+          ..write('caixaMovimentoId: $caixaMovimentoId, ')
+          ..write('pagoEmEpoch: $pagoEmEpoch, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('criadoEm: $criadoEm, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7554,6 +9585,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LiberacoesCacheTable liberacoesCache = $LiberacoesCacheTable(
     this,
   );
+  late final $EstadiasTable estadias = $EstadiasTable(this);
+  late final $EstadiaPagamentosTable estadiaPagamentos =
+      $EstadiaPagamentosTable(this);
   late final OperacaoDao operacaoDao = OperacaoDao(this as AppDatabase);
   late final TicketsDao ticketsDao = TicketsDao(this as AppDatabase);
   late final CaixaDao caixaDao = CaixaDao(this as AppDatabase);
@@ -7562,6 +9596,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final MensalidadePagamentosDao mensalidadePagamentosDao =
       MensalidadePagamentosDao(this as AppDatabase);
   late final LiberacoesDao liberacoesDao = LiberacoesDao(this as AppDatabase);
+  late final EstadiasDao estadiasDao = EstadiasDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7577,6 +9612,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     patioClientePlacas,
     mensalidadePagamentos,
     liberacoesCache,
+    estadias,
+    estadiaPagamentos,
   ];
 }
 
@@ -7828,6 +9865,10 @@ typedef $$TarifasTableCreateCompanionBuilder =
       required int pernoiteHoraFim,
       required int vigenciaInicioEpoch,
       Value<int?> vigenciaFimEpoch,
+      Value<String> modalidade,
+      Value<double?> diariaValor,
+      Value<int?> diariaHoras,
+      Value<String?> tarifaAtrasoId,
       Value<int> rowid,
     });
 typedef $$TarifasTableUpdateCompanionBuilder =
@@ -7849,6 +9890,10 @@ typedef $$TarifasTableUpdateCompanionBuilder =
       Value<int> pernoiteHoraFim,
       Value<int> vigenciaInicioEpoch,
       Value<int?> vigenciaFimEpoch,
+      Value<String> modalidade,
+      Value<double?> diariaValor,
+      Value<int?> diariaHoras,
+      Value<String?> tarifaAtrasoId,
       Value<int> rowid,
     });
 
@@ -7943,6 +9988,26 @@ class $$TarifasTableFilterComposer
 
   ColumnFilters<int> get vigenciaFimEpoch => $composableBuilder(
     column: $table.vigenciaFimEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modalidade => $composableBuilder(
+    column: $table.modalidade,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get diariaValor => $composableBuilder(
+    column: $table.diariaValor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diariaHoras => $composableBuilder(
+    column: $table.diariaHoras,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tarifaAtrasoId => $composableBuilder(
+    column: $table.tarifaAtrasoId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8040,6 +10105,26 @@ class $$TarifasTableOrderingComposer
     column: $table.vigenciaFimEpoch,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get modalidade => $composableBuilder(
+    column: $table.modalidade,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get diariaValor => $composableBuilder(
+    column: $table.diariaValor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diariaHoras => $composableBuilder(
+    column: $table.diariaHoras,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tarifaAtrasoId => $composableBuilder(
+    column: $table.tarifaAtrasoId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TarifasTableAnnotationComposer
@@ -8129,6 +10214,26 @@ class $$TarifasTableAnnotationComposer
     column: $table.vigenciaFimEpoch,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get modalidade => $composableBuilder(
+    column: $table.modalidade,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get diariaValor => $composableBuilder(
+    column: $table.diariaValor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get diariaHoras => $composableBuilder(
+    column: $table.diariaHoras,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tarifaAtrasoId => $composableBuilder(
+    column: $table.tarifaAtrasoId,
+    builder: (column) => column,
+  );
 }
 
 class $$TarifasTableTableManager
@@ -8176,6 +10281,10 @@ class $$TarifasTableTableManager
                 Value<int> pernoiteHoraFim = const Value.absent(),
                 Value<int> vigenciaInicioEpoch = const Value.absent(),
                 Value<int?> vigenciaFimEpoch = const Value.absent(),
+                Value<String> modalidade = const Value.absent(),
+                Value<double?> diariaValor = const Value.absent(),
+                Value<int?> diariaHoras = const Value.absent(),
+                Value<String?> tarifaAtrasoId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TarifasCompanion(
                 id: id,
@@ -8195,6 +10304,10 @@ class $$TarifasTableTableManager
                 pernoiteHoraFim: pernoiteHoraFim,
                 vigenciaInicioEpoch: vigenciaInicioEpoch,
                 vigenciaFimEpoch: vigenciaFimEpoch,
+                modalidade: modalidade,
+                diariaValor: diariaValor,
+                diariaHoras: diariaHoras,
+                tarifaAtrasoId: tarifaAtrasoId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8216,6 +10329,10 @@ class $$TarifasTableTableManager
                 required int pernoiteHoraFim,
                 required int vigenciaInicioEpoch,
                 Value<int?> vigenciaFimEpoch = const Value.absent(),
+                Value<String> modalidade = const Value.absent(),
+                Value<double?> diariaValor = const Value.absent(),
+                Value<int?> diariaHoras = const Value.absent(),
+                Value<String?> tarifaAtrasoId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TarifasCompanion.insert(
                 id: id,
@@ -8235,6 +10352,10 @@ class $$TarifasTableTableManager
                 pernoiteHoraFim: pernoiteHoraFim,
                 vigenciaInicioEpoch: vigenciaInicioEpoch,
                 vigenciaFimEpoch: vigenciaFimEpoch,
+                modalidade: modalidade,
+                diariaValor: diariaValor,
+                diariaHoras: diariaHoras,
+                tarifaAtrasoId: tarifaAtrasoId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8278,6 +10399,7 @@ typedef $$TicketsTableCreateCompanionBuilder =
       Value<String?> clienteId,
       Value<String?> planoId,
       Value<String> origem,
+      Value<String?> estadiaId,
       Value<String?> atk,
       Value<String?> itk,
       Value<String?> authorizationCode,
@@ -8311,6 +10433,7 @@ typedef $$TicketsTableUpdateCompanionBuilder =
       Value<String?> clienteId,
       Value<String?> planoId,
       Value<String> origem,
+      Value<String?> estadiaId,
       Value<String?> atk,
       Value<String?> itk,
       Value<String?> authorizationCode,
@@ -8417,6 +10540,11 @@ class $$TicketsTableFilterComposer
 
   ColumnFilters<String> get origem => $composableBuilder(
     column: $table.origem,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadiaId => $composableBuilder(
+    column: $table.estadiaId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8575,6 +10703,11 @@ class $$TicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get estadiaId => $composableBuilder(
+    column: $table.estadiaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get atk => $composableBuilder(
     column: $table.atk,
     builder: (column) => ColumnOrderings(column),
@@ -8718,6 +10851,9 @@ class $$TicketsTableAnnotationComposer
   GeneratedColumn<String> get origem =>
       $composableBuilder(column: $table.origem, builder: (column) => column);
 
+  GeneratedColumn<String> get estadiaId =>
+      $composableBuilder(column: $table.estadiaId, builder: (column) => column);
+
   GeneratedColumn<String> get atk =>
       $composableBuilder(column: $table.atk, builder: (column) => column);
 
@@ -8814,6 +10950,7 @@ class $$TicketsTableTableManager
                 Value<String?> clienteId = const Value.absent(),
                 Value<String?> planoId = const Value.absent(),
                 Value<String> origem = const Value.absent(),
+                Value<String?> estadiaId = const Value.absent(),
                 Value<String?> atk = const Value.absent(),
                 Value<String?> itk = const Value.absent(),
                 Value<String?> authorizationCode = const Value.absent(),
@@ -8845,6 +10982,7 @@ class $$TicketsTableTableManager
                 clienteId: clienteId,
                 planoId: planoId,
                 origem: origem,
+                estadiaId: estadiaId,
                 atk: atk,
                 itk: itk,
                 authorizationCode: authorizationCode,
@@ -8878,6 +11016,7 @@ class $$TicketsTableTableManager
                 Value<String?> clienteId = const Value.absent(),
                 Value<String?> planoId = const Value.absent(),
                 Value<String> origem = const Value.absent(),
+                Value<String?> estadiaId = const Value.absent(),
                 Value<String?> atk = const Value.absent(),
                 Value<String?> itk = const Value.absent(),
                 Value<String?> authorizationCode = const Value.absent(),
@@ -8909,6 +11048,7 @@ class $$TicketsTableTableManager
                 clienteId: clienteId,
                 planoId: planoId,
                 origem: origem,
+                estadiaId: estadiaId,
                 atk: atk,
                 itk: itk,
                 authorizationCode: authorizationCode,
@@ -9327,6 +11467,7 @@ typedef $$CaixaMovimentosTableCreateCompanionBuilder =
       required double valor,
       required String descricao,
       Value<String?> ticketId,
+      Value<String?> estadiaPagamentoId,
       Value<String?> formaPagamento,
       required int criadoEm,
       Value<String> syncStatus,
@@ -9340,6 +11481,7 @@ typedef $$CaixaMovimentosTableUpdateCompanionBuilder =
       Value<double> valor,
       Value<String> descricao,
       Value<String?> ticketId,
+      Value<String?> estadiaPagamentoId,
       Value<String?> formaPagamento,
       Value<int> criadoEm,
       Value<String> syncStatus,
@@ -9382,6 +11524,11 @@ class $$CaixaMovimentosTableFilterComposer
 
   ColumnFilters<String> get ticketId => $composableBuilder(
     column: $table.ticketId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadiaPagamentoId => $composableBuilder(
+    column: $table.estadiaPagamentoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9440,6 +11587,11 @@ class $$CaixaMovimentosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get estadiaPagamentoId => $composableBuilder(
+    column: $table.estadiaPagamentoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get formaPagamento => $composableBuilder(
     column: $table.formaPagamento,
     builder: (column) => ColumnOrderings(column),
@@ -9484,6 +11636,11 @@ class $$CaixaMovimentosTableAnnotationComposer
 
   GeneratedColumn<String> get ticketId =>
       $composableBuilder(column: $table.ticketId, builder: (column) => column);
+
+  GeneratedColumn<String> get estadiaPagamentoId => $composableBuilder(
+    column: $table.estadiaPagamentoId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get formaPagamento => $composableBuilder(
     column: $table.formaPagamento,
@@ -9542,6 +11699,7 @@ class $$CaixaMovimentosTableTableManager
                 Value<double> valor = const Value.absent(),
                 Value<String> descricao = const Value.absent(),
                 Value<String?> ticketId = const Value.absent(),
+                Value<String?> estadiaPagamentoId = const Value.absent(),
                 Value<String?> formaPagamento = const Value.absent(),
                 Value<int> criadoEm = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
@@ -9553,6 +11711,7 @@ class $$CaixaMovimentosTableTableManager
                 valor: valor,
                 descricao: descricao,
                 ticketId: ticketId,
+                estadiaPagamentoId: estadiaPagamentoId,
                 formaPagamento: formaPagamento,
                 criadoEm: criadoEm,
                 syncStatus: syncStatus,
@@ -9566,6 +11725,7 @@ class $$CaixaMovimentosTableTableManager
                 required double valor,
                 required String descricao,
                 Value<String?> ticketId = const Value.absent(),
+                Value<String?> estadiaPagamentoId = const Value.absent(),
                 Value<String?> formaPagamento = const Value.absent(),
                 required int criadoEm,
                 Value<String> syncStatus = const Value.absent(),
@@ -9577,6 +11737,7 @@ class $$CaixaMovimentosTableTableManager
                 valor: valor,
                 descricao: descricao,
                 ticketId: ticketId,
+                estadiaPagamentoId: estadiaPagamentoId,
                 formaPagamento: formaPagamento,
                 criadoEm: criadoEm,
                 syncStatus: syncStatus,
@@ -11146,6 +13307,808 @@ typedef $$LiberacoesCacheTableProcessedTableManager =
       LiberacoesCacheData,
       PrefetchHooks Function()
     >;
+typedef $$EstadiasTableCreateCompanionBuilder =
+    EstadiasCompanion Function({
+      required String id,
+      required String operacaoId,
+      required String placa,
+      required String tipoVeiculo,
+      required String tarifaId,
+      required double diariaValor,
+      required int diariaHoras,
+      required int inicioEpoch,
+      required int validaAteEpoch,
+      required int diarias,
+      required double valorTotal,
+      Value<String?> operadorId,
+      Value<String> syncStatus,
+      required int criadoEm,
+      required int atualizadoEm,
+      Value<int> rowid,
+    });
+typedef $$EstadiasTableUpdateCompanionBuilder =
+    EstadiasCompanion Function({
+      Value<String> id,
+      Value<String> operacaoId,
+      Value<String> placa,
+      Value<String> tipoVeiculo,
+      Value<String> tarifaId,
+      Value<double> diariaValor,
+      Value<int> diariaHoras,
+      Value<int> inicioEpoch,
+      Value<int> validaAteEpoch,
+      Value<int> diarias,
+      Value<double> valorTotal,
+      Value<String?> operadorId,
+      Value<String> syncStatus,
+      Value<int> criadoEm,
+      Value<int> atualizadoEm,
+      Value<int> rowid,
+    });
+
+class $$EstadiasTableFilterComposer
+    extends Composer<_$AppDatabase, $EstadiasTable> {
+  $$EstadiasTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get placa => $composableBuilder(
+    column: $table.placa,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoVeiculo => $composableBuilder(
+    column: $table.tipoVeiculo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tarifaId => $composableBuilder(
+    column: $table.tarifaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get diariaValor => $composableBuilder(
+    column: $table.diariaValor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diariaHoras => $composableBuilder(
+    column: $table.diariaHoras,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get inicioEpoch => $composableBuilder(
+    column: $table.inicioEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get validaAteEpoch => $composableBuilder(
+    column: $table.validaAteEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diarias => $composableBuilder(
+    column: $table.diarias,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get valorTotal => $composableBuilder(
+    column: $table.valorTotal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operadorId => $composableBuilder(
+    column: $table.operadorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get criadoEm => $composableBuilder(
+    column: $table.criadoEm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get atualizadoEm => $composableBuilder(
+    column: $table.atualizadoEm,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EstadiasTableOrderingComposer
+    extends Composer<_$AppDatabase, $EstadiasTable> {
+  $$EstadiasTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get placa => $composableBuilder(
+    column: $table.placa,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoVeiculo => $composableBuilder(
+    column: $table.tipoVeiculo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tarifaId => $composableBuilder(
+    column: $table.tarifaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get diariaValor => $composableBuilder(
+    column: $table.diariaValor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diariaHoras => $composableBuilder(
+    column: $table.diariaHoras,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get inicioEpoch => $composableBuilder(
+    column: $table.inicioEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get validaAteEpoch => $composableBuilder(
+    column: $table.validaAteEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diarias => $composableBuilder(
+    column: $table.diarias,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get valorTotal => $composableBuilder(
+    column: $table.valorTotal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operadorId => $composableBuilder(
+    column: $table.operadorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get criadoEm => $composableBuilder(
+    column: $table.criadoEm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get atualizadoEm => $composableBuilder(
+    column: $table.atualizadoEm,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EstadiasTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EstadiasTable> {
+  $$EstadiasTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get placa =>
+      $composableBuilder(column: $table.placa, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoVeiculo => $composableBuilder(
+    column: $table.tipoVeiculo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tarifaId =>
+      $composableBuilder(column: $table.tarifaId, builder: (column) => column);
+
+  GeneratedColumn<double> get diariaValor => $composableBuilder(
+    column: $table.diariaValor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get diariaHoras => $composableBuilder(
+    column: $table.diariaHoras,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get inicioEpoch => $composableBuilder(
+    column: $table.inicioEpoch,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get validaAteEpoch => $composableBuilder(
+    column: $table.validaAteEpoch,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get diarias =>
+      $composableBuilder(column: $table.diarias, builder: (column) => column);
+
+  GeneratedColumn<double> get valorTotal => $composableBuilder(
+    column: $table.valorTotal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get operadorId => $composableBuilder(
+    column: $table.operadorId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get criadoEm =>
+      $composableBuilder(column: $table.criadoEm, builder: (column) => column);
+
+  GeneratedColumn<int> get atualizadoEm => $composableBuilder(
+    column: $table.atualizadoEm,
+    builder: (column) => column,
+  );
+}
+
+class $$EstadiasTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EstadiasTable,
+          Estadia,
+          $$EstadiasTableFilterComposer,
+          $$EstadiasTableOrderingComposer,
+          $$EstadiasTableAnnotationComposer,
+          $$EstadiasTableCreateCompanionBuilder,
+          $$EstadiasTableUpdateCompanionBuilder,
+          (Estadia, BaseReferences<_$AppDatabase, $EstadiasTable, Estadia>),
+          Estadia,
+          PrefetchHooks Function()
+        > {
+  $$EstadiasTableTableManager(_$AppDatabase db, $EstadiasTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EstadiasTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EstadiasTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EstadiasTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> operacaoId = const Value.absent(),
+                Value<String> placa = const Value.absent(),
+                Value<String> tipoVeiculo = const Value.absent(),
+                Value<String> tarifaId = const Value.absent(),
+                Value<double> diariaValor = const Value.absent(),
+                Value<int> diariaHoras = const Value.absent(),
+                Value<int> inicioEpoch = const Value.absent(),
+                Value<int> validaAteEpoch = const Value.absent(),
+                Value<int> diarias = const Value.absent(),
+                Value<double> valorTotal = const Value.absent(),
+                Value<String?> operadorId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> criadoEm = const Value.absent(),
+                Value<int> atualizadoEm = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EstadiasCompanion(
+                id: id,
+                operacaoId: operacaoId,
+                placa: placa,
+                tipoVeiculo: tipoVeiculo,
+                tarifaId: tarifaId,
+                diariaValor: diariaValor,
+                diariaHoras: diariaHoras,
+                inicioEpoch: inicioEpoch,
+                validaAteEpoch: validaAteEpoch,
+                diarias: diarias,
+                valorTotal: valorTotal,
+                operadorId: operadorId,
+                syncStatus: syncStatus,
+                criadoEm: criadoEm,
+                atualizadoEm: atualizadoEm,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String operacaoId,
+                required String placa,
+                required String tipoVeiculo,
+                required String tarifaId,
+                required double diariaValor,
+                required int diariaHoras,
+                required int inicioEpoch,
+                required int validaAteEpoch,
+                required int diarias,
+                required double valorTotal,
+                Value<String?> operadorId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                required int criadoEm,
+                required int atualizadoEm,
+                Value<int> rowid = const Value.absent(),
+              }) => EstadiasCompanion.insert(
+                id: id,
+                operacaoId: operacaoId,
+                placa: placa,
+                tipoVeiculo: tipoVeiculo,
+                tarifaId: tarifaId,
+                diariaValor: diariaValor,
+                diariaHoras: diariaHoras,
+                inicioEpoch: inicioEpoch,
+                validaAteEpoch: validaAteEpoch,
+                diarias: diarias,
+                valorTotal: valorTotal,
+                operadorId: operadorId,
+                syncStatus: syncStatus,
+                criadoEm: criadoEm,
+                atualizadoEm: atualizadoEm,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EstadiasTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EstadiasTable,
+      Estadia,
+      $$EstadiasTableFilterComposer,
+      $$EstadiasTableOrderingComposer,
+      $$EstadiasTableAnnotationComposer,
+      $$EstadiasTableCreateCompanionBuilder,
+      $$EstadiasTableUpdateCompanionBuilder,
+      (Estadia, BaseReferences<_$AppDatabase, $EstadiasTable, Estadia>),
+      Estadia,
+      PrefetchHooks Function()
+    >;
+typedef $$EstadiaPagamentosTableCreateCompanionBuilder =
+    EstadiaPagamentosCompanion Function({
+      required String id,
+      required String operacaoId,
+      required String estadiaId,
+      required String tipo,
+      required int diarias,
+      required double valor,
+      required String formaPagamento,
+      Value<int?> baseEpoch,
+      Value<String?> operadorId,
+      Value<String?> caixaSessaoId,
+      Value<String?> caixaMovimentoId,
+      required int pagoEmEpoch,
+      Value<String> syncStatus,
+      required int criadoEm,
+      Value<int> rowid,
+    });
+typedef $$EstadiaPagamentosTableUpdateCompanionBuilder =
+    EstadiaPagamentosCompanion Function({
+      Value<String> id,
+      Value<String> operacaoId,
+      Value<String> estadiaId,
+      Value<String> tipo,
+      Value<int> diarias,
+      Value<double> valor,
+      Value<String> formaPagamento,
+      Value<int?> baseEpoch,
+      Value<String?> operadorId,
+      Value<String?> caixaSessaoId,
+      Value<String?> caixaMovimentoId,
+      Value<int> pagoEmEpoch,
+      Value<String> syncStatus,
+      Value<int> criadoEm,
+      Value<int> rowid,
+    });
+
+class $$EstadiaPagamentosTableFilterComposer
+    extends Composer<_$AppDatabase, $EstadiaPagamentosTable> {
+  $$EstadiaPagamentosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estadiaId => $composableBuilder(
+    column: $table.estadiaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diarias => $composableBuilder(
+    column: $table.diarias,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get valor => $composableBuilder(
+    column: $table.valor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formaPagamento => $composableBuilder(
+    column: $table.formaPagamento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get baseEpoch => $composableBuilder(
+    column: $table.baseEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operadorId => $composableBuilder(
+    column: $table.operadorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get caixaSessaoId => $composableBuilder(
+    column: $table.caixaSessaoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get caixaMovimentoId => $composableBuilder(
+    column: $table.caixaMovimentoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pagoEmEpoch => $composableBuilder(
+    column: $table.pagoEmEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get criadoEm => $composableBuilder(
+    column: $table.criadoEm,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EstadiaPagamentosTableOrderingComposer
+    extends Composer<_$AppDatabase, $EstadiaPagamentosTable> {
+  $$EstadiaPagamentosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estadiaId => $composableBuilder(
+    column: $table.estadiaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diarias => $composableBuilder(
+    column: $table.diarias,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get valor => $composableBuilder(
+    column: $table.valor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formaPagamento => $composableBuilder(
+    column: $table.formaPagamento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get baseEpoch => $composableBuilder(
+    column: $table.baseEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operadorId => $composableBuilder(
+    column: $table.operadorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get caixaSessaoId => $composableBuilder(
+    column: $table.caixaSessaoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get caixaMovimentoId => $composableBuilder(
+    column: $table.caixaMovimentoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pagoEmEpoch => $composableBuilder(
+    column: $table.pagoEmEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get criadoEm => $composableBuilder(
+    column: $table.criadoEm,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EstadiaPagamentosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EstadiaPagamentosTable> {
+  $$EstadiaPagamentosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get estadiaId =>
+      $composableBuilder(column: $table.estadiaId, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<int> get diarias =>
+      $composableBuilder(column: $table.diarias, builder: (column) => column);
+
+  GeneratedColumn<double> get valor =>
+      $composableBuilder(column: $table.valor, builder: (column) => column);
+
+  GeneratedColumn<String> get formaPagamento => $composableBuilder(
+    column: $table.formaPagamento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get baseEpoch =>
+      $composableBuilder(column: $table.baseEpoch, builder: (column) => column);
+
+  GeneratedColumn<String> get operadorId => $composableBuilder(
+    column: $table.operadorId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get caixaSessaoId => $composableBuilder(
+    column: $table.caixaSessaoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get caixaMovimentoId => $composableBuilder(
+    column: $table.caixaMovimentoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get pagoEmEpoch => $composableBuilder(
+    column: $table.pagoEmEpoch,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get criadoEm =>
+      $composableBuilder(column: $table.criadoEm, builder: (column) => column);
+}
+
+class $$EstadiaPagamentosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EstadiaPagamentosTable,
+          EstadiaPagamento,
+          $$EstadiaPagamentosTableFilterComposer,
+          $$EstadiaPagamentosTableOrderingComposer,
+          $$EstadiaPagamentosTableAnnotationComposer,
+          $$EstadiaPagamentosTableCreateCompanionBuilder,
+          $$EstadiaPagamentosTableUpdateCompanionBuilder,
+          (
+            EstadiaPagamento,
+            BaseReferences<
+              _$AppDatabase,
+              $EstadiaPagamentosTable,
+              EstadiaPagamento
+            >,
+          ),
+          EstadiaPagamento,
+          PrefetchHooks Function()
+        > {
+  $$EstadiaPagamentosTableTableManager(
+    _$AppDatabase db,
+    $EstadiaPagamentosTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EstadiaPagamentosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EstadiaPagamentosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EstadiaPagamentosTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> operacaoId = const Value.absent(),
+                Value<String> estadiaId = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<int> diarias = const Value.absent(),
+                Value<double> valor = const Value.absent(),
+                Value<String> formaPagamento = const Value.absent(),
+                Value<int?> baseEpoch = const Value.absent(),
+                Value<String?> operadorId = const Value.absent(),
+                Value<String?> caixaSessaoId = const Value.absent(),
+                Value<String?> caixaMovimentoId = const Value.absent(),
+                Value<int> pagoEmEpoch = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> criadoEm = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EstadiaPagamentosCompanion(
+                id: id,
+                operacaoId: operacaoId,
+                estadiaId: estadiaId,
+                tipo: tipo,
+                diarias: diarias,
+                valor: valor,
+                formaPagamento: formaPagamento,
+                baseEpoch: baseEpoch,
+                operadorId: operadorId,
+                caixaSessaoId: caixaSessaoId,
+                caixaMovimentoId: caixaMovimentoId,
+                pagoEmEpoch: pagoEmEpoch,
+                syncStatus: syncStatus,
+                criadoEm: criadoEm,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String operacaoId,
+                required String estadiaId,
+                required String tipo,
+                required int diarias,
+                required double valor,
+                required String formaPagamento,
+                Value<int?> baseEpoch = const Value.absent(),
+                Value<String?> operadorId = const Value.absent(),
+                Value<String?> caixaSessaoId = const Value.absent(),
+                Value<String?> caixaMovimentoId = const Value.absent(),
+                required int pagoEmEpoch,
+                Value<String> syncStatus = const Value.absent(),
+                required int criadoEm,
+                Value<int> rowid = const Value.absent(),
+              }) => EstadiaPagamentosCompanion.insert(
+                id: id,
+                operacaoId: operacaoId,
+                estadiaId: estadiaId,
+                tipo: tipo,
+                diarias: diarias,
+                valor: valor,
+                formaPagamento: formaPagamento,
+                baseEpoch: baseEpoch,
+                operadorId: operadorId,
+                caixaSessaoId: caixaSessaoId,
+                caixaMovimentoId: caixaMovimentoId,
+                pagoEmEpoch: pagoEmEpoch,
+                syncStatus: syncStatus,
+                criadoEm: criadoEm,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EstadiaPagamentosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EstadiaPagamentosTable,
+      EstadiaPagamento,
+      $$EstadiaPagamentosTableFilterComposer,
+      $$EstadiaPagamentosTableOrderingComposer,
+      $$EstadiaPagamentosTableAnnotationComposer,
+      $$EstadiaPagamentosTableCreateCompanionBuilder,
+      $$EstadiaPagamentosTableUpdateCompanionBuilder,
+      (
+        EstadiaPagamento,
+        BaseReferences<
+          _$AppDatabase,
+          $EstadiaPagamentosTable,
+          EstadiaPagamento
+        >,
+      ),
+      EstadiaPagamento,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11170,6 +14133,10 @@ class $AppDatabaseManager {
       $$MensalidadePagamentosTableTableManager(_db, _db.mensalidadePagamentos);
   $$LiberacoesCacheTableTableManager get liberacoesCache =>
       $$LiberacoesCacheTableTableManager(_db, _db.liberacoesCache);
+  $$EstadiasTableTableManager get estadias =>
+      $$EstadiasTableTableManager(_db, _db.estadias);
+  $$EstadiaPagamentosTableTableManager get estadiaPagamentos =>
+      $$EstadiaPagamentosTableTableManager(_db, _db.estadiaPagamentos);
 }
 
 mixin _$OperacaoDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -11277,5 +14244,24 @@ class LiberacoesDaoManager {
       $$LiberacoesCacheTableTableManager(
         _db.attachedDatabase,
         _db.liberacoesCache,
+      );
+}
+
+mixin _$EstadiasDaoMixin on DatabaseAccessor<AppDatabase> {
+  $EstadiasTable get estadias => attachedDatabase.estadias;
+  $EstadiaPagamentosTable get estadiaPagamentos =>
+      attachedDatabase.estadiaPagamentos;
+  EstadiasDaoManager get managers => EstadiasDaoManager(this);
+}
+
+class EstadiasDaoManager {
+  final _$EstadiasDaoMixin _db;
+  EstadiasDaoManager(this._db);
+  $$EstadiasTableTableManager get estadias =>
+      $$EstadiasTableTableManager(_db.attachedDatabase, _db.estadias);
+  $$EstadiaPagamentosTableTableManager get estadiaPagamentos =>
+      $$EstadiaPagamentosTableTableManager(
+        _db.attachedDatabase,
+        _db.estadiaPagamentos,
       );
 }
