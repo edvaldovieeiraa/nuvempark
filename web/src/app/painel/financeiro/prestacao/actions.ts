@@ -205,32 +205,50 @@ export type ReceitasResumo = {
   total: number;
   tickets: number;
   mensalidades: number;
+  /** Contratações e renovações de estadia de hóspede (db/41). */
+  estadias: number;
   outras: number;
 };
 
 export async function gerarReceitas(e: Escopo): Promise<ReceitasResumo> {
   const sb = await createClient();
   const ids = await sessaoIdsDoOperador(e);
-  let q = sb
-    .from("caixa_movimentos")
-    .select("valor, ticket_id, descricao")
-    .eq("patio_id", e.patioId)
-    .eq("tipo", "entrada")
-    .gte("criado_em", e.inicioIso)
-    .lte("criado_em", e.fimIso);
-  if (ids) q = q.in("caixa_sessao_id", ids.length ? ids : ["__none__"]);
-  const { data } = await q;
+  const consulta = (colunas: string) => {
+    let q = sb
+      .from("caixa_movimentos")
+      .select(colunas)
+      .eq("patio_id", e.patioId)
+      .eq("tipo", "entrada")
+      .gte("criado_em", e.inicioIso)
+      .lte("criado_em", e.fimIso);
+    if (ids) q = q.in("caixa_sessao_id", ids.length ? ids : ["__none__"]);
+    return q;
+  };
+  // `estadia_pagamento_id` nasce em db/41; banco sem ele repete sem a coluna
+  // (antes isso zeraria a seção inteira em silêncio).
+  let { data, error } = await consulta("valor, ticket_id, descricao, estadia_pagamento_id");
+  if (error) ({ data, error } = await consulta("valor, ticket_id, descricao"));
 
   let tickets = 0;
   let mensalidades = 0;
+  let estadias = 0;
   let outras = 0;
-  for (const m of data ?? []) {
+  for (const m of (data ?? []) as unknown as Array<Record<string, unknown>>) {
     const v = Number(m.valor) || 0;
     if (m.ticket_id) tickets += v;
+    // Movimento de estadia não tem ticket: classifica pelo vínculo com o
+    // pagamento, nunca pela descrição.
+    else if (m.estadia_pagamento_id) estadias += v;
     else if (String(m.descricao ?? "").startsWith("Mensalidade")) mensalidades += v;
     else outras += v;
   }
-  return { total: tickets + mensalidades + outras, tickets, mensalidades, outras };
+  return {
+    total: tickets + mensalidades + estadias + outras,
+    tickets,
+    mensalidades,
+    estadias,
+    outras,
+  };
 }
 
 // ── 5) Despesas (sangrias) ───────────────────────────────────────────────────
@@ -265,7 +283,7 @@ export async function gerarDespesas(e: Escopo): Promise<DespesasResumo> {
   };
 }
 
-// ── 6) Formas de pagamento (tickets + mensalidades) ──────────────────────────
+// ── 6) Formas de pagamento (tickets + mensalidades + estadias) ──────────────
 export type FormasResumo = {
   total: number;
   formas: { forma: string; qtd: number; valor: number; pct: number }[];
@@ -292,7 +310,17 @@ export async function gerarFormasPagamento(e: Escopo): Promise<FormasResumo> {
     .lte("pago_em", e.fimIso);
   if (e.operadorId) qm = qm.eq("registrado_por", e.operadorId);
 
-  const [{ data: tks }, { data: mens }] = await Promise.all([qt, qm]);
+  // Estadias de hóspede (db/41): contratação e renovação. O atraso cobrado na
+  // saída já vem pelos tickets. Banco sem a tabela: erro ignorado, sem estadias.
+  let qe = sb
+    .from("estadia_pagamentos")
+    .select("valor, forma_pagamento")
+    .eq("patio_id", e.patioId)
+    .gte("pago_em", e.inicioIso)
+    .lte("pago_em", e.fimIso);
+  if (e.operadorId) qe = qe.eq("operador_id", e.operadorId);
+
+  const [{ data: tks }, { data: mens }, { data: ests }] = await Promise.all([qt, qm, qe]);
 
   const acc: Record<string, { qtd: number; valor: number }> = {};
   for (const t of tks ?? []) {
@@ -300,7 +328,7 @@ export async function gerarFormasPagamento(e: Escopo): Promise<FormasResumo> {
     (acc[f] ??= { qtd: 0, valor: 0 }).qtd += 1;
     acc[f].valor += Number(t.valor_cobrado) || 0;
   }
-  for (const p of mens ?? []) {
+  for (const p of [...(mens ?? []), ...(ests ?? [])]) {
     const f = (p.forma_pagamento as string | null) ?? "—";
     (acc[f] ??= { qtd: 0, valor: 0 }).qtd += 1;
     acc[f].valor += Number(p.valor) || 0;

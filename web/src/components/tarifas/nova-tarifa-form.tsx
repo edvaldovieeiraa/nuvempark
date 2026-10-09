@@ -9,6 +9,7 @@ import { nomeAmigavel } from "@/lib/nome-amigavel";
 import type { TarifaSim } from "@/lib/tarifa-engine";
 import { useToast } from "@/components/ui/toast";
 import { ModalSimulador } from "@/components/tarifas/simulador-modal";
+import { ComoCobra, CamposHospede, type AvulsaAtraso } from "@/components/tarifas/campos-hospede";
 
 // ── Tokens do painel (fiéis ao protótipo Claude Design) ──
 const cssLabel: React.CSSProperties = {
@@ -171,13 +172,18 @@ function LinhaToggle({
 export function NovaTarifaForm({
   patioId,
   tipos,
+  avulsas,
 }: {
   patioId: string;
   tipos: string[];
+  avulsas: AvulsaAtraso[];
 }) {
   const router = useRouter();
   const toast = useToast();
   const formRef = useRef<HTMLFormElement>(null);
+  const [modalidade, setModalidade] = useState<"avulso" | "hospede">("avulso");
+  const [tipo, setTipo] = useState(tipos[0] ?? "carro");
+  const hospede = modalidade === "hospede";
   const [comTeto, setComTeto] = useState(false);
   const [comPernoite, setComPernoite] = useState(false);
   const [simulacao, setSimulacao] = useState<{
@@ -237,9 +243,13 @@ export function NovaTarifaForm({
     >
       <form ref={formRef} action={agir}>
         <input type="hidden" name="patio_id" value={patioId} />
+        <input type="hidden" name="modalidade" value={modalidade} />
+
+        {/* ── Como cobra: muda o formulário, por isso vem primeiro ── */}
+        <ComoCobra valor={modalidade} aoMudar={setModalidade} />
 
         {/* ── Básico ── */}
-        <div style={cssGrid3}>
+        <div style={{ ...cssGrid3, marginTop: 18 }}>
           <Campo label="Nome">
             <input name="nome" placeholder="Padrão" style={cssInput} />
           </Campo>
@@ -247,6 +257,8 @@ export function NovaTarifaForm({
             <div style={{ position: "relative" }}>
               <select
                 name="tipo_veiculo"
+                value={hospede && tipo === "ambos" ? (tipos[0] ?? "carro") : tipo}
+                onChange={(e) => setTipo(e.target.value)}
                 style={{
                   ...cssInput,
                   appearance: "none",
@@ -261,7 +273,8 @@ export function NovaTarifaForm({
                     {nomeAmigavel(t)}
                   </option>
                 ))}
-                <option value="ambos">Todos os tipos</option>
+                {/* Hóspede é por tipo: a tabela do atraso sai das avulsas dele. */}
+                {!hospede && <option value="ambos">Todos os tipos</option>}
               </select>
               <ChevronDown
                 style={{
@@ -277,17 +290,28 @@ export function NovaTarifaForm({
               />
             </div>
           </Campo>
-          <Campo label="Tolerância (min)">
-            <input
-              name="tolerancia_minutos"
-              type="number"
-              defaultValue="10"
-              className="mono"
-              style={cssInput}
-            />
-          </Campo>
+          {/* Em hóspede vale a tolerância da tabela do atraso (regra 12). */}
+          {!hospede && (
+            <Campo label="Tolerância (min)">
+              <input
+                name="tolerancia_minutos"
+                type="number"
+                defaultValue="10"
+                className="mono"
+                style={cssInput}
+              />
+            </Campo>
+          )}
         </div>
 
+        {hospede && (
+          <CamposHospede
+            tipo={hospede && tipo === "ambos" ? (tipos[0] ?? "carro") : tipo}
+            avulsas={avulsas}
+          />
+        )}
+
+        {!hospede && (<>
         {/* ── Cobrança por tempo ── */}
         <div style={cssSection}>Cobrança por tempo</div>
         <div style={{ ...cssGrid3, marginTop: 12 }}>
@@ -396,6 +420,7 @@ export function NovaTarifaForm({
             </>
           )}
         </div>
+        </>)}
 
         {/* ── Ações ── */}
         <div
@@ -433,10 +458,12 @@ export function NovaTarifaForm({
             )}
             Criar tarifa
           </button>
-          <button type="button" onClick={simular} style={cssBtnOutline}>
-            <Gauge style={{ width: 15, height: 15 }} />
-            Simular
-          </button>
+          {!hospede && (
+            <button type="button" onClick={simular} style={cssBtnOutline}>
+              <Gauge style={{ width: 15, height: 15 }} />
+              Simular
+            </button>
+          )}
           <button
             type="button"
             onClick={() => router.push(`/painel/tarifas?patio=${patioId}`)}

@@ -152,6 +152,7 @@ export async function gerarPdf(
       [
         ["Tickets", moeda.format(r.tickets)],
         ["Mensalidades (app)", moeda.format(r.mensalidades)],
+        ["Estadias de hospede", moeda.format(r.estadias)],
         ["Outras entradas", moeda.format(r.outras)],
         ["Total", moeda.format(r.total)],
       ],

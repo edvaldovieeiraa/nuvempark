@@ -52,6 +52,8 @@ const TABELAS_SINCRONIZADAS = [
   "caixa_movimentos",
   "mensalidade_pagamentos",
   "avarias",
+  "estadias",
+  "estadia_pagamentos",
 ] as const;
 
 export async function ultimaSincronizacao(
