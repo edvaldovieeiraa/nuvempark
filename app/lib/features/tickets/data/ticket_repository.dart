@@ -403,6 +403,7 @@ class TicketRepository {
         clienteId: row.clienteId,
         planoId: row.planoId,
         origem: row.origem,
+        estadiaId: row.estadiaId,
         syncStatus: row.syncStatus,
         fotoEntradaPath: row.fotoEntradaPath,
       );

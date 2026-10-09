@@ -202,4 +202,20 @@ void main() {
     expect(ordem, ['envio:inicio', 'envio:fim', 'leitura']);
     await db.close();
   });
+
+  test('ultimaConferencia: marca em 200/304, não marca offline', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final ok = sync(db, fakeDio((_) => lista([])));
+    expect(ok.ultimaConferencia, isNull);
+    await ok.puxar('p1');
+    expect(ok.ultimaConferencia, isNotNull);
+
+    final off = sync(
+        db,
+        fakeDio((_) => throw DioException.connectionError(
+            requestOptions: RequestOptions(), reason: 'offline')));
+    await off.puxar('p1');
+    expect(off.ultimaConferencia, isNull);
+    await db.close();
+  });
 }

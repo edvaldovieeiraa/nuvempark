@@ -34,6 +34,10 @@ class TicketsAbertosSync {
   String? _etag;
   String? _etagPatio;
 
+  /// Última vez que o servidor respondeu (200 ou 304). A saída de hóspede usa
+  /// para avisar quando a validade mostrada pode estar velha (offline).
+  DateTime? ultimaConferencia;
+
   /// Retorna true quando o Drift mudou (a tela precisa redesenhar). Falha de
   /// rede, 404 de API antiga e resposta estranha viram false sem mexer em nada.
   Future<bool> puxar(String patioId) => mutex.exclusivo(() async {
@@ -52,7 +56,10 @@ class TicketsAbertosSync {
         } catch (_) {
           return false;
         }
-        if (resp.statusCode == 304) return false;
+        if (resp.statusCode == 304) {
+          ultimaConferencia = DateTime.now();
+          return false;
+        }
 
         final body = resp.data;
         // Lista ausente NÃO é lista vazia: vazia apagaria todos os abertos.
@@ -76,6 +83,7 @@ class TicketsAbertosSync {
         final mudou = mudouTickets || mudouEstadias;
         _etag = resp.headers.value('etag');
         _etagPatio = patioId;
+        ultimaConferencia = DateTime.now();
         return mudou;
       });
 

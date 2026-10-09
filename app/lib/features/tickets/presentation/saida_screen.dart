@@ -12,6 +12,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/brisa.dart';
+import '../../../core/widgets/forma_pagamento_grid.dart';
 import '../../caixa/presentation/providers/caixa_provider.dart';
 import '../../patio/domain/patio_model.dart';
 import '../../patio/domain/tarifa_config.dart';
@@ -26,6 +27,7 @@ import '../data/pagamento_online_service.dart';
 import '../data/ticket_repository.dart';
 import '../domain/ticket_model.dart';
 import 'providers/ticket_provider.dart';
+import 'widgets/hero_saida.dart';
 
 /// Saída/cobrança: busca o ticket, calcula a tarifa com o TarifaEngine,
 /// registra a forma de pagamento (manual por ora; gancho Pix na Fase 4) e
@@ -213,7 +215,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _resumoLinha('Placa', ticket.placa),
-            _resumoLinha('Forma', _labelForma(formaPagamento)),
+            _resumoLinha('Forma', FormaPagamentoGrid.rotulo(formaPagamento)),
             const Divider(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -942,25 +944,10 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
             const RotuloBrisa('Como o cliente vai pagar?'),
             const SizedBox(height: 10),
             // Grade 2 colunas com as formas configuradas (cards do Brisa).
-            LayoutBuilder(
-              builder: (ctx, c) {
-                const gap = 10.0;
-                final w = (c.maxWidth - gap) / 2;
-                return Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
-                  children: patio.formasPagamento
-                      .map((forma) => SizedBox(
-                            width: w,
-                            child: _cardForma(
-                              forma,
-                              _formaSelecionada == forma,
-                              () => setState(() => _formaSelecionada = forma),
-                            ),
-                          ))
-                      .toList(),
-                );
-              },
+            FormaPagamentoGrid(
+              formas: patio.formasPagamento,
+              selecionada: _formaSelecionada,
+              onSelecionar: (forma) => setState(() => _formaSelecionada = forma),
             ),
             // Pix dinâmico: o operador gera o QR aqui e mostra pro cliente
             // pagar na hora. Some quando não há valor a cobrar (tolerância).
@@ -1031,132 +1018,17 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     required String? caption,
     required String valorLabel,
     required String subLabel,
-  }) {
-    final hora = DateFormat('HH:mm').format(ticket.entrada);
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F2937),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x4D14532D), blurRadius: 28, offset: Offset(0, 10)),
+  }) =>
+      HeroSaida(
+        placa: ticket.placa,
+        caption: caption,
+        valorLabel: valorLabel,
+        subLabel: subLabel,
+        chips: [
+          HeroChip('entrou ${DateFormat('HH:mm').format(ticket.entrada)}'),
+          HeroChip(ticket.tipoVeiculo),
         ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              ticket.placa,
-              style: const TextStyle(
-                  fontSize: 14,
-                  height: 1,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.6,
-                  color: Colors.white),
-            ),
-          ),
-          if (caption != null) ...[
-            const SizedBox(height: 12),
-            Text(caption,
-                style: const TextStyle(
-                    fontSize: 11,
-                    height: 1,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    color: Color(0xFF9CA3AF))),
-          ],
-          const SizedBox(height: 8),
-          Text(
-            valorLabel,
-            style: const TextStyle(
-                fontSize: 44,
-                height: 1,
-                fontWeight: FontWeight.w800,
-                color: Colors.white),
-          ),
-          const SizedBox(height: 8),
-          Text(subLabel,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 13, height: 1.3, color: Color(0xFF9CA3AF))),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _heroChip('entrou $hora'),
-              const SizedBox(width: 8),
-              _heroChip(ticket.tipoVeiculo),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _heroChip(String texto) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(texto,
-            style: const TextStyle(
-                fontSize: 11,
-                height: 1,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFCBD5E1))),
       );
-
-  /// Card de forma de pagamento (grade 2 colunas): ícone + rótulo, borda que
-  /// acende em verde quando selecionado.
-  Widget _cardForma(String forma, bool sel, VoidCallback onTap) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          height: 74,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: sel ? AppColors.primaryFill : AppColors.outlineVariant,
-              width: 2,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                  color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 2)),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(_iconeForma(forma),
-                  size: 22,
-                  color: sel ? AppColors.primary : AppColors.onSurfaceVariant),
-              const SizedBox(height: 5),
-              Text(_labelForma(forma),
-                  style: const TextStyle(
-                      fontSize: 13,
-                      height: 1,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.onSurface)),
-            ],
-          ),
-        ),
-      );
-
-  IconData _iconeForma(String forma) => switch (forma) {
-        'dinheiro' => Icons.payments_outlined,
-        'cartao_debito' => Icons.credit_card,
-        'cartao_credito' => Icons.credit_card,
-        'pix' => Icons.pix,
-        _ => Icons.attach_money,
-      };
 
   Widget _linha(String k, String v, {bool last = false}) => Container(
         padding: const EdgeInsets.symmetric(vertical: 11),
@@ -1171,14 +1043,6 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
           ],
         ),
       );
-
-  String _labelForma(String forma) => switch (forma) {
-        'dinheiro' => 'Dinheiro',
-        'cartao_debito' => 'Cartão de débito',
-        'cartao_credito' => 'Cartão de crédito',
-        'pix' => 'Pix (manual)',
-        _ => forma,
-      };
 
   static String _fmtDuracao(Duration d) {
     final h = d.inHours;

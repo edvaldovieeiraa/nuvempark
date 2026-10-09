@@ -31,6 +31,12 @@ class EstadiasDao extends DatabaseAccessor<AppDatabase> with _$EstadiasDaoMixin 
             ..orderBy([(e) => OrderingTerm.desc(e.validaAteEpoch)]))
           .get();
 
+  Future<List<Estadia>> porIds(Iterable<String> ids) {
+    final lista = ids.toList();
+    if (lista.isEmpty) return Future.value(const []);
+    return (select(estadias)..where((e) => e.id.isIn(lista))).get();
+  }
+
   Future<void> inserirPagamento(EstadiaPagamentosCompanion p) =>
       into(estadiaPagamentos).insert(p);
 

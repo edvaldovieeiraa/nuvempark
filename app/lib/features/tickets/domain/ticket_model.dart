@@ -17,6 +17,7 @@ class TicketModel {
     this.clienteId,
     this.planoId,
     this.origem = 'avulso',
+    this.estadiaId,
     required this.syncStatus,
     this.fotoEntradaPath,
   });
@@ -38,6 +39,9 @@ class TicketModel {
   final String? clienteId;
   final String? planoId;
   final String origem;
+
+  /// Ticket de hóspede: a estadia que cobre esta passagem.
+  final String? estadiaId;
   final String syncStatus;
 
   /// Caminho local da foto de entrada, se houver (feature foto + OCR).
@@ -47,6 +51,7 @@ class TicketModel {
 
   /// Ticket de livre passagem (cliente mensalista/credenciado) — saída gratuita.
   bool get isLivrePassagem => origem == 'plano';
+  bool get isHospede => estadiaId != null;
 
   Duration get tempoPermanencia {
     final fim = saida ?? DateTime.now();
