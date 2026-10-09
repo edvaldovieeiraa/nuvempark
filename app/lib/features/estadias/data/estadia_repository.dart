@@ -49,12 +49,18 @@ class EstadiaCriada {
 }
 
 class RenovacaoFeita {
-  const RenovacaoFeita({required this.validaAte, required this.valor, this.ticketId});
+  const RenovacaoFeita({
+    required this.validaAte,
+    required this.valor,
+    this.ticketId,
+    this.entrada,
+  });
   final DateTime validaAte;
   final double valor;
 
-  /// Renovou e entrou: o ticket criado junto.
+  /// Renovou e entrou: o ticket criado junto e a hora de entrada gravada.
   final String? ticketId;
+  final DateTime? entrada;
 }
 
 /// Gravação local da estadia de hóspede (offline-first, como mensalidade):
@@ -323,7 +329,13 @@ class EstadiaRepository {
         final e = (await db.estadiasDao.getEstadia(estadiaId))!;
         final ticketId = await registrarEntradaHospede(e,
             operadorId: operadorId, fotoEntradaPath: fotoEntradaPath);
-        return RenovacaoFeita(validaAte: r.validaAte, valor: r.valor, ticketId: ticketId);
+        final ticket = (await db.ticketsDao.getById(ticketId))!;
+        return RenovacaoFeita(
+          validaAte: r.validaAte,
+          valor: r.valor,
+          ticketId: ticketId,
+          entrada: DateTime.fromMillisecondsSinceEpoch(ticket.entradaEpoch),
+        );
       });
 
   /// Entrada de placa com estadia válida: ticket sem cobrança ligado à estadia.

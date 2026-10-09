@@ -51,19 +51,28 @@ async function carregarEstadias(
 
   const estadias = [...(recentes.data ?? [])] as Array<{ id: string }>;
   const jaTem = new Set(estadias.map((e) => e.id));
-  for (const lote of emLotes(idsDeCarroDentro.filter((id) => !jaTem.has(id)))) {
-    const r = await db.from('estadias').select(COLUNAS_ESTADIA).eq('patio_id', patioId).in('id', lote);
+  // Lotes em paralelo: o ciclo roda a cada 5 s por aparelho.
+  const deCarroDentro = await Promise.all(
+    emLotes(idsDeCarroDentro.filter((id) => !jaTem.has(id))).map((lote) =>
+      db.from('estadias').select(COLUNAS_ESTADIA).eq('patio_id', patioId).in('id', lote),
+    ),
+  );
+  for (const r of deCarroDentro) {
     if (r.error) return null;
     estadias.push(...((r.data ?? []) as Array<{ id: string }>));
   }
 
+  const lotesPagamentos = await Promise.all(
+    emLotes(estadias.map((e) => e.id)).map((lote) =>
+      db
+        .from('estadia_pagamentos')
+        .select('id, estadia_id, tipo, diarias, valor, forma_pagamento, pago_em')
+        .eq('patio_id', patioId)
+        .in('estadia_id', lote),
+    ),
+  );
   const pagamentos: Array<PagamentoResumo & { estadia_id: string }> = [];
-  for (const lote of emLotes(estadias.map((e) => e.id))) {
-    const r = await db
-      .from('estadia_pagamentos')
-      .select('id, estadia_id, tipo, diarias, valor, forma_pagamento, pago_em')
-      .eq('patio_id', patioId)
-      .in('estadia_id', lote);
+  for (const r of lotesPagamentos) {
     if (r.error) return null;
     pagamentos.push(...((r.data ?? []) as typeof pagamentos));
   }

@@ -189,7 +189,7 @@ class _RenovarEstadiaSheetState extends ConsumerState<RenovarEstadiaSheet> {
                 ticketId: ticketNovo,
                 placa: e.placa,
                 tipoVeiculo: e.tipoVeiculo,
-                entrada: agora,
+                entrada: gravada.entrada ?? agora,
                 operacaoNome: patio.nome,
                 cols: p.cols,
                 avancoFinal: p.avancoFinal,
