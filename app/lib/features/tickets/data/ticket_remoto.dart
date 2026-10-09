@@ -28,6 +28,7 @@ TicketsCompanion ticketRemotoParaCompanion(
     clienteId: Value(m['cliente_id'] as String?),
     planoId: Value(m['plano_id'] as String?),
     origem: Value(m['origem'] as String? ?? 'avulso'),
+    estadiaId: Value(m['estadia_id'] as String?),
     fotoEntradaEnviada: const Value(true),
     syncStatus: const Value('sincronizado'),
     criadoEm: Value(entrada),

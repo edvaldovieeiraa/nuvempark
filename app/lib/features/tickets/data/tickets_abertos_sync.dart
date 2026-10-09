@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../core/config/env.dart';
 import '../../../database/app_database.dart';
 import '../../sync/data/sync_mutex.dart';
+import '../../estadias/data/estadia_remota.dart';
 import 'ticket_remoto.dart';
 
 /// Veículos no pátio vistos por TODOS os aparelhos.
@@ -61,9 +62,47 @@ class TicketsAbertosSync {
             Map<String, dynamic>.from(e as Map),
         ];
 
-        final mudou = await _convergir(patioId, abertos);
+        // Estadias (db/41): ausente = API anterior a elas → não mexe.
+        final estadias = body['estadias'] is List
+            ? [
+                for (final e in body['estadias'] as List)
+                  Map<String, dynamic>.from(e as Map),
+              ]
+            : null;
+
+        final mudouTickets = await _convergir(patioId, abertos);
+        final mudouEstadias =
+            estadias != null && await _convergirEstadias(patioId, estadias);
+        final mudou = mudouTickets || mudouEstadias;
         _etag = resp.headers.value('etag');
         _etagPatio = patioId;
+        return mudou;
+      });
+
+  /// Estadias do pátio vindas do servidor. A que tem pagamento local ainda não
+  /// enviado fica como está: a do servidor é mais velha (a renovação daqui
+  /// ainda não chegou lá). Nada é apagado — o histórico fica no aparelho.
+  Future<bool> _convergirEstadias(
+    String patioId,
+    List<Map<String, dynamic>> estadias,
+  ) =>
+      db.transaction(() async {
+        final pendentes = await db.estadiasDao.idsComPagamentoPendente();
+        var mudou = false;
+        for (final m in estadias) {
+          final id = m['id'] as String;
+          if (!pendentes.contains(id)) {
+            mudou = await db.estadiasDao
+                    .aplicarDoServidor(estadiaRemotaParaCompanion(m, patioId)) ||
+                mudou;
+          }
+          for (final p in (m['pagamentos'] as List? ?? const [])) {
+            mudou = await db.estadiasDao.inserirPagamentoSeAusente(
+                    pagamentoRemotoParaCompanion(
+                        Map<String, dynamic>.from(p as Map), id, patioId)) ||
+                mudou;
+          }
+        }
         return mudou;
       });
 

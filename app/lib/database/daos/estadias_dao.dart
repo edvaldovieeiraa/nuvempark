@@ -40,6 +40,53 @@ class EstadiasDao extends DatabaseAccessor<AppDatabase> with _$EstadiasDaoMixin 
             ..orderBy([(p) => OrderingTerm.asc(p.pagoEmEpoch)]))
           .get();
 
+  /// Estadias com pagamento local ainda não enviado: a cópia do servidor
+  /// delas é mais velha que a local e não pode sobrescrevê-la.
+  Future<Set<String>> idsComPagamentoPendente() async {
+    final q = selectOnly(estadiaPagamentos, distinct: true)
+      ..addColumns([estadiaPagamentos.estadiaId])
+      ..where(estadiaPagamentos.syncStatus.equals('pendente'));
+    return {for (final r in await q.get()) r.read(estadiaPagamentos.estadiaId)!};
+  }
+
+  /// Grava a estadia do servidor. Já existindo, atualiza só o que a renovação
+  /// muda (vencimento, diárias, total). Devolve true se algo mudou.
+  Future<bool> aplicarDoServidor(EstadiasCompanion e) async {
+    final atual = await getEstadia(e.id.value);
+    if (atual == null) {
+      await into(estadias).insert(e);
+      return true;
+    }
+    if (atual.validaAteEpoch == e.validaAteEpoch.value &&
+        atual.diarias == e.diarias.value &&
+        atual.valorTotal == e.valorTotal.value &&
+        atual.syncStatus == 'sincronizado') {
+      return false;
+    }
+    await atualizarEstadia(
+      atual.id,
+      EstadiasCompanion(
+        validaAteEpoch: e.validaAteEpoch,
+        diarias: e.diarias,
+        valorTotal: e.valorTotal,
+        syncStatus: const Value('sincronizado'),
+      ),
+    );
+    return true;
+  }
+
+  /// Pagamento do servidor; se já existe aqui, nada. Devolve true se inseriu.
+  /// (Não dá para usar o retorno do insertOrIgnore: quando ignora, o SQLite
+  /// devolve o rowid do insert ANTERIOR.)
+  Future<bool> inserirPagamentoSeAusente(EstadiaPagamentosCompanion p) async {
+    final existe = await (select(estadiaPagamentos)
+          ..where((x) => x.id.equals(p.id.value)))
+        .getSingleOrNull();
+    if (existe != null) return false;
+    await into(estadiaPagamentos).insert(p);
+    return true;
+  }
+
   Future<void> marcarEstadiaSincronizada(String id) =>
       (update(estadias)..where((e) => e.id.equals(id)))
           .write(const EstadiasCompanion(syncStatus: Value('sincronizado')));

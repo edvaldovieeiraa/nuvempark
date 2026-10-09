@@ -197,6 +197,8 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
             valor: num(payload.valor) ?? 0,
             descricao: str(payload.descricao),
             ticket_id: str(payload.ticket_id),
+            // Contratação/renovação de estadia: não tem ticket, tem pagamento.
+            estadia_pagamento_id: str(payload.estadia_pagamento_id),
             forma_pagamento: str(payload.forma_pagamento),
             criado_em: toIso(payload.criado_em) ?? agora,
             sincronizado_em: agora,
