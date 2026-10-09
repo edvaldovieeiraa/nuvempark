@@ -18,6 +18,10 @@ export interface ContextoSync {
   agora: string;
 }
 
+/** Teto de diárias num único pagamento (o app oferece até 30). */
+const MAX_DIARIAS = 365;
+const UM_ANO_MS = 366 * 24 * 60 * 60 * 1000;
+
 export type Resultado<T> = { ok: true; valor: T } | { ok: false; erro: string };
 
 const falha = (erro: string): { ok: false; erro: string } => ({ ok: false, erro });
@@ -122,8 +126,15 @@ export function argsPagamentoEstadia(
   if (!estadiaId) return falha('pagamento sem estadia');
   if (tipo !== 'contratacao' && tipo !== 'renovacao') return falha(`tipo inválido: ${tipo}`);
   if (!diarias) return falha('pagamento sem diárias');
+  // Sanidade contra app adulterado ou com bug: o vencimento sai destes números.
+  if (diarias > MAX_DIARIAS) return falha(`mais de ${MAX_DIARIAS} diárias num pagamento`);
   if (valor === undefined || valor < 0) return falha('pagamento sem valor');
   if (!forma) return falha('pagamento sem forma');
+  const baseIso = toIso(p.base);
+  const pagoEmIso = toIso(p.pago_em) ?? ctx.agora;
+  if (baseIso && Date.parse(baseIso) - Date.parse(pagoEmIso) > UM_ANO_MS) {
+    return falha('base da renovação mais de um ano à frente do pagamento');
+  }
 
   return {
     ok: true,
@@ -136,11 +147,11 @@ export function argsPagamentoEstadia(
       p_diarias: diarias,
       p_valor: valor,
       p_forma_pagamento: forma,
-      p_base: toIso(p.base) ?? null,
+      p_base: baseIso ?? null,
       p_operador_id: str(p.operador_id) ?? ctx.operadorSub,
       p_caixa_sessao_id: str(p.caixa_sessao_id) ?? null,
       p_caixa_movimento_id: str(p.caixa_movimento_id) ?? null,
-      p_pago_em: toIso(p.pago_em) ?? ctx.agora,
+      p_pago_em: pagoEmIso,
     },
   };
 }
@@ -186,4 +197,26 @@ export function montarEstadias<E extends { id: string }>(
           : a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
       ),
     }));
+}
+
+/** Divide [xs] em lotes — `.in()` vai na URL do PostgREST e uuids somam rápido. */
+export function emLotes<T>(xs: T[], tamanho = 100): T[][] {
+  const lotes: T[][] = [];
+  for (let i = 0; i < xs.length; i += tamanho) lotes.push(xs.slice(i, i + tamanho));
+  return lotes;
+}
+
+/**
+ * Ticket como vai para o app. App anterior à estadia de hóspede (não manda
+ * `modalidades=hospede`) recebe o ticket de estadia como livre passagem
+ * (`origem: 'plano'`): sem isso ele o trataria como avulso e cobraria na saída
+ * o tempo todo de quem já pagou as diárias. `estadia_id` nunca vai para ele.
+ */
+export function ticketParaApp<T extends Record<string, unknown>>(
+  t: T,
+  aceitaHospede: boolean,
+): Record<string, unknown> {
+  if (aceitaHospede) return t;
+  const { estadia_id: _ignorado, ...resto } = t;
+  return resto.origem === 'estadia' ? { ...resto, origem: 'plano' } : resto;
 }

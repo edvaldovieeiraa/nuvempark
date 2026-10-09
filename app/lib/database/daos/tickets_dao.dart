@@ -92,6 +92,32 @@ class TicketsDao extends DatabaseAccessor<AppDatabase> with _$TicketsDaoMixin {
   Future<void> inserirSeAusente(TicketsCompanion t) =>
       into(tickets).insert(t, mode: InsertMode.insertOrIgnore);
 
+  /// Ticket aberto e já sincronizado que o servidor diz ter virado estadia em
+  /// outro aparelho. Escrita local pendente vence (não toca). True se mudou.
+  Future<bool> aplicarConversaoRemota(
+    String id, {
+    required String origem,
+    required String? estadiaId,
+    required String? tabelaPrecoId,
+  }) async {
+    final atual = await getById(id);
+    if (atual == null ||
+        atual.status != 'aberto' ||
+        atual.syncStatus != 'sincronizado' ||
+        (atual.origem == origem && atual.estadiaId == estadiaId)) {
+      return false;
+    }
+    await atualizar(
+      id,
+      TicketsCompanion(
+        origem: Value(origem),
+        estadiaId: Value(estadiaId),
+        tabelaPrecoId: Value(tabelaPrecoId ?? atual.tabelaPrecoId),
+      ),
+    );
+    return true;
+  }
+
   /// Quais destes ids já existem aqui (qualquer status).
   Future<Set<String>> idsExistentes(List<String> ids) async {
     if (ids.isEmpty) return {};

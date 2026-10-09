@@ -9,6 +9,7 @@ import '../../caixa/presentation/providers/caixa_provider.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/data/print_templates.dart';
 import '../domain/estadia_engine.dart';
+import '../data/estadia_repository.dart';
 import 'estadia_acoes.dart';
 import 'estadia_formatos.dart';
 import 'estadia_widgets.dart';
@@ -133,11 +134,11 @@ class _RenovarEstadiaSheetState extends ConsumerState<RenovarEstadiaSheet> {
     setState(() => _gravando = true);
     final repo = ref.read(estadiaRepositoryProvider);
     final patio = ref.read(patioNotifierProvider).value;
-    String? ticketNovo;
+    RenovacaoFeita? feita;
     final ok = await executarCobrancaEstadia(context, ref, (ctx) async {
       switch (widget.origem) {
         case OrigemRenovacao.ficha:
-          await repo.renovar(
+          feita = await repo.renovar(
             estadiaId: e.id,
             diarias: _diarias,
             formaPagamento: forma,
@@ -146,7 +147,7 @@ class _RenovarEstadiaSheetState extends ConsumerState<RenovarEstadiaSheet> {
             carroDentro: widget.carroDentro,
           );
         case OrigemRenovacao.entrada:
-          ticketNovo = await repo.renovarEEntrar(
+          feita = await repo.renovarEEntrar(
             estadiaId: e.id,
             diarias: _diarias,
             formaPagamento: forma,
@@ -155,7 +156,7 @@ class _RenovarEstadiaSheetState extends ConsumerState<RenovarEstadiaSheet> {
             fotoEntradaPath: widget.fotoEntradaPath,
           );
         case OrigemRenovacao.saida:
-          await repo.renovarESair(
+          feita = await repo.renovarESair(
             estadiaId: e.id,
             ticketId: widget.ticketId!,
             diarias: _diarias,
@@ -169,13 +170,15 @@ class _RenovarEstadiaSheetState extends ConsumerState<RenovarEstadiaSheet> {
     setState(() => _gravando = false);
     if (!ok) return;
 
-    if (patio != null) {
+    if (patio != null && feita != null) {
+      final gravada = feita!;
+      final ticketNovo = gravada.ticketId;
       final bloco = BlocoEstadia(
         titulo: 'HOSPEDE - RENOVACAO',
-        validaAte: r.novaValidaAte,
+        validaAte: gravada.validaAte,
         diarias: _diarias,
         diariaValor: e.diariaValor,
-        total: r.valor,
+        total: gravada.valor,
         formaPagamento: forma,
       );
       // Renovou e entrou: um papel só, cupom com QR + bloco (design, obs. 3).
@@ -183,7 +186,7 @@ class _RenovarEstadiaSheetState extends ConsumerState<RenovarEstadiaSheet> {
         ref,
         (p) => ticketNovo != null
             ? PrintTemplates.ticketEntrada(
-                ticketId: ticketNovo!,
+                ticketId: ticketNovo,
                 placa: e.placa,
                 tipoVeiculo: e.tipoVeiculo,
                 entrada: agora,

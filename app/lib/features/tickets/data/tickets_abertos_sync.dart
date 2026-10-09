@@ -47,7 +47,9 @@ class TicketsAbertosSync {
         try {
           resp = await dio.get<dynamic>(
             Env.ticketsAbertosUrl,
-            queryParameters: {'patio_id': patioId},
+            // `modalidades=hospede`: este app entende ticket de estadia. Sem
+            // o parâmetro a API o mostra como livre passagem (app antigo).
+            queryParameters: {'patio_id': patioId, 'modalidades': 'hospede'},
             options: Options(
               headers: {'If-None-Match': ?etag},
               validateStatus: (s) => s == 200 || s == 304,
@@ -125,7 +127,19 @@ class TicketsAbertosSync {
         var mudou = false;
 
         for (final m in abertos) {
-          if (conhecidos.contains(m['id'])) continue;
+          if (conhecidos.contains(m['id'])) {
+            // Já está aqui: só a conversão em estadia feita em outro aparelho
+            // muda um ticket aberto. Sem isto, este aparelho daria saída como
+            // avulso a quem já pagou as diárias (cobrança em dobro).
+            mudou = await db.ticketsDao.aplicarConversaoRemota(
+                  m['id'] as String,
+                  origem: m['origem'] as String? ?? 'avulso',
+                  estadiaId: m['estadia_id'] as String?,
+                  tabelaPrecoId: m['tabela_preco_id'] as String?,
+                ) ||
+                mudou;
+            continue;
+          }
           await db.ticketsDao
               .inserirSeAusente(ticketRemotoParaCompanion(m, patioId));
           mudou = true;

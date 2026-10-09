@@ -317,7 +317,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
         ticketId = r.ticketId;
         blocoCupom = BlocoEstadia(
           titulo: 'HOSPEDE - ESTADIA PAGA',
-          validaAte: c.validaAte,
+          validaAte: r.validaAte, // a gravada, não a do diálogo
           diarias: _diarias,
           diariaValor: contratar.diariaValor,
           total: c.valor,

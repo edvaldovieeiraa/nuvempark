@@ -17,6 +17,7 @@ import '../../printing/data/print_templates.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tickets/domain/ticket_model.dart';
 import '../../tickets/presentation/providers/ticket_provider.dart';
+import '../domain/tarifa_config.dart';
 import 'detalhe_veiculo_sheet.dart';
 import 'providers/patio_provider.dart';
 
@@ -255,7 +256,7 @@ class _PatioTabState extends ConsumerState<PatioTab> {
     final (durBg, durCor) = _faixaPermanencia(t.entrada);
     final estadia = t.estadiaId != null ? estadias[t.estadiaId] : null;
     final patio = ref.read(patioNotifierProvider).value;
-    final tabelasHospede = patio == null
+    final List<TarifaConfig> tabelasHospede = patio == null
         ? const []
         : patio.tabelasEntrada(t.tipoVeiculo).where((x) => x.isHospede).toList();
     return Padding(
@@ -270,7 +271,7 @@ class _PatioTabState extends ConsumerState<PatioTab> {
               ? () => mostrarConverterEstadia(
                     context,
                     ticket: t,
-                    tabelasHospede: tabelasHospede.cast(),
+                    tabelasHospede: tabelasHospede,
                   )
               : null,
         ),
@@ -364,9 +365,6 @@ class _PatioTabState extends ConsumerState<PatioTab> {
     return (AppColors.saidaBg, AppColors.saida);
   }
 
-  /// Estado vazio do Brisa. Serve aos dois casos: pátio realmente vazio e
-  /// busca sem resultado — antes o segundo era um texto solto, sem a moldura
-  /// do card, e parecia um erro.
   /// Pílula de uma linha: "até dom 14:30" (verde, cama) ou "venceu qua 18:00"
   /// (âmbar, relógio). Dia da semana perto de hoje, dd/mm longe (obs. 10).
   Widget _pilulaEstadia(Estadia e) {
@@ -450,6 +448,9 @@ class _PatioTabState extends ConsumerState<PatioTab> {
     );
   }
 
+  /// Estado vazio do Brisa. Serve a pátio vazio, busca sem resultado e
+  /// aba Hóspedes vazia — antes o segundo era um texto solto, sem a moldura
+  /// do card, e parecia um erro.
   Widget _vazio({bool busca = false, bool hospedes = false}) => Container(
         padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
         decoration: BoxDecoration(

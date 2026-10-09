@@ -218,4 +218,43 @@ void main() {
     expect(off.ultimaConferencia, isNull);
     await db.close();
   });
+
+  test('ticket convertido em estadia em OUTRO aparelho: o daqui vira hóspede', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    // Aqui o carro é avulso e já sincronizado.
+    await sync(db, fakeDio((_) => lista([remoto('C')]))).puxar('p1');
+
+    // Na recepção, o ticket virou estadia.
+    final convertido = {...remoto('C'), 'origem': 'estadia', 'estadia_id': 'eX', 'tabela_preco_id': 'tarH'};
+    final mudou = await sync(db, fakeDio((_) => lista([convertido], etag: '"v2"'))).puxar('p1');
+
+    expect(mudou, isTrue);
+    final t = (await db.ticketsDao.getById('C'))!;
+    expect(t.origem, 'estadia');
+    expect(t.estadiaId, 'eX');
+    expect(t.tabelaPrecoId, 'tarH');
+    await db.close();
+  });
+
+  test('ticket com escrita local pendente não é sobrescrito pela conversão remota', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    await seedTicket(db, id: 'P', patio: 'p1'); // pendente, avulso
+    final convertido = {...remoto('P'), 'origem': 'estadia', 'estadia_id': 'eX'};
+
+    await sync(db, fakeDio((_) => lista([convertido]))).puxar('p1');
+
+    expect((await db.ticketsDao.getById('P'))!.origem, 'avulso');
+    await db.close();
+  });
+
+  test('pede a lista dizendo que entende hóspede', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    Map<String, dynamic>? query;
+    await sync(db, fakeDio((o) {
+      query = o.queryParameters;
+      return lista([]);
+    })).puxar('p1');
+    expect(query!['modalidades'], 'hospede');
+    await db.close();
+  });
 }

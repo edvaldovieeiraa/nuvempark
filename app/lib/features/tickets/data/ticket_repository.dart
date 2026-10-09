@@ -62,6 +62,7 @@ class TicketRepository {
         Env.ticketAbertoUrl,
         queryParameters: {
           'patio_id': patioId,
+          'modalidades': 'hospede',
           'placa': ?placa,
           'id': ?id,
         },

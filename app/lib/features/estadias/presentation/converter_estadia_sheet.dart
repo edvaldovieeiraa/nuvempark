@@ -97,8 +97,9 @@ class _ConverterEstadiaSheetState extends ConsumerState<ConverterEstadiaSheet> {
 
     setState(() => _gravando = true);
     final patio = ref.read(patioNotifierProvider).value;
+    DateTime? validaGravada;
     final ok = await executarCobrancaEstadia(context, ref, (ctx) async {
-      await ref.read(estadiaRepositoryProvider).converterTicket(
+      final r = await ref.read(estadiaRepositoryProvider).converterTicket(
             ticketId: t.id,
             tarifa: _tarifa,
             diarias: _diarias,
@@ -106,6 +107,7 @@ class _ConverterEstadiaSheetState extends ConsumerState<ConverterEstadiaSheet> {
             caixaSessaoId: ctx.caixaSessaoId,
             operadorId: ctx.operadorId,
           );
+      validaGravada = r.validaAte;
     });
     if (!mounted) return;
     setState(() => _gravando = false);
@@ -118,7 +120,7 @@ class _ConverterEstadiaSheetState extends ConsumerState<ConverterEstadiaSheet> {
           operacaoNome: patio.nome,
           estadia: BlocoEstadia(
             titulo: 'HOSPEDE - ESTADIA PAGA',
-            validaAte: c.validaAte,
+            validaAte: validaGravada ?? c.validaAte,
             diarias: _diarias,
             diariaValor: _tarifa.diariaValor,
             total: c.valor,

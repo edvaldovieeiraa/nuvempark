@@ -35,10 +35,26 @@ class ReconhecimentoHospede {
   final SituacaoHospede situacao;
 }
 
+/// O que foi GRAVADO — a tela imprime isto, não o que calculou antes do
+/// diálogo de confirmação (o relógio andou nesse meio-tempo).
 class EstadiaCriada {
-  const EstadiaCriada({required this.estadiaId, required this.ticketId});
+  const EstadiaCriada({
+    required this.estadiaId,
+    required this.ticketId,
+    required this.validaAte,
+  });
   final String estadiaId;
   final String ticketId;
+  final DateTime validaAte;
+}
+
+class RenovacaoFeita {
+  const RenovacaoFeita({required this.validaAte, required this.valor, this.ticketId});
+  final DateTime validaAte;
+  final double valor;
+
+  /// Renovou e entrou: o ticket criado junto.
+  final String? ticketId;
 }
 
 /// Gravação local da estadia de hóspede (offline-first, como mensalidade):
@@ -154,7 +170,8 @@ class EstadiaRepository {
         fotoEntradaPath: fotoEntradaPath,
         entradaEpoch: agora.millisecondsSinceEpoch,
       );
-      return EstadiaCriada(estadiaId: estadiaId, ticketId: ticketId);
+      return EstadiaCriada(
+          estadiaId: estadiaId, ticketId: ticketId, validaAte: calculo.validaAte);
     });
   }
 
@@ -230,14 +247,15 @@ class EstadiaRepository {
         'tabela_preco_id': tarifa.id,
         'atualizado_em': agoraMs,
       }, criadoEm: agoraMs);
-      return EstadiaCriada(estadiaId: estadiaId, ticketId: ticketId);
+      return EstadiaCriada(
+          estadiaId: estadiaId, ticketId: ticketId, validaAte: calculo.validaAte);
     });
   }
 
   // ── Renovação ──────────────────────────────────────────────────────────────
 
   /// Renova sem mexer em ticket (ficha da estadia, entrada já registrada).
-  Future<void> renovar({
+  Future<RenovacaoFeita> renovar({
     required String estadiaId,
     required int diarias,
     required String formaPagamento,
@@ -256,7 +274,7 @@ class EstadiaRepository {
 
   /// Saída de estadia vencida em que o hóspede "vai continuar": renova a partir
   /// do vencimento antigo (cobre o atraso) e fecha o ticket a R$ 0.
-  Future<void> renovarESair({
+  Future<RenovacaoFeita> renovarESair({
     required String estadiaId,
     required String ticketId,
     required int diarias,
@@ -265,7 +283,7 @@ class EstadiaRepository {
     required String operadorId,
   }) =>
       db.transaction(() async {
-        await _renovar(
+        final r = await _renovar(
           estadiaId: estadiaId,
           diarias: diarias,
           formaPagamento: formaPagamento,
@@ -280,11 +298,12 @@ class EstadiaRepository {
           formaPagamento: formaHospede,
           operadorSaidaId: operadorId,
         );
+        return r;
       });
 
   /// Volta de hóspede com a estadia vencida: renova a partir de agora (o tempo
   /// fora não é cobrado) e registra a entrada na mesma transação.
-  Future<String> renovarEEntrar({
+  Future<RenovacaoFeita> renovarEEntrar({
     required String estadiaId,
     required int diarias,
     required String formaPagamento,
@@ -293,7 +312,7 @@ class EstadiaRepository {
     String? fotoEntradaPath,
   }) =>
       db.transaction(() async {
-        final e = await _renovar(
+        final r = await _renovar(
           estadiaId: estadiaId,
           diarias: diarias,
           formaPagamento: formaPagamento,
@@ -301,7 +320,10 @@ class EstadiaRepository {
           operadorId: operadorId,
           carroDentro: false,
         );
-        return registrarEntradaHospede(e, operadorId: operadorId, fotoEntradaPath: fotoEntradaPath);
+        final e = (await db.estadiasDao.getEstadia(estadiaId))!;
+        final ticketId = await registrarEntradaHospede(e,
+            operadorId: operadorId, fotoEntradaPath: fotoEntradaPath);
+        return RenovacaoFeita(validaAte: r.validaAte, valor: r.valor, ticketId: ticketId);
       });
 
   /// Entrada de placa com estadia válida: ticket sem cobrança ligado à estadia.
@@ -325,7 +347,7 @@ class EstadiaRepository {
   /// Forma gravada na saída de hóspede sem cobrança (não entra no caixa).
   static const formaHospede = 'hospede';
 
-  Future<Estadia> _renovar({
+  Future<RenovacaoFeita> _renovar({
     required String estadiaId,
     required int diarias,
     required String formaPagamento,
@@ -372,7 +394,7 @@ class EstadiaRepository {
       operadorId: operadorId,
       agoraMs: agora.millisecondsSinceEpoch,
     );
-    return (await db.estadiasDao.getEstadia(estadiaId))!;
+    return RenovacaoFeita(validaAte: r.novaValidaAte, valor: r.valor);
   }
 
   // ── Peças comuns ───────────────────────────────────────────────────────────

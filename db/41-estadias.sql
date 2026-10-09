@@ -239,6 +239,11 @@ begin
   return 'ok';
 end $$;
 
+-- Só o tenant autenticado (a API assina como `authenticated`). Função nova
+-- nasce executável por PUBLIC no Postgres: tira de PUBLIC e de anon.
+revoke execute on function public.fn_estadia_registrar_pagamento(
+  text, uuid, uuid, text, text, integer, numeric, text, timestamptz, uuid, text, text, timestamptz
+) from public, anon;
 grant execute on function public.fn_estadia_registrar_pagamento(
   text, uuid, uuid, text, text, integer, numeric, text, timestamptz, uuid, text, text, timestamptz
 ) to authenticated;

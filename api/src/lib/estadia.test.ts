@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { argsPagamentoEstadia, linhaEstadia, montarEstadias } from './estadia.js';
+import { argsPagamentoEstadia, emLotes, linhaEstadia, montarEstadias, ticketParaApp } from './estadia.js';
 
 const ctx = {
   patioId: '11111111-1111-1111-1111-111111111111',
@@ -158,5 +158,54 @@ describe('montarEstadias', () => {
     const out = montarEstadias([e('a'), e('a')], []);
     expect(out).toHaveLength(1);
     expect(out[0].pagamentos).toEqual([]);
+  });
+});
+
+describe('emLotes', () => {
+  it('quebra a lista para o .in() não estourar a URL do PostgREST', () => {
+    const ids = Array.from({ length: 250 }, (_, i) => `id${i}`);
+    const lotes = emLotes(ids, 100);
+    expect(lotes.map((l) => l.length)).toEqual([100, 100, 50]);
+    expect(lotes.flat()).toEqual(ids);
+    expect(emLotes([], 100)).toEqual([]);
+  });
+});
+
+describe('ticketParaApp', () => {
+  const tHospede = { id: 't1', origem: 'estadia', estadia_id: 'e1', placa: 'X' };
+
+  it('app que entende hóspede recebe o ticket como está', () => {
+    expect(ticketParaApp(tHospede, true)).toEqual(tHospede);
+  });
+
+  it('app antigo vê o ticket de hóspede como livre passagem (não cobra como avulso)', () => {
+    const t = ticketParaApp(tHospede, false);
+    expect(t.origem).toBe('plano');
+    expect(t).not.toHaveProperty('estadia_id');
+  });
+
+  it('ticket avulso não muda', () => {
+    const avulso = { id: 't2', origem: 'avulso', estadia_id: null };
+    expect(ticketParaApp(avulso, false)).toEqual({ id: 't2', origem: 'avulso' });
+  });
+});
+
+describe('limites do pagamento de estadia', () => {
+  const base = {
+    estadia_id: 'e1',
+    tipo: 'renovacao',
+    diarias: 1,
+    valor: 30,
+    forma_pagamento: 'pix',
+    pago_em: Date.parse('2026-10-08T17:30:00Z'),
+  };
+
+  it('mais de 365 diárias é recusado', () => {
+    expect(argsPagamentoEstadia('p', { ...base, diarias: 366 }, ctx).ok).toBe(false);
+  });
+
+  it('base além de um ano do pagamento é recusada', () => {
+    const r = argsPagamentoEstadia('p', { ...base, base: Date.parse('2028-01-01T00:00:00Z') }, ctx);
+    expect(r.ok).toBe(false);
   });
 });
