@@ -50,10 +50,11 @@ const PAGINAS_MARKDOWN = new Set(["/", "/blog"]);
  * aqui arrastaria o texto de todas elas para o bundle do Edge — que é
  * exatamente o que o aviso acima manda evitar. Slug inexistente não é problema:
  * o handler em `api/agentes/md` responde 404 em Markdown para caminho sem
- * conteúdo.
+ * conteúdo. A página de hotel é a única do silo que não termina em
+ * `-estacionamento` — por isso entra como alternativa à parte.
  */
 const SILO_MARKDOWN =
-  /^\/(?:sistema-para|gestao-de|controle-de|aplicativo-para|leitura-de-placa-para|validacao-de|cancela-para)-estacionamento(?:\/[a-z0-9-]+)?$/;
+  /^\/(?:(?:sistema-para|gestao-de|controle-de|aplicativo-para|leitura-de-placa-para|validacao-de|cancela-para)-estacionamento(?:\/[a-z0-9-]+)?|sistema-de-estacionamento-para-hotel)$/;
 
 /** Páginas fixas + o silo + `/blog/<slug>`. Navegação do blog fica fora. */
 function temMarkdown(caminho: string): boolean {

@@ -181,6 +181,7 @@ Antes disso, **15 dias grátis** com todos os recursos e sem cartão de crédito
 - Painel web em tempo real
 - Vários pátios na mesma conta
 - Mensalistas e livre passagem
+- Diária de hóspede para hotéis
 - Convênio e vouchers de lojista
 - Operadores e caixa por sessão
 - Relatórios de faturamento

@@ -21,6 +21,7 @@
 
 import { CANCELA } from "@/lib/solucoes-cancela";
 import { LEITURA_PLACA } from "@/lib/solucoes-leitura-placa";
+import { HOTEL } from "@/lib/solucoes-hotel";
 
 export type ItemH3 = { h3: string; texto: string };
 
@@ -180,9 +181,13 @@ export const PILAR: PaginaSolucao = {
         {
           h3: "Shoppings, condomínios e hotéis",
           texto:
-            "Mensalistas, credenciados e livre passagem convivem com o rotativo na mesma operação, cada um com sua regra de cobrança.",
+            "Mensalistas, credenciados e livre passagem convivem com o rotativo na mesma operação, cada um com sua regra de cobrança. Hotel e pousada com estacionamento próprio cobram o hóspede por diária: ele paga na chegada e entra e sai sem cobrança até vencer.",
         },
       ],
+      link: {
+        href: "/sistema-de-estacionamento-para-hotel",
+        texto: "Estacionamento de hotel e pousada: a diária do hóspede",
+      },
     },
   ],
   faq: [
@@ -723,7 +728,7 @@ export const VALIDACAO: PaginaSolucao = {
         "Galerias e shoppings de rua, com várias lojas dividindo o mesmo pátio",
         "Restaurantes e bares, que validam no caixa quando o cliente fecha a conta",
         "Clínicas e consultórios, com isenção do tempo aproximado da consulta",
-        "Hotéis e pousadas, com liberação de 24 horas por diária",
+        "Hotéis e pousadas sem estacionamento próprio, com liberação de 24 horas por diária",
         "Escritórios e coworkings, que liberam a visita do cliente",
         "Eventos, igrejas e feiras, com cota fechada para o dia",
       ],
@@ -777,7 +782,7 @@ export const VALIDACAO: PaginaSolucao = {
   relacionados: [
     "/sistema-para-estacionamento",
     "/gestao-de-estacionamento",
-    "/controle-de-estacionamento",
+    "/sistema-de-estacionamento-para-hotel",
   ],
   leituras: [
     {
@@ -814,6 +819,7 @@ export const SOLUCOES: PaginaSolucao[] = [
   APLICATIVO,
   LEITURA_PLACA,
   VALIDACAO,
+  HOTEL,
   CANCELA,
 ];
 

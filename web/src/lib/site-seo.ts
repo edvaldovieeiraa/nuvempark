@@ -69,6 +69,7 @@ export function schemaSoftware(): Schema {
       "Pagamento por Pix no ticket",
       "Caixa por operador com sangria e fechamento conferido",
       "Mensalistas, credenciados e livre passagem",
+      "Diária de hóspede para hotéis e pousadas",
       "Registro de avaria com foto",
       "Vários pátios consolidados numa conta",
       "Painel web de faturamento e ocupação em tempo real",

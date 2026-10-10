@@ -54,6 +54,7 @@ const ROTAS_ESCURAS = [
   "/aplicativo-para-estacionamento",
   "/leitura-de-placa-para-estacionamento",
   "/validacao-de-estacionamento",
+  "/sistema-de-estacionamento-para-hotel",
   "/cancela-para-estacionamento",
 ];
 

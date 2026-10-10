@@ -55,6 +55,8 @@ Principais recursos:
   depois.
 - Controle de caixa por turno, com abertura, sangria, suprimento e fechamento.
 - Mensalistas e credenciados, com cobrança recorrente e controle de vencimento.
+- Diária de hóspede para hotéis e pousadas: o hóspede paga as diárias na
+  chegada, entra e sai sem cobrança até vencer, e o atraso é calculado na saída.
 - Pagamento por Pix no próprio ticket, com confirmação automática.
 - Painel com ocupação ao vivo, faturamento e relatórios por pátio.
 - Multi-pátio: um único painel para todos os pátios do mesmo cliente.

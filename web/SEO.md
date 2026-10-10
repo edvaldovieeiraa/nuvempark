@@ -38,6 +38,7 @@ uma camada**, não desfazer o onepage:
 /aplicativo-para-estacionamento
 /leitura-de-placa-para-estacionamento
 /validacao-de-estacionamento
+/sistema-de-estacionamento-para-hotel
 /cancela-para-estacionamento
 /blog/*                              ← suporte informacional
 ```
@@ -74,6 +75,7 @@ resultado sem disputar o termo no título.
 | `/aplicativo-para-estacionamento` | aplicativo/app para estacionamento | `lib/solucoes.ts` → `APLICATIVO` |
 | `/leitura-de-placa-para-estacionamento` | leitura de placa / LPR para estacionamento, reconhecimento de placas | `lib/solucoes-leitura-placa.ts` |
 | `/validacao-de-estacionamento` | validação de estacionamento, convênio/voucher com lojista | `lib/solucoes.ts` → `VALIDACAO` |
+| `/sistema-de-estacionamento-para-hotel` | sistema/controle de estacionamento para hotel e pousada, diária de hóspede | `lib/solucoes-hotel.ts` |
 | `/cancela-para-estacionamento` | cancela para estacionamento | `lib/solucoes-cancela.ts` |
 | `/sistema-para-estacionamento/<cidade>` | ...em São Paulo / no Rio / em Recife... | `lib/cidades.ts` |
 
@@ -86,6 +88,7 @@ resultado sem disputar o termo no título.
 | Conteúdo das páginas de assunto | `lib/solucoes.ts` |
 | Conteúdo da página de cancela | `lib/solucoes-cancela.ts` |
 | Conteúdo da página de leitura de placa | `lib/solucoes-leitura-placa.ts` |
+| Conteúdo da página de hotel | `lib/solucoes-hotel.ts` |
 | Conteúdo das páginas de cidade | `lib/cidades.ts` |
 | JSON-LD do site (produto, site, organização) | `lib/site-seo.ts` |
 | JSON-LD genérico (migalhas, FAQ, organização) | `lib/blog-seo.ts` (reaproveitado) |
@@ -195,7 +198,27 @@ de iPhone. Cada afirmação da página aponta para o arquivo do app que a susten
 — a lista está no topo de `lib/solucoes-leitura-placa.ts`. Mudou o OCR do app
 (formatos, teto de correção, moldura, saída pela placa), confira a página.
 
-### 4.7 O dado estruturado tem de bater com o texto visível
+### 4.7 A página de hotel não promete o que hotel costuma pedir
+
+Entrou em 10/10/2026, junto com a estadia de hóspede (`db/42`; a spec fica em
+`.planning/specs/estadia-hospede.md`, pasta local fora do git). É para o hotel com estacionamento
+**próprio**; o hotel que manda o hóspede a um estacionamento vizinho usa o
+convênio da página de validação. As duas se citam, e o item de hotel da
+validação diz "sem estacionamento próprio" para não descrever hotel de dois
+jeitos.
+
+A página tem uma seção "O que a estadia de hóspede não faz hoje", e ela é
+regra, não modéstia: sem nome do hóspede nem nº do quarto, sem integração com
+o sistema de reservas, sem vencimento em horário fixo de check-out (a diária
+conta da contratação), sem estorno, sem Pix na contratação, e estadia só se
+lista e renova no app. Quando um desses itens virar verdade, a linha sai da
+lista — não antes.
+
+Também não entram: tempo de contratação em segundos (é meta da spec, não
+medição) e hotel cliente citado (ver 4.4). O preço comparado com uma diária
+de R$ 30 é exemplo e está escrito como exemplo.
+
+### 4.8 O dado estruturado tem de bater com o texto visível
 
 O `FAQPage` de cada página é montado da **mesma lista** que o acordeão renderiza.
 Declarar em JSON-LD uma resposta que não está na página é motivo de ação manual
