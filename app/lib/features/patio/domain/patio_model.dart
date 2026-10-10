@@ -51,16 +51,47 @@ class PatioModel {
   bool _atendeTipo(TarifaConfig t, String tipoVeiculo) =>
       t.tipoVeiculo == tipoVeiculo || t.tipoVeiculo == tipoAmbos;
 
-  /// Tarifas vigentes para um tipo de veículo (usadas no cálculo).
-  List<TarifaConfig> tarifasVigentes(String tipoVeiculo) =>
-      tarifas.where((t) => _atendeTipo(t, tipoVeiculo) && t.vigente).toList();
+  /// Tarifas AVULSAS vigentes para um tipo de veículo (usadas no cálculo).
+  ///
+  /// Tabela de hóspede fica de fora de propósito: ela não tem frações — cobrar
+  /// uma saída avulsa por ela daria o valor das frações padrão do banco.
+  List<TarifaConfig> tarifasVigentes(String tipoVeiculo) => tarifas
+      .where((t) => !t.isHospede && _atendeTipo(t, tipoVeiculo) && t.vigente)
+      .toList();
 
-  /// Tabelas visíveis ao operador para seleção, ordenadas.
-  List<TarifaConfig> tabelasVisiveis(String tipoVeiculo) {
-    final list = tarifas
-        .where((t) => _atendeTipo(t, tipoVeiculo) && t.vigente && t.visivelOperador)
-        .toList()
-      ..sort((a, b) => a.ordem.compareTo(b.ordem));
-    return list;
+  List<TarifaConfig> _visiveis(String tipoVeiculo, {required bool hospede}) =>
+      tarifas
+          .where((t) =>
+              t.isHospede == hospede &&
+              _atendeTipo(t, tipoVeiculo) &&
+              t.vigente &&
+              t.visivelOperador)
+          .toList()
+        ..sort((a, b) => a.ordem.compareTo(b.ordem));
+
+  /// Tabelas AVULSAS visíveis ao operador, ordenadas (saída, cálculo).
+  List<TarifaConfig> tabelasVisiveis(String tipoVeiculo) =>
+      _visiveis(tipoVeiculo, hospede: false);
+
+  /// Tabelas que a ENTRADA oferece: avulsas primeiro, hóspede depois. A ordem
+  /// garante que a pré-seleção da entrada (a primeira da lista) nunca é a de
+  /// hóspede — contratar sem querer cobraria diárias sem estorno.
+  List<TarifaConfig> tabelasEntrada(String tipoVeiculo) => [
+        ..._visiveis(tipoVeiculo, hospede: false),
+        ..._visiveis(tipoVeiculo, hospede: true),
+      ];
+
+  /// Tabela avulsa que cobra o atraso de uma estadia contratada por [hospede]:
+  /// a configurada, se ainda existir e for avulsa; senão a primeira avulsa
+  /// visível do tipo; nenhuma → null (o atraso vira diárias inteiras).
+  TarifaConfig? tarifaAtraso(TarifaConfig hospede) {
+    final configurada = hospede.tarifaAtrasoId;
+    if (configurada != null) {
+      for (final t in tarifas) {
+        if (t.id == configurada && !t.isHospede) return t;
+      }
+    }
+    final avulsas = tabelasVisiveis(hospede.tipoVeiculo);
+    return avulsas.isEmpty ? null : avulsas.first;
   }
 }

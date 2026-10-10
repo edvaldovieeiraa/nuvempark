@@ -14,7 +14,12 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
                   (s.proximaTentativaEpoch.isNull() |
                       s.proximaTentativaEpoch.isSmallerOrEqualValue(agora)),
             )
-            ..orderBy([(s) => OrderingTerm.asc(s.criadoEm)]))
+            // `id` desempata itens do mesmo milissegundo: a estadia precisa
+            // subir antes do pagamento dela, que nasceu na mesma transação.
+            ..orderBy([
+              (s) => OrderingTerm.asc(s.criadoEm),
+              (s) => OrderingTerm.asc(s.id),
+            ]))
           .get();
 
   Future<void> marcarSucesso(int id) =>

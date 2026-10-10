@@ -10,6 +10,13 @@ import '../../auth/data/token_storage.dart';
 /// Baixa a config do pátio (config + tarifas + clientes) e grava no Drift.
 /// O endpoint NuvemPark recebe `patio_id`; internamente o Drift usa a coluna
 /// `operacaoId` (nome mantido do leve-patio) para preservar as queries.
+/// `numeric` do Postgres pode chegar como número ou como string ("30.00").
+num? _numOuNulo(Object? v) => switch (v) {
+      num n => n,
+      String s => num.tryParse(s),
+      _ => null,
+    };
+
 class BootstrapRepository {
   BootstrapRepository({
     required this.dio,
@@ -26,7 +33,9 @@ class BootstrapRepository {
   Future<void> sincronizar(String patioId) async {
     final resp = await dio.get<Map<String, dynamic>>(
       Env.bootstrapUrl,
-      queryParameters: {'patio_id': patioId},
+      // `modalidades=hospede`: este app sabe tratar a tabela de diária de
+      // hóspede. Sem o parâmetro (app antigo) a API não a manda.
+      queryParameters: {'patio_id': patioId, 'modalidades': 'hospede'},
     );
     final data = resp.data!;
     final patioJson = data['patio'] as Map<String, dynamic>;
@@ -97,6 +106,11 @@ class BootstrapRepository {
         pernoiteHoraFim: Value((m['pernoite_hora_fim'] as num).toInt()),
         vigenciaInicioEpoch: Value(vigInicio.millisecondsSinceEpoch),
         vigenciaFimEpoch: Value(vigFim?.millisecondsSinceEpoch),
+        // Colunas de db/42: API anterior a elas não as manda → avulso.
+        modalidade: Value(m['modalidade'] as String? ?? 'avulso'),
+        diariaValor: Value(_numOuNulo(m['diaria_valor'])?.toDouble()),
+        diariaHoras: Value(_numOuNulo(m['diaria_horas'])?.toInt()),
+        tarifaAtrasoId: Value(m['tarifa_atraso_id'] as String?),
       ));
     }
     await db.operacaoDao.replaceTarifas(patioId, tarifasComp);

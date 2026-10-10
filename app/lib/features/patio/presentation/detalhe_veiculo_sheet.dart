@@ -22,20 +22,33 @@ Future<void> mostrarDetalheVeiculo(
   BuildContext context,
   TicketModel t, {
   VoidCallback? onReimprimir,
+  VoidCallback? onContratarEstadia,
 }) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => _DetalheVeiculo(ticket: t, onReimprimir: onReimprimir),
+    builder: (_) => _DetalheVeiculo(
+      ticket: t,
+      onReimprimir: onReimprimir,
+      onContratarEstadia: onContratarEstadia,
+    ),
   );
 }
 
 class _DetalheVeiculo extends StatelessWidget {
-  const _DetalheVeiculo({required this.ticket, this.onReimprimir});
+  const _DetalheVeiculo({
+    required this.ticket,
+    this.onReimprimir,
+    this.onContratarEstadia,
+  });
 
   final TicketModel ticket;
   final VoidCallback? onReimprimir;
+
+  /// Ticket avulso aberto num pátio com tabela de hóspede: o hóspede fez o
+  /// check-in depois de o carro entrar (Revisão 6).
+  final VoidCallback? onContratarEstadia;
 
   static final _dataHora = DateFormat("dd/MM 'às' HH:mm");
 
@@ -111,6 +124,18 @@ class _DetalheVeiculo extends StatelessWidget {
             ],
 
             const SizedBox(height: 20),
+            if (onContratarEstadia != null) ...[
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  onContratarEstadia!();
+                },
+                icon: const Icon(Icons.bed_outlined),
+                label: const Text('Contratar estadia'),
+                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+              ),
+              const SizedBox(height: 12),
+            ],
             // Brisa: reimprimir como botão redondo discreto + saída como CTA
             // laranja. A hierarquia é intencional — 2ª via é exceção, saída é
             // o que o operador veio fazer aqui.

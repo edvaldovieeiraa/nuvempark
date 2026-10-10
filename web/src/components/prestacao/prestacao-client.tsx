@@ -628,6 +628,7 @@ function Relatorio({ dados }: { dados: RelatorioDados }) {
             rows={[
               ["Tickets", moeda.format(dados.receitas.tickets)],
               ["Mensalidades (app)", moeda.format(dados.receitas.mensalidades)],
+              ["Estadias de hóspede", moeda.format(dados.receitas.estadias)],
               ["Outras entradas", moeda.format(dados.receitas.outras)],
               ["Total", moeda.format(dados.receitas.total)],
             ]}

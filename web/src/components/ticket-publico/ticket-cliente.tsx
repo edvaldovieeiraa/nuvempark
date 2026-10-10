@@ -16,7 +16,12 @@ import { Marca } from "@/components/marca";
 import { API_PUBLICA } from "@/lib/api-publica";
 import { formatarDataHora } from "@/lib/format-data";
 
-export type StatusPagamento = "nao_pago" | "pago" | "pago_diferenca_pendente";
+export type StatusPagamento =
+  | "nao_pago"
+  | "pago"
+  | "pago_diferenca_pendente"
+  // Estadia de hóspede: paga no balcão; a página não cobra.
+  | "hospede";
 
 export interface TicketPublicoDados {
   placa: string;
@@ -157,7 +162,9 @@ export function TicketPublicoClient({
           </p>
         </section>
 
-        {dados.status_pagamento === "pago" && dados.pago ? (
+        {dados.status_pagamento === "hospede" ? (
+          <Hospede />
+        ) : dados.status_pagamento === "pago" && dados.pago ? (
           <TicketDigital id={id} pago={dados.pago} />
         ) : (
           <Cobrar
@@ -177,6 +184,19 @@ export function TicketPublicoClient({
         </p>
       </div>
     </main>
+  );
+}
+
+/** Ticket de estadia de hóspede: nada a pagar por aqui. */
+function Hospede() {
+  return (
+    <section className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-5 space-y-2">
+      <p className="font-extrabold">Estadia de hóspede</p>
+      <p className="text-sm text-texto-2">
+        Este veículo está numa estadia paga por diária. Renovação ou tempo a
+        mais são acertados no balcão do estacionamento.
+      </p>
+    </section>
   );
 }
 

@@ -24,6 +24,9 @@ abstract final class PrintTemplates {
     List<String> cabecalho = const [],
     List<String> rodape = const [],
     img.Image? fotoVeiculo,
+    // Hóspede: contratação imprime o bloco da estadia no MESMO papel do cupom
+    // (um papel só, com o QR); entrada de hóspede imprime só a validade.
+    BlocoEstadia? estadia,
   }) {
     final shortId = ticketId.substring(0, 8).toUpperCase();
 
@@ -37,6 +40,7 @@ abstract final class PrintTemplates {
         .line(_row('Placa   :', placa, cols))
         .line(_row('Tipo    :', _capitalize(tipoVeiculo), cols))
         .line(_row('Entrada :', _fmt.format(entrada), cols));
+    if (estadia != null) _blocoEstadia(b, estadia, cols);
 
     // Foto do veículo (parametrização): sai centralizada, antes do QR.
     if (fotoVeiculo != null) {
@@ -225,6 +229,55 @@ abstract final class PrintTemplates {
         .build();
   }
 
+  // ── Estadia de hóspede ─────────────────────────────────────────────────────
+  /// Renovação sem entrada (ficha da estadia): só o bloco, sem QR.
+  static List<int> comprovanteEstadia({
+    required String placa,
+    required String operacaoNome,
+    required BlocoEstadia estadia,
+    int cols = cols58mm,
+    int avancoFinal = 10,
+    List<String> cabecalho = const [],
+    List<String> rodape = const [],
+  }) {
+    final b = EscPosBuilder().reset().centerAlign().boldOn();
+    _linhasCabecalho(b, cabecalho, operacaoNome);
+    b.boldOff().leftAlign().line(_row('Placa   :', placa, cols));
+    _blocoEstadia(b, estadia, cols);
+    b.separator(width: cols).centerAlign();
+    _linhasRodape(b, rodape, const ['Obrigado!']);
+    return b.cut(feedLines: avancoFinal, cutter: cols >= cols80mm).build();
+  }
+
+  static final _fmtValidade = DateFormat('dd/MM HH:mm');
+
+  /// "R$ 30,00" com UM espaço: o `_moeda` soma o espaço do símbolo ao espaço
+  /// não separável do intl, e a impressora imprime os dois.
+  static String _reais(double v) =>
+      NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$')
+          .format(v)
+          .replaceAll('\u00a0', ' ');
+
+  static void _blocoEstadia(EscPosBuilder b, BlocoEstadia e, int cols) {
+    b.separator(width: cols).centerAlign().boldOn().line(e.titulo).boldOff().leftAlign();
+    if (e.diarias != null && e.diariaValor != null) {
+      b.line(_row('Diarias :',
+          '${e.diarias} x ${_reais(e.diariaValor!)}', cols));
+    }
+    if (e.total != null) {
+      b.boldOn().line(_row('Total   :', _reais(e.total!), cols)).boldOff();
+    }
+    if (e.formaPagamento != null) {
+      b.line(_row('Forma   :', _rotuloForma(e.formaPagamento!), cols));
+    }
+    b
+        .centerAlign()
+        .boldOn()
+        .line('VALIDA ATE ${_fmtValidade.format(e.validaAte)}')
+        .boldOff()
+        .leftAlign();
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────────
   static void _linhasCabecalho(
     EscPosBuilder b,
@@ -291,4 +344,24 @@ class ResumoFormaCupom {
 
   final String rotulo;
   final double valor;
+}
+
+/// Bloco da estadia no papel. Sem os campos de pagamento = entrada de hóspede
+/// já pago (só a validade).
+class BlocoEstadia {
+  const BlocoEstadia({
+    required this.titulo,
+    required this.validaAte,
+    this.diarias,
+    this.diariaValor,
+    this.total,
+    this.formaPagamento,
+  });
+
+  final String titulo;
+  final DateTime validaAte;
+  final int? diarias;
+  final double? diariaValor;
+  final double? total;
+  final String? formaPagamento;
 }

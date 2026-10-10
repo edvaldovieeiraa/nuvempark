@@ -26,6 +26,25 @@ export default async function NovaTarifaPage({
     ? (config.tipos_veiculo as string[])
     : ["carro", "moto", "caminhonete", "van"];
 
+  // Candidatas a "tabela do atraso" de uma tarifa de hóspede: as avulsas ativas.
+  // Banco sem db/42 não tem `modalidade` — aí todas são avulsas.
+  const { data: tarifas, error: erroTarifas } = await supabase
+    .from("tarifas")
+    .select("id, nome, tipo_veiculo, tolerancia_minutos, modalidade")
+    .eq("patio_id", patioId)
+    .eq("ativo", true)
+    .order("ordem");
+  const avulsas = erroTarifas
+    ? []
+    : (tarifas ?? [])
+        .filter((t) => t.modalidade !== "hospede")
+        .map((t) => ({
+          id: t.id as string,
+          nome: t.nome as string,
+          tipo_veiculo: t.tipo_veiculo as string,
+          tolerancia_minutos: Number(t.tolerancia_minutos),
+        }));
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
@@ -57,7 +76,7 @@ export default async function NovaTarifaPage({
           que o app usa na cobrança.
         </div>
       </div>
-      <NovaTarifaForm patioId={patioId} tipos={tipos} />
+      <NovaTarifaForm patioId={patioId} tipos={tipos} avulsas={avulsas} />
     </div>
   );
 }

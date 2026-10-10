@@ -35,6 +35,7 @@ import { Botao } from "@/components/ui/botao";
 import { Campo, Input, Select } from "@/components/ui/campos";
 import { Confirmar } from "@/components/ui/confirmar";
 import { SecaoOpcional } from "@/components/ui/secao-opcional";
+import { CamposHospede, type AvulsaAtraso } from "@/components/tarifas/campos-hospede";
 
 type Tarifa = {
   id: string;
@@ -50,7 +51,14 @@ type Tarifa = {
   pernoite_valor: number;
   pernoite_hora_inicio: number;
   pernoite_hora_fim: number;
+  // db/42 — ausentes num banco anterior à migração.
+  modalidade?: string;
+  diaria_valor?: number | null;
+  diaria_horas?: number | null;
+  tarifa_atraso_id?: string | null;
 };
+
+const ehHospede = (t: Tarifa) => t.modalidade === "hospede";
 
 const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -106,8 +114,17 @@ export function TarifasClient({
 
   // KPIs derivados dos dados reais. A tarifa "primária" é a primeira da ordem
   // (a que o app deixa pré-selecionada), então a base/hora vem dela.
-  const primaria = ordem[0] ?? null;
-  const tetoMax = ordem.reduce((m, t) => Math.max(m, t.teto_diaria), 0);
+  // Tarifa de hóspede nunca é pré-selecionada no app: a primária é a
+  // primeira AVULSA da ordem.
+  const avulsasOrdem = ordem.filter((t) => !ehHospede(t));
+  const primaria = avulsasOrdem[0] ?? null;
+  const tetoMax = avulsasOrdem.reduce((m, t) => Math.max(m, t.teto_diaria), 0);
+  const avulsasAtraso: AvulsaAtraso[] = avulsasOrdem.map((t) => ({
+    id: t.id,
+    nome: t.nome,
+    tipo_veiculo: t.tipo_veiculo,
+    tolerancia_minutos: t.tolerancia_minutos,
+  }));
   const traco = "—";
 
   return (
@@ -286,7 +303,25 @@ export function TarifasClient({
                           }}
                         >
                           {t.nome}
-                          {i === 0 && (
+                          {ehHospede(t) && (
+                            <span
+                              title="Diária de hóspede: paga na chegada, entra e sai à vontade"
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: ".04em",
+                                color: "#15803D",
+                                background: "#DCFCE7",
+                                border: "1px solid #BBF7D0",
+                                borderRadius: 999,
+                                padding: "2px 8px",
+                              }}
+                            >
+                              hóspede
+                            </span>
+                          )}
+                          {t.id === primaria?.id && (
                             <span
                               title="Já vem selecionada no app do operador"
                               style={{
@@ -313,6 +348,18 @@ export function TarifasClient({
                       <td style={{ padding: "12px 12px", color: "#6B7280" }}>
                         {nomeAmigavel(t.tipo_veiculo)}
                       </td>
+                      {ehHospede(t) ? (
+                        <td
+                          colSpan={3}
+                          style={{ padding: "12px 12px", textAlign: "right", color: "#374151" }}
+                        >
+                          <b className="mono">{moeda.format(Number(t.diaria_valor ?? 0))}</b> por{" "}
+                          {t.diaria_horas ?? 24} h · atraso pela{" "}
+                          {avulsasOrdem.find((x) => x.id === t.tarifa_atraso_id)?.nome ??
+                            "primeira avulsa"}
+                        </td>
+                      ) : (
+                        <>
                       <td
                         className="mono"
                         style={{
@@ -347,6 +394,8 @@ export function TarifasClient({
                       >
                         {t.teto_diaria > 0 ? moeda.format(t.teto_diaria) : traco}
                       </td>
+                        </>
+                      )}
                       <td style={{ padding: "12px 18px" }}>
                         <span
                           style={{
@@ -381,13 +430,16 @@ export function TarifasClient({
                             gap: 2,
                           }}
                         >
-                          <AcaoBtn
-                            onClick={() => setSimulando(t)}
-                            aria-label={`Simular cobrança da tarifa ${t.nome}`}
-                            title="Simular cobrança"
-                          >
-                            <Calculator className="w-4 h-4" />
-                          </AcaoBtn>
+                          {/* Simulador é do motor avulso: não se aplica a hóspede. */}
+                          {!ehHospede(t) && (
+                            <AcaoBtn
+                              onClick={() => setSimulando(t)}
+                              aria-label={`Simular cobrança da tarifa ${t.nome}`}
+                              title="Simular cobrança"
+                            >
+                              <Calculator className="w-4 h-4" />
+                            </AcaoBtn>
+                          )}
                           <AcaoBtn
                             onClick={() => setEditando(t)}
                             aria-label={`Editar tarifa ${t.nome}`}
@@ -425,7 +477,8 @@ export function TarifasClient({
 
       {ordem.length > 0 && (
         <p style={{ fontSize: 12, color: "#8695A0" }}>
-          A ordem importa: o app deixa a primeira tabela já selecionada. Lembre
+          A ordem importa: o app deixa a primeira tabela avulsa já selecionada
+          (a de hóspede nunca vem marcada sozinha). Lembre
           de <b style={{ color: "#6B7280" }}>salvar</b> depois de mexer na ordem
           — as mudanças chegam ao app na próxima sincronização.
         </p>
@@ -437,6 +490,7 @@ export function TarifasClient({
             tarifa={editando}
             patioNome={patioNome}
             tipos={tipos}
+            avulsas={avulsasAtraso}
             fechar={() => setEditando(null)}
           />
         )}
@@ -539,14 +593,20 @@ function ModalEditarTarifa({
   tarifa,
   patioNome,
   tipos,
+  avulsas,
   fechar,
 }: {
   tarifa: Tarifa;
   patioNome: string;
   tipos: string[];
+  avulsas: AvulsaAtraso[];
   fechar: () => void;
 }) {
   const toast = useToast();
+  // A modalidade não muda na edição: avulso e hóspede têm campos diferentes, e
+  // estadias já contratadas guardam o preço congelado de qualquer forma.
+  const hospede = ehHospede(tarifa);
+  const [tipo, setTipo] = useState(tarifa.tipo_veiculo);
   const [comTeto, setComTeto] = useState(tarifa.teto_diaria > 0);
   const [comPernoite, setComPernoite] = useState(tarifa.pernoite_valor > 0);
   const [estado, agir, pendente] = useActionState<Resultado, FormData>(
@@ -593,11 +653,16 @@ function ModalEditarTarifa({
         </p>
         <form action={agir} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <input type="hidden" name="id" value={tarifa.id} />
+          <input type="hidden" name="modalidade" value={hospede ? "hospede" : "avulso"} />
           <Campo label="Nome">
             <Input name="nome" defaultValue={tarifa.nome} />
           </Campo>
           <Campo label="Tipo de veículo">
-            <Select name="tipo_veiculo" defaultValue={tarifa.tipo_veiculo}>
+            <Select
+              name="tipo_veiculo"
+              defaultValue={tarifa.tipo_veiculo}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTipo(e.target.value)}
+            >
               {/* tipo salvo que saiu do cadastro continua selecionável */}
               {!tipos.includes(tarifa.tipo_veiculo) &&
                 tarifa.tipo_veiculo !== "ambos" && (
@@ -610,9 +675,23 @@ function ModalEditarTarifa({
                   {nomeAmigavel(t)}
                 </option>
               ))}
-              <option value="ambos">Todos os tipos</option>
+              {!hospede && <option value="ambos">Todos os tipos</option>}
             </Select>
           </Campo>
+          {hospede && (
+            <div className="col-span-full">
+              <CamposHospede
+                tipo={tipo}
+                avulsas={avulsas}
+                inicial={{
+                  diaria_valor: tarifa.diaria_valor ?? null,
+                  diaria_horas: tarifa.diaria_horas ?? null,
+                  tarifa_atraso_id: tarifa.tarifa_atraso_id ?? null,
+                }}
+              />
+            </div>
+          )}
+          {!hospede && (<>
           <Campo label="Tolerância (min)">
             <Input
               name="tolerancia_minutos"
@@ -710,6 +789,7 @@ function ModalEditarTarifa({
               />
             </>
           )}
+          </>)}
           <div className="col-span-full pt-1">
             <Botao carregando={pendente} className="w-full">
               Salvar alterações

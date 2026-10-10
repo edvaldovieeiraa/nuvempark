@@ -62,6 +62,7 @@ class TicketRepository {
         Env.ticketAbertoUrl,
         queryParameters: {
           'patio_id': patioId,
+          'modalidades': 'hospede',
           'placa': ?placa,
           'id': ?id,
         },
@@ -140,9 +141,14 @@ class TicketRepository {
     String? planoId,
     String origem = 'avulso',
     String? fotoEntradaPath,
+    // Ticket de hóspede: a estadia que cobre esta passagem (origem 'estadia').
+    String? estadiaId,
+    // Hora da entrada; nula = agora. A contratação passa a MESMA hora da
+    // estadia, para início da estadia e entrada do carro baterem.
+    int? entradaEpoch,
   }) async {
     final id = const Uuid().v4();
-    final agora = DateTime.now().millisecondsSinceEpoch;
+    final agora = entradaEpoch ?? DateTime.now().millisecondsSinceEpoch;
     final placaNorm = placa.trim().toUpperCase();
 
     // Payload alinhado ao backend NuvemPark (sem operacao_id; chave `entrada`).
@@ -158,6 +164,7 @@ class TicketRepository {
       'cliente_id': clienteId,
       'plano_id': planoId,
       'origem': origem,
+      'estadia_id': ?estadiaId,
       'atualizado_em': agora,
     });
 
@@ -175,6 +182,7 @@ class TicketRepository {
         clienteId: Value(clienteId),
         planoId: Value(planoId),
         origem: Value(origem),
+        estadiaId: Value(estadiaId),
         fotoEntradaPath: Value(fotoEntradaPath),
         fotoEntradaEnviada: const Value(false),
         syncStatus: const Value('pendente'),
@@ -396,6 +404,7 @@ class TicketRepository {
         clienteId: row.clienteId,
         planoId: row.planoId,
         origem: row.origem,
+        estadiaId: row.estadiaId,
         syncStatus: row.syncStatus,
         fotoEntradaPath: row.fotoEntradaPath,
       );

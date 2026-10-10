@@ -18,6 +18,11 @@ class Tarifas extends Table {
   IntColumn get pernoiteHoraFim => integer()();
   IntColumn get vigenciaInicioEpoch => integer()();
   IntColumn get vigenciaFimEpoch => integer().nullable()();
+  // Estadia de hóspede (v5). 'avulso' | 'hospede'; os três abaixo só valem em hóspede.
+  TextColumn get modalidade => text().withDefault(const Constant('avulso'))();
+  RealColumn get diariaValor => real().nullable()();
+  IntColumn get diariaHoras => integer().nullable()();
+  TextColumn get tarifaAtrasoId => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {id};

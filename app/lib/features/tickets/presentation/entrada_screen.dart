@@ -12,6 +12,17 @@ import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/brisa.dart';
+import '../../../core/widgets/confirmar_cobranca_dialog.dart';
+import '../../../core/widgets/forma_pagamento_grid.dart';
+import '../../caixa/presentation/providers/caixa_provider.dart';
+import '../../estadias/data/estadia_repository.dart';
+import '../../estadias/domain/estadia_engine.dart';
+import '../../estadias/presentation/entrada_hospede.dart';
+import '../../estadias/presentation/estadia_formatos.dart';
+import '../../estadias/presentation/estadia_widgets.dart';
+import '../../estadias/presentation/providers/estadias_provider.dart';
+import '../../estadias/presentation/renovar_estadia_sheet.dart';
+import '../../patio/domain/tarifa_config.dart';
 import '../../patio/domain/patio_model.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/data/print_templates.dart';
@@ -41,6 +52,11 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
   bool _capturandoFoto = false;
   String? _fotoEntradaPath;
   ReconhecimentoCliente? _reconhecimento;
+  // Estadia de hóspede: reconhecimento da placa e a contratação em andamento.
+  ReconhecimentoHospede? _hospede;
+  String? _placaVencidaDispensada;
+  int _diarias = 1;
+  String? _formaEstadia;
   /// Checkbox "Imprimir foto no recibo" (só aparece no modo 'operador').
   /// Default ligado: quem não mexer, imprime.
   bool _imprimirFotoRecibo = true;
@@ -144,19 +160,65 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
     // dispararia setState em caminho nenhum e a borda ficaria verde mentindo.
     setState(() {});
     if (norm.length < 7) {
-      if (_reconhecimento != null) setState(() => _reconhecimento = null);
+      if (_reconhecimento != null || _hospede != null) {
+        setState(() {
+          _reconhecimento = null;
+          _hospede = null;
+        });
+      }
       return;
     }
     final patioId = await ref.read(tokenStorageProvider).readPatioId();
     if (patioId == null) return;
     final rec =
         await ref.read(ticketRepositoryProvider).reconhecerPlaca(patioId, norm);
+    // Mensalista com livre passagem tem precedência sobre hóspede (Revisão 5).
+    final hospede = (rec?.liberaPassagem ?? false)
+        ? null
+        : await ref.read(estadiaRepositoryProvider).reconhecerHospede(patioId, norm);
     // Descarta resposta obsoleta (placa mudou enquanto consultava).
     if (!mounted || _placaCtrl.text.trim().toUpperCase() != norm) return;
-    setState(() => _reconhecimento = rec);
+    setState(() {
+      _reconhecimento = rec;
+      _hospede = hospede;
+    });
   }
 
-  Future<void> _registrar(PatioModel patio) async {
+  /// Renovar pela faixa de hóspede. Vencida: renova a partir de agora e
+  /// registra a entrada (a folha faz as duas coisas). Válida: só renova.
+  Future<void> _renovarHospede({required bool vencida}) async {
+    final h = _hospede;
+    if (h == null) return;
+    if (vencida) {
+      final aberto = await ref
+          .read(ticketRepositoryProvider)
+          .ticketAbertoPorPlaca(h.estadia.operacaoId, h.estadia.placa);
+      if (!mounted) return;
+      if (aberto != null) {
+        AppToast.error(context, 'A placa ${h.estadia.placa} já tem entrada aberta.');
+        return;
+      }
+    }
+    final ok = await mostrarRenovarEstadia(
+      context,
+      estadia: h.estadia,
+      origem: vencida ? OrigemRenovacao.entrada : OrigemRenovacao.ficha,
+      carroDentro: false,
+      fotoEntradaPath: _fotoEntradaPath,
+    );
+    if (!ok || !mounted) return;
+    if (vencida) {
+      AppToast.success(context, 'Estadia renovada e entrada registrada!');
+      context.pop();
+    } else {
+      AppToast.success(context, 'Estadia renovada!');
+      await _checarPlaca(_placaCtrl.text);
+    }
+  }
+
+  /// [contratar] = tabela de hóspede escolhida: contrata a estadia e registra
+  /// a entrada juntos (diárias e forma vêm do cartão de contratação).
+  Future<void> _registrar(PatioModel patio, {TarifaConfig? contratar}) async {
     if (_loading) return;
     if (!_formKey.currentState!.validate()) return;
     if (_tipoVeiculo == null) {
@@ -205,20 +267,86 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
 
       final livre = _reconhecimento?.liberaPassagem ?? false;
       final agora = DateTime.now();
+      final estadiaRepo = ref.read(estadiaRepositoryProvider);
+      final hospede =
+          _hospede?.situacao == SituacaoHospede.valida ? _hospede!.estadia : null;
+      BlocoEstadia? blocoCupom;
 
       // ── ÚNICO await do caminho crítico: a transação Drift (ticket + outbox).
       // Nada de rede aqui — em modo avião isto termina em milissegundos.
-      final ticketId = await ref.read(ticketRepositoryProvider).registrarEntrada(
-            placa: placa,
-            tipoVeiculo: _tipoVeiculo!,
-            patioId: patioId,
-            operadorId: user.id,
-            tarifaId: _tarifaId,
-            clienteId: livre ? _reconhecimento?.clienteId : null,
-            planoId: livre ? _reconhecimento?.planoId : null,
-            origem: livre ? 'plano' : 'avulso',
-            fotoEntradaPath: _fotoEntradaPath,
-          );
+      final String ticketId;
+      if (contratar != null) {
+        final caixa = await ref.read(caixaSessaoNotifierProvider.future);
+        if (!mounted) return;
+        if (caixa == null) {
+          AppToast.error(context, 'Abra o caixa para cobrar a estadia.');
+          return;
+        }
+        final forma = _formaEstadia!;
+        final c = EstadiaEngine.contratacao(
+          diarias: _diarias,
+          diariaValor: contratar.diariaValor!,
+          diariaHoras: contratar.diariaHoras!,
+          inicio: agora,
+        );
+        final confirmou = await confirmarCobranca(
+          context,
+          titulo: 'Confirmar contratação',
+          linhas: [
+            ('Placa', placa),
+            ('Diárias', '$_diarias × ${fmtReais(contratar.diariaValor!)}'),
+            ('Válida até', fmtValidade(c.validaAte, agora)),
+            ('Forma', FormaPagamentoGrid.rotulo(forma)),
+          ],
+          total: fmtReais(c.valor),
+          aviso: 'Depois de confirmar não há estorno pelo app. Imprime o cupom '
+              'de entrada com os dados da estadia.',
+        );
+        if (!confirmou) return;
+        final r = await estadiaRepo.contratar(
+          patioId: patioId,
+          placa: placa,
+          tipoVeiculo: _tipoVeiculo!,
+          tarifa: contratar,
+          diarias: _diarias,
+          formaPagamento: forma,
+          caixaSessaoId: caixa.id,
+          operadorId: user.id,
+          fotoEntradaPath: _fotoEntradaPath,
+        );
+        ticketId = r.ticketId;
+        blocoCupom = BlocoEstadia(
+          titulo: 'HOSPEDE - ESTADIA PAGA',
+          validaAte: r.validaAte, // a gravada, não a do diálogo
+          diarias: _diarias,
+          diariaValor: contratar.diariaValor,
+          total: c.valor,
+          formaPagamento: forma,
+        );
+        ref.invalidate(caixaSessaoNotifierProvider);
+      } else if (hospede != null) {
+        ticketId = await estadiaRepo.registrarEntradaHospede(
+          hospede,
+          operadorId: user.id,
+          fotoEntradaPath: _fotoEntradaPath,
+        );
+        blocoCupom = BlocoEstadia(
+          titulo: 'HOSPEDE',
+          validaAte: DateTime.fromMillisecondsSinceEpoch(hospede.validaAteEpoch),
+        );
+      } else {
+        ticketId = await ref.read(ticketRepositoryProvider).registrarEntrada(
+              placa: placa,
+              tipoVeiculo: _tipoVeiculo!,
+              patioId: patioId,
+              operadorId: user.id,
+              tarifaId: _tarifaId,
+              clienteId: livre ? _reconhecimento?.clienteId : null,
+              planoId: livre ? _reconhecimento?.planoId : null,
+              origem: livre ? 'plano' : 'avulso',
+              fotoEntradaPath: _fotoEntradaPath,
+            );
+      }
 
       // Avaria (se preenchida): o REGISTRO entra na outbox agora (Drift); as
       // FOTOS sobem em background — antes, o upload segurava a confirmação e,
@@ -245,10 +373,12 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
       }
 
       ref.invalidate(ticketsAbertosProvider);
+      ref.invalidate(hospedesProvider);
 
       // ── Confirmação IMEDIATA. Tudo daqui pra baixo é background.
       if (mounted) {
-        AppToast.success(context, 'Entrada registrada!');
+        AppToast.success(
+            context, contratar != null ? 'Estadia contratada!' : 'Entrada registrada!');
         context.pop();
       }
 
@@ -267,7 +397,12 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
         patio: patio,
         fotoPath: _fotoEntradaPath,
         operadorMarcouFoto: _imprimirFotoRecibo,
+        estadia: blocoCupom,
       ));
+    } on EstadiaJaAtivaException {
+      if (mounted) AppToast.error(context, 'Esta placa já é hóspede. Use "Renovar estadia".');
+    } on CaixaFechadoException {
+      if (mounted) AppToast.error(context, 'Abra o caixa para cobrar a estadia.');
     } catch (e) {
       if (mounted) AppToast.error(context, 'Erro ao registrar entrada.');
     } finally {
@@ -287,6 +422,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
     required PatioModel patio,
     String? fotoPath,
     bool operadorMarcouFoto = false,
+    BlocoEstadia? estadia,
   }) async {
     final printer =
         await printerFuture.catchError((_) => const PrinterState());
@@ -318,6 +454,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
       cabecalho: patio.ticketCabecalho,
       rodape: patio.ticketRodape,
       fotoVeiculo: fotoVeiculo,
+      estadia: estadia,
     );
     final ok = await printerNotifier.print(bytes);
     if (ok) return;
@@ -360,22 +497,37 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
             }
           }
 
-          final tabelas = _tipoVeiculo != null
-              ? patio.tabelasVisiveis(_tipoVeiculo!)
+          // Avulsas primeiro, hóspede depois (PatioModel.tabelasEntrada).
+          final List<TarifaConfig> tabelas = _tipoVeiculo != null
+              ? patio.tabelasEntrada(_tipoVeiculo!)
               : const [];
 
-          // Pré-seleciona a PRIMEIRA tarifa da ordem (igual ao tipo de veículo).
-          // Se a atual não vale pro tipo escolhido, cai na primeira disponível.
-          if (tabelas.isNotEmpty &&
-              (_tarifaId == null ||
-                  !tabelas.any((t) => t.id == _tarifaId))) {
-            final primeira = tabelas.first.id;
+          // Pré-seleciona a PRIMEIRA tarifa AVULSA da ordem. A de hóspede nunca
+          // vem marcada sozinha: contratar sem querer cobra diárias sem estorno.
+          final primeiraAvulsa = tabelas.where((t) => !t.isHospede).firstOrNull?.id;
+          if (_tarifaId == null
+              ? primeiraAvulsa != null
+              : !tabelas.any((t) => t.id == _tarifaId)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && _tarifaId != primeira) {
-                setState(() => _tarifaId = primeira);
+              if (mounted && _tarifaId != primeiraAvulsa) {
+                setState(() => _tarifaId = primeiraAvulsa);
               }
             });
           }
+
+          // Estadia de hóspede: o reconhecimento da placa vence a escolha de
+          // tabela; com a faixa de vencida aberta, tabela e botão somem.
+          final tarifaSel = tabelas.where((t) => t.id == _tarifaId).firstOrNull;
+          final placaAtual = _placaCtrl.text.trim().toUpperCase();
+          final hospedeValido = _hospede?.situacao == SituacaoHospede.valida;
+          final vencidaAberta = _hospede?.situacao == SituacaoHospede.vencidaRecente &&
+              _placaVencidaDispensada != placaAtual;
+          final contratando =
+              !hospedeValido && !vencidaAberta && (tarifaSel?.isHospede ?? false);
+          final bloqueioContrato = (_reconhecimento?.liberaPassagem ?? false)
+              ? 'Esta placa já tem livre passagem (mensalista): não é preciso contratar estadia.'
+              : null;
+          final caixaAberto = ref.watch(caixaSessaoNotifierProvider).value != null;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -486,6 +638,24 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                     const SizedBox(height: 12),
                     _ReconhecimentoBanner(rec: _reconhecimento!),
                   ],
+                  if (hospedeValido) ...[
+                    const SizedBox(height: 12),
+                    FaixaHospedeValido(
+                      estadia: _hospede!.estadia,
+                      onRenovar: () => _renovarHospede(vencida: false),
+                    ),
+                  ],
+                  if (vencidaAberta) ...[
+                    const SizedBox(height: 12),
+                    FaixaEstadiaVencida(
+                      estadia: _hospede!.estadia,
+                      onRenovar: () => _renovarHospede(vencida: true),
+                      onAvulso: () => setState(() {
+                        _placaVencidaDispensada = placaAtual;
+                        _tarifaId = primeiraAvulsa;
+                      }),
+                    ),
+                  ],
 
                   const SizedBox(height: 20),
                   const Text('Tipo de veículo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.onSurfaceVariant)),
@@ -506,7 +676,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                     }).toList(),
                   ),
 
-                  if (tabelas.isNotEmpty) ...[
+                  if (tabelas.isNotEmpty && !hospedeValido && !vencidaAberta) ...[
                     const SizedBox(height: 20),
                     const Text('Tabela de preço', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.onSurfaceVariant)),
                     const SizedBox(height: 8),
@@ -516,11 +686,26 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                       children: tabelas.map((t) {
                         final sel = _tarifaId == t.id;
                         return ChoiceChip(
+                          avatar: t.isHospede && !sel
+                              ? const Icon(iconeHospede, size: 18)
+                              : null,
                           label: Text(t.nome),
                           selected: sel,
                           onSelected: (_) => setState(() => _tarifaId = t.id),
                         );
                       }).toList(),
+                    ),
+                  ],
+                  if (contratando) ...[
+                    const SizedBox(height: 16),
+                    EstadiaContratacaoCard(
+                      tarifa: tarifaSel!,
+                      diarias: _diarias,
+                      onDiarias: (v) => setState(() => _diarias = v),
+                      formas: patio.formasPagamento,
+                      forma: _formaEstadia,
+                      onForma: (f) => setState(() => _formaEstadia = f),
+                      bloqueio: bloqueioContrato,
                     ),
                   ],
 
@@ -556,15 +741,26 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
                   _secaoAvaria(),
 
                   const SizedBox(height: 20),
-                  SizedBox(
-                    height: 58,
-                    child: FilledButton(
-                      onPressed: _loading ? null : () => _registrar(patio),
-                      child: _loading
-                          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                          : const Text('Registrar entrada'),
+                  if (vencidaAberta || (contratando && bloqueioContrato != null))
+                    const SizedBox.shrink()
+                  else if (contratando && !caixaAberto)
+                    const FaixaCaixaFechado()
+                  else
+                    SizedBox(
+                      height: 58,
+                      child: FilledButton(
+                        onPressed: _loading || (contratando && _formaEstadia == null)
+                            ? null
+                            : () => _registrar(patio, contratar: contratando ? tarifaSel : null),
+                        child: _loading
+                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                            : Text(!contratando
+                                ? 'Registrar entrada'
+                                : _formaEstadia == null
+                                    ? 'Escolha a forma de pagamento'
+                                    : 'Contratar e registrar entrada'),
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 9),
                   // Diz o que vai acontecer depois do toque. O auto-print já
                   // era o comportamento; o operador é que não sabia.

@@ -81,6 +81,10 @@ class PatioNotifier extends AsyncNotifier<PatioModel?> {
         vigenciaFim: t.vigenciaFimEpoch != null
             ? DateTime.fromMillisecondsSinceEpoch(t.vigenciaFimEpoch!)
             : null,
+        modalidade: t.modalidade,
+        diariaValor: t.diariaValor,
+        diariaHoras: t.diariaHoras,
+        tarifaAtrasoId: t.tarifaAtrasoId,
       );
 
   /// Baixa a config atualizada do servidor e recarrega o cache.

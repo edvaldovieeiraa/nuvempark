@@ -245,6 +245,10 @@ class SyncEngine {
         await db.caixaDao.marcarMovimentoSincronizado(entidadeId);
       case 'mensalidade_pagamento':
         await db.mensalidadePagamentosDao.marcarSincronizado(entidadeId);
+      case 'estadia':
+        await db.estadiasDao.marcarEstadiaSincronizada(entidadeId);
+      case 'estadia_pagamento':
+        await db.estadiasDao.marcarPagamentoSincronizado(entidadeId);
     }
   }
 

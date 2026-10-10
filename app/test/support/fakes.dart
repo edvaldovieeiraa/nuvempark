@@ -111,7 +111,11 @@ Future<void> enqueueTicket(AppDatabase db, String ticketId) {
 
 /// Payload de bootstrap mínimo e válido. Inclui tickets_removidos só quando
 /// [removidos] != null (para testar também o caso do backend antigo).
-Map<String, dynamic> bootstrapPayload({List<String>? removidos}) => {
+Map<String, dynamic> bootstrapPayload({
+  List<String>? removidos,
+  List<Map<String, dynamic>> tarifas = const [],
+}) =>
+    {
       'patio': {
         'id': 'p1',
         'nome': 'Pátio Teste',
@@ -119,8 +123,34 @@ Map<String, dynamic> bootstrapPayload({List<String>? removidos}) => {
         'qtd_vagas': 50,
       },
       'config': <String, dynamic>{},
-      'tarifas': <dynamic>[],
+      'tarifas': tarifas,
       'clientes': <dynamic>[],
       'assinatura_estado': 'ativa',
       'tickets_removidos': ?removidos,
+    };
+
+/// Linha de tarifa como o bootstrap devolve (colunas NOT NULL do servidor).
+Map<String, dynamic> tarifaJson(
+  String id, {
+  String tipo = 'carro',
+  Map<String, dynamic> extra = const {},
+}) =>
+    {
+      'id': id,
+      'nome': id,
+      'tipo_veiculo': tipo,
+      'ordem': 0,
+      'visivel_operador': true,
+      'fracao_inicial_minutos': 60,
+      'fracao_inicial_valor': 10,
+      'fracao_adicional_minutos': 60,
+      'fracao_adicional_valor': 5,
+      'teto_diaria': 60,
+      'tolerancia_minutos': 10,
+      'pernoite_valor': 0,
+      'pernoite_hora_inicio': 22,
+      'pernoite_hora_fim': 6,
+      'vigencia_inicio': '2020-01-01T00:00:00Z',
+      'vigencia_fim': null,
+      ...extra,
     };

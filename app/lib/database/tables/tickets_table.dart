@@ -16,10 +16,12 @@ class Tickets extends Table {
   TextColumn get operadorId => text()();
   TextColumn get caixaSessaoId => text().nullable()();
   TextColumn get tabelaPrecoId => text().nullable()();
-  // Livre passagem: vínculo com cliente/plano. origem 'avulso' | 'plano'
+  // Livre passagem: vínculo com cliente/plano. origem 'avulso' | 'plano' | 'estadia'
   TextColumn get clienteId => text().nullable()();
   TextColumn get planoId => text().nullable()();
   TextColumn get origem => text().withDefault(const Constant('avulso'))();
+  // Ticket de hóspede (origem 'estadia'): a estadia que cobre esta passagem.
+  TextColumn get estadiaId => text().nullable()();
   // Transação de cartão/PIX. Nulos em dinheiro/plano/isenção.
   // cardPan corresponde a card_pan no backend (chave do payload: 'pan').
   TextColumn get atk => text().nullable()();
