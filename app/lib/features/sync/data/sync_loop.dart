@@ -13,6 +13,8 @@ import '../../tickets/presentation/providers/ticket_provider.dart';
 /// A cada tick ([Env.syncRapidoInterval] com o app aberto, [Env.syncInterval]
 /// em segundo plano) faz:
 ///   • PUSH — drena a outbox local (entradas, saídas, caixa) pro servidor
+///   • FOTOS — dispara uma rodada do FotoUploader sem esperar por ela (fora da
+///     trava dos dados) e, 1× por dia, a limpeza das fotos já enviadas
 ///   • VEÍCULOS — lê os tickets abertos do pátio, inclusive os dos OUTROS
 ///     aparelhos, e redesenha a lista quando algo mudou
 ///   • PULL — no máximo a cada [Env.syncInterval], baixa os cadastros da
@@ -50,6 +52,8 @@ class SyncLoop with WidgetsBindingObserver {
   void parar() {
     _rodando = false;
     _ultimoBootstrap = null;
+    // Logout / loop parado: a foto em envio não gasta tentativa.
+    _ref.read(fotoUploaderProvider).cancelar();
     _timer?.cancel();
     _timer = null;
     WidgetsBinding.instance.removeObserver(this);
@@ -71,6 +75,13 @@ class SyncLoop with WidgetsBindingObserver {
       // PUSH: sobe a fila local. Best-effort — offline não lança. Com a fila
       // vazia é só uma consulta ao Drift.
       await _ref.read(syncEngineProvider).drain();
+
+      // FOTOS: rodada própria, SEM await e fora da trava dos dados — corre em
+      // paralelo com a leitura dos veículos e não atrasa o próximo tick. Logo
+      // depois do drain para a foto do ticket que acabou de subir já ir.
+      // Nenhum dos dois lança (são totais), então o unawaited é seguro.
+      unawaited(_ref.read(fotoUploaderProvider).rodada());
+      unawaited(_ref.read(fotoLimpezaProvider).talvezExecutar());
 
       // VEÍCULOS: o que entrou ou saiu pelos outros aparelhos.
       final patioId = await _ref.read(tokenStorageProvider).readPatioId();

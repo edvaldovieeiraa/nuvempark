@@ -17,6 +17,8 @@ abstract final class _K {
   static const patioNome = 'nuvempark_patio_nome';
   static const patioCodigo = 'nuvempark_patio_codigo';
   static const ultimoSync = 'nuvempark_ultimo_sync';
+  // Fica fora do clearAll: é manutenção do aparelho, não do login.
+  static const ultimaLimpezaFotos = 'nuvempark_ultima_limpeza_fotos';
   // Último estado conhecido da assinatura (gate). Restaurado no splash ANTES de
   // decidir a rota — matar e reabrir o app não pode furar o bloqueio.
   static const assinaturaEstado = 'nuvempark_assinatura_estado';
@@ -104,6 +106,15 @@ class TokenStorage {
   Future<String?> readUltimoSync() => _storage.read(_K.ultimoSync);
   Future<void> saveUltimoSync(DateTime quando) =>
       _storage.write(_K.ultimoSync, quando.toIso8601String());
+
+  /// Última limpeza das fotos já enviadas (FotoLimpeza roda 1× por dia).
+  Future<DateTime?> readUltimaLimpezaFotos() async {
+    final iso = await _storage.read(_K.ultimaLimpezaFotos);
+    return iso == null ? null : DateTime.tryParse(iso);
+  }
+
+  Future<void> saveUltimaLimpezaFotos(DateTime quando) =>
+      _storage.write(_K.ultimaLimpezaFotos, quando.toIso8601String());
 
   Future<String?> readPatioNome() => _storage.read(_K.patioNome);
   Future<String?> readPatioCodigo() => _storage.read(_K.patioCodigo);
