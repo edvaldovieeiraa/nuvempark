@@ -50,8 +50,9 @@ void main() {
     ));
     expect(await db.estadiasDao.getEstadia('e1'), isNotNull);
 
+    // A migração segue até a versão atual (v6 em diante passa por aqui também).
     final versao = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(versao.read<int>('user_version'), 5);
+    expect(versao.read<int>('user_version'), db.schemaVersion);
     await db.close();
   });
 }
