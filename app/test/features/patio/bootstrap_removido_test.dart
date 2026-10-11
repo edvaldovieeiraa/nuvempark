@@ -37,6 +37,32 @@ void main() {
     await db.close();
   });
 
+  test('bootstrap com tickets_removidos=[X]: fotos pendentes de X descartadas',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    await seedTicket(db, id: 'X', patio: 'p1');
+    await seedTicket(db, id: 'Y', patio: 'p1');
+    for (final t in ['X', 'Y']) {
+      await db.fotosEnvioDao.enfileirar(FotosEnvioCompanion.insert(
+        id: 'entrada-$t',
+        tipo: 'entrada',
+        operacaoId: 'p1',
+        ticketId: t,
+        caminhoLocal: '/fotos/$t.jpg',
+        criadoEm: 1,
+      ));
+    }
+
+    final dio = fakeDio((_) => jsonResponse(bootstrapPayload(removidos: ['X'])));
+    await BootstrapRepository(dio: dio, db: db).sincronizar('p1');
+
+    final status = {
+      for (final f in await db.select(db.fotosEnvio).get()) f.ticketId: f.status
+    };
+    expect(status, {'X': 'descartada', 'Y': 'pendente'});
+    await db.close();
+  });
+
   test('bootstrap SEM o campo tickets_removidos (backend antigo): não quebra',
       () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());

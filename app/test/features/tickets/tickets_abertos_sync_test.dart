@@ -82,7 +82,9 @@ void main() {
     await db.close();
   });
 
-  test('ticket sincronizado com foto ainda por enviar não é apagado', () async {
+  test(
+      'saiu por outro aparelho com foto ainda por enviar: some da lista, a foto '
+      'continua na fila e pode subir', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     await seedTicket(db, id: 'F', patio: 'p1');
     await db.ticketsDao.atualizar(
@@ -93,10 +95,23 @@ void main() {
         syncStatus: Value('sincronizado'),
       ),
     );
+    await db.fotosEnvioDao.enfileirar(FotosEnvioCompanion.insert(
+      id: 'entrada-F',
+      tipo: 'entrada',
+      operacaoId: 'p1',
+      ticketId: 'F',
+      caminhoLocal: '/tmp/F.jpg',
+      criadoEm: 1,
+    ));
 
     await sync(db, fakeDio((_) => lista([]))).puxar('p1');
 
-    expect(await db.ticketsDao.getById('F'), isNotNull);
+    // A foto mora na fila, não na linha do ticket: segurar o ticket deixava
+    // na tela um carro que já tinha saído enquanto a foto esperava.
+    expect(await db.ticketsDao.getById('F'), isNull);
+    final devidas = await db.fotosEnvioDao.devidas(
+        agoraEpoch: DateTime.now().millisecondsSinceEpoch, limite: 10);
+    expect(devidas.map((f) => f.id), ['entrada-F']);
     await db.close();
   });
 

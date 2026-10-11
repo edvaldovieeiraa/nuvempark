@@ -75,14 +75,6 @@ class TicketsDao extends DatabaseAccessor<AppDatabase> with _$TicketsDaoMixin {
           .write(const TicketsCompanion(syncStatus: Value('sincronizado')));
 
   /// Tickets já sincronizados com foto local ainda não enviada.
-  Future<List<Ticket>> getFotosPendentes() =>
-      (select(tickets)
-            ..where((t) =>
-                t.fotoEntradaPath.isNotNull() &
-                t.fotoEntradaEnviada.equals(false) &
-                t.syncStatus.equals('sincronizado')))
-          .get();
-
   Future<void> marcarFotoEnviada(String id) =>
       (update(tickets)..where((t) => t.id.equals(id)))
           .write(const TicketsCompanion(fotoEntradaEnviada: Value(true)));
@@ -128,20 +120,20 @@ class TicketsDao extends DatabaseAccessor<AppDatabase> with _$TicketsDaoMixin {
   }
 
   /// Abertos deste pátio que o servidor já conhece e que podem ser apagados sem
-  /// perder nada: nenhuma escrita pendente e nenhuma foto por enviar.
+  /// perder nada: nenhuma escrita pendente. A foto por enviar não segura mais
+  /// o ticket — ela mora na fila `fotos_envio` e sobe mesmo sem ele.
   Future<List<Ticket>> getAbertosSincronizados(String operacaoId) =>
       (select(tickets)
             ..where((t) =>
                 t.operacaoId.equals(operacaoId) &
                 t.status.equals('aberto') &
-                t.syncStatus.equals('sincronizado') &
-                (t.fotoEntradaPath.isNull() |
-                    t.fotoEntradaEnviada.equals(true))))
+                t.syncStatus.equals('sincronizado')))
           .get();
 
   /// Remove um ticket local — usado na convergência da Limpeza de Pátio
-  /// (bootstrap ou resposta 'ignorado' do sync). A foto pendente daquele ticket
-  /// deixa de existir junto (getFotosPendentes lê a própria tabela de tickets).
+  /// (bootstrap ou resposta 'ignorado' do sync) e quando o carro saiu por outro
+  /// aparelho. As fotos dele ficam na fila `fotos_envio`; quem as descarta,
+  /// quando for o caso, é o chamador.
   Future<void> deletar(String id) =>
       (delete(tickets)..where((t) => t.id.equals(id))).go();
 }

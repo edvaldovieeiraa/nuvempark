@@ -29,10 +29,7 @@ final pagamentoOnlineServiceProvider = Provider<PagamentoOnlineService>(
 );
 
 final avariaServiceProvider = Provider<AvariaService>(
-  (ref) => AvariaService(
-    db: ref.read(appDatabaseProvider),
-    dio: ref.read(dioProvider),
-  ),
+  (ref) => AvariaService(db: ref.read(appDatabaseProvider)),
 );
 
 /// Lista de tickets abertos do pátio atual (veículos no pátio).

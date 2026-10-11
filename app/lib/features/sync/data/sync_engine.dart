@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
@@ -59,9 +58,9 @@ class SyncEngine {
       }
     }
 
-    // Fotos de entrada são best-effort: rodam mesmo com a fila principal vazia
-    // e nunca marcam a sync como falha — reintentam na próxima drenagem.
-    await _enviarFotosPendentes(patioId);
+    // Fotos NÃO sobem aqui: são do FotoUploader, fora desta trava. Dentro
+    // dela, um lote de fotos segurava a leitura dos veículos e as entradas
+    // novas — e sem rede ainda esperava o timeout de cada foto.
 
     // Carimbo de "sincronizado com a nuvem": só quando o servidor confirmou ao
     // menos um item nesta drenagem.
@@ -83,38 +82,6 @@ class SyncEngine {
   /// lido logo em seguida pelo [drain]. Contido no engine de propósito: não
   /// muda envelope, payload nem estratégia de retry.
   DateTime? _ultimoCarimboServidor;
-
-  /// Sobe as fotos de entrada de tickets já sincronizados ainda não enviadas.
-  /// Falha silenciosa por item (fica pendente p/ próxima run).
-  Future<void> _enviarFotosPendentes(String patioId) async {
-    final pendentes = await db.ticketsDao.getFotosPendentes();
-    for (final ticket in pendentes) {
-      final path = ticket.fotoEntradaPath;
-      if (path == null) continue;
-
-      final file = File(path);
-      // Arquivo sumiu: marca como enviada para não reintentar em loop.
-      if (!await file.exists()) {
-        await db.ticketsDao.marcarFotoEnviada(ticket.id);
-        continue;
-      }
-
-      try {
-        final form = FormData.fromMap({
-          'ticket_id': ticket.id,
-          'patio_id': patioId,
-          'foto': await MultipartFile.fromFile(
-            path,
-            filename: '${ticket.id}.jpg',
-          ),
-        });
-        await dio.post<void>(Env.fotoUrl, data: form);
-        await db.ticketsDao.marcarFotoEnviada(ticket.id);
-      } catch (_) {
-        // Best-effort: mantém pendente para a próxima drenagem.
-      }
-    }
-  }
 
   Future<_Envio> _enviarItem(
     SyncLogData item, {
@@ -175,10 +142,12 @@ class SyncEngine {
         await db.syncDao.marcarSucesso(item.id);
         await _marcarEntidadeSincronizada(item.entidade, item.entidadeId);
         if (ignoradoRemovido) {
-          // Converge: apaga o ticket local e limpa a outbox remanescente dele
-          // (a foto pendente sai junto, por viver na linha do ticket).
+          // Converge: apaga o ticket local, limpa a outbox remanescente dele
+          // e descarta as fotos que ainda não subiram (não há mais onde
+          // mostrá-las).
           await db.ticketsDao.deletar(item.entidadeId);
           await db.syncDao.removerItensDoTicket(item.entidadeId);
+          await db.fotosEnvioDao.descartarDoTicket(item.entidadeId);
         }
       });
       return _Envio.ok;

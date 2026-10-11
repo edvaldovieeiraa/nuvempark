@@ -348,28 +348,22 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
             );
       }
 
-      // Avaria (se preenchida): o REGISTRO entra na outbox agora (Drift); as
-      // FOTOS sobem em background — antes, o upload segurava a confirmação e,
-      // offline, ainda perdia as fotos.
+      // Avaria (se preenchida): o REGISTRO entra na outbox e as FOTOS na fila
+      // de envio, agora, só no Drift — o FotoUploader sobe as fotos depois,
+      // com retry gravado (antes subiam em memória e se perdiam offline).
       final descricaoAvaria = _avariaCtrl.text.trim();
       final fotosAvaria = List<String>.of(_avariaFotos);
       if (descricaoAvaria.isNotEmpty || fotosAvaria.isNotEmpty) {
-        final avariaId = await avariaService.enfileirar(
+        await avariaService.enfileirar(
           ticketId: ticketId,
+          patioId: patioId,
           placa: placa,
           descricao: descricaoAvaria.isEmpty
               ? 'Avaria registrada (ver fotos)'
               : descricaoAvaria,
           operadorId: user.id,
-          totalFotos: fotosAvaria.length,
+          fotosPaths: fotosAvaria,
         );
-        if (fotosAvaria.isNotEmpty) {
-          unawaited(avariaService.subirFotos(
-            avariaId: avariaId,
-            patioId: patioId,
-            fotosPaths: fotosAvaria,
-          ));
-        }
       }
 
       ref.invalidate(ticketsAbertosProvider);

@@ -184,14 +184,15 @@ class BootstrapRepository {
     await db.liberacoesDao.substituir(patioId, liberacoesComp);
 
     // ── Convergência da Limpeza de Pátio (Camada 2) ──────────────────────────
-    // Para cada ticket removido no painel: apaga o ticket local e limpa os itens
-    // de outbox dele (foto pendente sai junto, por viver na linha do ticket).
-    // As duas escritas de cada id na MESMA transação (padrão do projeto).
+    // Para cada ticket removido no painel: apaga o ticket local, limpa os itens
+    // de outbox dele e descarta as fotos que ainda não subiram (não há mais
+    // onde mostrá-las). As escritas de cada id na MESMA transação.
     if (removidosIds.isNotEmpty) {
       await db.transaction(() async {
         for (final id in removidosIds) {
           await db.ticketsDao.deletar(id);
           await db.syncDao.removerItensDoTicket(id);
+          await db.fotosEnvioDao.descartarDoTicket(id);
         }
       });
     }
