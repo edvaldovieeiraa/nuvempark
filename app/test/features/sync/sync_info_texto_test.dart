@@ -14,6 +14,7 @@ void main() {
     int fotosPendentes = 0,
     int fotosBytes = 0,
     int fotosFalhas = 0,
+    int fotosPerdidas = 0,
     FotoProgresso? progresso,
     DateTime? ultimo,
   }) =>
@@ -24,6 +25,7 @@ void main() {
         fotosPendentes: fotosPendentes,
         fotosBytes: fotosBytes,
         fotosFalhas: fotosFalhas,
+        fotosPerdidas: fotosPerdidas,
         progresso: progresso,
       );
 
@@ -60,6 +62,16 @@ void main() {
         '1 registro e 1 foto falharam · toque para reenviar');
     expect(t(info(falhos: 1, pendentes: 9)).tom, TomSync.falha,
         reason: 'falha pesa mais que pendência');
+  });
+
+  test('foto perdida (arquivo ausente): aviso sem convite a reenviar', () {
+    final r = t(info(fotosPerdidas: 1));
+    expect(r.texto, '1 foto perdida: arquivo não encontrado no aparelho');
+    expect(r.tom, TomSync.falha);
+    expect(t(info(fotosPerdidas: 2, pendentes: 1)).tom, TomSync.pendente,
+        reason: 'pendência real passa na frente do aviso');
+    expect(t(info(fotosPerdidas: 1, fotosFalhas: 1)).texto,
+        '1 foto falhou · toque para reenviar');
   });
 
   test('enviando fotos: n de N e os bytes da rodada', () {

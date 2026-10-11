@@ -105,6 +105,12 @@ class FotoUploader {
   /// gasta tentativa.
   void cancelar() => _cancel?.cancel('rodada cancelada');
 
+  /// Fecha o canal de progresso (descarte do provider).
+  void dispose() {
+    cancelar();
+    _progresso.close();
+  }
+
   /// Uma rodada de envio. Devolve quantas fotos subiram.
   Future<int> rodada() async {
     if (_rodando) return 0;

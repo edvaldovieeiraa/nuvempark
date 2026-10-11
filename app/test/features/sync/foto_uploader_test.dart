@@ -297,6 +297,26 @@ void main() {
     expect((f.status, f.tentativas), ('pendente', 0));
   });
 
+  test('descartada durante o envio (ticket removido) não volta à fila',
+      () async {
+    await fotoAvaria('A', 0, criado: 1);
+    await fotoAvaria('A', 1, criado: 2);
+    final m = montar((o) async {
+      // O painel remove o ticket enquanto a foto sobe.
+      await db.fotosEnvioDao.descartarDoTicket('T');
+      return _campos(o)['indice'] == '0'
+          ? _ok()
+          : jsonResponse({'error': 'x'}, status: 413);
+    });
+
+    await m.uploader.rodada();
+
+    expect((await ler('avaria-A-0')).status, 'descartada',
+        reason: 'sucesso não reescreve a descartada');
+    expect((await ler('avaria-A-1')).status, 'descartada',
+        reason: 'falha não a transforma em "foto falhou" reenviável');
+  });
+
   test('erro inesperado nunca escapa da rodada', () async {
     await fotoAvaria('A', 0);
     final m = montar((_) => throw StateError('adapter quebrou'));

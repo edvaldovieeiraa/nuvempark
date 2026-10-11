@@ -74,7 +74,8 @@ class TicketsDao extends DatabaseAccessor<AppDatabase> with _$TicketsDaoMixin {
       (update(tickets)..where((t) => t.id.equals(id)))
           .write(const TicketsCompanion(syncStatus: Value('sincronizado')));
 
-  /// Tickets já sincronizados com foto local ainda não enviada.
+  /// Compatibilidade: marca que a foto de entrada subiu. Quem decide o envio é
+  /// a fila `fotos_envio`.
   Future<void> marcarFotoEnviada(String id) =>
       (update(tickets)..where((t) => t.id.equals(id)))
           .write(const TicketsCompanion(fotoEntradaEnviada: Value(true)));

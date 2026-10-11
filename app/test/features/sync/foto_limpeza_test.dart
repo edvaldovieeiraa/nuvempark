@@ -108,6 +108,21 @@ void main() {
     expect(await db.select(db.fotosEnvio).get(), isEmpty);
   });
 
+  test('foto sem arquivo há mais de 7 dias sai do aviso do menu', () async {
+    await db.fotosEnvioDao.enfileirar(FotosEnvioCompanion.insert(
+      id: 'perdida',
+      tipo: 'entrada',
+      operacaoId: 'p1',
+      ticketId: 'x',
+      caminhoLocal: '${tmp.path}/sumiu.jpg',
+      criadoEm: agora.subtract(_dia * 8).millisecondsSinceEpoch,
+      status: const Value('falhou'),
+      erroCodigo: const Value('sem_arquivo'),
+    ));
+    await limpeza().executar();
+    expect((await ler('perdida')).status, 'descartada');
+  });
+
   test('talvezExecutar: no máximo uma vez a cada 24 h', () async {
     await ticket('saiu', saiuHa: _dia * 8);
     await foto('a', 'saiu');

@@ -19,7 +19,9 @@ import 'ticket_remoto.dart';
 ///   • aberto no servidor e ausente aqui → grava (entrou por outro aparelho)
 ///   • aberto aqui, já sincronizado, e fora da lista → apaga (saiu por outro
 ///     aparelho, ou foi cancelado no painel)
-/// O que tem escrita ou foto pendente nunca é tocado.
+/// O que tem escrita pendente nunca é tocado. A foto pendente não segura o
+/// ticket: ela mora na fila `fotos_envio` e sobe mesmo sem ele (a rota /foto
+/// não exige o ticket); se ele foi removido no painel, o bootstrap a descarta.
 class TicketsAbertosSync {
   TicketsAbertosSync({
     required this.db,

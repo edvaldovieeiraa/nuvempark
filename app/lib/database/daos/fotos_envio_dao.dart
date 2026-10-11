@@ -6,6 +6,7 @@ class ResumoFotos {
     required this.pendentes,
     required this.bytes,
     required this.falhas,
+    this.perdidas = 0,
   });
 
   /// Fotos `pendente` (inclui as que esperam o ticket subir).
@@ -14,8 +15,12 @@ class ResumoFotos {
   /// Soma do tamanho das pendentes — é o "4,8 MB" do menu.
   final int bytes;
 
-  /// Fotos `falhou` (reenviáveis ou não).
+  /// Fotos `falhou` que o toque no menu reabre.
   final int falhas;
+
+  /// Fotos `falhou` por arquivo ausente: não há o que reenviar — o menu só
+  /// avisa, sem convidar a tocar.
+  final int perdidas;
 
   static const vazio = ResumoFotos(pendentes: 0, bytes: 0, falhas: 0);
 }
@@ -57,8 +62,12 @@ class FotosEnvioDao extends DatabaseAccessor<AppDatabase>
     return q.map((r) => r.readTable(fotosEnvio)).get();
   }
 
+  // As transições abaixo só valem para foto `pendente`: a rodada trabalha sobre
+  // uma cópia da fila, e o ticket pode ser removido no painel (foto
+  // `descartada`) enquanto ela sobe. Sem a condição, a descartada voltava como
+  // `enviada` — ou pior, como "foto falhou" reenviável no menu.
   Future<void> marcarEnviada(String id, {required int agoraEpoch}) =>
-      (update(fotosEnvio)..where((f) => f.id.equals(id))).write(
+      (update(fotosEnvio)..where(_pendente(id))).write(
         FotosEnvioCompanion(
           status: const Value('enviada'),
           enviadoEmEpoch: Value(agoraEpoch),
@@ -73,7 +82,7 @@ class FotosEnvioDao extends DatabaseAccessor<AppDatabase>
     required int proximaEpoch,
     required String erro,
   }) =>
-      (update(fotosEnvio)..where((f) => f.id.equals(id))).write(
+      (update(fotosEnvio)..where(_pendente(id))).write(
         FotosEnvioCompanion(
           tentativas: Value(tentativas),
           proximaTentativaEpoch: Value(proximaEpoch),
@@ -87,7 +96,7 @@ class FotosEnvioDao extends DatabaseAccessor<AppDatabase>
     required String codigo,
     int? tentativas,
   }) =>
-      (update(fotosEnvio)..where((f) => f.id.equals(id))).write(
+      (update(fotosEnvio)..where(_pendente(id))).write(
         FotosEnvioCompanion(
           status: const Value('falhou'),
           erro: Value(erro),
@@ -96,6 +105,9 @@ class FotosEnvioDao extends DatabaseAccessor<AppDatabase>
               tentativas == null ? const Value.absent() : Value(tentativas),
         ),
       );
+
+  Expression<bool> Function($FotosEnvioTable) _pendente(String id) =>
+      (f) => f.id.equals(id) & f.status.equals('pendente');
 
   /// Ticket removido no painel: as fotos que ainda não subiram não têm mais
   /// onde aparecer.
@@ -138,7 +150,11 @@ class FotosEnvioDao extends DatabaseAccessor<AppDatabase>
         SELECT
           COALESCE(SUM(CASE WHEN status = 'pendente' THEN 1 ELSE 0 END), 0) AS pendentes,
           COALESCE(SUM(CASE WHEN status = 'pendente' THEN bytes ELSE 0 END), 0) AS bytes,
-          COALESCE(SUM(CASE WHEN status = 'falhou' THEN 1 ELSE 0 END), 0) AS falhas
+          COALESCE(SUM(CASE WHEN status = 'falhou'
+                             AND (erro_codigo IS NULL OR erro_codigo <> 'sem_arquivo')
+                            THEN 1 ELSE 0 END), 0) AS falhas,
+          COALESCE(SUM(CASE WHEN status = 'falhou' AND erro_codigo = 'sem_arquivo'
+                            THEN 1 ELSE 0 END), 0) AS perdidas
         FROM fotos_envio
         ''',
         readsFrom: {fotosEnvio},
@@ -146,6 +162,7 @@ class FotosEnvioDao extends DatabaseAccessor<AppDatabase>
             pendentes: r.read<int>('pendentes'),
             bytes: r.read<int>('bytes'),
             falhas: r.read<int>('falhas'),
+            perdidas: r.read<int>('perdidas'),
           ));
 
   /// Fotos cujo arquivo local pode ser apagado: já enviadas e com o carro
@@ -170,6 +187,16 @@ class FotosEnvioDao extends DatabaseAccessor<AppDatabase>
   Future<void> marcarArquivoApagado(String id, {required int agoraEpoch}) =>
       (update(fotosEnvio)..where((f) => f.id.equals(id))).write(
           FotosEnvioCompanion(arquivoApagadoEmEpoch: Value(agoraEpoch)));
+
+  /// Foto sem arquivo, falhada antes de [corteEpoch]: depois de avisar por um
+  /// tempo, sai do menu — não há nada que o operador possa fazer com ela.
+  Future<int> descartarPerdidasAntes({required int corteEpoch}) =>
+      (update(fotosEnvio)
+            ..where((f) =>
+                f.status.equals('falhou') &
+                f.erroCodigo.equals('sem_arquivo') &
+                f.criadoEm.isSmallerOrEqualValue(corteEpoch)))
+          .write(const FotosEnvioCompanion(status: Value('descartada')));
 
   /// Fila técnica: a linha de uma foto já enviada e com o arquivo apagado há
   /// mais de [corteEpoch] não serve para mais nada.

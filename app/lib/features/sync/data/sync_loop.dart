@@ -7,6 +7,8 @@ import '../../../core/config/env.dart';
 import '../../../core/di/providers.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
 import '../../tickets/presentation/providers/ticket_provider.dart';
+import '../presentation/sync_info_provider.dart';
+import 'foto_uploader.dart';
 
 /// Loop de sincronização contínua e bidirecional.
 ///
@@ -39,10 +41,15 @@ class SyncLoop with WidgetsBindingObserver {
   bool _primeiroPlano = true;
   DateTime? _ultimoBootstrap;
 
+  /// Guardado no [iniciar]: o [parar] roda também no `onDispose` do provider,
+  /// quando ler outro provider já não é permitido.
+  FotoUploader? _uploader;
+
   /// Liga o loop: sincroniza uma vez agora e agenda o ciclo.
   void iniciar() {
     if (_rodando) return;
     _rodando = true;
+    _uploader = _ref.read(fotoUploaderProvider);
     WidgetsBinding.instance.addObserver(this);
     _tick(); // primeira sincronização imediata
     _agendar();
@@ -53,7 +60,7 @@ class SyncLoop with WidgetsBindingObserver {
     _rodando = false;
     _ultimoBootstrap = null;
     // Logout / loop parado: a foto em envio não gasta tentativa.
-    _ref.read(fotoUploaderProvider).cancelar();
+    _uploader?.cancelar();
     _timer?.cancel();
     _timer = null;
     WidgetsBinding.instance.removeObserver(this);
@@ -74,14 +81,21 @@ class SyncLoop with WidgetsBindingObserver {
     try {
       // PUSH: sobe a fila local. Best-effort — offline não lança. Com a fila
       // vazia é só uma consulta ao Drift.
-      await _ref.read(syncEngineProvider).drain();
+      final push = await _ref.read(syncEngineProvider).drain();
+      // O drain grava o carimbo do servidor no TokenStorage, que não avisa.
+      if (push.synced > 0) _ref.invalidate(ultimoSyncProvider);
 
       // FOTOS: rodada própria, SEM await e fora da trava dos dados — corre em
       // paralelo com a leitura dos veículos e não atrasa o próximo tick. Logo
       // depois do drain para a foto do ticket que acabou de subir já ir.
       // Nenhum dos dois lança (são totais), então o unawaited é seguro.
-      unawaited(_ref.read(fotoUploaderProvider).rodada());
-      unawaited(_ref.read(fotoLimpezaProvider).talvezExecutar());
+      // Só com o loop ligado: um tick que estava no meio do drain quando o
+      // parar() rodou (logout) não pode abrir rodada sem token — o 401 gastaria
+      // tentativa de cada foto.
+      if (_rodando) {
+        unawaited(_ref.read(fotoUploaderProvider).rodada());
+        unawaited(_ref.read(fotoLimpezaProvider).talvezExecutar());
+      }
 
       // VEÍCULOS: o que entrou ou saiu pelos outros aparelhos.
       final patioId = await _ref.read(tokenStorageProvider).readPatioId();

@@ -163,19 +163,44 @@ void main() {
     expect((await _ler(db, 'zero')).bytes, 4321);
   });
 
-  test('watchResumo conta pendentes, soma os bytes deles e conta falhas',
+  test('watchResumo conta pendentes, soma os bytes deles e separa as falhas',
       () async {
     await _foto(db, 'p1', bytes: 1000);
     await _foto(db, 'p2', bytes: 500);
-    await _foto(db, 'f1', bytes: 9999, status: 'falhou');
+    await _foto(db, 'f1', bytes: 9999, status: 'falhou', erroCodigo: 'tentativas');
+    await _foto(db, 'perdida', status: 'falhou', erroCodigo: 'sem_arquivo');
     await _foto(db, 'e1', bytes: 9999, status: 'enviada');
     final r = await db.fotosEnvioDao.watchResumo().first;
-    expect((r.pendentes, r.bytes, r.falhas), (2, 1500, 1));
+    expect((r.pendentes, r.bytes, r.falhas, r.perdidas), (2, 1500, 1, 1),
+        reason: 'sem arquivo não é reenviável: conta à parte');
   });
 
   test('watchResumo com a fila vazia é zero, não nulo', () async {
     final r = await db.fotosEnvioDao.watchResumo().first;
-    expect((r.pendentes, r.bytes, r.falhas), (0, 0, 0));
+    expect((r.pendentes, r.bytes, r.falhas, r.perdidas), (0, 0, 0, 0));
+  });
+
+  test('transições só valem para foto pendente (não ressuscitam descartada)',
+      () async {
+    await _foto(db, 'd', status: 'descartada');
+    await db.fotosEnvioDao.marcarEnviada('d', agoraEpoch: 1);
+    await db.fotosEnvioDao.marcarFalhou('d', erro: 'x', codigo: 'tentativas');
+    await db.fotosEnvioDao.agendarRetry('d', tentativas: 2, proximaEpoch: 9, erro: 'y');
+    final f = await _ler(db, 'd');
+    expect((f.status, f.tentativas), ('descartada', 0));
+    expect(f.erro, isNull);
+  });
+
+  test('descartarPerdidasAntes tira do menu a foto sem arquivo antiga',
+      () async {
+    await _foto(db, 'velha', status: 'falhou', erroCodigo: 'sem_arquivo', criado: 10);
+    await _foto(db, 'nova', status: 'falhou', erroCodigo: 'sem_arquivo', criado: 100);
+    await _foto(db, 'reenviavel', status: 'falhou', erroCodigo: 'tentativas', criado: 10);
+    final n = await db.fotosEnvioDao.descartarPerdidasAntes(corteEpoch: 50);
+    expect(n, 1);
+    expect((await _ler(db, 'velha')).status, 'descartada');
+    expect((await _ler(db, 'nova')).status, 'falhou');
+    expect((await _ler(db, 'reenviavel')).status, 'falhou');
   });
 
   group('limpeza', () {

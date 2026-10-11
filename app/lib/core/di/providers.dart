@@ -93,12 +93,14 @@ final syncEngineProvider = Provider<SyncEngine>(
 
 /// Envio da fila de fotos — FORA da [syncMutexProvider] de propósito: um lote
 /// de fotos não pode segurar a leitura dos veículos nem as entradas novas.
-final fotoUploaderProvider = Provider<FotoUploader>(
-  (ref) => FotoUploader(
+final fotoUploaderProvider = Provider<FotoUploader>((ref) {
+  final uploader = FotoUploader(
     db: ref.read(appDatabaseProvider),
     dio: ref.read(dioProvider),
-  ),
-);
+  );
+  ref.onDispose(uploader.dispose);
+  return uploader;
+});
 
 /// Limpeza diária das fotos já enviadas de carros que saíram.
 final fotoLimpezaProvider = Provider<FotoLimpeza>(

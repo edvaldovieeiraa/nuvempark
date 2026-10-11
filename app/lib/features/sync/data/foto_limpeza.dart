@@ -63,6 +63,10 @@ class FotoLimpeza {
         // Não deu para apagar este: tenta de novo na próxima limpeza.
       }
     }
+    // A foto sem arquivo já avisou no menu por [Env.fotoLimpezaDias] dias.
+    await db.fotosEnvioDao.descartarPerdidasAntes(
+      corteEpoch: agora - Env.fotoLimpezaDias * dia,
+    );
     await db.fotosEnvioDao.removerApagadasAntes(
       corteEpoch: agora - Env.fotoLinhaRetencaoDias * dia,
     );

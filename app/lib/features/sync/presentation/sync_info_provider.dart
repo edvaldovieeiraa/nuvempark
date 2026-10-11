@@ -17,6 +17,7 @@ class SyncInfo {
     this.fotosPendentes = 0,
     this.fotosBytes = 0,
     this.fotosFalhas = 0,
+    this.fotosPerdidas = 0,
     this.progresso,
   });
 
@@ -31,13 +32,21 @@ class SyncInfo {
 
   /// Tamanho das fotos pendentes (0 = ainda não medido).
   final int fotosBytes;
+  /// Falhas que o toque no menu reabre.
   final int fotosFalhas;
+
+  /// Falhas por arquivo ausente: só aviso, nada a reenviar.
+  final int fotosPerdidas;
 
   /// Rodada de fotos em curso; null fora dela.
   final FotoProgresso? progresso;
 
   bool get emDia =>
-      pendentes == 0 && falhos == 0 && fotosPendentes == 0 && fotosFalhas == 0;
+      pendentes == 0 &&
+      falhos == 0 &&
+      fotosPendentes == 0 &&
+      fotosFalhas == 0 &&
+      fotosPerdidas == 0;
 }
 
 /// Contagens da fila de dados, ao vivo.
@@ -55,10 +64,12 @@ final fotoProgressoProvider = StreamProvider<FotoProgresso?>(
   (ref) => ref.read(fotoUploaderProvider).progresso,
 );
 
-/// Último sync confirmado pelo servidor. Relido quando a fila de dados muda
-/// (é quando o carimbo muda) e quando alguém invalida o [syncInfoProvider].
+/// Último sync confirmado pelo servidor. O carimbo mora no TokenStorage, que
+/// não avisa quando muda: quem grava ou quer o valor fresco invalida ESTE
+/// provider (o SyncLoop depois de um drain que subiu algo, o toque no menu, o
+/// heartbeat e as telas de bloqueio). Invalidar o [syncInfoProvider] não
+/// adianta — ele só recombina o que já tem.
 final ultimoSyncProvider = FutureProvider<DateTime?>((ref) async {
-  ref.watch(syncDadosProvider);
   final iso = await ref.read(tokenStorageProvider).readUltimoSync();
   return iso == null ? null : DateTime.tryParse(iso);
 });
@@ -84,6 +95,7 @@ final syncInfoProvider = Provider<AsyncValue<SyncInfo>>((ref) {
     fotosPendentes: f.pendentes,
     fotosBytes: f.bytes,
     fotosFalhas: f.falhas,
+    fotosPerdidas: f.perdidas,
     progresso: progresso,
   ));
 });
@@ -143,6 +155,17 @@ TextoSync textoSincronizacao(SyncInfo? info, {required DateTime agora}) {
     ];
     return TextoSync(
         TomSync.pendente, '${partes.join(' e ')} aguardando envio · $ultimo');
+  }
+
+  // Sem convite a tocar: não há o que reenviar (a limpeza tira o aviso
+  // depois de alguns dias).
+  if (info.fotosPerdidas > 0) {
+    final n = info.fotosPerdidas;
+    return TextoSync(
+      TomSync.falha,
+      '$n ${n == 1 ? 'foto perdida' : 'fotos perdidas'}: '
+      'arquivo não encontrado no aparelho',
+    );
   }
 
   return TextoSync(TomSync.emDia, 'Tudo em dia · $ultimo');
