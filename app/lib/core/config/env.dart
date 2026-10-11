@@ -66,6 +66,19 @@ abstract final class Env {
   static const Duration syncRapidoInterval = Duration(seconds: 5);
   static const int syncMaxTentativas = 10;
 
+  /// Teto para enviar UMA foto (o upload em si, além do connect/receive). Sem
+  /// ele, um envio travado num sinal ruim não tinha fim.
+  static const Duration fotoSendTimeout = Duration(seconds: 90);
+
+  /// Fotos por rodada do FotoUploader; a próxima rodada vem no tick seguinte.
+  static const int fotosPorRodada = 10;
+
+  /// A foto já enviada sai do celular quando o carro saiu há este tanto.
+  static const int fotoLimpezaDias = 7;
+
+  /// A linha da fila de uma foto com o arquivo já apagado some depois disto.
+  static const int fotoLinhaRetencaoDias = 30;
+
   /// Intervalo do heartbeat: "este app está vivo" para o painel do gestor.
   /// Independente do sync — num pátio parado nada sobe, e sem isto o gestor
   /// não distingue app ocioso de app fechado.
