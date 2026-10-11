@@ -59,6 +59,9 @@ um painel web.
   fechamento com conferência.
 - **Multi-pátio.** Cada pátio com suas tarifas, operadores e caixa, tudo
   consolidado numa conta só.
+- **Diária de hóspede.** Hotel e pousada com estacionamento próprio cobram por
+  diária: o hóspede paga na chegada, entra e sai sem cobrança até vencer, e o
+  atraso é calculado na saída.
 - **Pix no ticket.** O cliente escaneia o QR do cupom, vê o valor da estadia e
   paga por Pix; a confirmação chega automaticamente.
 - **Convênio com lojista.** Cada parceiro do pátio (loja, restaurante, clínica)
@@ -138,6 +141,18 @@ ou uma rede inteira, consolidados numa conta só.
 
 - Caixa por operador, com dono e horário.
 - Da primeira vaga à quinta filial, sem trocar de sistema.
+
+## Hotel e pousada — o hóspede paga a diária na chegada
+
+Para hotel e pousada com estacionamento próprio. O operador escolhe a tabela de
+hóspede, marca as diárias e recebe na hora. Até a estadia vencer, o app
+reconhece a placa e a saída é sem cobrança. Passou do vencimento, o atraso já
+aparece calculado.
+
+- Ficou mais um dia? Renova com o carro dentro ou fora do pátio.
+- Atraso pela tabela avulsa ou uma diária por período, o que for menor.
+
+Veja também: [Estacionamento de hotel e pousada](${urlSite("/sistema-de-estacionamento-para-hotel")})
 
 ## Demais recursos
 

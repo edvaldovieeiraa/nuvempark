@@ -50,7 +50,7 @@ html{scroll-behavior:smooth}
   [data-spot],[data-pix],[data-voucher],[data-avaria],[data-prova-feat],[data-roadmap],[data-precos-a],[data-mock-lower],[data-steps],[data-garantias],[data-prova-grid]{grid-template-columns:1fr!important;gap:36px!important}
   [data-steps],[data-garantias],[data-prova-grid]{gap:16px!important}
   [data-bento]{grid-template-columns:1fr!important}
-  [data-bento] > [data-bento-wide]{grid-column:auto!important}
+  [data-bento] > *{grid-column:auto!important}
   [data-num-grid],[data-mock-kpis],[data-valores]{grid-template-columns:repeat(2,1fr)!important}
   [data-contato]{grid-template-columns:1fr!important}
   [data-footer]{grid-template-columns:1fr 1fr!important;gap:32px!important}

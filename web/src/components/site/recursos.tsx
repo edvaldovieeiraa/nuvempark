@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   WifiOff,
   ScanLine,
@@ -12,6 +13,8 @@ import {
   ShieldCheck,
   Building2,
   Ticket,
+  BedDouble,
+  ArrowRight,
 } from "lucide-react";
 import { Reveal } from "@/components/site/reveal";
 import { MONO, eyebrow, h2, pill, listItem } from "@/components/site/tokens";
@@ -90,6 +93,7 @@ function Spotlight({
   glow,
   flip = false,
   badge,
+  link,
 }: {
   chip: string;
   chipCor: string;
@@ -103,6 +107,8 @@ function Spotlight({
   glow: string;
   flip?: boolean;
   badge: React.ReactNode;
+  /** Página de solução do recurso — é lá que o visitante vira lead. */
+  link?: { href: string; texto: string };
 }) {
   const media = (
     <div data-flip-media={flip ? "" : undefined} style={{ position: "relative" }}>
@@ -137,6 +143,15 @@ function Spotlight({
           </li>
         ))}
       </ul>
+      {link && (
+        <Link
+          href={link.href}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 24, fontSize: 15, fontWeight: 700, color: "#15803D", textDecoration: "none" }}
+        >
+          {link.texto}
+          <ArrowRight size={16} strokeWidth={2.4} />
+        </Link>
+      )}
     </div>
   );
 
@@ -228,6 +243,36 @@ function VarianteA() {
           </div>
         }
       />
+
+      {/* Estadia de hóspede (db/42). O texto espelha `lib/solucoes-hotel.ts` e
+          obedece SEO.md 4.7: nada de nome do hóspede, quarto ou integração com
+          reservas. Os prints saem de `app/tool/prints_site/`. */}
+      <Spotlight
+        flip
+        chip="Hotel e pousada"
+        chipBg="#F0FDFA"
+        chipBorda="#99F6E4"
+        chipCor="#0F766E"
+        chipIco={<BedDouble size={14} strokeWidth={2} />}
+        titulo={<>Hóspede paga na chegada.<br />Depois, entra e sai sem pagar.</>}
+        texto="Para hotel e pousada com estacionamento próprio. O operador escolhe a tabela de hóspede, marca as diárias e recebe na hora. Até a estadia vencer, o app reconhece a placa e a saída é sem cobrança. Passou do vencimento, o atraso já aparece calculado."
+        bullets={[
+          "Ficou mais um dia? Renova com o carro dentro ou fora do pátio",
+          "Atraso pela tabela avulsa ou uma diária por período, o que for menor",
+        ]}
+        glow="radial-gradient(60% 60% at 50% 40%,rgba(13,148,136,.13),transparent 70%)"
+        imagens={[
+          { src: "/uploads/estadia-hospede-saida.png", alt: "Saída de hóspede com a estadia válida: R$ 0,00, sem cobrança" },
+          { src: "/uploads/estadia-hospede-entrada.png", alt: "Nova entrada com a tabela Diária de hóspede: 3 diárias, total de R$ 90,00 e a validade da estadia" },
+        ]}
+        badge={
+          <div style={{ position: "absolute", right: -14, bottom: -14, zIndex: 3, display: "flex", alignItems: "center", gap: 8, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "10px 14px", boxShadow: "0 16px 40px -12px rgba(11,18,32,.2)" }}>
+            <BedDouble size={16} strokeWidth={2} color="#0D9488" />
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#1F2937" }}>Sem cobrança até vencer</span>
+          </div>
+        }
+        link={{ href: "/sistema-de-estacionamento-para-hotel", texto: "Ver como funciona no hotel e na pousada" }}
+      />
     </div>
   );
 }
@@ -252,7 +297,6 @@ function BentoCard({
 }) {
   return (
     <div
-      data-bento-wide={wide ? "" : undefined}
       style={{
         gridColumn: wide ? "span 4" : "span 2",
         borderRadius: 20,
@@ -295,10 +339,11 @@ function VarianteB() {
       <BentoCard icoBg="#FEF3C7" ico={<Clock size={22} strokeWidth={2} color="#D97706" />} titulo="O valor certo, sem conta de cabeça" texto="Fração, hora, diária, tolerância e pernoite calculados sozinhos." />
       <BentoCard icoBg="#DCFCE7" ico={<Printer size={22} strokeWidth={2} color="#16A34A" />} titulo="Ticket profissional na hora" texto="Comprovante com QR Code e o nome do seu pátio, na térmica de bolso." />
       <BentoCard icoBg="#DCFCE7" ico={<ShieldCheck size={22} strokeWidth={2} color="#16A34A" />} titulo="Cada centavo tem dono" texto="Caixa por operador, sangria registrada, fechamento com conferência." />
-      <BentoCard wide icoBg="#F5F3FF" ico={<Building2 size={22} strokeWidth={2} color="#8B5CF6" />} titulo="Da primeira vaga à quinta filial" texto="Cada pátio com suas tarifas, operadores e caixa — tudo consolidado numa conta só. Crescer não exige trocar de sistema." />
-      {/* Fecha a última fileira: 4+2 | 2+2+2 | 4+2. Sem este cartão o bento
-          termina com um vão de duas colunas. */}
+      {/* Fileiras de 6 colunas: 4+2 | 2+2+2 | 2+2+2. Só cabe UM cartão largo:
+          com oito cartões, um segundo largo deixa um vão de duas colunas. */}
+      <BentoCard icoBg="#F0FDFA" ico={<BedDouble size={22} strokeWidth={2} color="#0D9488" />} titulo="Diária de hóspede para hotel" texto="O hóspede paga as diárias na chegada e entra e sai sem cobrança até vencer. Passou do prazo, o atraso sai calculado." />
       <BentoCard icoBg="#FEF3C7" ico={<Ticket size={22} strokeWidth={2} color="#B45309" />} titulo="Convênio com lojista" texto="O parceiro libera o ticket pelo navegador e o desconto sai aplicado na saída." />
+      <BentoCard icoBg="#F5F3FF" ico={<Building2 size={22} strokeWidth={2} color="#8B5CF6" />} titulo="Da primeira vaga à quinta filial" texto="Cada pátio com suas tarifas, operadores e caixa — tudo consolidado numa conta só. Crescer não exige trocar de sistema." />
     </div>
   );
 }
