@@ -80,12 +80,10 @@ function Chave({
   ligada,
   aoAlternar,
   rotulo,
-  desabilitada = false,
 }: {
   ligada: boolean;
   aoAlternar: () => void;
   rotulo: string;
-  desabilitada?: boolean;
 }) {
   return (
     <button
@@ -93,7 +91,6 @@ function Chave({
       role="switch"
       aria-checked={ligada}
       aria-label={rotulo}
-      disabled={desabilitada}
       onClick={aoAlternar}
       style={{
         position: "relative",
@@ -103,7 +100,7 @@ function Chave({
         borderRadius: 999,
         border: "none",
         padding: 0,
-        cursor: desabilitada ? "not-allowed" : "pointer",
+        cursor: "pointer",
         background: ligada
           ? "linear-gradient(90deg,#16A34A,#22C55E)"
           : "#D5DBE1",
@@ -133,14 +130,12 @@ export function ParametrizacaoClient({
   modoInicial,
   quiosqueInicial,
   rapidoInicial,
-  rapidoImprimeInicial,
 }: {
   patioId: string | null;
   patioNome: string | null;
   modoInicial: ModoFoto;
   quiosqueInicial: boolean;
   rapidoInicial: boolean;
-  rapidoImprimeInicial: boolean;
 }) {
   const toast = useToast();
   const [salvando, iniciarSalvar] = useTransition();
@@ -150,15 +145,11 @@ export function ParametrizacaoClient({
   const [quiosque, setQuiosque] = useState(quiosqueInicial);
   const [rapidoInic, setRapidoInic] = useState(rapidoInicial);
   const [rapido, setRapido] = useState(rapidoInicial);
-  const [rapidoImprimeInic, setRapidoImprimeInic] =
-    useState(rapidoImprimeInicial);
-  const [rapidoImprime, setRapidoImprime] = useState(rapidoImprimeInicial);
 
   const sujo =
     modoFoto !== inicial ||
     quiosque !== quiosqueInic ||
-    rapido !== rapidoInic ||
-    rapidoImprime !== rapidoImprimeInic;
+    rapido !== rapidoInic;
 
   const salvar = () => {
     if (!patioId) {
@@ -170,13 +161,11 @@ export function ParametrizacaoClient({
         fotoReciboModo: modoFoto,
         modoQuiosque: quiosque,
         modoRapidoEntrada: rapido,
-        modoRapidoImprime: rapidoImprime,
       });
       if (r.ok) {
         setInicial(modoFoto);
         setQuiosqueInic(quiosque);
         setRapidoInic(rapido);
-        setRapidoImprimeInic(rapidoImprime);
         toast.sucesso("Parametrização salva.");
       } else {
         toast.erro(r.erro ?? "Não foi possível salvar.");
@@ -492,42 +481,15 @@ export function ParametrizacaoClient({
             </div>
             <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
               Com a câmera aberta, o carro entra sozinho depois de 2 s de
-              contagem. O operador só toca para corrigir. Cada operador liga ou
-              desliga no app.
+              contagem. O operador só toca para corrigir. Cada celular liga ou
+              desliga, e escolhe se imprime o cupom, no app em Menu →
+              Configurações.
             </div>
           </div>
           <Chave
             ligada={rapido}
             aoAlternar={() => setRapido((v) => !v)}
             rotulo="Modo rápido de entrada"
-          />
-        </div>
-        <div
-          style={{
-            padding: "16px 18px",
-            borderTop: "1px solid #E4E8EC",
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 16,
-            opacity: rapido ? 1 : 0.45,
-            transition: "opacity .15s",
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>
-              Imprimir cupom no modo rápido
-            </div>
-            <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
-              Desligado, o modo rápido não imprime: o carro é achado na saída
-              pela placa.
-            </div>
-          </div>
-          <Chave
-            ligada={rapidoImprime}
-            aoAlternar={() => setRapidoImprime((v) => !v)}
-            rotulo="Imprimir cupom no modo rápido"
-            desabilitada={!rapido}
           />
         </div>
       </section>
@@ -584,7 +546,6 @@ export function ParametrizacaoClient({
                   setModoFoto(inicial);
                   setQuiosque(quiosqueInic);
                   setRapido(rapidoInic);
-                  setRapidoImprime(rapidoImprimeInic);
                 }}
                 disabled={salvando}
                 style={{

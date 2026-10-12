@@ -17,22 +17,19 @@ export async function salvarParametrizacao(
     fotoReciboModo: string;
     modoQuiosque: boolean;
     modoRapidoEntrada: boolean;
-    modoRapidoImprime: boolean;
   },
 ) {
   // Server action é endpoint público: o tipo do TS não chega ao runtime.
   if (typeof valores !== "object" || valores === null) {
     return { ok: false as const, erro: "Valor inválido." };
   }
-  const { fotoReciboModo, modoQuiosque, modoRapidoEntrada, modoRapidoImprime } =
-    valores;
+  const { fotoReciboModo, modoQuiosque, modoRapidoEntrada } = valores;
   if (!MODOS.includes(fotoReciboModo as ModoFoto)) {
     return { ok: false as const, erro: "Modo inválido." };
   }
   if (
     typeof modoQuiosque !== "boolean" ||
-    typeof modoRapidoEntrada !== "boolean" ||
-    typeof modoRapidoImprime !== "boolean"
+    typeof modoRapidoEntrada !== "boolean"
   ) {
     return { ok: false as const, erro: "Valor inválido." };
   }
@@ -43,7 +40,9 @@ export async function salvarParametrizacao(
       foto_recibo_modo: fotoReciboModo,
       modo_quiosque: modoQuiosque,
       modo_rapido_entrada: modoRapidoEntrada,
-      modo_rapido_imprime: modoRapidoImprime,
+      // modo_rapido_imprime saiu daqui: imprimir no modo rápido é escolha de
+      // cada celular (Menu → Configurações). A coluna fica com o valor atual
+      // para os APKs até a 1.0.0+18, que ainda a leem.
     })
     .eq("id", patioId);
 
