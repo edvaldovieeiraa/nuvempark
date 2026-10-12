@@ -9,6 +9,7 @@ import '../data/placa_captura_processor.dart';
 import '../data/placa_ocr_service.dart';
 import '../data/quadro_ocr.dart';
 import '../domain/roi_mapper.dart';
+import '../domain/trava_placa.dart';
 import 'widgets/plate_frame_overlay.dart';
 
 /// Resultado da tela de captura de placa. Selado para o chamador tratar cada
@@ -71,11 +72,6 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   // que torna cada leitura mais cara e o ritmo mais folgado, obrigatório.
   static const Duration _intervaloLeitura = Duration(milliseconds: 400);
 
-  // Uma leitura só oscila entre quadros. Exigir a MESMA placa algumas vezes
-  // dentro de uma janela curta é o que separa "achou algo" de "leu direito".
-  static const int _repeticoesParaEstavel = 3;
-  static const int _janelaHistorico = 5;
-
   // Folga ao redor da moldura ao filtrar candidatos (mesma da foto): a placa
   // pode encostar na borda do guia sem estar fora dele.
   static const double _margemRoi = 0.15;
@@ -83,7 +79,8 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   CameraDescription? _camera;
   bool _lendo = false;
   DateTime _ultimaLeitura = DateTime.fromMillisecondsSinceEpoch(0);
-  final List<String> _historico = [];
+  /// Quando a leitura "acertou" (3 iguais em 5) — ver [TravaPlaca].
+  final TravaPlaca _trava = TravaPlaca();
   /// Última placa reconhecida — mostrada ao vivo, ainda sem confiança.
   String? _placaAoVivo;
   /// Placa travada: repetiu o bastante e a leitura PAUSOU, aguardando o
@@ -124,6 +121,16 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
     if (state == AppLifecycleState.inactive) {
       c.dispose();
       _controller = null;
+      // A leitura recomeça do zero ao voltar: nada travado antes de sair vale
+      // depois (no modo rápido, uma contagem não pode terminar em segundo
+      // plano).
+      _trava.limpar();
+      if (mounted) {
+        setState(() {
+          _placaTravada = null;
+          _placaAoVivo = null;
+        });
+      }
     } else if (state == AppLifecycleState.resumed) {
       _iniciar();
     }
@@ -234,18 +241,19 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
     }
   }
 
-  /// Guarda a leitura e trava quando ela se repete. A janela é curta de
-  /// propósito: ao mover a câmera para outro carro, as leituras antigas saem
-  /// rápido e não contaminam a placa nova.
+  /// Mostra a leitura ao vivo e trava quando ela se repete ([TravaPlaca]).
   void _registrarLeitura(String placa) {
-    _historico.add(placa);
-    if (_historico.length > _janelaHistorico) _historico.removeAt(0);
-
-    final repeticoes = _historico.where((p) => p == placa).length;
-    setState(() {
-      _placaAoVivo = placa;
-      if (repeticoes >= _repeticoesParaEstavel) _placaTravada = placa;
-    });
+    switch (_trava.ler(placa)) {
+      case EstadoLeitura.ignorada:
+        return;
+      case EstadoLeitura.lendo:
+        setState(() => _placaAoVivo = placa);
+      case EstadoLeitura.travou:
+        setState(() {
+          _placaAoVivo = placa;
+          _placaTravada = placa;
+        });
+    }
   }
 
   /// Operador recusou a placa travada: descarta o histórico para ela não travar
@@ -254,8 +262,8 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
     setState(() {
       _placaTravada = null;
       _placaAoVivo = null;
-      _historico.clear();
     });
+    _trava.limpar();
   }
 
   Future<void> _pararFluxo(CameraController c) async {
