@@ -100,6 +100,22 @@ class PatioModel {
     return avulsas.isEmpty ? null : avulsas.first;
   }
 
+  /// Por que o modo rápido não pode rodar neste pátio; null = pode. Ele entra
+  /// sempre com o tipo e a tabela padrão, então precisa dos dois.
+  String? get motivoModoRapidoIndisponivel {
+    if (!modoRapidoEntrada) {
+      return 'O modo rápido não está liberado para este pátio no painel.';
+    }
+    final tipo = tipoPadrao;
+    if (tipo == null) {
+      return 'Cadastre um tipo de veículo no painel para usar o modo rápido.';
+    }
+    if (tabelaAvulsaPadrao(tipo) == null) {
+      return 'Cadastre uma tabela avulsa para "$tipo" para usar o modo rápido.';
+    }
+    return null;
+  }
+
   /// Uma tarifa com tipoVeiculo == 'ambos' atende qualquer tipo de veículo.
   static const tipoAmbos = 'ambos';
 

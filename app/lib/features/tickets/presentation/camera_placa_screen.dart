@@ -47,10 +47,15 @@ class CameraPlacaScreen extends StatefulWidget {
     super.key,
     required this.ocrService,
     required this.fotoService,
+    this.rapido,
   });
 
   final PlacaOcrService ocrService;
   final FotoEntradaService fotoService;
+
+  /// Modo rápido de entrada. Nulo = a câmera de sempre: a placa trava e espera
+  /// o operador confirmar a foto, e a tela devolve o resultado ao sair.
+  final ModoRapidoCamera? rapido;
 
   @override
   State<CameraPlacaScreen> createState() => _CameraPlacaScreenState();
@@ -100,11 +105,22 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    widget.rapido?.controller._estado = this;
     _iniciar();
   }
 
   @override
+  void didUpdateWidget(CameraPlacaScreen antigo) {
+    super.didUpdateWidget(antigo);
+    if (antigo.rapido?.controller != widget.rapido?.controller) {
+      antigo.rapido?.controller._estado = null;
+      widget.rapido?.controller._estado = this;
+    }
+  }
+
+  @override
   void dispose() {
+    widget.rapido?.controller._estado = null;
     WidgetsBinding.instance.removeObserver(this);
     _focoTimer?.cancel();
     // `dispose` do controller já encerra o fluxo de quadros.
@@ -131,6 +147,7 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
           _placaAoVivo = null;
         });
       }
+      widget.rapido?.aoSegundoPlano?.call();
     } else if (state == AppLifecycleState.resumed) {
       _iniciar();
     }
@@ -189,6 +206,8 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   }
 
   void _sair(CapturaSaida saida) {
+    final rapido = widget.rapido;
+    if (rapido != null) return rapido.aoSair(saida);
     if (mounted) Navigator.of(context).pop(saida);
   }
 
@@ -249,11 +268,69 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
       case EstadoLeitura.lendo:
         setState(() => _placaAoVivo = placa);
       case EstadoLeitura.travou:
+        // Travada, a leitura pausa (`_processarQuadro` ignora quadros) até o
+        // operador decidir — ou, no modo rápido, até a tela dona retomar.
         setState(() {
           _placaAoVivo = placa;
           _placaTravada = placa;
         });
+        widget.rapido?.aoTravar(placa);
     }
+  }
+
+  // ── Modo rápido (via [CameraPlacaController]) ───────────────────────────
+
+  /// Pedido de retomar chegou com a foto ainda sendo tirada: o fluxo só pode
+  /// voltar depois do `takePicture` (os dois disputam a câmera).
+  bool _retomarAposCaptura = false;
+
+  /// Foto da placa travada, sem sair da tela. Devolve o caminho salvo ou null
+  /// se falhou — nunca lança. O fluxo fica parado até [_retomarLeitura].
+  Future<String?> _capturarSemSair() async {
+    final c = _controller;
+    if (c == null || !c.value.isInitialized || _capturando) return null;
+    _capturando = true;
+    try {
+      await _pararFluxo(c);
+      final shot = await c.takePicture();
+      final processado = await PlacaCapturaProcessor(
+        widget.fotoService,
+        widget.ocrService,
+      ).processar(
+        arquivoBruto: shot.path,
+        previewSize: _previewSize,
+        placaJaLida: _placaTravada,
+      );
+      return processado.fotoPath;
+    } catch (_) {
+      return null;
+    } finally {
+      _capturando = false;
+      if (_retomarAposCaptura) {
+        _retomarAposCaptura = false;
+        unawaited(_retomarLeitura());
+      }
+    }
+  }
+
+  /// Volta a ler: solta a placa travada e religa o fluxo de quadros.
+  Future<void> _retomarLeitura() async {
+    if (!mounted) return;
+    setState(() {
+      _placaTravada = null;
+      _placaAoVivo = null;
+    });
+    if (_capturando) {
+      _retomarAposCaptura = true;
+      return;
+    }
+    final c = _controller;
+    if (c == null || !c.value.isInitialized || c.value.isStreamingImages) {
+      return;
+    }
+    try {
+      await c.startImageStream(_processarQuadro);
+    } catch (_) {/* segue sem leitura ao vivo; o próximo retomar tenta de novo */}
   }
 
   /// Operador recusou a placa travada: descarta o histórico para ela não travar
@@ -351,6 +428,7 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   Widget build(BuildContext context) {
     final c = _controller;
     final pronto = c != null && c.value.isInitialized && !_iniciando;
+    final rapido = widget.rapido;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -374,16 +452,22 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
                 ),
               if (pronto)
                 PlateFrameOverlay(
-                  legenda: _placaTravada != null
-                      ? 'Placa reconhecida — confirme a foto'
-                      : 'Enquadre a placa na moldura',
+                  legenda: _placaTravada == null
+                      ? 'Enquadre a placa na moldura'
+                      : rapido == null
+                          ? 'Placa reconhecida — confirme a foto'
+                          : 'Placa reconhecida',
                 ),
-              if (pronto) _leituraAoVivo(),
+              // No modo rápido a placa travada é da tela dona (contagem);
+              // aqui fica só a leitura ao vivo, em cinza.
+              if (pronto && (rapido == null || _placaTravada == null))
+                _leituraAoVivo(),
+              if (pronto && rapido != null) rapido.sobreposicao(context),
               if (_focoPonto != null) _reticuloFoco(_focoPonto!),
               _barraSuperior(),
               if (pronto && _zoomMax > _zoomMin) _controlesZoom(),
-              if (pronto) _barraInferior(),
-              if (_capturando)
+              if (pronto && rapido == null) _barraInferior(),
+              if (_capturando && rapido == null)
                 Container(
                   color: Colors.black38,
                   child: const Center(
@@ -573,12 +657,18 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
   Widget _barraSuperior() {
     return SafeArea(
       child: Align(
-        alignment: Alignment.topLeft,
+        alignment: Alignment.topCenter,
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white, size: 28),
-            onPressed: () => _sair(const CapturaCancelada()),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                onPressed: () => _sair(const CapturaCancelada()),
+              ),
+              const Spacer(),
+              ...?widget.rapido?.acoes,
+            ],
           ),
         ),
       ),
@@ -631,4 +721,50 @@ class _CameraCarregando extends StatelessWidget {
       child: Center(child: CircularProgressIndicator(color: Colors.white)),
     );
   }
+}
+
+/// O que a tela do modo rápido entrega à câmera. Imutável: a tela dona monta
+/// um novo a cada build (a sobreposição muda com a contagem); o [controller]
+/// é o mesmo durante toda a vida da tela.
+class ModoRapidoCamera {
+  const ModoRapidoCamera({
+    required this.controller,
+    required this.aoTravar,
+    required this.aoSair,
+    required this.sobreposicao,
+    this.aoSegundoPlano,
+    this.acoes = const [],
+  });
+
+  final CameraPlacaController controller;
+
+  /// A leitura travou uma placa. A câmera para de ler até [CameraPlacaController.retomarLeitura].
+  final void Function(String placa) aoTravar;
+
+  /// Fechar, câmera indisponível: no modo rápido a câmera não sai sozinha.
+  final void Function(CapturaSaida saida) aoSair;
+
+  /// Interface do modo rápido por cima do preview (contagem, faixa, contador).
+  final Widget Function(BuildContext context) sobreposicao;
+
+  /// App foi para o segundo plano (a câmera já soltou a trava).
+  final VoidCallback? aoSegundoPlano;
+
+  /// Botões extras na barra de cima (ex.: "Entrada normal").
+  final List<Widget> acoes;
+}
+
+/// Comandos da tela do modo rápido para a câmera. Fica ligado ao estado da
+/// câmera enquanto ela está na tela; antes disso (ou depois) não faz nada.
+class CameraPlacaController {
+  _CameraPlacaScreenState? _estado;
+
+  /// Tira a foto da placa travada sem sair. Caminho salvo, ou null se falhou.
+  Future<String?> capturarFoto() async => _estado?._capturarSemSair();
+
+  /// Solta a placa travada e volta a ler.
+  Future<void> retomarLeitura() async => _estado?._retomarLeitura();
+
+  /// A câmera passa a ignorar [placa] (ver [TravaPlaca.ignorar]).
+  void ignorar(String placa) => _estado?._trava.ignorar(placa);
 }

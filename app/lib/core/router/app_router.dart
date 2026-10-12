@@ -34,6 +34,7 @@ abstract final class Routes {
   static const dispositivoBloqueado = '/dispositivo-bloqueado';
   static const home = '/home';
   static const entrada = '/entrada';
+  static const entradaRapida = '/entrada-rapida';
   static const saida = '/saida';
   static const movimentos = '/movimentos';
   static const caixa = '/caixa';
