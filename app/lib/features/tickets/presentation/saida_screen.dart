@@ -26,6 +26,7 @@ import '../../tarifa/domain/tarifa_engine.dart';
 import '../data/pagamento_online_service.dart';
 import '../data/ticket_repository.dart';
 import '../domain/ticket_model.dart';
+import 'navegacao_saida.dart';
 import 'providers/ticket_provider.dart';
 import 'widgets/hero_saida.dart';
 import '../../estadias/presentation/estadia_saida_panel.dart';
@@ -486,49 +487,54 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
             // só tem valor quando existe hora de saída, e é aqui que ela nasce.
             valorAbatido: _valorAbatido,
           );
-
-      if (mounted) {
-        if (movimentaCaixa) ref.invalidate(caixaSessaoNotifierProvider);
-        ref.invalidate(ticketsAbertosProvider);
-      }
-
-      // ── Confirmação IMEDIATA. O commit local (fecho + caixa + outbox) já está
-      // persistido — fechar o app agora não perde nada. Tudo daqui pra baixo é
-      // background e NÃO segura o botão. Espelha o entrada_screen.
-      if (mounted) {
-        AppToast.success(context, 'Saída registrada!');
-        context.pop();
-      }
-
-      // Fire-and-forget: a fila sobe sozinha (e, offline, na próxima drenagem).
-      unawaited(syncEngine.drain());
-
-      // Recibo: impressão Bluetooth pode reconectar e demorar SEGUNDOS (socket
-      // ocioso → disconnect + connect). Fora do caminho crítico. A saída já está
-      // registrada e válida; falha avisa pelo navigator raiz com "Reimprimir".
-      unawaited(_imprimirReciboSaida(
-        printerFuture: printerFuture,
-        printerNotifier: printerNotifier,
-        ticket: ticket,
-        saida: saida,
-        valorCobrado: valorCobrado,
-        formaPagamento: formaPagamento,
-        patio: patio,
-        isIsento: isLivre,
-      ));
     } on TicketJaFechadoException {
       // Duplo-toque / retry: a saída já foi efetivada por outra chamada. Não é
       // erro — nada foi cobrado a mais (o fecho é atômico). Só sai da tela.
       if (mounted) {
         ref.invalidate(ticketsAbertosProvider);
         AppToast.success(context, 'Saída já registrada.');
-        context.pop();
+        fecharSaida(context);
       }
+      return;
     } catch (e) {
       if (mounted) AppToast.error(context, 'Erro ao registrar saída.');
+      return;
     } finally {
       if (mounted) setState(() => _fechando = false);
     }
+
+    // Daqui para baixo a saída JÁ ESTÁ GRAVADA. Fica fora do try de propósito:
+    // uma falha ao sair da tela não pode virar "Erro ao registrar saída" — o
+    // operador acharia que não cobrou e cobraria de novo.
+    if (mounted) {
+      if (movimentaCaixa) ref.invalidate(caixaSessaoNotifierProvider);
+      ref.invalidate(ticketsAbertosProvider);
+    }
+
+    // ── Confirmação IMEDIATA. O commit local (fecho + caixa + outbox) já está
+    // persistido — fechar o app agora não perde nada. Tudo daqui pra baixo é
+    // background e NÃO segura o botão. Espelha o entrada_screen.
+    if (mounted) {
+      AppToast.success(context, 'Saída registrada!');
+      fecharSaida(context);
+    }
+
+    // Fire-and-forget: a fila sobe sozinha (e, offline, na próxima drenagem).
+    unawaited(syncEngine.drain());
+
+    // Recibo: impressão Bluetooth pode reconectar e demorar SEGUNDOS (socket
+    // ocioso → disconnect + connect). Fora do caminho crítico. A saída já está
+    // registrada e válida; falha avisa pelo navigator raiz com "Reimprimir".
+    unawaited(_imprimirReciboSaida(
+      printerFuture: printerFuture,
+      printerNotifier: printerNotifier,
+      ticket: ticket,
+      saida: saida,
+      valorCobrado: valorCobrado,
+      formaPagamento: formaPagamento,
+      patio: patio,
+      isIsento: isLivre,
+    ));
   }
 
   /// Imprime o recibo FORA do caminho crítico. Não usa `ref` nem o `context` da
@@ -611,7 +617,7 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       body: _carregando
           ? const Center(child: CircularProgressIndicator())
           : _erro != null
-              ? ErrorState(mensagem: _erro!, onRetry: () => context.pop())
+              ? ErrorState(mensagem: _erro!, onRetry: () => fecharSaida(context))
               : patioAsync.when(
                   loading: () => const Center(child: CircularProgressIndicator()),
                   error: (e, _) => const ErrorState(mensagem: 'Config do pátio indisponível.'),

@@ -47,7 +47,7 @@ class _BloqueioScreenState extends ConsumerState<BloqueioScreen> {
     // interceptor aplica no gate. Se desbloqueou, o guard leva pra /home sozinho.
     await ref.read(heartbeatServiceProvider).baterAgora();
     // Também tenta drenar a fila agora (caso a rede tenha voltado).
-    ref.invalidate(syncInfoProvider);
+    ref.invalidate(ultimoSyncProvider);
     if (mounted) setState(() => _revalidando = false);
   }
 

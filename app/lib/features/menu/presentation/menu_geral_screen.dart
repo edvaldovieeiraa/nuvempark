@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:nuvempark_core/nuvempark_core.dart';
 
-import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/brisa.dart';
@@ -12,7 +10,7 @@ import '../../auth/presentation/providers/auth_provider.dart';
 import '../../caixa/presentation/providers/caixa_provider.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
-import '../../sync/presentation/sync_info_provider.dart';
+import '../../sync/presentation/sincronizacao_tile.dart';
 
 /// Aba "Menu": porta única para o que não mora na barra inferior, em três
 /// seções — Operação / Aparelho / Informações. Regra de ouro: cada conceito
@@ -28,9 +26,7 @@ class MenuGeralScreen extends ConsumerStatefulWidget {
 
 class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
   static final _hora = DateFormat('HH:mm');
-  static final _diaHora = DateFormat('dd/MM HH:mm');
 
-  bool _sincronizando = false;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +58,7 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
             _secao('Aparelho'),
             _grupo([
               _itemImpressora(),
-              _itemSync(),
+              const SincronizacaoTile(),
             ]),
 
             // Aqui os itens NÃO têm subtítulo — é assim no protótipo, e faz
@@ -281,158 +277,6 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
         decoration: BoxDecoration(color: cor, shape: BoxShape.circle),
       ),
     );
-  }
-
-  // ── Sincronização: item VIVO (status + ação, sem fingir navegação) ──────
-
-  /// Bolinha de status + última sincronização no subtítulo; o toque dispara a
-  /// MESMA drenagem que o loop automático usa — só que na hora.
-  Widget _itemSync() {
-    final syncAsync = ref.watch(syncInfoProvider);
-    final info = syncAsync.value;
-
-    final Color cor;
-    final String subtitulo;
-    if (_sincronizando) {
-      cor = AppColors.warning;
-      subtitulo = 'Sincronizando…';
-    } else if (info == null) {
-      cor = AppColors.outline;
-      subtitulo = 'Verificando…';
-    } else if (info.falhos > 0) {
-      cor = AppColors.danger;
-      subtitulo =
-          '${info.falhos} ${info.falhos == 1 ? 'item falhou' : 'itens falharam'} · toque para reenviar';
-    } else if (info.pendentes > 0) {
-      cor = AppColors.warning;
-      subtitulo =
-          '${info.pendentes} aguardando envio · ${_fmtUltimo(info.ultimoSync)}';
-    } else {
-      cor = AppColors.success;
-      subtitulo = 'Tudo em dia · ${_fmtUltimo(info.ultimoSync)}';
-    }
-
-    return InkWell(
-      onTap: _sincronizando ? null : _sincronizarAgora,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.sync, size: 20, color: AppColors.primary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text('Sincronização',
-                          style: TextStyle(
-                              fontSize: 14,
-                              height: 1.3,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.onSurface)),
-                      const SizedBox(width: 7),
-                      Container(
-                        width: 9,
-                        height: 9,
-                        decoration:
-                            BoxDecoration(color: cor, shape: BoxShape.circle),
-                      ),
-                    ],
-                  ),
-                  Text(subtitulo,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontSize: 11.5,
-                          height: 1.3,
-                          fontWeight: FontWeight.w500,
-                          // O estado "tudo em dia" fala em verde; os demais
-                          // ficam neutros para o verde significar só uma coisa.
-                          color: cor == AppColors.success
-                              ? AppColors.primary
-                              : AppColors.onSurfaceVariant)),
-                ],
-              ),
-            ),
-            if (_sincronizando)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: AppColors.primaryFill,
-                  backgroundColor: AppColors.surfaceContainerHigh,
-                ),
-              )
-            else
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: const Text('sincronizar',
-                    style: TextStyle(
-                        fontSize: 11,
-                        height: 1,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary)),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _fmtUltimo(DateTime? d) {
-    if (d == null) return 'nenhuma ainda';
-    final agora = DateTime.now();
-    final hoje = d.year == agora.year &&
-        d.month == agora.month &&
-        d.day == agora.day;
-    return hoje
-        ? 'última às ${_hora.format(d)}'
-        : 'última em ${_diaHora.format(d)}';
-  }
-
-  /// Dispara a MESMA drenagem que o loop de sync usa — só que na hora, a
-  /// pedido do operador. O engine não muda: só é invocado.
-  Future<void> _sincronizarAgora() async {
-    if (_sincronizando) return;
-    setState(() => _sincronizando = true);
-    try {
-      final r = await ref.read(syncEngineProvider).drain();
-      ref.invalidate(syncInfoProvider);
-      if (!mounted) return;
-      if (r.failed > 0) {
-        AppToast.error(context,
-            '${r.synced} enviados, ${r.failed} falharam. Vou reintentar.');
-      } else if (r.synced > 0) {
-        AppToast.success(
-            context,
-            '${r.synced} ${r.synced == 1 ? 'item enviado' : 'itens enviados'} '
-            'para a dashboard.');
-      } else {
-        AppToast.info(context, 'Nada pendente — tudo em dia.');
-      }
-    } catch (_) {
-      if (mounted) {
-        AppToast.error(context, 'Não consegui sincronizar agora.');
-      }
-    } finally {
-      if (mounted) setState(() => _sincronizando = false);
-    }
   }
 
   // ── Sair (subiu das Configurações; mesma confirmação) ───────────────────

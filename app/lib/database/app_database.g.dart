@@ -9566,6 +9566,928 @@ class EstadiaPagamentosCompanion extends UpdateCompanion<EstadiaPagamento> {
   }
 }
 
+class $FotosEnvioTable extends FotosEnvio
+    with TableInfo<$FotosEnvioTable, FotoEnvio> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FotosEnvioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operacaoIdMeta = const VerificationMeta(
+    'operacaoId',
+  );
+  @override
+  late final GeneratedColumn<String> operacaoId = GeneratedColumn<String>(
+    'operacao_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ticketIdMeta = const VerificationMeta(
+    'ticketId',
+  );
+  @override
+  late final GeneratedColumn<String> ticketId = GeneratedColumn<String>(
+    'ticket_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _avariaIdMeta = const VerificationMeta(
+    'avariaId',
+  );
+  @override
+  late final GeneratedColumn<String> avariaId = GeneratedColumn<String>(
+    'avaria_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _indiceMeta = const VerificationMeta('indice');
+  @override
+  late final GeneratedColumn<int> indice = GeneratedColumn<int>(
+    'indice',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _caminhoLocalMeta = const VerificationMeta(
+    'caminhoLocal',
+  );
+  @override
+  late final GeneratedColumn<String> caminhoLocal = GeneratedColumn<String>(
+    'caminho_local',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<int> bytes = GeneratedColumn<int>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pendente'),
+  );
+  static const VerificationMeta _tentativasMeta = const VerificationMeta(
+    'tentativas',
+  );
+  @override
+  late final GeneratedColumn<int> tentativas = GeneratedColumn<int>(
+    'tentativas',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _proximaTentativaEpochMeta =
+      const VerificationMeta('proximaTentativaEpoch');
+  @override
+  late final GeneratedColumn<int> proximaTentativaEpoch = GeneratedColumn<int>(
+    'proxima_tentativa_epoch',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _erroMeta = const VerificationMeta('erro');
+  @override
+  late final GeneratedColumn<String> erro = GeneratedColumn<String>(
+    'erro',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _erroCodigoMeta = const VerificationMeta(
+    'erroCodigo',
+  );
+  @override
+  late final GeneratedColumn<String> erroCodigo = GeneratedColumn<String>(
+    'erro_codigo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _criadoEmMeta = const VerificationMeta(
+    'criadoEm',
+  );
+  @override
+  late final GeneratedColumn<int> criadoEm = GeneratedColumn<int>(
+    'criado_em',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _enviadoEmEpochMeta = const VerificationMeta(
+    'enviadoEmEpoch',
+  );
+  @override
+  late final GeneratedColumn<int> enviadoEmEpoch = GeneratedColumn<int>(
+    'enviado_em_epoch',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _arquivoApagadoEmEpochMeta =
+      const VerificationMeta('arquivoApagadoEmEpoch');
+  @override
+  late final GeneratedColumn<int> arquivoApagadoEmEpoch = GeneratedColumn<int>(
+    'arquivo_apagado_em_epoch',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tipo,
+    operacaoId,
+    ticketId,
+    avariaId,
+    indice,
+    caminhoLocal,
+    bytes,
+    status,
+    tentativas,
+    proximaTentativaEpoch,
+    erro,
+    erroCodigo,
+    criadoEm,
+    enviadoEmEpoch,
+    arquivoApagadoEmEpoch,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'fotos_envio';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FotoEnvio> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
+    if (data.containsKey('operacao_id')) {
+      context.handle(
+        _operacaoIdMeta,
+        operacaoId.isAcceptableOrUnknown(data['operacao_id']!, _operacaoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_operacaoIdMeta);
+    }
+    if (data.containsKey('ticket_id')) {
+      context.handle(
+        _ticketIdMeta,
+        ticketId.isAcceptableOrUnknown(data['ticket_id']!, _ticketIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ticketIdMeta);
+    }
+    if (data.containsKey('avaria_id')) {
+      context.handle(
+        _avariaIdMeta,
+        avariaId.isAcceptableOrUnknown(data['avaria_id']!, _avariaIdMeta),
+      );
+    }
+    if (data.containsKey('indice')) {
+      context.handle(
+        _indiceMeta,
+        indice.isAcceptableOrUnknown(data['indice']!, _indiceMeta),
+      );
+    }
+    if (data.containsKey('caminho_local')) {
+      context.handle(
+        _caminhoLocalMeta,
+        caminhoLocal.isAcceptableOrUnknown(
+          data['caminho_local']!,
+          _caminhoLocalMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_caminhoLocalMeta);
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('tentativas')) {
+      context.handle(
+        _tentativasMeta,
+        tentativas.isAcceptableOrUnknown(data['tentativas']!, _tentativasMeta),
+      );
+    }
+    if (data.containsKey('proxima_tentativa_epoch')) {
+      context.handle(
+        _proximaTentativaEpochMeta,
+        proximaTentativaEpoch.isAcceptableOrUnknown(
+          data['proxima_tentativa_epoch']!,
+          _proximaTentativaEpochMeta,
+        ),
+      );
+    }
+    if (data.containsKey('erro')) {
+      context.handle(
+        _erroMeta,
+        erro.isAcceptableOrUnknown(data['erro']!, _erroMeta),
+      );
+    }
+    if (data.containsKey('erro_codigo')) {
+      context.handle(
+        _erroCodigoMeta,
+        erroCodigo.isAcceptableOrUnknown(data['erro_codigo']!, _erroCodigoMeta),
+      );
+    }
+    if (data.containsKey('criado_em')) {
+      context.handle(
+        _criadoEmMeta,
+        criadoEm.isAcceptableOrUnknown(data['criado_em']!, _criadoEmMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_criadoEmMeta);
+    }
+    if (data.containsKey('enviado_em_epoch')) {
+      context.handle(
+        _enviadoEmEpochMeta,
+        enviadoEmEpoch.isAcceptableOrUnknown(
+          data['enviado_em_epoch']!,
+          _enviadoEmEpochMeta,
+        ),
+      );
+    }
+    if (data.containsKey('arquivo_apagado_em_epoch')) {
+      context.handle(
+        _arquivoApagadoEmEpochMeta,
+        arquivoApagadoEmEpoch.isAcceptableOrUnknown(
+          data['arquivo_apagado_em_epoch']!,
+          _arquivoApagadoEmEpochMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FotoEnvio map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FotoEnvio(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      tipo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo'],
+      )!,
+      operacaoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operacao_id'],
+      )!,
+      ticketId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ticket_id'],
+      )!,
+      avariaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}avaria_id'],
+      ),
+      indice: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}indice'],
+      ),
+      caminhoLocal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caminho_local'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bytes'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      tentativas: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tentativas'],
+      )!,
+      proximaTentativaEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}proxima_tentativa_epoch'],
+      )!,
+      erro: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}erro'],
+      ),
+      erroCodigo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}erro_codigo'],
+      ),
+      criadoEm: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}criado_em'],
+      )!,
+      enviadoEmEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}enviado_em_epoch'],
+      ),
+      arquivoApagadoEmEpoch: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}arquivo_apagado_em_epoch'],
+      ),
+    );
+  }
+
+  @override
+  $FotosEnvioTable createAlias(String alias) {
+    return $FotosEnvioTable(attachedDatabase, alias);
+  }
+}
+
+class FotoEnvio extends DataClass implements Insertable<FotoEnvio> {
+  final String id;
+  final String tipo;
+  final String operacaoId;
+  final String ticketId;
+  final String? avariaId;
+  final int? indice;
+  final String caminhoLocal;
+  final int bytes;
+  final String status;
+  final int tentativas;
+  final int proximaTentativaEpoch;
+  final String? erro;
+  final String? erroCodigo;
+  final int criadoEm;
+  final int? enviadoEmEpoch;
+  final int? arquivoApagadoEmEpoch;
+  const FotoEnvio({
+    required this.id,
+    required this.tipo,
+    required this.operacaoId,
+    required this.ticketId,
+    this.avariaId,
+    this.indice,
+    required this.caminhoLocal,
+    required this.bytes,
+    required this.status,
+    required this.tentativas,
+    required this.proximaTentativaEpoch,
+    this.erro,
+    this.erroCodigo,
+    required this.criadoEm,
+    this.enviadoEmEpoch,
+    this.arquivoApagadoEmEpoch,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['tipo'] = Variable<String>(tipo);
+    map['operacao_id'] = Variable<String>(operacaoId);
+    map['ticket_id'] = Variable<String>(ticketId);
+    if (!nullToAbsent || avariaId != null) {
+      map['avaria_id'] = Variable<String>(avariaId);
+    }
+    if (!nullToAbsent || indice != null) {
+      map['indice'] = Variable<int>(indice);
+    }
+    map['caminho_local'] = Variable<String>(caminhoLocal);
+    map['bytes'] = Variable<int>(bytes);
+    map['status'] = Variable<String>(status);
+    map['tentativas'] = Variable<int>(tentativas);
+    map['proxima_tentativa_epoch'] = Variable<int>(proximaTentativaEpoch);
+    if (!nullToAbsent || erro != null) {
+      map['erro'] = Variable<String>(erro);
+    }
+    if (!nullToAbsent || erroCodigo != null) {
+      map['erro_codigo'] = Variable<String>(erroCodigo);
+    }
+    map['criado_em'] = Variable<int>(criadoEm);
+    if (!nullToAbsent || enviadoEmEpoch != null) {
+      map['enviado_em_epoch'] = Variable<int>(enviadoEmEpoch);
+    }
+    if (!nullToAbsent || arquivoApagadoEmEpoch != null) {
+      map['arquivo_apagado_em_epoch'] = Variable<int>(arquivoApagadoEmEpoch);
+    }
+    return map;
+  }
+
+  FotosEnvioCompanion toCompanion(bool nullToAbsent) {
+    return FotosEnvioCompanion(
+      id: Value(id),
+      tipo: Value(tipo),
+      operacaoId: Value(operacaoId),
+      ticketId: Value(ticketId),
+      avariaId: avariaId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avariaId),
+      indice: indice == null && nullToAbsent
+          ? const Value.absent()
+          : Value(indice),
+      caminhoLocal: Value(caminhoLocal),
+      bytes: Value(bytes),
+      status: Value(status),
+      tentativas: Value(tentativas),
+      proximaTentativaEpoch: Value(proximaTentativaEpoch),
+      erro: erro == null && nullToAbsent ? const Value.absent() : Value(erro),
+      erroCodigo: erroCodigo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(erroCodigo),
+      criadoEm: Value(criadoEm),
+      enviadoEmEpoch: enviadoEmEpoch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(enviadoEmEpoch),
+      arquivoApagadoEmEpoch: arquivoApagadoEmEpoch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(arquivoApagadoEmEpoch),
+    );
+  }
+
+  factory FotoEnvio.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FotoEnvio(
+      id: serializer.fromJson<String>(json['id']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      operacaoId: serializer.fromJson<String>(json['operacaoId']),
+      ticketId: serializer.fromJson<String>(json['ticketId']),
+      avariaId: serializer.fromJson<String?>(json['avariaId']),
+      indice: serializer.fromJson<int?>(json['indice']),
+      caminhoLocal: serializer.fromJson<String>(json['caminhoLocal']),
+      bytes: serializer.fromJson<int>(json['bytes']),
+      status: serializer.fromJson<String>(json['status']),
+      tentativas: serializer.fromJson<int>(json['tentativas']),
+      proximaTentativaEpoch: serializer.fromJson<int>(
+        json['proximaTentativaEpoch'],
+      ),
+      erro: serializer.fromJson<String?>(json['erro']),
+      erroCodigo: serializer.fromJson<String?>(json['erroCodigo']),
+      criadoEm: serializer.fromJson<int>(json['criadoEm']),
+      enviadoEmEpoch: serializer.fromJson<int?>(json['enviadoEmEpoch']),
+      arquivoApagadoEmEpoch: serializer.fromJson<int?>(
+        json['arquivoApagadoEmEpoch'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'tipo': serializer.toJson<String>(tipo),
+      'operacaoId': serializer.toJson<String>(operacaoId),
+      'ticketId': serializer.toJson<String>(ticketId),
+      'avariaId': serializer.toJson<String?>(avariaId),
+      'indice': serializer.toJson<int?>(indice),
+      'caminhoLocal': serializer.toJson<String>(caminhoLocal),
+      'bytes': serializer.toJson<int>(bytes),
+      'status': serializer.toJson<String>(status),
+      'tentativas': serializer.toJson<int>(tentativas),
+      'proximaTentativaEpoch': serializer.toJson<int>(proximaTentativaEpoch),
+      'erro': serializer.toJson<String?>(erro),
+      'erroCodigo': serializer.toJson<String?>(erroCodigo),
+      'criadoEm': serializer.toJson<int>(criadoEm),
+      'enviadoEmEpoch': serializer.toJson<int?>(enviadoEmEpoch),
+      'arquivoApagadoEmEpoch': serializer.toJson<int?>(arquivoApagadoEmEpoch),
+    };
+  }
+
+  FotoEnvio copyWith({
+    String? id,
+    String? tipo,
+    String? operacaoId,
+    String? ticketId,
+    Value<String?> avariaId = const Value.absent(),
+    Value<int?> indice = const Value.absent(),
+    String? caminhoLocal,
+    int? bytes,
+    String? status,
+    int? tentativas,
+    int? proximaTentativaEpoch,
+    Value<String?> erro = const Value.absent(),
+    Value<String?> erroCodigo = const Value.absent(),
+    int? criadoEm,
+    Value<int?> enviadoEmEpoch = const Value.absent(),
+    Value<int?> arquivoApagadoEmEpoch = const Value.absent(),
+  }) => FotoEnvio(
+    id: id ?? this.id,
+    tipo: tipo ?? this.tipo,
+    operacaoId: operacaoId ?? this.operacaoId,
+    ticketId: ticketId ?? this.ticketId,
+    avariaId: avariaId.present ? avariaId.value : this.avariaId,
+    indice: indice.present ? indice.value : this.indice,
+    caminhoLocal: caminhoLocal ?? this.caminhoLocal,
+    bytes: bytes ?? this.bytes,
+    status: status ?? this.status,
+    tentativas: tentativas ?? this.tentativas,
+    proximaTentativaEpoch: proximaTentativaEpoch ?? this.proximaTentativaEpoch,
+    erro: erro.present ? erro.value : this.erro,
+    erroCodigo: erroCodigo.present ? erroCodigo.value : this.erroCodigo,
+    criadoEm: criadoEm ?? this.criadoEm,
+    enviadoEmEpoch: enviadoEmEpoch.present
+        ? enviadoEmEpoch.value
+        : this.enviadoEmEpoch,
+    arquivoApagadoEmEpoch: arquivoApagadoEmEpoch.present
+        ? arquivoApagadoEmEpoch.value
+        : this.arquivoApagadoEmEpoch,
+  );
+  FotoEnvio copyWithCompanion(FotosEnvioCompanion data) {
+    return FotoEnvio(
+      id: data.id.present ? data.id.value : this.id,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      operacaoId: data.operacaoId.present
+          ? data.operacaoId.value
+          : this.operacaoId,
+      ticketId: data.ticketId.present ? data.ticketId.value : this.ticketId,
+      avariaId: data.avariaId.present ? data.avariaId.value : this.avariaId,
+      indice: data.indice.present ? data.indice.value : this.indice,
+      caminhoLocal: data.caminhoLocal.present
+          ? data.caminhoLocal.value
+          : this.caminhoLocal,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+      status: data.status.present ? data.status.value : this.status,
+      tentativas: data.tentativas.present
+          ? data.tentativas.value
+          : this.tentativas,
+      proximaTentativaEpoch: data.proximaTentativaEpoch.present
+          ? data.proximaTentativaEpoch.value
+          : this.proximaTentativaEpoch,
+      erro: data.erro.present ? data.erro.value : this.erro,
+      erroCodigo: data.erroCodigo.present
+          ? data.erroCodigo.value
+          : this.erroCodigo,
+      criadoEm: data.criadoEm.present ? data.criadoEm.value : this.criadoEm,
+      enviadoEmEpoch: data.enviadoEmEpoch.present
+          ? data.enviadoEmEpoch.value
+          : this.enviadoEmEpoch,
+      arquivoApagadoEmEpoch: data.arquivoApagadoEmEpoch.present
+          ? data.arquivoApagadoEmEpoch.value
+          : this.arquivoApagadoEmEpoch,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FotoEnvio(')
+          ..write('id: $id, ')
+          ..write('tipo: $tipo, ')
+          ..write('operacaoId: $operacaoId, ')
+          ..write('ticketId: $ticketId, ')
+          ..write('avariaId: $avariaId, ')
+          ..write('indice: $indice, ')
+          ..write('caminhoLocal: $caminhoLocal, ')
+          ..write('bytes: $bytes, ')
+          ..write('status: $status, ')
+          ..write('tentativas: $tentativas, ')
+          ..write('proximaTentativaEpoch: $proximaTentativaEpoch, ')
+          ..write('erro: $erro, ')
+          ..write('erroCodigo: $erroCodigo, ')
+          ..write('criadoEm: $criadoEm, ')
+          ..write('enviadoEmEpoch: $enviadoEmEpoch, ')
+          ..write('arquivoApagadoEmEpoch: $arquivoApagadoEmEpoch')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    tipo,
+    operacaoId,
+    ticketId,
+    avariaId,
+    indice,
+    caminhoLocal,
+    bytes,
+    status,
+    tentativas,
+    proximaTentativaEpoch,
+    erro,
+    erroCodigo,
+    criadoEm,
+    enviadoEmEpoch,
+    arquivoApagadoEmEpoch,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FotoEnvio &&
+          other.id == this.id &&
+          other.tipo == this.tipo &&
+          other.operacaoId == this.operacaoId &&
+          other.ticketId == this.ticketId &&
+          other.avariaId == this.avariaId &&
+          other.indice == this.indice &&
+          other.caminhoLocal == this.caminhoLocal &&
+          other.bytes == this.bytes &&
+          other.status == this.status &&
+          other.tentativas == this.tentativas &&
+          other.proximaTentativaEpoch == this.proximaTentativaEpoch &&
+          other.erro == this.erro &&
+          other.erroCodigo == this.erroCodigo &&
+          other.criadoEm == this.criadoEm &&
+          other.enviadoEmEpoch == this.enviadoEmEpoch &&
+          other.arquivoApagadoEmEpoch == this.arquivoApagadoEmEpoch);
+}
+
+class FotosEnvioCompanion extends UpdateCompanion<FotoEnvio> {
+  final Value<String> id;
+  final Value<String> tipo;
+  final Value<String> operacaoId;
+  final Value<String> ticketId;
+  final Value<String?> avariaId;
+  final Value<int?> indice;
+  final Value<String> caminhoLocal;
+  final Value<int> bytes;
+  final Value<String> status;
+  final Value<int> tentativas;
+  final Value<int> proximaTentativaEpoch;
+  final Value<String?> erro;
+  final Value<String?> erroCodigo;
+  final Value<int> criadoEm;
+  final Value<int?> enviadoEmEpoch;
+  final Value<int?> arquivoApagadoEmEpoch;
+  final Value<int> rowid;
+  const FotosEnvioCompanion({
+    this.id = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.operacaoId = const Value.absent(),
+    this.ticketId = const Value.absent(),
+    this.avariaId = const Value.absent(),
+    this.indice = const Value.absent(),
+    this.caminhoLocal = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.status = const Value.absent(),
+    this.tentativas = const Value.absent(),
+    this.proximaTentativaEpoch = const Value.absent(),
+    this.erro = const Value.absent(),
+    this.erroCodigo = const Value.absent(),
+    this.criadoEm = const Value.absent(),
+    this.enviadoEmEpoch = const Value.absent(),
+    this.arquivoApagadoEmEpoch = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FotosEnvioCompanion.insert({
+    required String id,
+    required String tipo,
+    required String operacaoId,
+    required String ticketId,
+    this.avariaId = const Value.absent(),
+    this.indice = const Value.absent(),
+    required String caminhoLocal,
+    this.bytes = const Value.absent(),
+    this.status = const Value.absent(),
+    this.tentativas = const Value.absent(),
+    this.proximaTentativaEpoch = const Value.absent(),
+    this.erro = const Value.absent(),
+    this.erroCodigo = const Value.absent(),
+    required int criadoEm,
+    this.enviadoEmEpoch = const Value.absent(),
+    this.arquivoApagadoEmEpoch = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       tipo = Value(tipo),
+       operacaoId = Value(operacaoId),
+       ticketId = Value(ticketId),
+       caminhoLocal = Value(caminhoLocal),
+       criadoEm = Value(criadoEm);
+  static Insertable<FotoEnvio> custom({
+    Expression<String>? id,
+    Expression<String>? tipo,
+    Expression<String>? operacaoId,
+    Expression<String>? ticketId,
+    Expression<String>? avariaId,
+    Expression<int>? indice,
+    Expression<String>? caminhoLocal,
+    Expression<int>? bytes,
+    Expression<String>? status,
+    Expression<int>? tentativas,
+    Expression<int>? proximaTentativaEpoch,
+    Expression<String>? erro,
+    Expression<String>? erroCodigo,
+    Expression<int>? criadoEm,
+    Expression<int>? enviadoEmEpoch,
+    Expression<int>? arquivoApagadoEmEpoch,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tipo != null) 'tipo': tipo,
+      if (operacaoId != null) 'operacao_id': operacaoId,
+      if (ticketId != null) 'ticket_id': ticketId,
+      if (avariaId != null) 'avaria_id': avariaId,
+      if (indice != null) 'indice': indice,
+      if (caminhoLocal != null) 'caminho_local': caminhoLocal,
+      if (bytes != null) 'bytes': bytes,
+      if (status != null) 'status': status,
+      if (tentativas != null) 'tentativas': tentativas,
+      if (proximaTentativaEpoch != null)
+        'proxima_tentativa_epoch': proximaTentativaEpoch,
+      if (erro != null) 'erro': erro,
+      if (erroCodigo != null) 'erro_codigo': erroCodigo,
+      if (criadoEm != null) 'criado_em': criadoEm,
+      if (enviadoEmEpoch != null) 'enviado_em_epoch': enviadoEmEpoch,
+      if (arquivoApagadoEmEpoch != null)
+        'arquivo_apagado_em_epoch': arquivoApagadoEmEpoch,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FotosEnvioCompanion copyWith({
+    Value<String>? id,
+    Value<String>? tipo,
+    Value<String>? operacaoId,
+    Value<String>? ticketId,
+    Value<String?>? avariaId,
+    Value<int?>? indice,
+    Value<String>? caminhoLocal,
+    Value<int>? bytes,
+    Value<String>? status,
+    Value<int>? tentativas,
+    Value<int>? proximaTentativaEpoch,
+    Value<String?>? erro,
+    Value<String?>? erroCodigo,
+    Value<int>? criadoEm,
+    Value<int?>? enviadoEmEpoch,
+    Value<int?>? arquivoApagadoEmEpoch,
+    Value<int>? rowid,
+  }) {
+    return FotosEnvioCompanion(
+      id: id ?? this.id,
+      tipo: tipo ?? this.tipo,
+      operacaoId: operacaoId ?? this.operacaoId,
+      ticketId: ticketId ?? this.ticketId,
+      avariaId: avariaId ?? this.avariaId,
+      indice: indice ?? this.indice,
+      caminhoLocal: caminhoLocal ?? this.caminhoLocal,
+      bytes: bytes ?? this.bytes,
+      status: status ?? this.status,
+      tentativas: tentativas ?? this.tentativas,
+      proximaTentativaEpoch:
+          proximaTentativaEpoch ?? this.proximaTentativaEpoch,
+      erro: erro ?? this.erro,
+      erroCodigo: erroCodigo ?? this.erroCodigo,
+      criadoEm: criadoEm ?? this.criadoEm,
+      enviadoEmEpoch: enviadoEmEpoch ?? this.enviadoEmEpoch,
+      arquivoApagadoEmEpoch:
+          arquivoApagadoEmEpoch ?? this.arquivoApagadoEmEpoch,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (operacaoId.present) {
+      map['operacao_id'] = Variable<String>(operacaoId.value);
+    }
+    if (ticketId.present) {
+      map['ticket_id'] = Variable<String>(ticketId.value);
+    }
+    if (avariaId.present) {
+      map['avaria_id'] = Variable<String>(avariaId.value);
+    }
+    if (indice.present) {
+      map['indice'] = Variable<int>(indice.value);
+    }
+    if (caminhoLocal.present) {
+      map['caminho_local'] = Variable<String>(caminhoLocal.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<int>(bytes.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (tentativas.present) {
+      map['tentativas'] = Variable<int>(tentativas.value);
+    }
+    if (proximaTentativaEpoch.present) {
+      map['proxima_tentativa_epoch'] = Variable<int>(
+        proximaTentativaEpoch.value,
+      );
+    }
+    if (erro.present) {
+      map['erro'] = Variable<String>(erro.value);
+    }
+    if (erroCodigo.present) {
+      map['erro_codigo'] = Variable<String>(erroCodigo.value);
+    }
+    if (criadoEm.present) {
+      map['criado_em'] = Variable<int>(criadoEm.value);
+    }
+    if (enviadoEmEpoch.present) {
+      map['enviado_em_epoch'] = Variable<int>(enviadoEmEpoch.value);
+    }
+    if (arquivoApagadoEmEpoch.present) {
+      map['arquivo_apagado_em_epoch'] = Variable<int>(
+        arquivoApagadoEmEpoch.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FotosEnvioCompanion(')
+          ..write('id: $id, ')
+          ..write('tipo: $tipo, ')
+          ..write('operacaoId: $operacaoId, ')
+          ..write('ticketId: $ticketId, ')
+          ..write('avariaId: $avariaId, ')
+          ..write('indice: $indice, ')
+          ..write('caminhoLocal: $caminhoLocal, ')
+          ..write('bytes: $bytes, ')
+          ..write('status: $status, ')
+          ..write('tentativas: $tentativas, ')
+          ..write('proximaTentativaEpoch: $proximaTentativaEpoch, ')
+          ..write('erro: $erro, ')
+          ..write('erroCodigo: $erroCodigo, ')
+          ..write('criadoEm: $criadoEm, ')
+          ..write('enviadoEmEpoch: $enviadoEmEpoch, ')
+          ..write('arquivoApagadoEmEpoch: $arquivoApagadoEmEpoch, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -9588,6 +10510,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $EstadiasTable estadias = $EstadiasTable(this);
   late final $EstadiaPagamentosTable estadiaPagamentos =
       $EstadiaPagamentosTable(this);
+  late final $FotosEnvioTable fotosEnvio = $FotosEnvioTable(this);
   late final OperacaoDao operacaoDao = OperacaoDao(this as AppDatabase);
   late final TicketsDao ticketsDao = TicketsDao(this as AppDatabase);
   late final CaixaDao caixaDao = CaixaDao(this as AppDatabase);
@@ -9597,6 +10520,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       MensalidadePagamentosDao(this as AppDatabase);
   late final LiberacoesDao liberacoesDao = LiberacoesDao(this as AppDatabase);
   late final EstadiasDao estadiasDao = EstadiasDao(this as AppDatabase);
+  late final FotosEnvioDao fotosEnvioDao = FotosEnvioDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9614,6 +10538,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     liberacoesCache,
     estadias,
     estadiaPagamentos,
+    fotosEnvio,
   ];
 }
 
@@ -14109,6 +15034,426 @@ typedef $$EstadiaPagamentosTableProcessedTableManager =
       EstadiaPagamento,
       PrefetchHooks Function()
     >;
+typedef $$FotosEnvioTableCreateCompanionBuilder =
+    FotosEnvioCompanion Function({
+      required String id,
+      required String tipo,
+      required String operacaoId,
+      required String ticketId,
+      Value<String?> avariaId,
+      Value<int?> indice,
+      required String caminhoLocal,
+      Value<int> bytes,
+      Value<String> status,
+      Value<int> tentativas,
+      Value<int> proximaTentativaEpoch,
+      Value<String?> erro,
+      Value<String?> erroCodigo,
+      required int criadoEm,
+      Value<int?> enviadoEmEpoch,
+      Value<int?> arquivoApagadoEmEpoch,
+      Value<int> rowid,
+    });
+typedef $$FotosEnvioTableUpdateCompanionBuilder =
+    FotosEnvioCompanion Function({
+      Value<String> id,
+      Value<String> tipo,
+      Value<String> operacaoId,
+      Value<String> ticketId,
+      Value<String?> avariaId,
+      Value<int?> indice,
+      Value<String> caminhoLocal,
+      Value<int> bytes,
+      Value<String> status,
+      Value<int> tentativas,
+      Value<int> proximaTentativaEpoch,
+      Value<String?> erro,
+      Value<String?> erroCodigo,
+      Value<int> criadoEm,
+      Value<int?> enviadoEmEpoch,
+      Value<int?> arquivoApagadoEmEpoch,
+      Value<int> rowid,
+    });
+
+class $$FotosEnvioTableFilterComposer
+    extends Composer<_$AppDatabase, $FotosEnvioTable> {
+  $$FotosEnvioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ticketId => $composableBuilder(
+    column: $table.ticketId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get avariaId => $composableBuilder(
+    column: $table.avariaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get indice => $composableBuilder(
+    column: $table.indice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get caminhoLocal => $composableBuilder(
+    column: $table.caminhoLocal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tentativas => $composableBuilder(
+    column: $table.tentativas,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get proximaTentativaEpoch => $composableBuilder(
+    column: $table.proximaTentativaEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get erro => $composableBuilder(
+    column: $table.erro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get erroCodigo => $composableBuilder(
+    column: $table.erroCodigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get criadoEm => $composableBuilder(
+    column: $table.criadoEm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get enviadoEmEpoch => $composableBuilder(
+    column: $table.enviadoEmEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get arquivoApagadoEmEpoch => $composableBuilder(
+    column: $table.arquivoApagadoEmEpoch,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FotosEnvioTableOrderingComposer
+    extends Composer<_$AppDatabase, $FotosEnvioTable> {
+  $$FotosEnvioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ticketId => $composableBuilder(
+    column: $table.ticketId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get avariaId => $composableBuilder(
+    column: $table.avariaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get indice => $composableBuilder(
+    column: $table.indice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get caminhoLocal => $composableBuilder(
+    column: $table.caminhoLocal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tentativas => $composableBuilder(
+    column: $table.tentativas,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get proximaTentativaEpoch => $composableBuilder(
+    column: $table.proximaTentativaEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get erro => $composableBuilder(
+    column: $table.erro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get erroCodigo => $composableBuilder(
+    column: $table.erroCodigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get criadoEm => $composableBuilder(
+    column: $table.criadoEm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get enviadoEmEpoch => $composableBuilder(
+    column: $table.enviadoEmEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get arquivoApagadoEmEpoch => $composableBuilder(
+    column: $table.arquivoApagadoEmEpoch,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FotosEnvioTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FotosEnvioTable> {
+  $$FotosEnvioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get operacaoId => $composableBuilder(
+    column: $table.operacaoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get ticketId =>
+      $composableBuilder(column: $table.ticketId, builder: (column) => column);
+
+  GeneratedColumn<String> get avariaId =>
+      $composableBuilder(column: $table.avariaId, builder: (column) => column);
+
+  GeneratedColumn<int> get indice =>
+      $composableBuilder(column: $table.indice, builder: (column) => column);
+
+  GeneratedColumn<String> get caminhoLocal => $composableBuilder(
+    column: $table.caminhoLocal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get tentativas => $composableBuilder(
+    column: $table.tentativas,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get proximaTentativaEpoch => $composableBuilder(
+    column: $table.proximaTentativaEpoch,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get erro =>
+      $composableBuilder(column: $table.erro, builder: (column) => column);
+
+  GeneratedColumn<String> get erroCodigo => $composableBuilder(
+    column: $table.erroCodigo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get criadoEm =>
+      $composableBuilder(column: $table.criadoEm, builder: (column) => column);
+
+  GeneratedColumn<int> get enviadoEmEpoch => $composableBuilder(
+    column: $table.enviadoEmEpoch,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get arquivoApagadoEmEpoch => $composableBuilder(
+    column: $table.arquivoApagadoEmEpoch,
+    builder: (column) => column,
+  );
+}
+
+class $$FotosEnvioTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FotosEnvioTable,
+          FotoEnvio,
+          $$FotosEnvioTableFilterComposer,
+          $$FotosEnvioTableOrderingComposer,
+          $$FotosEnvioTableAnnotationComposer,
+          $$FotosEnvioTableCreateCompanionBuilder,
+          $$FotosEnvioTableUpdateCompanionBuilder,
+          (
+            FotoEnvio,
+            BaseReferences<_$AppDatabase, $FotosEnvioTable, FotoEnvio>,
+          ),
+          FotoEnvio,
+          PrefetchHooks Function()
+        > {
+  $$FotosEnvioTableTableManager(_$AppDatabase db, $FotosEnvioTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FotosEnvioTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FotosEnvioTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FotosEnvioTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String> operacaoId = const Value.absent(),
+                Value<String> ticketId = const Value.absent(),
+                Value<String?> avariaId = const Value.absent(),
+                Value<int?> indice = const Value.absent(),
+                Value<String> caminhoLocal = const Value.absent(),
+                Value<int> bytes = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> tentativas = const Value.absent(),
+                Value<int> proximaTentativaEpoch = const Value.absent(),
+                Value<String?> erro = const Value.absent(),
+                Value<String?> erroCodigo = const Value.absent(),
+                Value<int> criadoEm = const Value.absent(),
+                Value<int?> enviadoEmEpoch = const Value.absent(),
+                Value<int?> arquivoApagadoEmEpoch = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FotosEnvioCompanion(
+                id: id,
+                tipo: tipo,
+                operacaoId: operacaoId,
+                ticketId: ticketId,
+                avariaId: avariaId,
+                indice: indice,
+                caminhoLocal: caminhoLocal,
+                bytes: bytes,
+                status: status,
+                tentativas: tentativas,
+                proximaTentativaEpoch: proximaTentativaEpoch,
+                erro: erro,
+                erroCodigo: erroCodigo,
+                criadoEm: criadoEm,
+                enviadoEmEpoch: enviadoEmEpoch,
+                arquivoApagadoEmEpoch: arquivoApagadoEmEpoch,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String tipo,
+                required String operacaoId,
+                required String ticketId,
+                Value<String?> avariaId = const Value.absent(),
+                Value<int?> indice = const Value.absent(),
+                required String caminhoLocal,
+                Value<int> bytes = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> tentativas = const Value.absent(),
+                Value<int> proximaTentativaEpoch = const Value.absent(),
+                Value<String?> erro = const Value.absent(),
+                Value<String?> erroCodigo = const Value.absent(),
+                required int criadoEm,
+                Value<int?> enviadoEmEpoch = const Value.absent(),
+                Value<int?> arquivoApagadoEmEpoch = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FotosEnvioCompanion.insert(
+                id: id,
+                tipo: tipo,
+                operacaoId: operacaoId,
+                ticketId: ticketId,
+                avariaId: avariaId,
+                indice: indice,
+                caminhoLocal: caminhoLocal,
+                bytes: bytes,
+                status: status,
+                tentativas: tentativas,
+                proximaTentativaEpoch: proximaTentativaEpoch,
+                erro: erro,
+                erroCodigo: erroCodigo,
+                criadoEm: criadoEm,
+                enviadoEmEpoch: enviadoEmEpoch,
+                arquivoApagadoEmEpoch: arquivoApagadoEmEpoch,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FotosEnvioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FotosEnvioTable,
+      FotoEnvio,
+      $$FotosEnvioTableFilterComposer,
+      $$FotosEnvioTableOrderingComposer,
+      $$FotosEnvioTableAnnotationComposer,
+      $$FotosEnvioTableCreateCompanionBuilder,
+      $$FotosEnvioTableUpdateCompanionBuilder,
+      (FotoEnvio, BaseReferences<_$AppDatabase, $FotosEnvioTable, FotoEnvio>),
+      FotoEnvio,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -14137,6 +15482,8 @@ class $AppDatabaseManager {
       $$EstadiasTableTableManager(_db, _db.estadias);
   $$EstadiaPagamentosTableTableManager get estadiaPagamentos =>
       $$EstadiaPagamentosTableTableManager(_db, _db.estadiaPagamentos);
+  $$FotosEnvioTableTableManager get fotosEnvio =>
+      $$FotosEnvioTableTableManager(_db, _db.fotosEnvio);
 }
 
 mixin _$OperacaoDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -14264,4 +15611,19 @@ class EstadiasDaoManager {
         _db.attachedDatabase,
         _db.estadiaPagamentos,
       );
+}
+
+mixin _$FotosEnvioDaoMixin on DatabaseAccessor<AppDatabase> {
+  $FotosEnvioTable get fotosEnvio => attachedDatabase.fotosEnvio;
+  $TicketsTable get tickets => attachedDatabase.tickets;
+  FotosEnvioDaoManager get managers => FotosEnvioDaoManager(this);
+}
+
+class FotosEnvioDaoManager {
+  final _$FotosEnvioDaoMixin _db;
+  FotosEnvioDaoManager(this._db);
+  $$FotosEnvioTableTableManager get fotosEnvio =>
+      $$FotosEnvioTableTableManager(_db.attachedDatabase, _db.fotosEnvio);
+  $$TicketsTableTableManager get tickets =>
+      $$TicketsTableTableManager(_db.attachedDatabase, _db.tickets);
 }

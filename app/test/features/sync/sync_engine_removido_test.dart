@@ -40,6 +40,41 @@ void main() {
     await db.close();
   });
 
+  test('removido no painel: as fotos pendentes do ticket são descartadas',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final storage = await _storagePronta();
+    await seedTicket(db, id: 'X', patio: 'p1');
+    await enqueueTicket(db, 'X');
+    await db.fotosEnvioDao.enfileirar(FotosEnvioCompanion.insert(
+      id: 'entrada-X',
+      tipo: 'entrada',
+      operacaoId: 'p1',
+      ticketId: 'X',
+      caminhoLocal: '/fotos/X.jpg',
+      criadoEm: 1,
+    ));
+
+    // Qualquer upload aqui é bug: o engine não envia mais fotos.
+    final dio = fakeDio((o) {
+      if (o.uri.path.endsWith('/sync')) {
+        return jsonResponse({'ok': true, 'ignorado': true, 'motivo': 'removido'});
+      }
+      throw StateError('o SyncEngine não sobe foto: ${o.uri}');
+    });
+
+    await SyncEngine(db: db, dio: dio, storage: storage).drain();
+
+    final foto = await (db.select(db.fotosEnvio)
+          ..where((f) => f.id.equals('entrada-X')))
+        .getSingle();
+    expect(foto.status, 'descartada');
+    final resumo = await db.fotosEnvioDao.watchResumo().first;
+    expect(resumo.pendentes, 0, reason: 'sai da contagem do menu');
+
+    await db.close();
+  });
+
   test(
       'sync 200 SEM a flag (regressão): item sincronizado, ticket permanece intocado',
       () async {

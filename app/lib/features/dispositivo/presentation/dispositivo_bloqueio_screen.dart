@@ -52,7 +52,7 @@ class _DispositivoBloqueioScreenState
       // Heartbeat 200 = liberado → o próprio serviço chama liberar() e o guard
       // devolve à /home. Se ainda bloqueado, o interceptor mantém o estado.
       await ref.read(heartbeatServiceProvider).baterAgora();
-      ref.invalidate(syncInfoProvider);
+      ref.invalidate(ultimoSyncProvider);
       if (mounted &&
           ref.read(dispositivoControllerProvider) != null) {
         setState(() => _revalidando = false);

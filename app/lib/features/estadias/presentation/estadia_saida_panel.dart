@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:nuvempark_core/nuvempark_core.dart';
 
@@ -13,7 +12,9 @@ import '../../caixa/presentation/providers/caixa_provider.dart';
 import '../../patio/domain/patio_model.dart';
 import '../../patio/domain/tarifa_config.dart';
 import '../../printing/data/print_templates.dart';
+import '../../tickets/data/ticket_repository.dart';
 import '../../tickets/domain/ticket_model.dart';
+import '../../tickets/presentation/navegacao_saida.dart';
 import '../../tickets/presentation/providers/ticket_provider.dart';
 import '../../tickets/presentation/widgets/hero_saida.dart';
 import '../data/estadia_repository.dart';
@@ -146,6 +147,15 @@ class _EstadiaSaidaPanelState extends ConsumerState<EstadiaSaidaPanel> {
             caixaSessaoId: caixaSessaoId,
             placa: t.placa,
           );
+    } on TicketJaFechadoException {
+      // Retry depois de uma saída que já gravou: não é erro, só sai da tela.
+      if (mounted) {
+        ref.invalidate(ticketsAbertosProvider);
+        ref.invalidate(hospedesProvider);
+        AppToast.success(context, 'Saída já registrada.');
+        fecharSaida(context);
+      }
+      return;
     } catch (_) {
       if (mounted) {
         setState(() => _fechando = false);
@@ -176,7 +186,7 @@ class _EstadiaSaidaPanelState extends ConsumerState<EstadiaSaidaPanel> {
       ),
     );
     AppToast.success(context, 'Saída registrada!');
-    context.pop();
+    fecharSaida(context);
   }
 
   Future<void> _renovar(Estadia e) async {
@@ -189,7 +199,7 @@ class _EstadiaSaidaPanelState extends ConsumerState<EstadiaSaidaPanel> {
     );
     if (!ok || !mounted) return;
     AppToast.success(context, 'Estadia renovada e saída registrada!');
-    context.pop();
+    fecharSaida(context);
   }
 
   @override

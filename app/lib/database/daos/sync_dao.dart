@@ -72,6 +72,21 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
     return row.read(count) ?? 0;
   }
 
+  /// Pendentes e falhos, reativo — o menu de sincronização se atualiza
+  /// sozinho, sem ninguém precisar invalidar nada.
+  Stream<({int pendentes, int falhos})> watchContagens() => customSelect(
+        '''
+        SELECT
+          COALESCE(SUM(CASE WHEN status = 'pendente' THEN 1 ELSE 0 END), 0) AS pendentes,
+          COALESCE(SUM(CASE WHEN status = 'falhou' THEN 1 ELSE 0 END), 0) AS falhos
+        FROM sync_log
+        ''',
+        readsFrom: {syncLog},
+      ).watchSingle().map((r) => (
+            pendentes: r.read<int>('pendentes'),
+            falhos: r.read<int>('falhos'),
+          ));
+
   Future<List<SyncLogData>> getFalhos() =>
       (select(syncLog)
             ..where((s) => s.status.equals('falhou'))

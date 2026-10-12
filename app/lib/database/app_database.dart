@@ -17,6 +17,7 @@ import 'tables/mensalidade_pagamentos_table.dart';
 import 'tables/liberacoes_cache_table.dart';
 import 'tables/estadias_table.dart';
 import 'tables/estadia_pagamentos_table.dart';
+import 'tables/fotos_envio_table.dart';
 
 part 'app_database.g.dart';
 part 'daos/operacao_dao.dart';
@@ -27,6 +28,7 @@ part 'daos/clientes_dao.dart';
 part 'daos/mensalidade_pagamentos_dao.dart';
 part 'daos/liberacoes_dao.dart';
 part 'daos/estadias_dao.dart';
+part 'daos/fotos_envio_dao.dart';
 
 @DriftDatabase(
   tables: [
@@ -42,6 +44,7 @@ part 'daos/estadias_dao.dart';
     LiberacoesCache,
     Estadias,
     EstadiaPagamentos,
+    FotosEnvio,
   ],
   daos: [
     OperacaoDao,
@@ -52,6 +55,7 @@ part 'daos/estadias_dao.dart';
     MensalidadePagamentosDao,
     LiberacoesDao,
     EstadiasDao,
+    FotosEnvioDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -65,7 +69,9 @@ class AppDatabase extends _$AppDatabase {
   // offline honrar um desconto ja sincronizado.
   // v5: estadia de hóspede — tabelas estadias/estadia_pagamentos; colunas de
   // diária em tarifas; estadia_id em tickets; estadia_pagamento_id no caixa.
-  int get schemaVersion => 5;
+  // v6: fotos_envio — fila durável das fotos de entrada e de avaria; as fotos
+  // de entrada ainda não enviadas entram nela na migração.
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -96,6 +102,11 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(caixaMovimentos, caixaMovimentos.estadiaPagamentoId);
             await _criarIndicesEstadias(m);
           }
+          if (from < 6) {
+            await m.createTable(fotosEnvio);
+            await _criarIndicesFotos(m);
+            await _backfillFotosEntrada(m);
+          }
         },
       );
 
@@ -115,6 +126,33 @@ class AppDatabase extends _$AppDatabase {
     );
     await _criarIndicesMensalidade(m);
     await _criarIndicesEstadias(m);
+    await _criarIndicesFotos(m);
+  }
+
+  /// Índices da fila de fotos (usados no onCreate e no onUpgrade v6).
+  Future<void> _criarIndicesFotos(Migrator m) async {
+    await m.database.customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_fotos_status_prox ON fotos_envio(status, proxima_tentativa_epoch, criado_em)',
+    );
+    await m.database.customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_fotos_ticket ON fotos_envio(ticket_id)',
+    );
+  }
+
+  /// Leva para a fila as fotos de entrada que ainda não subiram. SQL puro: o
+  /// tamanho do arquivo fica 0 e é medido pelo uploader, para a migração não
+  /// fazer I/O de arquivo. `criado_em` vem do ticket — a ordem de envio
+  /// (mais antigas primeiro) continua a de antes.
+  Future<void> _backfillFotosEntrada(Migrator m) async {
+    await m.database.customStatement('''
+      INSERT OR IGNORE INTO fotos_envio
+        (id, tipo, operacao_id, ticket_id, caminho_local, bytes, status,
+         tentativas, proxima_tentativa_epoch, criado_em)
+      SELECT 'entrada-' || id, 'entrada', operacao_id, id, foto_entrada_path,
+             0, 'pendente', 0, 0, criado_em
+      FROM tickets
+      WHERE foto_entrada_path IS NOT NULL AND foto_entrada_enviada = 0
+    ''');
   }
 
   /// Índices da estadia de hóspede (usados no onCreate e no onUpgrade v5).

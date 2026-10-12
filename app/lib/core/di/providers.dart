@@ -11,6 +11,8 @@ import '../network/dispositivo_interceptor.dart';
 import '../../database/app_database.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/data/token_storage.dart';
+import '../../features/sync/data/foto_limpeza.dart';
+import '../../features/sync/data/foto_uploader.dart';
 import '../../features/sync/data/sync_engine.dart';
 import '../../features/sync/data/sync_mutex.dart';
 import '../../features/printing/data/printer_service.dart';
@@ -86,6 +88,25 @@ final syncEngineProvider = Provider<SyncEngine>(
     dio: ref.read(dioProvider),
     storage: ref.read(tokenStorageProvider),
     mutex: ref.read(syncMutexProvider),
+  ),
+);
+
+/// Envio da fila de fotos — FORA da [syncMutexProvider] de propósito: um lote
+/// de fotos não pode segurar a leitura dos veículos nem as entradas novas.
+final fotoUploaderProvider = Provider<FotoUploader>((ref) {
+  final uploader = FotoUploader(
+    db: ref.read(appDatabaseProvider),
+    dio: ref.read(dioProvider),
+  );
+  ref.onDispose(uploader.dispose);
+  return uploader;
+});
+
+/// Limpeza diária das fotos já enviadas de carros que saíram.
+final fotoLimpezaProvider = Provider<FotoLimpeza>(
+  (ref) => FotoLimpeza(
+    db: ref.read(appDatabaseProvider),
+    storage: ref.read(tokenStorageProvider),
   ),
 );
 

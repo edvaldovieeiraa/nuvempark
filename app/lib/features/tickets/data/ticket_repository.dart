@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
@@ -168,6 +169,12 @@ class TicketRepository {
       'atualizado_em': agora,
     });
 
+    // Tamanho da foto para o menu ("12 fotos, 4,8 MB"). Medido fora da
+    // transação; arquivo ausente fica 0 e o envio marca a falha.
+    final fotoBytes = fotoEntradaPath == null
+        ? 0
+        : await _tamanhoArquivo(fotoEntradaPath);
+
     await db.transaction(() async {
       await db.ticketsDao.inserir(TicketsCompanion(
         id: Value(id),
@@ -196,9 +203,30 @@ class TicketRepository {
         payload: Value(payload),
         criadoEm: Value(agora),
       ));
+      // A foto entra na fila de envio na MESMA transação do ticket: não existe
+      // ticket com foto que a fila desconheça (spec fila-fotos-sync, req. 1).
+      if (fotoEntradaPath != null) {
+        await db.fotosEnvioDao.enfileirar(FotosEnvioCompanion.insert(
+          id: 'entrada-$id',
+          tipo: 'entrada',
+          operacaoId: patioId,
+          ticketId: id,
+          caminhoLocal: fotoEntradaPath,
+          bytes: Value(fotoBytes),
+          criadoEm: agora,
+        ));
+      }
     });
 
     return id;
+  }
+
+  static Future<int> _tamanhoArquivo(String path) async {
+    try {
+      return await File(path).length();
+    } catch (_) {
+      return 0;
+    }
   }
 
   /// Efetiva a SAÍDA de um veículo: fecha o ticket e — quando o dinheiro passa

@@ -102,7 +102,7 @@ class HeartbeatService with WidgetsBindingObserver {
           final quando = DateTime.tryParse(iso)?.toLocal();
           if (quando != null) {
             await _ref.read(tokenStorageProvider).saveUltimoSync(quando);
-            _ref.invalidate(syncInfoProvider);
+            _ref.invalidate(ultimoSyncProvider);
           }
         }
       }
