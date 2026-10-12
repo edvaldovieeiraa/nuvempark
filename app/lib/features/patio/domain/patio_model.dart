@@ -17,7 +17,43 @@ class PatioModel {
     required this.sincronizadoEm,
     this.fotoReciboModo = 'desativada',
     this.modoQuiosque = true,
+    this.modoRapidoEntrada = false,
+    this.modoRapidoImprime = true,
   });
+
+  /// Monta o pátio a partir do cache do bootstrap (`OperacaoCache.configJson`
+  /// já decodificado). Chave ausente — API antiga ou cache de antes do campo —
+  /// cai no default de cada um.
+  factory PatioModel.fromCache({
+    required String id,
+    required String nome,
+    required String codigo,
+    required int qtdVagas,
+    required Map<String, dynamic> config,
+    required List<TarifaConfig> tarifas,
+    required DateTime sincronizadoEm,
+  }) {
+    List<String> lista(String k) =>
+        List<String>.from((config[k] as List?) ?? const []);
+    return PatioModel(
+      id: id,
+      nome: nome,
+      codigo: codigo,
+      qtdVagas: qtdVagas,
+      tiposVeiculo: lista('tipos_veiculo'),
+      formasPagamento: lista('formas_pagamento'),
+      motivosIsencao: lista('motivos_isencao'),
+      motivosCancelamento: lista('motivos_cancelamento'),
+      ticketCabecalho: lista('ticket_cabecalho'),
+      ticketRodape: lista('ticket_rodape'),
+      tarifas: tarifas,
+      sincronizadoEm: sincronizadoEm,
+      fotoReciboModo: (config['foto_recibo_modo'] as String?) ?? 'desativada',
+      modoQuiosque: (config['modo_quiosque'] as bool?) ?? true,
+      modoRapidoEntrada: (config['modo_rapido_entrada'] as bool?) ?? false,
+      modoRapidoImprime: (config['modo_rapido_imprime'] as bool?) ?? true,
+    );
+  }
 
   final String id;
   final String nome;
@@ -44,6 +80,25 @@ class PatioModel {
 
   /// Modo quiosque (Lock Task) do Android ligado para este pátio.
   final bool modoQuiosque;
+
+  /// O painel liberou o modo rápido de entrada neste pátio (cada operador
+  /// ainda liga ou desliga no aparelho).
+  final bool modoRapidoEntrada;
+
+  /// O modo rápido imprime o cupom de entrada.
+  final bool modoRapidoImprime;
+
+  /// Tipo que a entrada pré-seleciona: o primeiro da ordem definida no painel
+  /// (Cadastros → Tipos de veículo). A ordem é a regra do gestor.
+  String? get tipoPadrao => tiposVeiculo.isEmpty ? null : tiposVeiculo.first;
+
+  /// Tabela que a entrada pré-seleciona para [tipoVeiculo]: a primeira AVULSA
+  /// visível. A de hóspede nunca vem marcada sozinha — contratar sem querer
+  /// cobra diárias sem estorno.
+  TarifaConfig? tabelaAvulsaPadrao(String tipoVeiculo) {
+    final avulsas = tabelasVisiveis(tipoVeiculo);
+    return avulsas.isEmpty ? null : avulsas.first;
+  }
 
   /// Uma tarifa com tipoVeiculo == 'ambos' atende qualquer tipo de veículo.
   static const tipoAmbos = 'ambos';

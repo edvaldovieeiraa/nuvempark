@@ -30,6 +30,7 @@ import '../../printing/presentation/providers/printer_provider.dart';
 import '../data/foto_entrada_service.dart';
 import '../data/placa_ocr_service.dart';
 import '../domain/reconhecimento_cliente.dart';
+import '../data/entrada_service.dart';
 import 'camera_placa_screen.dart';
 import 'navegacao_saida.dart';
 import 'placa_formatter.dart';
@@ -171,17 +172,16 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
     }
     final patioId = await ref.read(tokenStorageProvider).readPatioId();
     if (patioId == null) return;
-    final rec =
-        await ref.read(ticketRepositoryProvider).reconhecerPlaca(patioId, norm);
-    // Mensalista com livre passagem tem precedência sobre hóspede (Revisão 5).
-    final hospede = (rec?.liberaPassagem ?? false)
-        ? null
-        : await ref.read(estadiaRepositoryProvider).reconhecerHospede(patioId, norm);
+    // Mensalista com livre passagem tem precedência sobre hóspede (Revisão 5)
+    // — a regra mora no serviço, a mesma do modo rápido.
+    final r = await ref
+        .read(entradaServiceProvider)
+        .reconhecer(patioId: patioId, placa: norm);
     // Descarta resposta obsoleta (placa mudou enquanto consultava).
     if (!mounted || _placaCtrl.text.trim().toUpperCase() != norm) return;
     setState(() {
-      _reconhecimento = rec;
-      _hospede = hospede;
+      _reconhecimento = r.cliente;
+      _hospede = r.hospede;
     });
   }
 
@@ -266,7 +266,6 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
       final printerFuture = ref.read(printerNotifierProvider.future);
       final printerNotifier = ref.read(printerNotifierProvider.notifier);
 
-      final livre = _reconhecimento?.liberaPassagem ?? false;
       final agora = DateTime.now();
       final estadiaRepo = ref.read(estadiaRepositoryProvider);
       final hospede =
@@ -325,28 +324,25 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
           formaPagamento: forma,
         );
         ref.invalidate(caixaSessaoNotifierProvider);
-      } else if (hospede != null) {
-        ticketId = await estadiaRepo.registrarEntradaHospede(
-          hospede,
-          operadorId: user.id,
-          fotoEntradaPath: _fotoEntradaPath,
-        );
-        blocoCupom = BlocoEstadia(
-          titulo: 'HOSPEDE',
-          validaAte: DateTime.fromMillisecondsSinceEpoch(hospede.validaAteEpoch),
-        );
       } else {
-        ticketId = await ref.read(ticketRepositoryProvider).registrarEntrada(
-              placa: placa,
-              tipoVeiculo: _tipoVeiculo!,
+        // Hóspede válido, livre passagem ou avulso: as mesmas regras do modo
+        // rápido (EntradaService). O reconhecimento é o que a tela já mostra.
+        final r = await ref.read(entradaServiceProvider).registrar(
+              EntradaLiberada(placa, cliente: _reconhecimento, hospede: hospede),
               patioId: patioId,
+              tipoVeiculo: _tipoVeiculo!,
               operadorId: user.id,
               tarifaId: _tarifaId,
-              clienteId: livre ? _reconhecimento?.clienteId : null,
-              planoId: livre ? _reconhecimento?.planoId : null,
-              origem: livre ? 'plano' : 'avulso',
               fotoEntradaPath: _fotoEntradaPath,
             );
+        ticketId = r.ticketId;
+        if (hospede != null) {
+          blocoCupom = BlocoEstadia(
+            titulo: 'HOSPEDE',
+            validaAte:
+                DateTime.fromMillisecondsSinceEpoch(hospede.validaAteEpoch),
+          );
+        }
       }
 
       // Avaria (se preenchida): o REGISTRO entra na outbox e as FOTOS na fila
@@ -483,8 +479,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
           // (Cadastros → Tipos de veículo). A ordem é a regra do gestor.
           if (!_tipoDefaultAplicado) {
             _tipoDefaultAplicado = true;
-            final def =
-                patio.tiposVeiculo.isNotEmpty ? patio.tiposVeiculo.first : null;
+            final def = patio.tipoPadrao;
             if (def != null) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) setState(() => _tipoVeiculo = def);
@@ -499,7 +494,9 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
 
           // Pré-seleciona a PRIMEIRA tarifa AVULSA da ordem. A de hóspede nunca
           // vem marcada sozinha: contratar sem querer cobra diárias sem estorno.
-          final primeiraAvulsa = tabelas.where((t) => !t.isHospede).firstOrNull?.id;
+          final primeiraAvulsa = _tipoVeiculo != null
+              ? patio.tabelaAvulsaPadrao(_tipoVeiculo!)?.id
+              : null;
           if (_tarifaId == null
               ? primeiraAvulsa != null
               : !tabelas.any((t) => t.id == _tarifaId)) {
