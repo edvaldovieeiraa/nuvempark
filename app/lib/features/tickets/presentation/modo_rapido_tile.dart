@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nuvempark_core/nuvempark_core.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/theme/app_colors.dart';
@@ -14,25 +15,47 @@ import 'providers/ticket_provider.dart';
 /// Quem decide se o item aparece é o Menu (pátio liberado no painel). Liberado
 /// mas sem tipo ou tabela padrão, a chave fica travada e desligada, com o
 /// motivo no lugar da legenda.
-class ModoRapidoTile extends ConsumerWidget {
+class ModoRapidoTile extends ConsumerStatefulWidget {
   const ModoRapidoTile({super.key, required this.patio});
 
   final PatioModel patio;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final motivo = patio.motivoModoRapidoIndisponivel;
+  ConsumerState<ModoRapidoTile> createState() => _ModoRapidoTileState();
+}
+
+class _ModoRapidoTileState extends ConsumerState<ModoRapidoTile> {
+  /// Gravando a preferência: toques nesse meio-tempo são ignorados (o valor
+  /// na tela ainda é o antigo, e o segundo toque repetiria o primeiro).
+  bool _gravando = false;
+
+  Future<void> _alternar(bool ligar) async {
+    if (_gravando) return;
+    setState(() => _gravando = true);
+    // Lido antes do await: se o pátio sincronizar no meio e o item sumir do
+    // Menu, a preferência gravada ainda precisa chegar à Home.
+    final container = ProviderScope.containerOf(context, listen: false);
+    try {
+      await container.read(tokenStorageProvider).saveModoRapido(ligar);
+      // A Home lê este provider para decidir qual entrada o botão abre.
+      container.invalidate(modoRapidoLigadoProvider);
+    } catch (_) {
+      if (mounted) AppToast.error(context, 'Não consegui salvar o modo rápido.');
+    } finally {
+      if (mounted) setState(() => _gravando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final motivo = widget.patio.motivoModoRapidoIndisponivel;
     final ligado = ref.watch(modoRapidoLigadoProvider).value ?? false;
     final valor = ligado && motivo == null;
-
-    Future<void> alternar(bool ligar) async {
-      await ref.read(tokenStorageProvider).saveModoRapido(ligar);
-      ref.invalidate(modoRapidoLigadoProvider);
-    }
+    final travada = motivo != null;
 
     return MergeSemantics(
       child: InkWell(
-        onTap: motivo != null ? null : () => alternar(!valor),
+        onTap: travada ? null : () => _alternar(!valor),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
@@ -71,7 +94,7 @@ class ModoRapidoTile extends ConsumerWidget {
               const SizedBox(width: 8),
               Switch(
                 value: valor,
-                onChanged: motivo != null ? null : alternar,
+                onChanged: travada ? null : _alternar,
               ),
             ],
           ),

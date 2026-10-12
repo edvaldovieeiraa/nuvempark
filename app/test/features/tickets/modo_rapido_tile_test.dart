@@ -6,6 +6,7 @@ import 'package:nuvempark_app/features/auth/data/token_storage.dart';
 import 'package:nuvempark_app/features/patio/domain/patio_model.dart';
 import 'package:nuvempark_app/features/patio/domain/tarifa_config.dart';
 import 'package:nuvempark_app/features/tickets/presentation/modo_rapido_tile.dart';
+import 'package:nuvempark_app/features/tickets/presentation/providers/ticket_provider.dart';
 
 import '../../support/fakes.dart';
 
@@ -44,13 +45,35 @@ PatioModel _patio({List<TarifaConfig>? tarifas}) => PatioModel(
       modoRapidoEntrada: true,
     );
 
+/// Aparelho cujo secure storage passa a recusar gravações.
+class _StorageQuebravel extends MemSecureStorage {
+  bool quebrado = false;
+  @override
+  Future<void> write(String key, String value) async {
+    if (quebrado) throw StateError('keystore');
+    return super.write(key, value);
+  }
+}
+
+/// Monta o tile e, ao lado, um leitor da preferência no lugar da Home — o
+/// botão "Entrada" de lá precisa ver a mudança feita no Menu.
 Future<TokenStorage> _montar(WidgetTester tester, PatioModel patio,
-    {bool ligado = false}) async {
-  final storage = TokenStorage(MemSecureStorage());
+    {bool ligado = false, MemSecureStorage? secure}) async {
+  final storage = TokenStorage(secure ?? MemSecureStorage());
   await storage.saveModoRapido(ligado);
   await tester.pumpWidget(ProviderScope(
     overrides: [tokenStorageProvider.overrideWithValue(storage)],
-    child: MaterialApp(home: Scaffold(body: ModoRapidoTile(patio: patio))),
+    child: MaterialApp(
+      home: Scaffold(
+        body: Column(children: [
+          ModoRapidoTile(patio: patio),
+          Consumer(
+            builder: (_, ref, _) => Text(
+                'home: ${ref.watch(modoRapidoLigadoProvider).value ?? '-'}'),
+          ),
+        ]),
+      ),
+    ),
   ));
   await tester.pumpAndSettle();
   return storage;
@@ -70,6 +93,8 @@ void main() {
 
     expect(await storage.readModoRapido(), isTrue);
     expect(_valor(tester), isTrue);
+    expect(find.text('home: true'), findsOneWidget,
+        reason: 'o resto do app enxerga a mudança sem reabrir');
   });
 
   testWidgets('ligado: o toque na chave desliga', (tester) async {
@@ -81,20 +106,41 @@ void main() {
 
     expect(await storage.readModoRapido(), isFalse);
     expect(_valor(tester), isFalse);
+    expect(find.text('home: false'), findsOneWidget);
   });
 
   testWidgets('pátio sem tabela avulsa: chave travada e o motivo à vista',
       (tester) async {
     final patio = _patio(tarifas: []);
-    final storage = await _montar(tester, patio, ligado: true);
+    final storage = await _montar(tester, patio);
 
     expect(find.text(patio.motivoModoRapidoIndisponivel!), findsOneWidget);
-    expect(_valor(tester), isFalse, reason: 'não promete o que não abre');
     expect(tester.widget<Switch>(find.byType(Switch)).onChanged, isNull);
+    expect(tester.widget<InkWell>(find.byType(InkWell).first).onTap, isNull);
 
     await tester.tap(find.text('Modo rápido de entrada'));
     await tester.pumpAndSettle();
-    expect(await storage.readModoRapido(), isTrue,
-        reason: 'travada não mexe na preferência guardada');
+    expect(await storage.readModoRapido(), isFalse,
+        reason: 'travada, o toque não liga nada');
+  });
+
+  testWidgets('travada com a preferência ligada: mostra desligada',
+      (tester) async {
+    await _montar(tester, _patio(tarifas: []), ligado: true);
+    expect(_valor(tester), isFalse, reason: 'não promete o que não abre');
+  });
+
+  testWidgets('aparelho recusa gravar: avisa e a chave fica como estava',
+      (tester) async {
+    final secure = _StorageQuebravel();
+    final storage = await _montar(tester, _patio(), secure: secure);
+    secure.quebrado = true;
+
+    await tester.tap(find.text('Modo rápido de entrada'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Não consegui salvar o modo rápido.'), findsOneWidget);
+    expect(_valor(tester), isFalse);
+    expect(await storage.readModoRapido(), isFalse);
   });
 }

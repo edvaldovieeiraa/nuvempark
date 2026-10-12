@@ -14,11 +14,10 @@ import '../../sync/presentation/sincronizacao_tile.dart';
 import '../../tickets/presentation/modo_rapido_tile.dart';
 
 /// Aba "Menu": porta única para o que não mora na barra inferior, em seções —
-/// Operação / Aparelho / Configurações (só com algo a configurar) /
-/// Informações. Regra de ouro: cada conceito
-/// tem UM lugar só (a antiga tela de Configurações foi dissolvida aqui: o
-/// card de sync virou o item vivo, o bloco "Conexão" foi para o Sobre e o
-/// Sair subiu para o fim do menu).
+/// Operação / Aparelho / Configurações (só quando há o que configurar) /
+/// Informações. Regra de ouro: cada conceito tem UM lugar só (a antiga tela
+/// de Configurações foi dissolvida aqui: o card de sync virou o item vivo, o
+/// bloco "Conexão" foi para o Sobre e o Sair subiu para o fim do menu).
 class MenuGeralScreen extends ConsumerStatefulWidget {
   const MenuGeralScreen({super.key});
 
