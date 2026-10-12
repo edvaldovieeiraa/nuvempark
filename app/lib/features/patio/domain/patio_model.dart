@@ -18,7 +18,6 @@ class PatioModel {
     this.fotoReciboModo = 'desativada',
     this.modoQuiosque = true,
     this.modoRapidoEntrada = false,
-    this.modoRapidoImprime = true,
   });
 
   /// Monta o pátio a partir do cache do bootstrap (`OperacaoCache.configJson`
@@ -51,7 +50,6 @@ class PatioModel {
       fotoReciboModo: (config['foto_recibo_modo'] as String?) ?? 'desativada',
       modoQuiosque: (config['modo_quiosque'] as bool?) ?? true,
       modoRapidoEntrada: (config['modo_rapido_entrada'] as bool?) ?? false,
-      modoRapidoImprime: (config['modo_rapido_imprime'] as bool?) ?? true,
     );
   }
 
@@ -82,11 +80,9 @@ class PatioModel {
   final bool modoQuiosque;
 
   /// O painel liberou o modo rápido de entrada neste pátio (cada operador
-  /// ainda liga ou desliga no aparelho).
+  /// ainda liga ou desliga no aparelho). Imprimir ou não o cupom no modo
+  /// rápido é só do aparelho — ver `TokenStorage.readModoRapidoImprime`.
   final bool modoRapidoEntrada;
-
-  /// O modo rápido imprime o cupom de entrada.
-  final bool modoRapidoImprime;
 
   /// Tipo que a entrada pré-seleciona: o primeiro da ordem definida no painel
   /// (Cadastros → Tipos de veículo). A ordem é a regra do gestor.

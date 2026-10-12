@@ -22,6 +22,12 @@ final modoRapidoLigadoProvider = FutureProvider<bool>(
   (ref) => ref.read(tokenStorageProvider).readModoRapido(),
 );
 
+/// O modo rápido imprime o cupom neste aparelho. Quem muda a preferência
+/// invalida este provider.
+final modoRapidoImprimeProvider = FutureProvider<bool>(
+  (ref) => ref.read(tokenStorageProvider).readModoRapidoImprime(),
+);
+
 /// Regras da entrada compartilhadas pela entrada normal e pelo modo rápido.
 final entradaServiceProvider = Provider<EntradaService>(
   (ref) => EntradaService(

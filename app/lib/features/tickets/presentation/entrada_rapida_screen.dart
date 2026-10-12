@@ -134,7 +134,9 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
     ref.invalidate(ticketsAbertosProvider);
     ref.invalidate(hospedesProvider);
 
-    if (!patio.modoRapidoImprime) return;
+    // Escolha do aparelho (Menu → Configurações); carregando, imprime — o
+    // padrão de sempre.
+    if (!(ref.read(modoRapidoImprimeProvider).value ?? true)) return;
     final hospede = a.hospede;
     final tipo = hospede?.tipoVeiculo ?? patio.tipoPadrao!;
     final printerFuture = ref.read(printerNotifierProvider.future);
@@ -210,6 +212,8 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Já carrega a escolha de imprimir: o cupom do 1º carro lê daqui.
+    ref.watch(modoRapidoImprimeProvider);
     final patio = ref.watch(patioNotifierProvider).value ?? _patio;
     _patio = patio;
     final motivo = patio == null

@@ -30,22 +30,21 @@ PatioModel _patio({
   bool liberado = true,
   List<String> tipos = const ['carro'],
   List<TarifaConfig>? tarifas,
-}) =>
-    PatioModel(
-      id: 'p1',
-      nome: 'Pátio',
-      codigo: 'P1',
-      qtdVagas: 10,
-      tiposVeiculo: tipos,
-      formasPagamento: const [],
-      motivosIsencao: const [],
-      motivosCancelamento: const [],
-      ticketCabecalho: const [],
-      ticketRodape: const [],
-      tarifas: tarifas ?? [_avulsa],
-      sincronizadoEm: DateTime(2026),
-      modoRapidoEntrada: liberado,
-    );
+}) => PatioModel(
+  id: 'p1',
+  nome: 'Pátio',
+  codigo: 'P1',
+  qtdVagas: 10,
+  tiposVeiculo: tipos,
+  formasPagamento: const [],
+  motivosIsencao: const [],
+  motivosCancelamento: const [],
+  ticketCabecalho: const [],
+  ticketRodape: const [],
+  tarifas: tarifas ?? [_avulsa],
+  sincronizadoEm: DateTime(2026),
+  modoRapidoEntrada: liberado,
+);
 
 void main() {
   group('preferência do aparelho', () {
@@ -64,6 +63,26 @@ void main() {
       await s.clearAll();
       expect(await s.readModoRapido(), isTrue);
     });
+
+    test('imprimir no modo rápido começa ligado, desliga e liga', () async {
+      final s = TokenStorage(MemSecureStorage());
+      expect(
+        await s.readModoRapidoImprime(),
+        isTrue,
+        reason: 'é o que todos os pátios usavam pelo painel',
+      );
+      await s.saveModoRapidoImprime(false);
+      expect(await s.readModoRapidoImprime(), isFalse);
+      await s.saveModoRapidoImprime(true);
+      expect(await s.readModoRapidoImprime(), isTrue);
+    });
+
+    test('imprimir também sobrevive ao logout', () async {
+      final s = TokenStorage(MemSecureStorage());
+      await s.saveModoRapidoImprime(false);
+      await s.clearAll();
+      expect(await s.readModoRapidoImprime(), isFalse);
+    });
   });
 
   group('motivo de o modo rápido não estar disponível', () {
@@ -72,18 +91,24 @@ void main() {
     });
 
     test('pátio não liberou no painel', () {
-      expect(_patio(liberado: false).motivoModoRapidoIndisponivel,
-          contains('não está liberado'));
+      expect(
+        _patio(liberado: false).motivoModoRapidoIndisponivel,
+        contains('não está liberado'),
+      );
     });
 
     test('sem tipo de veículo', () {
-      expect(_patio(tipos: []).motivoModoRapidoIndisponivel,
-          contains('tipo de veículo'));
+      expect(
+        _patio(tipos: []).motivoModoRapidoIndisponivel,
+        contains('tipo de veículo'),
+      );
     });
 
     test('sem tabela avulsa para o tipo padrão', () {
-      expect(_patio(tarifas: []).motivoModoRapidoIndisponivel,
-          contains('tabela avulsa'));
+      expect(
+        _patio(tarifas: []).motivoModoRapidoIndisponivel,
+        contains('tabela avulsa'),
+      );
     });
   });
 
@@ -97,8 +122,10 @@ void main() {
     });
 
     test('pátio desliberou no painel (edge 11): entrada normal', () {
-      expect(rotaDeEntrada(_patio(liberado: false), ligado: true),
-          Routes.entrada);
+      expect(
+        rotaDeEntrada(_patio(liberado: false), ligado: true),
+        Routes.entrada,
+      );
     });
 
     test('sem tabela avulsa: entrada normal', () {

@@ -15,33 +15,108 @@ import 'providers/ticket_provider.dart';
 /// Quem decide se o item aparece é o Menu (pátio liberado no painel). Liberado
 /// mas sem tipo ou tabela padrão, a chave fica travada e desligada, com o
 /// motivo no lugar da legenda.
-class ModoRapidoTile extends ConsumerStatefulWidget {
+class ModoRapidoTile extends ConsumerWidget {
   const ModoRapidoTile({super.key, required this.patio});
 
   final PatioModel patio;
 
   @override
-  ConsumerState<ModoRapidoTile> createState() => _ModoRapidoTileState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final motivo = patio.motivoModoRapidoIndisponivel;
+    final ligado = ref.watch(modoRapidoLigadoProvider).value ?? false;
+    return _ChavePreferencia(
+      icone: Icons.bolt,
+      titulo: 'Modo rápido de entrada',
+      legenda: motivo ?? 'câmera aberta, cada placa entra sozinha',
+      valor: ligado && motivo == null,
+      travada: motivo != null,
+      erro: 'Não consegui salvar o modo rápido.',
+      salvar: (container, ligar) async {
+        await container.read(tokenStorageProvider).saveModoRapido(ligar);
+        // A Home lê este provider para decidir qual entrada o botão abre.
+        container.invalidate(modoRapidoLigadoProvider);
+      },
+    );
+  }
 }
 
-class _ModoRapidoTileState extends ConsumerState<ModoRapidoTile> {
+/// Imprimir ou não o cupom de entrada no modo rápido — escolha de CADA
+/// aparelho, porque a impressora é do aparelho (antes era do pátio, no
+/// painel). Só vale com o modo rápido ligado e disponível; fora disso fica
+/// travada, mostrando a escolha guardada.
+class ImprimeRapidoTile extends ConsumerWidget {
+  const ImprimeRapidoTile({super.key, required this.patio});
+
+  final PatioModel patio;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rapidoValendo =
+        (ref.watch(modoRapidoLigadoProvider).value ?? false) &&
+        patio.motivoModoRapidoIndisponivel == null;
+    final imprime = ref.watch(modoRapidoImprimeProvider).value ?? true;
+    return _ChavePreferencia(
+      icone: Icons.receipt_long_outlined,
+      titulo: 'Imprimir cupom no modo rápido',
+      legenda: rapidoValendo
+          ? 'na impressora deste celular'
+          : 'vale com o modo rápido ligado',
+      valor: imprime,
+      travada: !rapidoValendo,
+      erro: 'Não consegui salvar a impressão do cupom.',
+      salvar: (container, ligar) async {
+        await container.read(tokenStorageProvider).saveModoRapidoImprime(ligar);
+        // A câmera do modo rápido lê este provider a cada cupom.
+        container.invalidate(modoRapidoImprimeProvider);
+      },
+    );
+  }
+}
+
+/// Linha de chave do Menu (mesmo desenho do `SincronizacaoTile`) que grava
+/// uma preferência do aparelho: ignora toques enquanto grava, avisa se o
+/// aparelho recusar e, travada, não aceita toque nenhum.
+class _ChavePreferencia extends StatefulWidget {
+  const _ChavePreferencia({
+    required this.icone,
+    required this.titulo,
+    required this.legenda,
+    required this.valor,
+    required this.travada,
+    required this.erro,
+    required this.salvar,
+  });
+
+  final IconData icone;
+  final String titulo;
+  final String legenda;
+  final bool valor;
+  final bool travada;
+  final String erro;
+
+  /// Grava e invalida o provider da preferência. Recebe o container, não o
+  /// `ref`: se o pátio sincronizar no meio e o item sumir do Menu, a
+  /// preferência gravada ainda precisa chegar a quem a lê.
+  final Future<void> Function(ProviderContainer container, bool valor) salvar;
+
+  @override
+  State<_ChavePreferencia> createState() => _ChavePreferenciaState();
+}
+
+class _ChavePreferenciaState extends State<_ChavePreferencia> {
   /// Gravando a preferência: toques nesse meio-tempo são ignorados (o valor
   /// na tela ainda é o antigo, e o segundo toque repetiria o primeiro).
   bool _gravando = false;
 
-  Future<void> _alternar(bool ligar) async {
+  Future<void> _alternar(bool valor) async {
     if (_gravando) return;
     setState(() => _gravando = true);
-    // Lido antes do await: se o pátio sincronizar no meio e o item sumir do
-    // Menu, a preferência gravada ainda precisa chegar à Home.
     final container = ProviderScope.containerOf(context, listen: false);
     try {
-      await container.read(tokenStorageProvider).saveModoRapido(ligar);
-      // A Home lê este provider para decidir qual entrada o botão abre.
-      container.invalidate(modoRapidoLigadoProvider);
+      await widget.salvar(container, valor);
     } catch (_) {
       if (mounted) {
-        AppToast.error(context, 'Não consegui salvar o modo rápido.');
+        AppToast.error(context, widget.erro);
       }
     } finally {
       if (mounted) setState(() => _gravando = false);
@@ -50,14 +125,10 @@ class _ModoRapidoTileState extends ConsumerState<ModoRapidoTile> {
 
   @override
   Widget build(BuildContext context) {
-    final motivo = widget.patio.motivoModoRapidoIndisponivel;
-    final ligado = ref.watch(modoRapidoLigadoProvider).value ?? false;
-    final valor = ligado && motivo == null;
-    final travada = motivo != null;
-
+    final travada = widget.travada;
     return MergeSemantics(
       child: InkWell(
-        onTap: travada ? null : () => _alternar(!valor),
+        onTap: travada ? null : () => _alternar(!widget.valor),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
@@ -69,20 +140,16 @@ class _ModoRapidoTileState extends ConsumerState<ModoRapidoTile> {
                   color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(
-                  Icons.bolt,
-                  size: 20,
-                  color: AppColors.primary,
-                ),
+                child: Icon(widget.icone, size: 20, color: AppColors.primary),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Modo rápido de entrada',
-                      style: TextStyle(
+                    Text(
+                      widget.titulo,
+                      style: const TextStyle(
                         fontSize: 14,
                         height: 1.3,
                         fontWeight: FontWeight.w700,
@@ -90,7 +157,7 @@ class _ModoRapidoTileState extends ConsumerState<ModoRapidoTile> {
                       ),
                     ),
                     Text(
-                      motivo ?? 'câmera aberta, cada placa entra sozinha',
+                      widget.legenda,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -104,7 +171,10 @@ class _ModoRapidoTileState extends ConsumerState<ModoRapidoTile> {
                 ),
               ),
               const SizedBox(width: 8),
-              Switch(value: valor, onChanged: travada ? null : _alternar),
+              Switch(
+                value: widget.valor,
+                onChanged: travada ? null : _alternar,
+              ),
             ],
           ),
         ),

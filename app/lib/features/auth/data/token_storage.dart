@@ -20,6 +20,8 @@ abstract final class _K {
   // Fica fora do clearAll: é escolha do aparelho, não do login (o operador
   // do turno seguinte encontra o modo como o pátio costuma usar).
   static const modoRapido = 'nuvempark_modo_rapido';
+  // Idem: a impressora é deste aparelho.
+  static const modoRapidoImprime = 'nuvempark_modo_rapido_imprime';
   // Fica fora do clearAll: é manutenção do aparelho, não do login.
   static const ultimaLimpezaFotos = 'nuvempark_ultima_limpeza_fotos';
   // Último estado conhecido da assinatura (gate). Restaurado no splash ANTES de
@@ -125,6 +127,13 @@ class TokenStorage {
       (await _storage.read(_K.modoRapido)) == '1';
   Future<void> saveModoRapido(bool ligado) =>
       _storage.write(_K.modoRapido, ligado ? '1' : '0');
+
+  /// O modo rápido imprime o cupom de entrada NESTE aparelho. Começa ligado —
+  /// era o padrão do pátio quando a escolha morava no painel.
+  Future<bool> readModoRapidoImprime() async =>
+      (await _storage.read(_K.modoRapidoImprime)) != '0';
+  Future<void> saveModoRapidoImprime(bool imprime) =>
+      _storage.write(_K.modoRapidoImprime, imprime ? '1' : '0');
 
   Future<String?> readPatioNome() => _storage.read(_K.patioNome);
   Future<String?> readPatioCodigo() => _storage.read(_K.patioCodigo);
