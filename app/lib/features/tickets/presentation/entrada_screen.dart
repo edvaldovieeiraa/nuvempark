@@ -31,6 +31,7 @@ import '../data/foto_entrada_service.dart';
 import '../data/placa_ocr_service.dart';
 import '../domain/reconhecimento_cliente.dart';
 import 'camera_placa_screen.dart';
+import 'navegacao_saida.dart';
 import 'placa_formatter.dart';
 import 'providers/ticket_provider.dart';
 
@@ -253,7 +254,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
           ),
         );
         if (irParaSaida == true && mounted) {
-          context.go('/saida/${existente.id}');
+          abrirSaidaNoLugarDaEntrada(context, existente.id);
         }
         return;
       }
