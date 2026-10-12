@@ -7,16 +7,27 @@ const MODOS = ["ativada", "operador", "desativada"] as const;
 type ModoFoto = (typeof MODOS)[number];
 
 /**
- * Salva a parametrização do pátio (foto no recibo + modo quiosque).
+ * Salva a parametrização do pátio (foto no recibo + modo quiosque + modo
+ * rápido de entrada).
  * A RLS do gestor garante que só pátios do próprio tenant são afetados.
  */
 export async function salvarParametrizacao(
   patioId: string,
   fotoReciboModo: string,
   modoQuiosque: boolean,
+  modoRapidoEntrada: boolean,
+  modoRapidoImprime: boolean,
 ) {
   if (!MODOS.includes(fotoReciboModo as ModoFoto)) {
     return { ok: false as const, erro: "Modo inválido." };
+  }
+  // Server action é endpoint público: o tipo do TS não chega ao runtime.
+  if (
+    typeof modoQuiosque !== "boolean" ||
+    typeof modoRapidoEntrada !== "boolean" ||
+    typeof modoRapidoImprime !== "boolean"
+  ) {
+    return { ok: false as const, erro: "Valor inválido." };
   }
   const supabase = await createClient();
   const { error } = await supabase
@@ -24,6 +35,8 @@ export async function salvarParametrizacao(
     .update({
       foto_recibo_modo: fotoReciboModo,
       modo_quiosque: modoQuiosque,
+      modo_rapido_entrada: modoRapidoEntrada,
+      modo_rapido_imprime: modoRapidoImprime,
     })
     .eq("id", patioId);
 

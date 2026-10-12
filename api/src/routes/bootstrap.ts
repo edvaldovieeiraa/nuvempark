@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
 import { getAssinaturaStatus } from '../lib/assinatura.js';
+import { flagsModoRapido } from '../lib/modo-rapido.js';
 
 /**
  * GET /bootstrap?patio_id=... — hidrata a config offline do app.
@@ -27,7 +28,10 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
     // Pátio
     const { data: patio, error: patioErr } = await db
       .from('patios')
-      .select('id, nome, codigo, qtd_vagas, ativo, foto_recibo_modo, modo_quiosque')
+      // modo_rapido_*: colunas da db/43 — aplicar a migração ANTES desta API.
+      .select(
+        'id, nome, codigo, qtd_vagas, ativo, foto_recibo_modo, modo_quiosque, modo_rapido_entrada, modo_rapido_imprime',
+      )
       .eq('id', patioId)
       .maybeSingle();
     if (patioErr || !patio) {
@@ -223,6 +227,13 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
           'desativada',
         modo_quiosque:
           (patio as { modo_quiosque?: boolean }).modo_quiosque ?? true,
+        // Modo rápido de entrada: o pátio libera e diz se imprime o cupom.
+        ...flagsModoRapido(
+          patio as {
+            modo_rapido_entrada?: boolean | null;
+            modo_rapido_imprime?: boolean | null;
+          },
+        ),
       },
       tarifas: tarifas ?? [],
       clientes: clientesOut,
