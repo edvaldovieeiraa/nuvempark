@@ -85,14 +85,16 @@ export default function DownloadPage() {
           </div>
         </div>
 
+        {/* `flex-1` só a partir do sm: na coluna do celular ele vira flex-basis 0
+            e o botão ignora a altura, encolhendo para a linha do texto. */}
         <div className="mt-5 flex flex-col sm:flex-row gap-2.5">
           <motion.a
             whileTap={{ scale: 0.97 }}
             href={APK_URL}
             download="nuvempark.apk"
-            className="flex-1 inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-brand-600 to-brand-500 shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
+            className="sm:flex-1 inline-flex items-center justify-center gap-2.5 h-14 sm:h-12 px-6 rounded-xl font-bold text-base sm:text-sm text-white bg-gradient-to-r from-brand-600 to-brand-500 shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
           >
-            <Download className="w-5 h-5" />
+            <Download className="w-6 h-6 sm:w-5 sm:h-5" />
             Baixar APK
           </motion.a>
           <button
