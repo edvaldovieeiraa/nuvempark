@@ -11,12 +11,13 @@ import '../../caixa/presentation/providers/caixa_provider.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../../sync/presentation/sincronizacao_tile.dart';
+import '../../tickets/presentation/modo_rapido_tile.dart';
 
-/// Aba "Menu": porta única para o que não mora na barra inferior, em três
-/// seções — Operação / Aparelho / Informações. Regra de ouro: cada conceito
-/// tem UM lugar só (a antiga tela de Configurações foi dissolvida aqui: o
-/// card de sync virou o item vivo, o bloco "Conexão" foi para o Sobre e o
-/// Sair subiu para o fim do menu).
+/// Aba "Menu": porta única para o que não mora na barra inferior, em seções —
+/// Operação / Aparelho / Configurações (só quando há o que configurar) /
+/// Informações. Regra de ouro: cada conceito tem UM lugar só (a antiga tela
+/// de Configurações foi dissolvida aqui: o card de sync virou o item vivo, o
+/// bloco "Conexão" foi para o Sobre e o Sair subiu para o fim do menu).
 class MenuGeralScreen extends ConsumerStatefulWidget {
   const MenuGeralScreen({super.key});
 
@@ -30,6 +31,7 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final patio = ref.watch(patioNotifierProvider).value;
     // Brisa: sem AppBar — o perfil abre a tela no lugar do título "Menu".
     return Scaffold(
       body: SafeArea(
@@ -60,6 +62,13 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
               _itemImpressora(),
               const SincronizacaoTile(),
             ]),
+
+            // Liga e desliga modos da operação. Hoje só o modo rápido, que o
+            // painel precisa liberar antes — sem ele a seção nem aparece.
+            if (patio != null && patio.modoRapidoEntrada) ...[
+              _secao('Configurações'),
+              _grupo([ModoRapidoTile(patio: patio)]),
+            ],
 
             // Aqui os itens NÃO têm subtítulo — é assim no protótipo, e faz
             // sentido: "Sobre" e "Sair" se explicam sozinhos, e a legenda só
