@@ -1,7 +1,7 @@
 name: nuvempark_app
 description: "NuvemPark — Operação de Pátio (offline-first, multi-tenant)"
 publish_to: none
-version: 1.0.0+15
+version: 1.0.0+16
 
 environment:
   sdk: ^3.12.1
