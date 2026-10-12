@@ -24,6 +24,7 @@ import '../data/foto_entrada_service.dart';
 import '../data/placa_ocr_service.dart';
 import '../domain/leitura_rapida.dart';
 import 'camera_placa_screen.dart';
+import 'ciclo_entrada_rapida.dart';
 import 'cupom_entrada.dart';
 import 'providers/ticket_provider.dart';
 import 'widgets/entrada_rapida_widgets.dart';
@@ -31,15 +32,15 @@ import 'widgets/entrada_rapida_widgets.dart';
 /// Modo rápido de entrada: a câmera fica aberta e a placa travada entra
 /// sozinha depois de [_contagem], sem o operador tocar em nada.
 ///
-/// Tempo de cada carro: ao travar, a foto e a checagem de "já no pátio"
-/// começam JUNTAS com a contagem. Quando os 2 s acabam, quase sempre só resta
-/// gravar (local, milissegundos) e religar a leitura. A checagem no servidor
-/// tem prazo de [_prazoServidor] e cai no resultado do aparelho — sem isso,
-/// cada carro novo esperaria o timeout de conexão com sinal ruim.
-///
-/// As decisões (contagem cancelada, pausa, contador) são da [LeituraRapida];
-/// esta tela faz os efeitos. A câmera é a de sempre, com os ganchos do
+/// O ciclo de cada placa (contagem, foto e checagem em paralelo, gravação,
+/// pausa) e as corridas entre eles são do [CicloEntradaRapida], testado sem
+/// tela. Esta tela só fornece os efeitos: câmera, serviço de entrada, folha de
+/// decisão, cupom e avisos. A câmera é a de sempre, com os ganchos do
 /// [ModoRapidoCamera].
+///
+/// A checagem de "já no pátio" no servidor tem prazo de [_prazoServidor] e
+/// cai no resultado do aparelho — sem isso, cada carro novo esperaria o
+/// timeout de conexão com sinal ruim.
 class EntradaRapidaScreen extends ConsumerStatefulWidget {
   const EntradaRapidaScreen({super.key});
 
@@ -56,6 +57,7 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
   final _ocrService = PlacaOcrService();
   final _camera = CameraPlacaController();
   late final _leitura = LeituraRapida(ignorar: _camera.ignorar);
+  late final CicloEntradaRapida _ciclo;
 
   // Lidos com o widget vivo: a gravação pode terminar depois de a tela sair.
   late final EntradaService _servico;
@@ -64,10 +66,9 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
   late final FilaImpressao _fila;
   late final PrinterNotifier _printer;
 
+  /// Último pátio carregado. Uma recarga (bootstrap) passa por "sem valor" —
+  /// não pode derrubar a câmera no meio de uma contagem.
   PatioModel? _patio;
-  Timer? _timer;
-  Future<String?>? _foto;
-  Future<AnaliseEntrada>? _analise;
 
   @override
   void initState() {
@@ -77,198 +78,119 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
     _sync = ref.read(syncEngineProvider);
     _fila = ref.read(filaImpressaoProvider);
     _printer = ref.read(printerNotifierProvider.notifier);
+    _ciclo = CicloEntradaRapida(
+      leitura: _leitura,
+      contagem: _contagem,
+      capturarFoto: _camera.capturarFoto,
+      analisar: (placa) => _servico.analisar(
+        patioId: _patio!.id,
+        placa: placa,
+        prazoServidor: _prazoServidor,
+      ),
+      registrar: _registrar,
+      aposRegistrar: _aposRegistrar,
+      resolverPausa: _resolverPausa,
+      retomarLeitura: () => unawaited(_camera.retomarLeitura()),
+      apagarFoto: (caminho) =>
+          File(caminho).delete().then((_) {}, onError: (_) {}),
+      avisarFalha: (mensagem) {
+        if (mounted) AppToast.error(context, mensagem);
+      },
+      mudou: () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    if (_leitura.fase == FaseRapida.contagem) _descartarFoto();
+    _ciclo.encerrar();
     _ocrService.dispose();
     super.dispose();
   }
 
-  // ── Ciclo de uma placa ──────────────────────────────────────────────────
+  // ── Efeitos do ciclo ────────────────────────────────────────────────────
 
-  void _aoTravar(String placa) {
-    final patio = _patio;
-    if (patio == null || !_leitura.travou(placa)) return;
-    setState(() {});
-
-    _foto = _camera.capturarFoto();
-    final analise = _servico.analisar(
+  Future<EntradaRegistrada> _registrar(EntradaLiberada a, String? foto) async {
+    final patio = _patio!;
+    final user = await _storage.readUser();
+    if (user == null) throw StateError('sessão inválida');
+    final tipo = patio.tipoPadrao!;
+    return _servico.registrar(
+      a,
       patioId: patio.id,
-      placa: placa,
-      prazoServidor: _prazoServidor,
+      tipoVeiculo: tipo,
+      tarifaId: patio.tabelaAvulsaPadrao(tipo)?.id,
+      operadorId: user.id,
+      fotoEntradaPath: foto,
     );
-    _analise = analise;
-    // Placa que pede decisão não precisa esperar a contagem acabar.
-    unawaited(analise.then((a) {
-      if (mounted && _leitura.placa == placa) _pausarSePrecisa(a, patio);
-    }, onError: (_) {}));
-    _timer = Timer(_contagem, () => _fimDaContagem(patio));
   }
 
-  Future<void> _fimDaContagem(PatioModel patio) async {
-    if (!mounted || !_leitura.contagemTerminou()) return;
-    setState(() {});
-    final placa = _leitura.placa!;
-    final printerFuture = ref.read(printerNotifierProvider.future);
-
-    final AnaliseEntrada analise;
-    try {
-      analise = await _analise!;
-    } catch (_) {
-      _descartarFoto();
-      return _falhou('Não consegui verificar a placa $placa.');
-    }
-    if (_pausarSePrecisa(analise, patio)) return;
-    final liberada = analise as EntradaLiberada;
-
-    final foto = await _foto;
-    try {
-      final user = await _storage.readUser();
-      if (user == null) {
-        _descartarFoto();
-        return _falhou('Sessão inválida. Entre novamente.');
-      }
-      final tipo = patio.tipoPadrao!;
-      final r = await _servico.registrar(
-        liberada,
-        patioId: patio.id,
-        tipoVeiculo: tipo,
-        tarifaId: patio.tabelaAvulsaPadrao(tipo)?.id,
-        operadorId: user.id,
-        fotoEntradaPath: foto,
-      );
-
-      if (mounted) {
-        ref.invalidate(ticketsAbertosProvider);
-        ref.invalidate(hospedesProvider);
-      }
-      unawaited(_sync.drain());
-
-      final hospede = liberada.hospede;
-      if (patio.modoRapidoImprime) {
-        unawaited(_fila.enfileirar(() => imprimirCupomEntrada(
-              printerFuture: printerFuture,
-              printerNotifier: _printer,
-              ticketId: r.ticketId,
-              placa: placa,
-              tipoVeiculo: hospede?.tipoVeiculo ?? tipo,
-              entrada: DateTime.now(),
-              patio: patio,
-              fotoPath: foto,
-              estadia: hospede == null
-                  ? null
-                  : BlocoEstadia(
-                      titulo: 'HOSPEDE',
-                      validaAte: DateTime.fromMillisecondsSinceEpoch(
-                          hospede.validaAteEpoch),
-                    ),
-            )));
-      }
-
-      unawaited(HapticFeedback.mediumImpact());
-      _leitura.registrou(
-          aviso: r.aviso ??
-              (foto == null ? 'Entrou sem foto: a câmera falhou' : null));
-      if (mounted) setState(() {});
-      unawaited(_camera.retomarLeitura());
-    } catch (_) {
-      _apagar(foto);
-      _falhou('Erro ao registrar a entrada de $placa.');
-    }
-  }
-
-  /// Análise pediu decisão: pausa e abre a folha. Devolve se pausou.
-  bool _pausarSePrecisa(AnaliseEntrada a, PatioModel patio) {
-    final motivo = switch (a) {
-      EntradaJaNoPatio() => MotivoPausa.jaNoPatio,
-      EntradaHospedeVencido() => MotivoPausa.hospedeVencido,
-      EntradaLiberada() => null,
-    };
-    if (motivo == null) return false;
-    if (_leitura.fase == FaseRapida.pausado) return true; // já tratada
-    _timer?.cancel();
-    _leitura.pausou(motivo);
-    setState(() {});
-    unawaited(_resolverPausa(a));
-    return true;
-  }
-
-  Future<void> _resolverPausa(AnaliseEntrada a) async {
-    final placa = a.placa;
-    final motivo = _leitura.motivo!;
-    final acao = await mostrarPausaRapida(context, placa: placa, motivo: motivo);
+  void _aposRegistrar(EntradaRegistrada r, EntradaLiberada a, String? foto) {
+    final patio = _patio!;
+    unawaited(_sync.drain());
+    unawaited(HapticFeedback.mediumImpact());
     if (!mounted) return;
+    ref.invalidate(ticketsAbertosProvider);
+    ref.invalidate(hospedesProvider);
 
-    var registrou = false;
+    if (!patio.modoRapidoImprime) return;
+    final hospede = a.hospede;
+    final tipo = hospede?.tipoVeiculo ?? patio.tipoPadrao!;
+    final printerFuture = ref.read(printerNotifierProvider.future);
+    unawaited(_fila.enfileirar(() => imprimirCupomEntrada(
+          printerFuture: printerFuture,
+          printerNotifier: _printer,
+          ticketId: r.ticketId,
+          placa: a.placa,
+          tipoVeiculo: tipo,
+          entrada: DateTime.now(),
+          patio: patio,
+          // Sem toque no modo rápido: com a foto "o operador decide", ela não
+          // sai no cupom (sai com "sempre").
+          fotoPath: foto,
+          estadia: hospede == null
+              ? null
+              : BlocoEstadia(
+                  titulo: 'HOSPEDE',
+                  validaAte: DateTime.fromMillisecondsSinceEpoch(
+                      hospede.validaAteEpoch),
+                ),
+        )));
+  }
+
+  /// Folha de decisão e a escolha. Devolve se a entrada foi registrada.
+  Future<bool> _resolverPausa(
+      AnaliseEntrada a, Future<String?> fotoFutura) async {
+    if (!mounted) return false;
+    final motivo = _leitura.motivo!;
+    final acao =
+        await mostrarPausaRapida(context, placa: a.placa, motivo: motivo);
+    if (!mounted) return false;
+
     switch ((acao, a)) {
       case (AcaoPausa.irParaSaida, EntradaJaNoPatio(:final ticket)):
-        _descartarFoto();
         await context.push(Routes.saidaDetalhe(ticket.id));
+        return false;
       case (AcaoPausa.renovar, EntradaHospedeVencido(:final hospede)):
         // A renovação registra a entrada junto, com a foto já tirada.
-        final foto = await _foto;
-        if (!mounted) return;
-        registrou = await mostrarRenovarEstadia(
+        final foto = await fotoFutura;
+        if (!mounted) return false;
+        final renovou = await mostrarRenovarEstadia(
           context,
           estadia: hospede.estadia,
           origem: OrigemRenovacao.entrada,
           carroDentro: false,
           fotoEntradaPath: foto,
         );
-        if (registrou) {
+        if (renovou && mounted) {
           ref.invalidate(ticketsAbertosProvider);
           ref.invalidate(hospedesProvider);
-        } else {
-          _descartarFoto();
         }
+        return renovou;
       default:
-        _descartarFoto();
+        return false;
     }
-    if (!mounted) return;
-    _leitura.sairDaPausa(registrou: registrou);
-    setState(() {});
-    unawaited(_camera.retomarLeitura());
-  }
-
-  void _corrigir() {
-    _timer?.cancel();
-    _leitura.corrigir();
-    _descartarFoto();
-    setState(() {});
-    unawaited(_camera.retomarLeitura());
-  }
-
-  void _aoSegundoPlano() {
-    if (_leitura.fase != FaseRapida.contagem) return;
-    _timer?.cancel();
-    _descartarFoto();
-    _leitura.segundoPlano();
-    if (mounted) setState(() {});
-  }
-
-  void _falhou(String mensagem) {
-    _leitura.falhou();
-    if (!mounted) return;
-    AppToast.error(context, mensagem);
-    setState(() {});
-    unawaited(_camera.retomarLeitura());
-  }
-
-  /// A foto da contagem não vai virar entrada: apaga o arquivo quando ele
-  /// existir (a captura pode ainda estar em curso).
-  void _descartarFoto() {
-    final f = _foto;
-    _foto = null;
-    _analise = null;
-    if (f != null) unawaited(f.then(_apagar, onError: (_) {}));
-  }
-
-  void _apagar(String? caminho) {
-    if (caminho == null) return;
-    File(caminho).delete().then((_) {}, onError: (_) {});
   }
 
   // ── Navegação ───────────────────────────────────────────────────────────
@@ -286,15 +208,16 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
 
   Future<void> _desligar() async {
     await _storage.saveModoRapido(false);
+    if (!mounted) return;
     ref.invalidate(modoRapidoLigadoProvider);
-    if (mounted) context.pushReplacement(Routes.entrada);
+    context.pushReplacement(Routes.entrada);
   }
 
   // ── Tela ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final patio = ref.watch(patioNotifierProvider).value;
+    final patio = ref.watch(patioNotifierProvider).value ?? _patio;
     _patio = patio;
     final motivo = patio == null
         ? 'Carregando o pátio…'
@@ -306,9 +229,9 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
       fotoService: _fotoService,
       rapido: ModoRapidoCamera(
         controller: _camera,
-        aoTravar: _aoTravar,
+        aoTravar: _ciclo.travou,
         aoSair: _aoSair,
-        aoSegundoPlano: _aoSegundoPlano,
+        aoSegundoPlano: _ciclo.segundoPlano,
         sobreposicao: (_) => _sobreposicao(),
         acoes: [
           _acaoBarra('Entrada normal', Icons.edit_note, _entradaNormal),
@@ -360,7 +283,7 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
                     FaseRapida.contagem => PainelContagemRapida(
                         placa: placa,
                         duracao: _contagem,
-                        onCorrigir: _corrigir,
+                        onCorrigir: _ciclo.corrigir,
                       ),
                     FaseRapida.registrando =>
                       PainelRegistrandoRapida(placa: placa),

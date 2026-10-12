@@ -166,13 +166,12 @@ export function ParametrizacaoClient({
       return;
     }
     iniciarSalvar(async () => {
-      const r = await salvarParametrizacao(
-        patioId,
-        modoFoto,
-        quiosque,
-        rapido,
-        rapidoImprime,
-      );
+      const r = await salvarParametrizacao(patioId, {
+        fotoReciboModo: modoFoto,
+        modoQuiosque: quiosque,
+        modoRapidoEntrada: rapido,
+        modoRapidoImprime: rapidoImprime,
+      });
       if (r.ok) {
         setInicial(modoFoto);
         setQuiosqueInic(quiosque);
@@ -489,7 +488,7 @@ export function ParametrizacaoClient({
         >
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700 }}>
-              Modo rápido de entrada
+              Liberar para este pátio
             </div>
             <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
               Com a câmera aberta, o carro entra sozinho depois de 2 s de

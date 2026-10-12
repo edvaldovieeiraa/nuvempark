@@ -39,6 +39,16 @@ void main() {
     expect(await c, isTrue);
   });
 
+  test('impressão pendurada (Bluetooth) não segura a fila para sempre',
+      () async {
+    final fila = FilaImpressao(limite: const Duration(milliseconds: 50));
+    final pendurada = fila.enfileirar(() => Completer<bool>().future);
+    final seguinte = fila.enfileirar(() async => true);
+    expect(await pendurada, isFalse);
+    expect(await seguinte, isTrue);
+    expect(fila.pendentes, 0);
+  });
+
   test('erro síncrono do trabalho também é contido', () async {
     final fila = FilaImpressao();
     final a = fila.enfileirar(() => throw StateError('montagem'));

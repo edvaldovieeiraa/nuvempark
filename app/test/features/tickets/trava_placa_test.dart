@@ -60,6 +60,14 @@ void main() {
       expect(ler(['ABC1D23', 'ABC1D23', 'ABC1D23']).last, EstadoLeitura.travou);
     });
 
+    test('ignorar por um tempo menor (leitura corrigida)', () {
+      trava.ignorar('ABC1D28', por: const Duration(seconds: 10));
+      agora = agora.add(const Duration(seconds: 9));
+      expect(trava.ler('ABC1D28'), EstadoLeitura.ignorada);
+      agora = agora.add(const Duration(seconds: 2));
+      expect(trava.ler('ABC1D28'), EstadoLeitura.lendo);
+    });
+
     test('limpar não esquece a ignorada', () {
       trava.ignorar('ABC1D23');
       trava.limpar();

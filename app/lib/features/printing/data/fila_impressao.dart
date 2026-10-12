@@ -13,6 +13,14 @@ import 'dart:async';
 /// próximo. Vive em memória — fechar o app descarta o que não saiu (o carro já
 /// entrou; o cupom é o que se perde).
 class FilaImpressao {
+  FilaImpressao({this.limite = const Duration(seconds: 60)});
+
+  /// Teto de cada trabalho. Uma impressão pendurada no Bluetooth não pode
+  /// segurar todos os cupons seguintes — inclusive os da entrada normal, que
+  /// também passam por aqui. Folgado: reconectar e imprimir foto leva
+  /// segundos, não minutos.
+  final Duration limite;
+
   Future<void> _cauda = Future<void>.value();
   int _pendentes = 0;
 
@@ -20,11 +28,12 @@ class FilaImpressao {
   int get pendentes => _pendentes;
 
   /// Roda [trabalho] depois de todos os anteriores. Devolve se imprimiu; erro
-  /// do trabalho (síncrono ou não) vira `false` — nunca lança.
+  /// do trabalho (síncrono ou não) ou estouro do [limite] vira `false` — nunca
+  /// lança.
   Future<bool> enfileirar(FutureOr<bool> Function() trabalho) {
     _pendentes++;
     final este = _cauda
-        .then((_) => trabalho())
+        .then((_) => Future.sync(trabalho).timeout(limite))
         .then((ok) => ok, onError: (Object _) => false)
         .whenComplete(() => _pendentes--);
     _cauda = este.then((_) {});

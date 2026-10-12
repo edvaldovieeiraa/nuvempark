@@ -21,13 +21,20 @@ enum MotivoPausa { jaNoPatio, hospedeVencido }
 /// avisa aqui o que aconteceu; daqui sai o que mostrar e se o efeito ainda
 /// vale — um timer de contagem cancelada não pode registrar nada.
 ///
-/// [ignorar] é chamado com a placa que a câmera deve passar a ignorar: a que
-/// acabou de entrar e a de uma pausa resolvida. O carro continua na frente da
-/// câmera e travaria de novo.
+/// [ignorar] é chamado com a placa que a câmera deve passar a ignorar, e por
+/// quanto tempo: a que acabou de entrar e a de uma pausa resolvida (o carro
+/// continua na frente da câmera e travaria de novo), e a leitura corrigida.
 class LeituraRapida {
   LeituraRapida({required this.ignorar});
 
-  final void Function(String placa) ignorar;
+  final void Function(String placa, Duration por) ignorar;
+
+  /// Placa que entrou (ou cuja pausa foi resolvida): até outra placa travar.
+  static const ignorarRegistrada = Duration(minutes: 2);
+
+  /// Leitura que o operador corrigiu: com o carro parado, a MESMA leitura
+  /// errada travaria de novo em ~1 s. Pouco tempo — dá para reenquadrar.
+  static const ignorarCorrigida = Duration(seconds: 10);
 
   FaseRapida _fase = FaseRapida.lendo;
   String? _placa;
@@ -59,10 +66,15 @@ class LeituraRapida {
     return true;
   }
 
-  void corrigir() {
-    if (_fase != FaseRapida.contagem) return;
+  /// Devolve se valeu — fora da contagem (o toque chegou no fim dos 2 s) não
+  /// faz nada, e a tela não pode descartar a foto nem religar a leitura.
+  bool corrigir() {
+    final p = _placa;
+    if (_fase != FaseRapida.contagem || p == null) return false;
     _corrigidas++;
+    ignorar(p, ignorarCorrigida);
     _voltarALer();
+    return true;
   }
 
   /// O timer da contagem disparou. Devolve se é para gravar — `false` quando a
@@ -78,7 +90,7 @@ class LeituraRapida {
     if (_fase != FaseRapida.registrando || p == null) return;
     _registradas++;
     _ultima = (placa: p, aviso: aviso);
-    ignorar(p);
+    ignorar(p, ignorarRegistrada);
     _voltarALer();
   }
 
@@ -106,7 +118,7 @@ class LeituraRapida {
       _registradas++;
       _ultima = (placa: p, aviso: null);
     }
-    ignorar(p);
+    ignorar(p, ignorarRegistrada);
     _voltarALer();
   }
 

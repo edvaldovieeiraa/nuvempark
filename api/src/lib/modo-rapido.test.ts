@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { flagsModoRapido } from './modo-rapido.js';
 
 describe('flagsModoRapido', () => {
-  it('sem as colunas (banco antes da migração 43) usa os defaults da coluna', () => {
+  // Só o helper: a API NÃO aguenta banco sem a migração 43 — o select do
+  // bootstrap pede as colunas e falha antes de chegar aqui.
+  it('campos ausentes caem nos defaults da coluna', () => {
     expect(flagsModoRapido({})).toEqual({
       modo_rapido_entrada: false,
       modo_rapido_imprime: true,

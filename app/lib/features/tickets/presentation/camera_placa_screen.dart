@@ -130,10 +130,19 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final c = _controller;
-    if (c == null || !c.value.isInitialized) return;
     // Solta a câmera ao ir pro background e recria ao voltar — evita travar o
     // recurso e o "camera in use" ao retomar.
+    //
+    // A volta vem ANTES da guarda abaixo: o `inactive` deixa `_controller`
+    // nulo, então com a guarda primeiro a câmera nunca era recriada e a tela
+    // ficava carregando para sempre. `_iniciando` evita abrir duas vezes — o
+    // próprio pedido de permissão passa o app por inactive/resumed.
+    if (state == AppLifecycleState.resumed) {
+      if (_controller == null && !_iniciando) _iniciar();
+      return;
+    }
+    final c = _controller;
+    if (c == null || !c.value.isInitialized) return;
     if (state == AppLifecycleState.inactive) {
       c.dispose();
       _controller = null;
@@ -148,8 +157,6 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
         });
       }
       widget.rapido?.aoSegundoPlano?.call();
-    } else if (state == AppLifecycleState.resumed) {
-      _iniciar();
     }
   }
 
@@ -202,13 +209,19 @@ class _CameraPlacaScreenState extends State<CameraPlacaScreen>
       // Sem hardware, permissão revogada em runtime, device ocupado, etc.:
       // não trava o operador — cai no fluxo antigo.
       _sair(const CapturaIndisponivel());
+    } finally {
+      // Também quando falha: a próxima volta do segundo plano pode tentar de
+      // novo (ver didChangeAppLifecycleState).
+      _iniciando = false;
     }
   }
 
   void _sair(CapturaSaida saida) {
+    // `_iniciar` chega aqui depois de awaits: a tela pode já ter saído.
+    if (!mounted) return;
     final rapido = widget.rapido;
     if (rapido != null) return rapido.aoSair(saida);
-    if (mounted) Navigator.of(context).pop(saida);
+    Navigator.of(context).pop(saida);
   }
 
   // ── Leitura ao vivo ─────────────────────────────────────────────────────
@@ -765,6 +778,7 @@ class CameraPlacaController {
   /// Solta a placa travada e volta a ler.
   Future<void> retomarLeitura() async => _estado?._retomarLeitura();
 
-  /// A câmera passa a ignorar [placa] (ver [TravaPlaca.ignorar]).
-  void ignorar(String placa) => _estado?._trava.ignorar(placa);
+  /// A câmera passa a ignorar [placa] por até [por] (ver [TravaPlaca.ignorar]).
+  void ignorar(String placa, Duration por) =>
+      _estado?._trava.ignorar(placa, por: por);
 }

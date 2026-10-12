@@ -3,11 +3,16 @@ import 'package:nuvempark_app/features/tickets/domain/leitura_rapida.dart';
 
 void main() {
   late List<String> ignoradas;
+  late List<Duration> prazos;
   late LeituraRapida l;
 
   setUp(() {
     ignoradas = [];
-    l = LeituraRapida(ignorar: ignoradas.add);
+    prazos = [];
+    l = LeituraRapida(ignorar: (placa, por) {
+      ignoradas.add(placa);
+      prazos.add(por);
+    });
   });
 
   test('ciclo completo: trava, conta, registra e volta a ler', () {
@@ -24,17 +29,30 @@ void main() {
     expect(l.ultima?.placa, 'ABC1D23');
     expect(l.ultima?.aviso, 'Plano vencido — cobrar avulso');
     expect(ignoradas, ['ABC1D23'], reason: 'o carro segue na frente da câmera');
+    expect(prazos, [LeituraRapida.ignorarRegistrada]);
   });
 
   test('Corrigir na contagem volta a ler, conta a correção e não registra', () {
     l.travou('ABC1D28');
-    l.corrigir();
+    expect(l.corrigir(), isTrue);
     expect(l.fase, FaseRapida.lendo);
     expect(l.corrigidas, 1);
     expect(l.contagemTerminou(), isFalse,
         reason: 'o timer da contagem cancelada não pode registrar');
     expect(l.registradas, 0);
-    expect(ignoradas, isEmpty, reason: 'a placa certa pode ser a mesma');
+    expect(ignoradas, ['ABC1D28'],
+        reason: 'com o carro parado, a mesma leitura errada travaria de novo');
+    expect(prazos, [LeituraRapida.ignorarCorrigida],
+        reason: 'por pouco tempo: dá para reenquadrar e ler de novo');
+  });
+
+  test('Corrigir fora da contagem não faz nada (toque no fim dos 2 s)', () {
+    l.travou('ABC1D23');
+    l.contagemTerminou();
+    expect(l.corrigir(), isFalse);
+    expect(l.fase, FaseRapida.registrando);
+    expect(l.corrigidas, 0);
+    expect(ignoradas, isEmpty);
   });
 
   test('falha ao gravar volta a ler sem ignorar a placa', () {

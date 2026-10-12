@@ -13,15 +13,22 @@ type ModoFoto = (typeof MODOS)[number];
  */
 export async function salvarParametrizacao(
   patioId: string,
-  fotoReciboModo: string,
-  modoQuiosque: boolean,
-  modoRapidoEntrada: boolean,
-  modoRapidoImprime: boolean,
+  valores: {
+    fotoReciboModo: string;
+    modoQuiosque: boolean;
+    modoRapidoEntrada: boolean;
+    modoRapidoImprime: boolean;
+  },
 ) {
+  // Server action é endpoint público: o tipo do TS não chega ao runtime.
+  if (typeof valores !== "object" || valores === null) {
+    return { ok: false as const, erro: "Valor inválido." };
+  }
+  const { fotoReciboModo, modoQuiosque, modoRapidoEntrada, modoRapidoImprime } =
+    valores;
   if (!MODOS.includes(fotoReciboModo as ModoFoto)) {
     return { ok: false as const, erro: "Modo inválido." };
   }
-  // Server action é endpoint público: o tipo do TS não chega ao runtime.
   if (
     typeof modoQuiosque !== "boolean" ||
     typeof modoRapidoEntrada !== "boolean" ||

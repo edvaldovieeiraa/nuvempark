@@ -37,6 +37,7 @@ class TravaPlaca {
   final List<String> _historico = [];
   String? _ignorada;
   DateTime? _ignoradaDesde;
+  Duration _ignoradaPor = Duration.zero;
 
   EstadoLeitura ler(String placa) {
     if (_ignorando(placa)) return EstadoLeitura.ignorada;
@@ -57,15 +58,18 @@ class TravaPlaca {
   /// ignorada continua ignorada.
   void limpar() => _historico.clear();
 
-  void ignorar(String placa) {
+  /// [por]: quanto tempo, no máximo ([ignorarPor] se omitido). Outra placa
+  /// travar libera antes.
+  void ignorar(String placa, {Duration? por}) {
     _ignorada = placa;
     _ignoradaDesde = _agora();
+    _ignoradaPor = por ?? ignorarPor;
   }
 
   bool _ignorando(String placa) {
     final desde = _ignoradaDesde;
     if (_ignorada != placa || desde == null) return false;
-    if (_agora().difference(desde) >= ignorarPor) {
+    if (_agora().difference(desde) >= _ignoradaPor) {
       _ignorada = null;
       return false;
     }
