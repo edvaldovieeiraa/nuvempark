@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nuvempark_core/nuvempark_core.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/brisa.dart';
 import '../../../core/widgets/confirmar_cobranca_dialog.dart';
@@ -405,6 +406,33 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
     }
   }
 
+  /// Chave do modo rápido de entrada. Só aparece com o pátio liberado no
+  /// painel; sem tipo ou tabela padrão fica desligada, com o motivo.
+  Widget _chaveModoRapido(PatioModel patio) {
+    final motivo = patio.motivoModoRapidoIndisponivel;
+    final ligado = ref.watch(modoRapidoLigadoProvider).value ?? false;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: SwitchListTile(
+        value: ligado && motivo == null,
+        onChanged: motivo != null ? null : _alternarModoRapido,
+        secondary: const Icon(Icons.bolt, color: AppColors.primary),
+        title: const Text('Modo rápido',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(
+            motivo ?? 'A câmera fica aberta e cada placa entra sozinha.'),
+      ),
+    );
+  }
+
+  Future<void> _alternarModoRapido(bool ligar) async {
+    await ref.read(tokenStorageProvider).saveModoRapido(ligar);
+    if (!mounted) return;
+    ref.invalidate(modoRapidoLigadoProvider);
+    // Ligou: a entrada normal dá lugar à câmera do modo rápido.
+    if (ligar) context.pushReplacement(Routes.entradaRapida);
+  }
+
   @override
   Widget build(BuildContext context) {
     final patioAsync = ref.watch(patioNotifierProvider);
@@ -477,6 +505,10 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (patio.modoRapidoEntrada) ...[
+                    _chaveModoRapido(patio),
+                    const SizedBox(height: 14),
+                  ],
                   // Foto + OCR — a ação principal da tela. Card verde cheio do
                   // Brisa: é o único elemento com sombra colorida aqui, e é o
                   // que o operador toca 9 em cada 10 vezes.

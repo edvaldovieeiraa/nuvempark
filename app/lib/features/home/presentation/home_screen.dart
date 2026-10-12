@@ -19,6 +19,7 @@ import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tickets/data/foto_entrada_service.dart';
 import '../../tickets/data/placa_ocr_service.dart';
 import '../../tickets/presentation/camera_placa_screen.dart';
+import '../../tickets/presentation/navegacao_entrada.dart';
 import '../../tickets/presentation/providers/ticket_provider.dart';
 import '../../tickets/domain/ticket_model.dart';
 import '../../tickets/domain/ticket_qr.dart';
@@ -102,6 +103,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         (auth is AuthLoggedIn ? auth.assinaturaEstado : 'ativa');
     final operadorNome = auth is AuthLoggedIn ? auth.user.nome : '';
     final patio = ref.watch(patioNotifierProvider).value;
+    // Modo rápido: só com o pátio liberado/pronto E ligado neste aparelho.
+    final rotaEntrada = rotaDeEntrada(patio,
+        ligado: ref.watch(modoRapidoLigadoProvider).value ?? false);
     final abertos = ref.watch(ticketsAbertosProvider).value ?? const [];
     final caixa = ref.watch(caixaSessaoNotifierProvider).value;
     final printer = ref.watch(printerNotifierProvider).value;
@@ -135,10 +139,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   Expanded(
                     child: _acao(
                       titulo: 'Entrada',
-                      sub: 'fotografe a placa',
-                      icone: Icons.add,
+                      sub: rotaEntrada == Routes.entradaRapida
+                          ? 'modo rápido ligado'
+                          : 'fotografe a placa',
+                      icone: rotaEntrada == Routes.entradaRapida
+                          ? Icons.bolt
+                          : Icons.add,
                       destaque: true,
-                      onTap: () => context.push(Routes.entrada),
+                      onTap: () => context.push(rotaEntrada),
                     ),
                   ),
                   const SizedBox(width: 12),

@@ -14,6 +14,7 @@ import '../../features/dispositivo/presentation/providers/dispositivo_provider.d
 import '../../features/patio/presentation/patio_select_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/tickets/presentation/entrada_screen.dart';
+import '../../features/tickets/presentation/entrada_rapida_screen.dart';
 import '../../features/tickets/presentation/saida_screen.dart';
 import '../../features/tickets/presentation/movimentos_screen.dart';
 import '../../features/caixa/domain/caixa_model.dart';
@@ -119,6 +120,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.entrada,
         pageBuilder: (context, state) => _brisa(state, const EntradaScreen()),
+      ),
+      // Irmã da entrada: o modo rápido empilha a saída ("Ir para a saída") e
+      // volta para a câmera pelo pop — tem de ser página do go_router.
+      GoRoute(
+        path: Routes.entradaRapida,
+        pageBuilder: (context, state) =>
+            _brisa(state, const EntradaRapidaScreen()),
       ),
       GoRoute(
         path: Routes.movimentos,
