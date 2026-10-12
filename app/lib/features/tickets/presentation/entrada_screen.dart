@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image/image.dart' as img;
 import 'package:go_router/go_router.dart';
 import 'package:nuvempark_core/nuvempark_core.dart';
 
@@ -30,7 +29,9 @@ import '../../printing/presentation/providers/printer_provider.dart';
 import '../data/foto_entrada_service.dart';
 import '../data/placa_ocr_service.dart';
 import '../domain/reconhecimento_cliente.dart';
+import '../data/entrada_service.dart';
 import 'camera_placa_screen.dart';
+import 'cupom_entrada.dart';
 import 'navegacao_saida.dart';
 import 'placa_formatter.dart';
 import 'providers/ticket_provider.dart';
@@ -171,17 +172,16 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
     }
     final patioId = await ref.read(tokenStorageProvider).readPatioId();
     if (patioId == null) return;
-    final rec =
-        await ref.read(ticketRepositoryProvider).reconhecerPlaca(patioId, norm);
-    // Mensalista com livre passagem tem precedência sobre hóspede (Revisão 5).
-    final hospede = (rec?.liberaPassagem ?? false)
-        ? null
-        : await ref.read(estadiaRepositoryProvider).reconhecerHospede(patioId, norm);
+    // Mensalista com livre passagem tem precedência sobre hóspede (Revisão 5)
+    // — a regra mora no serviço, a mesma do modo rápido.
+    final r = await ref
+        .read(entradaServiceProvider)
+        .reconhecer(patioId: patioId, placa: norm);
     // Descarta resposta obsoleta (placa mudou enquanto consultava).
     if (!mounted || _placaCtrl.text.trim().toUpperCase() != norm) return;
     setState(() {
-      _reconhecimento = rec;
-      _hospede = hospede;
+      _reconhecimento = r.cliente;
+      _hospede = r.hospede;
     });
   }
 
@@ -265,8 +265,8 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
       final syncEngine = ref.read(syncEngineProvider);
       final printerFuture = ref.read(printerNotifierProvider.future);
       final printerNotifier = ref.read(printerNotifierProvider.notifier);
+      final filaImpressao = ref.read(filaImpressaoProvider);
 
-      final livre = _reconhecimento?.liberaPassagem ?? false;
       final agora = DateTime.now();
       final estadiaRepo = ref.read(estadiaRepositoryProvider);
       final hospede =
@@ -325,28 +325,25 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
           formaPagamento: forma,
         );
         ref.invalidate(caixaSessaoNotifierProvider);
-      } else if (hospede != null) {
-        ticketId = await estadiaRepo.registrarEntradaHospede(
-          hospede,
-          operadorId: user.id,
-          fotoEntradaPath: _fotoEntradaPath,
-        );
-        blocoCupom = BlocoEstadia(
-          titulo: 'HOSPEDE',
-          validaAte: DateTime.fromMillisecondsSinceEpoch(hospede.validaAteEpoch),
-        );
       } else {
-        ticketId = await ref.read(ticketRepositoryProvider).registrarEntrada(
-              placa: placa,
-              tipoVeiculo: _tipoVeiculo!,
+        // Hóspede válido, livre passagem ou avulso: as mesmas regras do modo
+        // rápido (EntradaService). O reconhecimento é o que a tela já mostra.
+        final r = await ref.read(entradaServiceProvider).registrar(
+              EntradaLiberada(placa, cliente: _reconhecimento, hospede: hospede),
               patioId: patioId,
+              tipoVeiculo: _tipoVeiculo!,
               operadorId: user.id,
               tarifaId: _tarifaId,
-              clienteId: livre ? _reconhecimento?.clienteId : null,
-              planoId: livre ? _reconhecimento?.planoId : null,
-              origem: livre ? 'plano' : 'avulso',
               fotoEntradaPath: _fotoEntradaPath,
             );
+        ticketId = r.ticketId;
+        if (hospede != null) {
+          blocoCupom = BlocoEstadia(
+            titulo: 'HOSPEDE',
+            validaAte:
+                DateTime.fromMillisecondsSinceEpoch(hospede.validaAteEpoch),
+          );
+        }
       }
 
       // Avaria (se preenchida): o REGISTRO entra na outbox e as FOTOS na fila
@@ -381,19 +378,23 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
       unawaited(syncEngine.drain());
 
       // Cupom de entrada: impressão Bluetooth pode reconectar e demorar
-      // segundos — não é motivo para o operador esperar.
-      unawaited(_imprimirCupom(
-        printerFuture: printerFuture,
-        printerNotifier: printerNotifier,
-        ticketId: ticketId,
-        placa: placa,
-        tipoVeiculo: _tipoVeiculo!,
-        entrada: agora,
-        patio: patio,
-        fotoPath: _fotoEntradaPath,
-        operadorMarcouFoto: _imprimirFotoRecibo,
-        estadia: blocoCupom,
-      ));
+      // segundos — não é motivo para o operador esperar. Pela fila: com a
+      // impressora ocupada o cupom espera a vez em vez de falhar.
+      final tipoVeiculo = _tipoVeiculo!;
+      final fotoPath = _fotoEntradaPath;
+      final marcouFoto = _imprimirFotoRecibo;
+      unawaited(filaImpressao.enfileirar(() => imprimirCupomEntrada(
+            printerFuture: printerFuture,
+            printerNotifier: printerNotifier,
+            ticketId: ticketId,
+            placa: placa,
+            tipoVeiculo: tipoVeiculo,
+            entrada: agora,
+            patio: patio,
+            fotoPath: fotoPath,
+            operadorMarcouFoto: marcouFoto,
+            estadia: blocoCupom,
+          )));
     } on EstadiaJaAtivaException {
       if (mounted) AppToast.error(context, 'Esta placa já é hóspede. Use "Renovar estadia".');
     } on CaixaFechadoException {
@@ -405,59 +406,31 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
     }
   }
 
-  /// Imprime o cupom fora do caminho crítico. Não usa `ref` nem o `context` da
-  /// tela (ela já saiu): o aviso de falha vai pelo navigator raiz.
-  Future<void> _imprimirCupom({
-    required Future<PrinterState> printerFuture,
-    required PrinterNotifier printerNotifier,
-    required String ticketId,
-    required String placa,
-    required String tipoVeiculo,
-    required DateTime entrada,
-    required PatioModel patio,
-    String? fotoPath,
-    bool operadorMarcouFoto = false,
-    BlocoEstadia? estadia,
-  }) async {
-    final printer =
-        await printerFuture.catchError((_) => const PrinterState());
-    if (!printer.temImpressora) return;
-
-    // Modo da parametrização: sempre, o operador decidiu, ou nunca.
-    final deveImprimirFoto = patio.fotoReciboSempre ||
-        (patio.fotoReciboOperadorDecide && operadorMarcouFoto);
-    img.Image? fotoVeiculo;
-    if (deveImprimirFoto && fotoPath != null) {
-      try {
-        final decodificada = img.decodeImage(await File(fotoPath).readAsBytes());
-        if (decodificada != null) {
-          fotoVeiculo = img.bakeOrientation(decodificada);
-        }
-      } catch (_) {
-        // Foto ilegível não pode derrubar o cupom — imprime sem ela.
-      }
-    }
-
-    final bytes = PrintTemplates.ticketEntrada(
-      ticketId: ticketId,
-      placa: placa,
-      tipoVeiculo: tipoVeiculo,
-      entrada: entrada,
-      operacaoNome: patio.nome,
-      cols: printer.cols,
-      avancoFinal: printer.avancoFinal,
-      cabecalho: patio.ticketCabecalho,
-      rodape: patio.ticketRodape,
-      fotoVeiculo: fotoVeiculo,
-      estadia: estadia,
+  /// Chave do modo rápido de entrada. Só aparece com o pátio liberado no
+  /// painel; sem tipo ou tabela padrão fica desligada, com o motivo.
+  Widget _chaveModoRapido(PatioModel patio) {
+    final motivo = patio.motivoModoRapidoIndisponivel;
+    final ligado = ref.watch(modoRapidoLigadoProvider).value ?? false;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: SwitchListTile(
+        value: ligado && motivo == null,
+        onChanged: motivo != null ? null : _alternarModoRapido,
+        secondary: const Icon(Icons.bolt, color: AppColors.primary),
+        title: const Text('Modo rápido',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(
+            motivo ?? 'A câmera fica aberta e cada placa entra sozinha.'),
+      ),
     );
-    final ok = await printerNotifier.print(bytes);
-    if (ok) return;
+  }
 
-    final ctx = rootNavigatorKey.currentContext;
-    if (ctx != null && ctx.mounted) {
-      AppToast.error(ctx, 'Falha ao imprimir o ticket.');
-    }
+  Future<void> _alternarModoRapido(bool ligar) async {
+    await ref.read(tokenStorageProvider).saveModoRapido(ligar);
+    if (!mounted) return;
+    ref.invalidate(modoRapidoLigadoProvider);
+    // Ligou: a entrada normal dá lugar à câmera do modo rápido.
+    if (ligar) context.pushReplacement(Routes.entradaRapida);
   }
 
   @override
@@ -483,8 +456,7 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
           // (Cadastros → Tipos de veículo). A ordem é a regra do gestor.
           if (!_tipoDefaultAplicado) {
             _tipoDefaultAplicado = true;
-            final def =
-                patio.tiposVeiculo.isNotEmpty ? patio.tiposVeiculo.first : null;
+            final def = patio.tipoPadrao;
             if (def != null) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) setState(() => _tipoVeiculo = def);
@@ -499,7 +471,9 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
 
           // Pré-seleciona a PRIMEIRA tarifa AVULSA da ordem. A de hóspede nunca
           // vem marcada sozinha: contratar sem querer cobra diárias sem estorno.
-          final primeiraAvulsa = tabelas.where((t) => !t.isHospede).firstOrNull?.id;
+          final primeiraAvulsa = _tipoVeiculo != null
+              ? patio.tabelaAvulsaPadrao(_tipoVeiculo!)?.id
+              : null;
           if (_tarifaId == null
               ? primeiraAvulsa != null
               : !tabelas.any((t) => t.id == _tarifaId)) {
@@ -531,6 +505,10 @@ class _EntradaScreenState extends ConsumerState<EntradaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (patio.modoRapidoEntrada) ...[
+                    _chaveModoRapido(patio),
+                    const SizedBox(height: 14),
+                  ],
                   // Foto + OCR — a ação principal da tela. Card verde cheio do
                   // Brisa: é o único elemento com sombra colorida aqui, e é o
                   // que o operador toca 9 em cada 10 vezes.

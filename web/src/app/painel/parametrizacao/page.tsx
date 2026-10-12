@@ -22,7 +22,9 @@ export default async function ParametrizacaoPage({
   // ?patio= (mesmo seletor do resto do painel); sem ele, cai no primeiro.
   const { data: patios } = await supabase
     .from("patios")
-    .select("id, nome, foto_recibo_modo, modo_quiosque")
+    .select(
+      "id, nome, foto_recibo_modo, modo_quiosque, modo_rapido_entrada, modo_rapido_imprime",
+    )
     .eq("ativo", true)
     .order("nome");
 
@@ -36,6 +38,8 @@ export default async function ParametrizacaoPage({
       patioNome={atual?.nome ?? null}
       modoInicial={normalizarModo(atual?.foto_recibo_modo)}
       quiosqueInicial={atual?.modo_quiosque ?? true}
+      rapidoInicial={atual?.modo_rapido_entrada ?? false}
+      rapidoImprimeInicial={atual?.modo_rapido_imprime ?? true}
     />
   );
 }

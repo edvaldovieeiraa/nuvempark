@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/di/providers.dart';
+import '../../../estadias/presentation/providers/estadias_provider.dart';
 import '../../data/avaria_service.dart';
+import '../../data/entrada_service.dart';
 import '../../data/pagamento_online_service.dart';
 import '../../data/ticket_repository.dart';
 import '../../data/tickets_abertos_sync.dart';
@@ -11,6 +13,20 @@ final ticketRepositoryProvider = Provider<TicketRepository>(
   (ref) => TicketRepository(
     db: ref.read(appDatabaseProvider),
     dio: ref.read(dioProvider),
+  ),
+);
+
+/// Modo rápido de entrada ligado neste aparelho. Quem muda a preferência
+/// invalida este provider.
+final modoRapidoLigadoProvider = FutureProvider<bool>(
+  (ref) => ref.read(tokenStorageProvider).readModoRapido(),
+);
+
+/// Regras da entrada compartilhadas pela entrada normal e pelo modo rápido.
+final entradaServiceProvider = Provider<EntradaService>(
+  (ref) => EntradaService(
+    tickets: ref.read(ticketRepositoryProvider),
+    estadias: ref.read(estadiaRepositoryProvider),
   ),
 );
 

@@ -125,10 +125,22 @@ class TicketRepository {
   }
 
   /// Ticket aberto com esta placa (veículo ainda no pátio), se houver.
-  Future<Ticket?> ticketAbertoPorPlaca(String patioId, String placa) async {
+  /// [prazoServidor]: teto para a busca no servidor quando o Drift não tem a
+  /// placa (todo carro novo cai nela). Estourado, vale o resultado local — o
+  /// mesmo de quando não há internet. A busca segue em segundo plano e, se
+  /// achar, ainda grava o ticket no Drift.
+  Future<Ticket?> ticketAbertoPorPlaca(
+    String patioId,
+    String placa, {
+    Duration? prazoServidor,
+  }) async {
     final placaNorm = placa.trim().toUpperCase();
-    return await db.ticketsDao.getAbertoByPlaca(patioId, placaNorm) ??
-        await _buscarAbertoNoServidor(patioId, placa: placaNorm);
+    final local = await db.ticketsDao.getAbertoByPlaca(patioId, placaNorm);
+    if (local != null) return local;
+    final remoto = _buscarAbertoNoServidor(patioId, placa: placaNorm);
+    return prazoServidor == null
+        ? remoto
+        : remoto.timeout(prazoServidor, onTimeout: () => null);
   }
 
   Future<String> registrarEntrada({

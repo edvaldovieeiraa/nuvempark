@@ -14,6 +14,7 @@ import {
   Loader2,
   Building2,
   MonitorSmartphone,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
@@ -74,16 +75,72 @@ const cardHeaderStyle: CSSProperties = {
   borderBottom: "1px solid #E4E8EC",
 };
 
+/** Chave liga/desliga (switch) — mesma do modo quiosque, reaproveitada. */
+function Chave({
+  ligada,
+  aoAlternar,
+  rotulo,
+  desabilitada = false,
+}: {
+  ligada: boolean;
+  aoAlternar: () => void;
+  rotulo: string;
+  desabilitada?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={ligada}
+      aria-label={rotulo}
+      disabled={desabilitada}
+      onClick={aoAlternar}
+      style={{
+        position: "relative",
+        flexShrink: 0,
+        width: 48,
+        height: 28,
+        borderRadius: 999,
+        border: "none",
+        padding: 0,
+        cursor: desabilitada ? "not-allowed" : "pointer",
+        background: ligada
+          ? "linear-gradient(90deg,#16A34A,#22C55E)"
+          : "#D5DBE1",
+      }}
+    >
+      <motion.span
+        layout
+        transition={{ type: "spring", stiffness: 520, damping: 34 }}
+        style={{
+          position: "absolute",
+          top: 3,
+          width: 22,
+          height: 22,
+          borderRadius: 999,
+          background: "#fff",
+          boxShadow: "0 1px 3px rgba(16,27,20,0.35)",
+          left: ligada ? "calc(100% - 25px)" : 3,
+        }}
+      />
+    </button>
+  );
+}
+
 export function ParametrizacaoClient({
   patioId,
   patioNome,
   modoInicial,
   quiosqueInicial,
+  rapidoInicial,
+  rapidoImprimeInicial,
 }: {
   patioId: string | null;
   patioNome: string | null;
   modoInicial: ModoFoto;
   quiosqueInicial: boolean;
+  rapidoInicial: boolean;
+  rapidoImprimeInicial: boolean;
 }) {
   const toast = useToast();
   const [salvando, iniciarSalvar] = useTransition();
@@ -91,8 +148,17 @@ export function ParametrizacaoClient({
   const [modoFoto, setModoFoto] = useState<ModoFoto>(modoInicial);
   const [quiosqueInic, setQuiosqueInic] = useState(quiosqueInicial);
   const [quiosque, setQuiosque] = useState(quiosqueInicial);
+  const [rapidoInic, setRapidoInic] = useState(rapidoInicial);
+  const [rapido, setRapido] = useState(rapidoInicial);
+  const [rapidoImprimeInic, setRapidoImprimeInic] =
+    useState(rapidoImprimeInicial);
+  const [rapidoImprime, setRapidoImprime] = useState(rapidoImprimeInicial);
 
-  const sujo = modoFoto !== inicial || quiosque !== quiosqueInic;
+  const sujo =
+    modoFoto !== inicial ||
+    quiosque !== quiosqueInic ||
+    rapido !== rapidoInic ||
+    rapidoImprime !== rapidoImprimeInic;
 
   const salvar = () => {
     if (!patioId) {
@@ -100,10 +166,17 @@ export function ParametrizacaoClient({
       return;
     }
     iniciarSalvar(async () => {
-      const r = await salvarParametrizacao(patioId, modoFoto, quiosque);
+      const r = await salvarParametrizacao(patioId, {
+        fotoReciboModo: modoFoto,
+        modoQuiosque: quiosque,
+        modoRapidoEntrada: rapido,
+        modoRapidoImprime: rapidoImprime,
+      });
       if (r.ok) {
         setInicial(modoFoto);
         setQuiosqueInic(quiosque);
+        setRapidoInic(rapido);
+        setRapidoImprimeInic(rapidoImprime);
         toast.sucesso("Parametrização salva.");
       } else {
         toast.erro(r.erro ?? "Não foi possível salvar.");
@@ -369,41 +442,93 @@ export function ParametrizacaoClient({
               querer. Só sai pelo botão &quot;Sair&quot; do menu.
             </div>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={quiosque}
-            aria-label="Modo quiosque"
-            onClick={() => setQuiosque((v) => !v)}
+          <Chave
+            ligada={quiosque}
+            aoAlternar={() => setQuiosque((v) => !v)}
+            rotulo="Modo quiosque"
+          />
+        </div>
+      </section>
+
+      {/* Feature 3 — Modo rápido de entrada (o pátio libera; cada operador
+          liga no app). A impressão só vale com o modo liberado. */}
+      <section style={cardStyle}>
+        <div style={cardHeaderStyle}>
+          <span
             style={{
-              position: "relative",
+              width: 40,
+              height: 40,
+              borderRadius: 11,
+              background: "#FEF3C7",
+              color: "#D97706",
+              display: "grid",
+              placeItems: "center",
               flexShrink: 0,
-              width: 48,
-              height: 28,
-              borderRadius: 999,
-              border: "none",
-              padding: 0,
-              cursor: "pointer",
-              background: quiosque
-                ? "linear-gradient(90deg,#16A34A,#22C55E)"
-                : "#D5DBE1",
             }}
           >
-            <motion.span
-              layout
-              transition={{ type: "spring", stiffness: 520, damping: 34 }}
-              style={{
-                position: "absolute",
-                top: 3,
-                width: 22,
-                height: 22,
-                borderRadius: 999,
-                background: "#fff",
-                boxShadow: "0 1px 3px rgba(16,27,20,0.35)",
-                left: quiosque ? "calc(100% - 25px)" : 3,
-              }}
-            />
-          </button>
+            <Zap style={{ width: 20, height: 20 }} />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>
+              Modo rápido de entrada
+            </div>
+            <div style={{ fontSize: 12, color: "#8695A0" }}>
+              O carro entra sem toque depois de 2 s de contagem.
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            padding: "16px 18px",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>
+              Liberar para este pátio
+            </div>
+            <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
+              Com a câmera aberta, o carro entra sozinho depois de 2 s de
+              contagem. O operador só toca para corrigir. Cada operador liga ou
+              desliga no app.
+            </div>
+          </div>
+          <Chave
+            ligada={rapido}
+            aoAlternar={() => setRapido((v) => !v)}
+            rotulo="Modo rápido de entrada"
+          />
+        </div>
+        <div
+          style={{
+            padding: "16px 18px",
+            borderTop: "1px solid #E4E8EC",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 16,
+            opacity: rapido ? 1 : 0.45,
+            transition: "opacity .15s",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>
+              Imprimir cupom no modo rápido
+            </div>
+            <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
+              Desligado, o modo rápido não imprime: o carro é achado na saída
+              pela placa.
+            </div>
+          </div>
+          <Chave
+            ligada={rapidoImprime}
+            aoAlternar={() => setRapidoImprime((v) => !v)}
+            rotulo="Imprimir cupom no modo rápido"
+            desabilitada={!rapido}
+          />
         </div>
       </section>
 
@@ -458,6 +583,8 @@ export function ParametrizacaoClient({
                 onClick={() => {
                   setModoFoto(inicial);
                   setQuiosque(quiosqueInic);
+                  setRapido(rapidoInic);
+                  setRapidoImprime(rapidoImprimeInic);
                 }}
                 disabled={salvando}
                 style={{

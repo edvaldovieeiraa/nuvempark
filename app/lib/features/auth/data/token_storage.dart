@@ -17,6 +17,9 @@ abstract final class _K {
   static const patioNome = 'nuvempark_patio_nome';
   static const patioCodigo = 'nuvempark_patio_codigo';
   static const ultimoSync = 'nuvempark_ultimo_sync';
+  // Fica fora do clearAll: é escolha do aparelho, não do login (o operador
+  // do turno seguinte encontra o modo como o pátio costuma usar).
+  static const modoRapido = 'nuvempark_modo_rapido';
   // Fica fora do clearAll: é manutenção do aparelho, não do login.
   static const ultimaLimpezaFotos = 'nuvempark_ultima_limpeza_fotos';
   // Último estado conhecido da assinatura (gate). Restaurado no splash ANTES de
@@ -115,6 +118,13 @@ class TokenStorage {
 
   Future<void> saveUltimaLimpezaFotos(DateTime quando) =>
       _storage.write(_K.ultimaLimpezaFotos, quando.toIso8601String());
+
+  /// Modo rápido de entrada ligado NESTE aparelho (o pátio ainda precisa
+  /// liberar no painel — ver `PatioModel.modoRapidoEntrada`).
+  Future<bool> readModoRapido() async =>
+      (await _storage.read(_K.modoRapido)) == '1';
+  Future<void> saveModoRapido(bool ligado) =>
+      _storage.write(_K.modoRapido, ligado ? '1' : '0');
 
   Future<String?> readPatioNome() => _storage.read(_K.patioNome);
   Future<String?> readPatioCodigo() => _storage.read(_K.patioCodigo);

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
 import '../../../../core/di/providers.dart';
+import '../../data/fila_impressao.dart';
 import '../../data/print_templates.dart';
 import '../../data/printer_service.dart';
 
@@ -223,3 +224,7 @@ class PrinterNotifier extends AsyncNotifier<PrinterState> {
 // ── Provider ─────────────────────────────────────────────────────────────────
 final printerNotifierProvider =
     AsyncNotifierProvider<PrinterNotifier, PrinterState>(PrinterNotifier.new);
+
+/// Fila única de impressão do app: vive enquanto o app vive, porque os cupons
+/// saem depois de a tela que os pediu já ter fechado.
+final filaImpressaoProvider = Provider<FilaImpressao>((ref) => FilaImpressao());

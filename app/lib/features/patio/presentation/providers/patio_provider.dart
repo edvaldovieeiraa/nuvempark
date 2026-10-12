@@ -34,29 +34,15 @@ class PatioNotifier extends AsyncNotifier<PatioModel?> {
     if (cache == null) return null;
 
     final tarifasRows = await db.operacaoDao.getTarifasByOperacaoId(patioId);
-    final config = jsonDecode(cache.configJson) as Map<String, dynamic>;
-
-    List<String> lista(String k) =>
-        List<String>.from((config[k] as List?) ?? const []);
-
-    final tarifas = tarifasRows.map(_toTarifaConfig).toList();
-
-    return PatioModel(
+    return PatioModel.fromCache(
       id: cache.operacaoId,
       nome: cache.nome,
       codigo: cache.codigo,
       qtdVagas: cache.qtdVagas,
-      tiposVeiculo: lista('tipos_veiculo'),
-      formasPagamento: lista('formas_pagamento'),
-      motivosIsencao: lista('motivos_isencao'),
-      motivosCancelamento: lista('motivos_cancelamento'),
-      ticketCabecalho: lista('ticket_cabecalho'),
-      ticketRodape: lista('ticket_rodape'),
-      tarifas: tarifas,
+      config: jsonDecode(cache.configJson) as Map<String, dynamic>,
+      tarifas: tarifasRows.map(_toTarifaConfig).toList(),
       sincronizadoEm:
           DateTime.fromMillisecondsSinceEpoch(cache.sincronizadoEm),
-      fotoReciboModo: (config['foto_recibo_modo'] as String?) ?? 'desativada',
-      modoQuiosque: (config['modo_quiosque'] as bool?) ?? true,
     );
   }
 
