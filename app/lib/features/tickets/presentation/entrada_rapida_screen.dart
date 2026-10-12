@@ -206,13 +206,6 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
 
   void _entradaNormal() => context.pushReplacement(Routes.entrada);
 
-  Future<void> _desligar() async {
-    await _storage.saveModoRapido(false);
-    if (!mounted) return;
-    ref.invalidate(modoRapidoLigadoProvider);
-    context.pushReplacement(Routes.entrada);
-  }
-
   // ── Tela ────────────────────────────────────────────────────────────────
 
   @override
@@ -233,10 +226,10 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
         aoSair: _aoSair,
         aoSegundoPlano: _ciclo.segundoPlano,
         sobreposicao: (_) => _sobreposicao(),
+        // Ligar e desligar o modo é no Menu → Configurações; aqui só a saída
+        // para um carro que precisa da entrada normal.
         acoes: [
           _acaoBarra('Entrada normal', Icons.edit_note, _entradaNormal),
-          const SizedBox(width: 6),
-          _acaoBarra('Desligar', Icons.flash_off, _desligar),
         ],
       ),
     );
