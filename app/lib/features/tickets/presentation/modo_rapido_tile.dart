@@ -23,13 +23,15 @@ class ModoRapidoTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final motivo = patio.motivoModoRapidoIndisponivel;
-    final ligado = ref.watch(modoRapidoLigadoProvider).value ?? false;
+    final estado = ref.watch(modoRapidoLigadoProvider);
+    final ligado = estado.value ?? false;
     return _ChavePreferencia(
       icone: Icons.bolt,
       titulo: 'Modo rápido de entrada',
       legenda: motivo ?? 'câmera aberta, cada placa entra sozinha',
       valor: ligado && motivo == null,
-      travada: motivo != null,
+      // Sem a leitura do aparelho, o valor na tela é um chute.
+      travada: motivo != null || !estado.hasValue,
       erro: 'Não consegui salvar o modo rápido.',
       salvar: (container, ligar) async {
         await container.read(tokenStorageProvider).saveModoRapido(ligar);
@@ -54,7 +56,8 @@ class ImprimeRapidoTile extends ConsumerWidget {
     final rapidoValendo =
         (ref.watch(modoRapidoLigadoProvider).value ?? false) &&
         patio.motivoModoRapidoIndisponivel == null;
-    final imprime = ref.watch(modoRapidoImprimeProvider).value ?? true;
+    final estado = ref.watch(modoRapidoImprimeProvider);
+    final imprime = estado.value ?? true;
     return _ChavePreferencia(
       icone: Icons.receipt_long_outlined,
       titulo: 'Imprimir cupom no modo rápido',
@@ -62,7 +65,7 @@ class ImprimeRapidoTile extends ConsumerWidget {
           ? 'na impressora deste celular'
           : 'vale com o modo rápido ligado',
       valor: imprime,
-      travada: !rapidoValendo,
+      travada: !rapidoValendo || !estado.hasValue,
       erro: 'Não consegui salvar a impressão do cupom.',
       salvar: (container, ligar) async {
         await container.read(tokenStorageProvider).saveModoRapidoImprime(ligar);

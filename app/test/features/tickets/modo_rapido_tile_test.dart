@@ -67,6 +67,7 @@ Future<TokenStorage> _montar(
   bool ligado = false,
   bool imprime = true,
   MemSecureStorage? secure,
+  bool assentar = true,
 }) async {
   final storage = TokenStorage(secure ?? MemSecureStorage());
   await storage.saveModoRapido(ligado);
@@ -96,7 +97,7 @@ Future<TokenStorage> _montar(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (assentar) await tester.pumpAndSettle();
   return storage;
 }
 
@@ -278,5 +279,28 @@ void main() {
       expect(_chave(tester, _imprime).value, isTrue);
       expect(await storage.readModoRapidoImprime(), isTrue);
     });
+  });
+
+  testWidgets('lendo as escolhas guardadas: as duas chaves travadas', (
+    tester,
+  ) async {
+    // Antes da leitura, o valor na tela é um chute; um toque gravaria o
+    // contrário do que o operador vê depois.
+    final storage = await _montar(
+      tester,
+      _patio(),
+      ligado: true,
+      imprime: false,
+      assentar: false,
+    );
+    expect(_chave(tester, _rapido).onChanged, isNull);
+    expect(_chave(tester, _imprime).onChanged, isNull);
+
+    await tester.tap(find.text(_imprime));
+    await tester.pumpAndSettle();
+    expect(await storage.readModoRapidoImprime(), isFalse);
+    expect(_chave(tester, _rapido).onChanged, isNotNull);
+    expect(_chave(tester, _imprime).onChanged, isNotNull);
+    expect(_chave(tester, _imprime).value, isFalse);
   });
 }
