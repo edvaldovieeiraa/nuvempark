@@ -40,7 +40,9 @@ class _ModoRapidoTileState extends ConsumerState<ModoRapidoTile> {
       // A Home lê este provider para decidir qual entrada o botão abre.
       container.invalidate(modoRapidoLigadoProvider);
     } catch (_) {
-      if (mounted) AppToast.error(context, 'Não consegui salvar o modo rápido.');
+      if (mounted) {
+        AppToast.error(context, 'Não consegui salvar o modo rápido.');
+      }
     } finally {
       if (mounted) setState(() => _gravando = false);
     }
@@ -67,35 +69,42 @@ class _ModoRapidoTileState extends ConsumerState<ModoRapidoTile> {
                   color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.bolt, size: 20, color: AppColors.primary),
+                child: const Icon(
+                  Icons.bolt,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Modo rápido de entrada',
-                        style: TextStyle(
-                            fontSize: 14,
-                            height: 1.3,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.onSurface)),
-                    Text(motivo ?? 'câmera aberta, cada placa entra sozinha',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 11.5,
-                            height: 1.3,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.onSurfaceVariant)),
+                    const Text(
+                      'Modo rápido de entrada',
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.3,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                    Text(
+                      motivo ?? 'câmera aberta, cada placa entra sozinha',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        height: 1.3,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              Switch(
-                value: valor,
-                onChanged: travada ? null : _alternar,
-              ),
+              Switch(value: valor, onChanged: travada ? null : _alternar),
             ],
           ),
         ),

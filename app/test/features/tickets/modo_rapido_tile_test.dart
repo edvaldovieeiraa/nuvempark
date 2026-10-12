@@ -30,20 +30,20 @@ final _avulsa = TarifaConfig(
 );
 
 PatioModel _patio({List<TarifaConfig>? tarifas}) => PatioModel(
-      id: 'p1',
-      nome: 'Pátio',
-      codigo: 'P1',
-      qtdVagas: 10,
-      tiposVeiculo: const ['carro'],
-      formasPagamento: const [],
-      motivosIsencao: const [],
-      motivosCancelamento: const [],
-      ticketCabecalho: const [],
-      ticketRodape: const [],
-      tarifas: tarifas ?? [_avulsa],
-      sincronizadoEm: DateTime(2026),
-      modoRapidoEntrada: true,
-    );
+  id: 'p1',
+  nome: 'Pátio',
+  codigo: 'P1',
+  qtdVagas: 10,
+  tiposVeiculo: const ['carro'],
+  formasPagamento: const [],
+  motivosIsencao: const [],
+  motivosCancelamento: const [],
+  ticketCabecalho: const [],
+  ticketRodape: const [],
+  tarifas: tarifas ?? [_avulsa],
+  sincronizadoEm: DateTime(2026),
+  modoRapidoEntrada: true,
+);
 
 /// Aparelho cujo secure storage passa a recusar gravações.
 class _StorageQuebravel extends MemSecureStorage {
@@ -57,24 +57,33 @@ class _StorageQuebravel extends MemSecureStorage {
 
 /// Monta o tile e, ao lado, um leitor da preferência no lugar da Home — o
 /// botão "Entrada" de lá precisa ver a mudança feita no Menu.
-Future<TokenStorage> _montar(WidgetTester tester, PatioModel patio,
-    {bool ligado = false, MemSecureStorage? secure}) async {
+Future<TokenStorage> _montar(
+  WidgetTester tester,
+  PatioModel patio, {
+  bool ligado = false,
+  MemSecureStorage? secure,
+}) async {
   final storage = TokenStorage(secure ?? MemSecureStorage());
   await storage.saveModoRapido(ligado);
-  await tester.pumpWidget(ProviderScope(
-    overrides: [tokenStorageProvider.overrideWithValue(storage)],
-    child: MaterialApp(
-      home: Scaffold(
-        body: Column(children: [
-          ModoRapidoTile(patio: patio),
-          Consumer(
-            builder: (_, ref, _) => Text(
-                'home: ${ref.watch(modoRapidoLigadoProvider).value ?? '-'}'),
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [tokenStorageProvider.overrideWithValue(storage)],
+      child: MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              ModoRapidoTile(patio: patio),
+              Consumer(
+                builder: (_, ref, _) => Text(
+                  'home: ${ref.watch(modoRapidoLigadoProvider).value ?? '-'}',
+                ),
+              ),
+            ],
           ),
-        ]),
+        ),
       ),
     ),
-  ));
+  );
   await tester.pumpAndSettle();
   return storage;
 }
@@ -93,8 +102,11 @@ void main() {
 
     expect(await storage.readModoRapido(), isTrue);
     expect(_valor(tester), isTrue);
-    expect(find.text('home: true'), findsOneWidget,
-        reason: 'o resto do app enxerga a mudança sem reabrir');
+    expect(
+      find.text('home: true'),
+      findsOneWidget,
+      reason: 'o resto do app enxerga a mudança sem reabrir',
+    );
   });
 
   testWidgets('ligado: o toque na chave desliga', (tester) async {
@@ -109,8 +121,9 @@ void main() {
     expect(find.text('home: false'), findsOneWidget);
   });
 
-  testWidgets('pátio sem tabela avulsa: chave travada e o motivo à vista',
-      (tester) async {
+  testWidgets('pátio sem tabela avulsa: chave travada e o motivo à vista', (
+    tester,
+  ) async {
     final patio = _patio(tarifas: []);
     final storage = await _montar(tester, patio);
 
@@ -120,18 +133,23 @@ void main() {
 
     await tester.tap(find.text('Modo rápido de entrada'));
     await tester.pumpAndSettle();
-    expect(await storage.readModoRapido(), isFalse,
-        reason: 'travada, o toque não liga nada');
+    expect(
+      await storage.readModoRapido(),
+      isFalse,
+      reason: 'travada, o toque não liga nada',
+    );
   });
 
-  testWidgets('travada com a preferência ligada: mostra desligada',
-      (tester) async {
+  testWidgets('travada com a preferência ligada: mostra desligada', (
+    tester,
+  ) async {
     await _montar(tester, _patio(tarifas: []), ligado: true);
     expect(_valor(tester), isFalse, reason: 'não promete o que não abre');
   });
 
-  testWidgets('aparelho recusa gravar: avisa e a chave fica como estava',
-      (tester) async {
+  testWidgets('aparelho recusa gravar: avisa e a chave fica como estava', (
+    tester,
+  ) async {
     final secure = _StorageQuebravel();
     final storage = await _montar(tester, _patio(), secure: secure);
     secure.quebrado = true;
