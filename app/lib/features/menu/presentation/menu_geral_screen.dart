@@ -63,11 +63,15 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
               const SincronizacaoTile(),
             ]),
 
-            // Liga e desliga modos da operação. Hoje só o modo rápido, que o
-            // painel precisa liberar antes — sem ele a seção nem aparece.
+            // Liga e desliga modos da operação, por aparelho. Hoje só o modo
+            // rápido (e a impressão dele), que o painel precisa liberar antes
+            // — sem ele a seção nem aparece.
             if (patio != null && patio.modoRapidoEntrada) ...[
               _secao('Configurações'),
-              _grupo([ModoRapidoTile(patio: patio)]),
+              _grupo([
+                ModoRapidoTile(patio: patio),
+                ImprimeRapidoTile(patio: patio),
+              ]),
             ],
 
             // Aqui os itens NÃO têm subtítulo — é assim no protótipo, e faz

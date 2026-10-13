@@ -126,7 +126,8 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
     );
   }
 
-  void _aposRegistrar(EntradaRegistrada r, EntradaLiberada a, String? foto) {
+  Future<void> _aposRegistrar(
+      EntradaRegistrada r, EntradaLiberada a, String? foto) async {
     final patio = _patio!;
     unawaited(_sync.drain());
     unawaited(HapticFeedback.mediumImpact());
@@ -134,10 +135,18 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
     ref.invalidate(ticketsAbertosProvider);
     ref.invalidate(hospedesProvider);
 
-    if (!patio.modoRapidoImprime) return;
+    // Escolha do aparelho (Menu → Configurações). Espera a leitura se ainda
+    // não terminou; falhando, imprime — o padrão de sempre. Depois do await
+    // vai pelo container, não pelo `ref`: a tela pode ter saído no meio.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final imprime = await container
+        .read(modoRapidoImprimeProvider.future)
+        .catchError((Object _) => true);
+    if (!imprime) return;
     final hospede = a.hospede;
     final tipo = hospede?.tipoVeiculo ?? patio.tipoPadrao!;
-    final printerFuture = ref.read(printerNotifierProvider.future);
+    // Só aqui: ler a impressora tenta conectar o Bluetooth.
+    final printerFuture = container.read(printerNotifierProvider.future);
     unawaited(_fila.enfileirar(() => imprimirCupomEntrada(
           printerFuture: printerFuture,
           printerNotifier: _printer,
@@ -210,6 +219,8 @@ class _EntradaRapidaScreenState extends ConsumerState<EntradaRapidaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Já carrega a escolha de imprimir: o cupom do 1º carro lê daqui.
+    ref.watch(modoRapidoImprimeProvider);
     final patio = ref.watch(patioNotifierProvider).value ?? _patio;
     _patio = patio;
     final motivo = patio == null

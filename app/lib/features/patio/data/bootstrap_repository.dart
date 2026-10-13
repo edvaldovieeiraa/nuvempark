@@ -70,7 +70,8 @@ class BootstrapRepository {
       'foto_recibo_modo': configJson['foto_recibo_modo'],
       'modo_quiosque': configJson['modo_quiosque'],
       'modo_rapido_entrada': configJson['modo_rapido_entrada'],
-      'modo_rapido_imprime': configJson['modo_rapido_imprime'],
+      // modo_rapido_imprime ainda chega da API (APKs até a 1.0.0+18 leem),
+      // mas a escolha agora é do aparelho: não entra no cache.
     });
 
     await db.operacaoDao.upsertCache(OperacaoCacheCompanion(
