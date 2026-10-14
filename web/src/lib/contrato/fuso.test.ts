@@ -31,6 +31,11 @@ describe('fuso', () => {
     expect(partesLocais(new Date('2026-03-08T07:00:00Z'), NY).minutoDoDia).toBe(3 * 60);
   });
 
+  it('hora inexistente volta uma hora; hora repetida fica com a primeira (igual ao Dart)', () => {
+    expect(instanteLocal(2026, 3, 8, 150, NY).toISOString()).toBe('2026-03-08T06:30:00.000Z');
+    expect(instanteLocal(2026, 11, 1, 90, NY).toISOString()).toBe('2026-11-01T05:30:00.000Z');
+  });
+
   it('somarDias atravessa mês e ano', () => {
     expect(somarDias(2026, 12, 31, 1)).toEqual({ ano: 2027, mes: 1, dia: 1 });
     expect(somarDias(2026, 3, 1, -1)).toEqual({ ano: 2026, mes: 2, dia: 28 });
