@@ -10,6 +10,10 @@ enum FareMotivo {
 
   /// Estadia abrangeu a janela de pernoite.
   pernoite,
+
+  /// Estadia acima de 24 h: soma de blocos de 24 h desde a entrada, cada um
+  /// cobrado pelas regras acima, mais a sobra final.
+  diarias,
 }
 
 class FareResult {

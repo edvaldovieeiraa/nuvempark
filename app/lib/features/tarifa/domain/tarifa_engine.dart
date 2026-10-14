@@ -8,7 +8,14 @@ import 'fare_result.dart';
 ///  2. Pernoite    → tarifa.pernoiteValor
 ///  3. Normal      → fração inicial + frações adicionais (arredondadas pra cima)
 ///  4. Teto diária → substituído por tarifa.tetoDiaria quando excedido
+///
+/// Acima de 24 h, com teto ou pernoite ligados, a estadia é dividida em blocos
+/// de 24 h corridas desde a entrada; cada bloco e a sobra final passam pelas
+/// regras 1–4 e os valores são somados (motivo `diarias`). Sem teto nem
+/// pernoite as frações já cobram o tempo todo, então não divide.
 abstract final class TarifaEngine {
+  static const _periodo = Duration(hours: 24);
+
   /// Calcula o valor a cobrar dada uma entrada, saída e configuração de tarifa.
   static FareResult calcular({
     required DateTime entrada,
@@ -18,6 +25,34 @@ abstract final class TarifaEngine {
     assert(!saida.isBefore(entrada), 'saida deve ser igual ou posterior à entrada');
     assert(tarifa.fracaoAdicionalMinutos > 0, 'fracaoAdicionalMinutos deve ser > 0');
 
+    final cobraPorPeriodo = tarifa.tetoDiaria > 0 || tarifa.pernoiteValor > 0;
+    if (!cobraPorPeriodo || saida.difference(entrada) <= _periodo) {
+      return _calcularPeriodo(entrada, saida, tarifa);
+    }
+
+    var inicio = entrada;
+    var valor = 0.0;
+    while (saida.difference(inicio) > _periodo) {
+      final fim = inicio.add(_periodo);
+      valor += _calcularPeriodo(inicio, fim, tarifa).valor;
+      inicio = fim;
+    }
+    valor += _calcularPeriodo(inicio, saida, tarifa).valor;
+
+    return FareResult(
+      valor: valor,
+      duracaoMinutos: saida.difference(entrada).inMinutes,
+      motivo: FareMotivo.diarias,
+    );
+  }
+
+  /// Regras 1–4 aplicadas a um intervalo de até 24 h (ou a qualquer intervalo
+  /// quando a tarifa não tem teto nem pernoite).
+  static FareResult _calcularPeriodo(
+    DateTime entrada,
+    DateTime saida,
+    TarifaConfig tarifa,
+  ) {
     final duracao = saida.difference(entrada);
     final duracaoSegundos = duracao.inSeconds;
     // Frações/pernoite/teto seguem em MINUTOS (regra original inalterada).

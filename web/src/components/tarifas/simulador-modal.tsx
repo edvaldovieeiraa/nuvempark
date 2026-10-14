@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Clock, Gauge, Moon, ShieldCheck, X } from "lucide-react";
+import { CalendarDays, Clock, Gauge, Moon, ShieldCheck, X } from "lucide-react";
 import { calcularTarifa, type TarifaSim } from "@/lib/tarifa-engine";
 
 const moeda = new Intl.NumberFormat("pt-BR", {
@@ -97,6 +97,13 @@ export function ModalSimulador({
       bg: "#FEF7E6",
       bd: "#FCE3A6",
       Icone: ShieldCheck,
+    },
+    diarias: {
+      rotulo: "Mais de 24 h",
+      fg: "#B45309",
+      bg: "#FEF7E6",
+      bd: "#FCE3A6",
+      Icone: CalendarDays,
     },
   } as const;
 
@@ -290,6 +297,13 @@ export function ModalSimulador({
                     : `Fração inicial (${tarifa.fracao_inicial_minutos}min) = ${moeda.format(tarifa.fracao_inicial_valor)} + ${resultado.fracoesAdicionais} ${resultado.fracoesAdicionais === 1 ? "fração adicional" : "frações adicionais"} de ${tarifa.fracao_adicional_minutos}min × ${moeda.format(tarifa.fracao_adicional_valor)}.`)}
                 {resultado.motivo === "tetoDiaria" &&
                   `Por tempo daria ${moeda.format(resultado.valorSemTeto)}, mas o teto de diária limita a cobrança a ${moeda.format(tarifa.teto_diaria)}.`}
+                {resultado.motivo === "diarias" &&
+                  (() => {
+                    const n = resultado.diarias ?? 0;
+                    const sobra = resultado.valorSobra ?? 0;
+                    const sobraMin = resultado.duracaoMinutos - n * 1440;
+                    return `${n} ${n === 1 ? "período" : "períodos"} de 24 h desde a entrada, cada um com tolerância, pernoite, frações e teto: ${moeda.format(resultado.valor - sobra)}. ${sobraMin > 0 ? `As ${formatarPermanencia(sobraMin)} restantes: ${moeda.format(sobra)}.` : ""}`;
+                  })()}
               </p>
             </div>
           )}

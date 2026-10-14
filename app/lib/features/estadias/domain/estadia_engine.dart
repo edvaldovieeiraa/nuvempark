@@ -7,8 +7,9 @@ import '../../tarifa/domain/tarifa_engine.dart';
 /// Puro, sem I/O — testável sem banco nem tela.
 ///
 /// O atraso NÃO entra no TarifaEngine: ele usa o TarifaEngine por bloco e
-/// aplica por cima o teto de uma diária de hóspede. Os ports do motor na API e
-/// no painel ("tem que bater com o Dart") ficam intocados.
+/// aplica por cima o teto de uma diária de hóspede. Bloco acima de 24 h
+/// (diária de hóspede de 25 a 168 h) é dividido pelo próprio TarifaEngine em
+/// períodos de 24 h antes desse teto.
 abstract final class EstadiaEngine {
   static ContratacaoResult contratacao({
     required int diarias,

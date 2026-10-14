@@ -5,6 +5,8 @@
  *  2. Pernoite    → pernoite_valor (só se > 0; janela D hh_ini → D+1 hh_fim)
  *  3. Frações     → inicial + ceil(restante/adicional) × valor_adicional
  *  4. Teto diária → substitui quando excedido (só se > 0)
+ * Acima de 24 h, com teto ou pernoite ligados, divide em blocos de 24 h desde
+ * a entrada, cobra cada bloco e a sobra pelas regras 1–4 e soma (`diarias`).
  * Qualquer mudança de regra deve ser feita NOS DOIS lugares.
  */
 
@@ -20,7 +22,12 @@ export type TarifaSim = {
   pernoite_hora_fim: number;
 };
 
-export type MotivoSim = "tolerancia" | "pernoite" | "normal" | "tetoDiaria";
+export type MotivoSim =
+  | "tolerancia"
+  | "pernoite"
+  | "normal"
+  | "tetoDiaria"
+  | "diarias";
 
 export type ResultadoSim = {
   valor: number;
@@ -30,9 +37,49 @@ export type ResultadoSim = {
   fracoesAdicionais: number;
   /** Valor por tempo antes do teto (motivo tetoDiaria). */
   valorSemTeto: number;
+  /** Blocos de 24 h cheios antes da sobra (motivo diarias). */
+  diarias?: number;
+  /** Valor da sobra depois dos blocos de 24 h (motivo diarias). */
+  valorSobra?: number;
 };
 
+const MS_POR_DIA = 24 * 3_600_000;
+
 export function calcularTarifa(
+  entrada: Date,
+  saida: Date,
+  t: TarifaSim,
+): ResultadoSim {
+  const cobraPorPeriodo = t.teto_diaria > 0 || t.pernoite_valor > 0;
+  const fimMs = saida.getTime();
+  if (!cobraPorPeriodo || fimMs - entrada.getTime() <= MS_POR_DIA) {
+    return calcularPeriodo(entrada, saida, t);
+  }
+
+  let inicioMs = entrada.getTime();
+  let valor = 0;
+  let diarias = 0;
+  while (fimMs - inicioMs > MS_POR_DIA) {
+    const fimBloco = inicioMs + MS_POR_DIA;
+    valor += calcularPeriodo(new Date(inicioMs), new Date(fimBloco), t).valor;
+    inicioMs = fimBloco;
+    diarias++;
+  }
+  const valorSobra = calcularPeriodo(new Date(inicioMs), saida, t).valor;
+
+  return {
+    valor: valor + valorSobra,
+    duracaoMinutos: Math.floor((fimMs - entrada.getTime()) / 60000),
+    motivo: "diarias",
+    fracoesAdicionais: 0,
+    valorSemTeto: 0,
+    diarias,
+    valorSobra,
+  };
+}
+
+/** Regras 1–4 num intervalo de até 24 h. Espelha `_calcularPeriodo` do Dart. */
+function calcularPeriodo(
   entrada: Date,
   saida: Date,
   t: TarifaSim,

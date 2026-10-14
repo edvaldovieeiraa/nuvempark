@@ -93,6 +93,20 @@ void main() {
       expect(atraso(const Duration(hours: 24, minutes: 5), tarifa: padrao).valor, 30);
     });
 
+    test('diária de 48 h: o bloco de atraso também cobra a tabela por 24 h', () {
+      // Bloco de 48 h pela tabela: 2 tetos (R\$ 120) e não 1 (R\$ 60) desde que o
+      // TarifaEngine passou a dividir estadias acima de 24 h. Limitado à diária
+      // de hóspede (R\$ 100).
+      final r = EstadiaEngine.atraso(
+        validaAte: vence,
+        saida: vence.add(const Duration(hours: 48)),
+        diariaValor: 100,
+        diariaHoras: 48,
+        tarifaAtraso: padrao,
+      );
+      expect(r.valor, 100);
+    });
+
     test('sem tabela avulsa: cada período começado é uma diária', () {
       expect(atraso(const Duration(hours: 2)).valor, 30);
       expect(atraso(const Duration(hours: 25)).valor, 60);

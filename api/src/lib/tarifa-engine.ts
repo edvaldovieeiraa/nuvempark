@@ -14,6 +14,11 @@
  *  3. Normal      → fração inicial + frações adicionais (arredondadas PRA CIMA)
  *  4. Teto diária → substitui o normal quando excedido
  *
+ * Acima de 24 h, com teto ou pernoite ligados, a estadia é dividida em blocos
+ * de 24 h corridas desde a entrada; cada bloco e a sobra final passam pelas
+ * regras 1–4 e os valores são somados (motivo `diarias`). Sem teto nem
+ * pernoite as frações já cobram o tempo todo, então não divide.
+ *
  * DATAS: `Date` (não epoch-ms). Duração medida em minutos inteiros, truncando —
  * igual ao `Duration.inMinutes` do Dart.
  *
@@ -36,7 +41,12 @@ export interface TarifaConfig {
   pernoiteHoraFim: number;
 }
 
-export type FareMotivo = 'tolerancia' | 'normal' | 'tetoDiaria' | 'pernoite';
+export type FareMotivo =
+  | 'tolerancia'
+  | 'normal'
+  | 'tetoDiaria'
+  | 'pernoite'
+  | 'diarias';
 
 export interface FareResult {
   valor: number;
@@ -67,6 +77,37 @@ export function calcular(params: {
     throw new Error('fracaoAdicionalMinutos deve ser > 0');
   }
 
+  const cobraPorPeriodo = tarifa.tetoDiaria > 0 || tarifa.pernoiteValor > 0;
+  const fimMs = saida.getTime();
+  if (!cobraPorPeriodo || fimMs - entrada.getTime() <= MS_POR_DIA) {
+    return calcularPeriodo(entrada, saida, tarifa);
+  }
+
+  let inicioMs = entrada.getTime();
+  let valor = 0;
+  while (fimMs - inicioMs > MS_POR_DIA) {
+    const fimBloco = inicioMs + MS_POR_DIA;
+    valor += calcularPeriodo(new Date(inicioMs), new Date(fimBloco), tarifa).valor;
+    inicioMs = fimBloco;
+  }
+  valor += calcularPeriodo(new Date(inicioMs), saida, tarifa).valor;
+
+  return {
+    valor,
+    duracaoMinutos: Math.floor((fimMs - entrada.getTime()) / MS_POR_MINUTO),
+    motivo: 'diarias',
+  };
+}
+
+/**
+ * Regras 1–4 aplicadas a um intervalo de até 24 h (ou a qualquer intervalo
+ * quando a tarifa não tem teto nem pernoite). Espelha `_calcularPeriodo` do Dart.
+ */
+function calcularPeriodo(
+  entrada: Date,
+  saida: Date,
+  tarifa: TarifaConfig,
+): FareResult {
   const ms = saida.getTime() - entrada.getTime();
   // Trunca, como o `Duration.inSeconds`/`inMinutes` do Dart.
   const duracaoSegundos = Math.floor(ms / MS_POR_SEGUNDO);

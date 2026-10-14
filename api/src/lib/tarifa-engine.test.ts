@@ -172,3 +172,73 @@ describe('TarifaEngine — tolerância em segundos', () => {
     expect(r.valor).toBeCloseTo(5.0, 3);
   });
 });
+
+/**
+ * Estadias acima de 24 h (fix 2026-10). Antes o teto e a pernoite valiam UMA
+ * vez para a estadia inteira: 72 h pagavam um teto, 10 dias pagavam uma
+ * pernoite. Agora a estadia é dividida em blocos de 24 h corridas desde a
+ * entrada; cada bloco é cobrado com as regras de sempre (tolerância, pernoite,
+ * frações, teto) e a sobra final também. Só divide quando a tarifa tem teto
+ * ou pernoite ligados — tarifa só de frações já cobra o tempo todo.
+ * Mesmos cenários em `app/test/features/tarifa/tarifa_engine_test.dart`.
+ */
+describe('TarifaEngine — estadias acima de 24 h', () => {
+  const semPernoite: TarifaConfig = { ...tarifa, pernoiteValor: 0 };
+  const soFracoes: TarifaConfig = { ...tarifa, pernoiteValor: 0, tetoDiaria: 0 };
+  const d = (dia: number, h: number, m = 0) => new Date(2024, 0, dia, h, m);
+
+  it('24 h exatas sem pernoite → um teto, como antes', () => {
+    const r = TarifaEngine.calcular({ entrada: d(15, 10), saida: d(16, 10), tarifa: semPernoite });
+    expect(r.motivo).toBe('tetoDiaria');
+    expect(r.valor).toBeCloseTo(60.0, 3);
+  });
+
+  it('72 h sem pernoite → 3 tetos (R$ 180)', () => {
+    const r = TarifaEngine.calcular({ entrada: d(15, 10), saida: d(18, 10), tarifa: semPernoite });
+    expect(r.motivo).toBe('diarias');
+    expect(r.valor).toBeCloseTo(180.0, 3);
+    expect(r.duracaoMinutos).toBe(72 * 60);
+  });
+
+  it('74 h sem pernoite → 3 tetos + 2 h pela tabela (R$ 206)', () => {
+    // 2 h = 5 + ceil(105/15) × 3 = 26
+    const r = TarifaEngine.calcular({ entrada: d(15, 10), saida: d(18, 12), tarifa: semPernoite });
+    expect(r.motivo).toBe('diarias');
+    expect(r.valor).toBeCloseTo(206.0, 3);
+  });
+
+  it('24 h + 5 min: a sobra cai na tolerância → só o teto', () => {
+    const r = TarifaEngine.calcular({ entrada: d(15, 10), saida: d(16, 10, 5), tarifa: semPernoite });
+    expect(r.motivo).toBe('diarias');
+    expect(r.valor).toBeCloseTo(60.0, 3);
+  });
+
+  it('72 h com pernoite, entrada 10h → cada bloco fecha a madrugada (3 × R$ 25)', () => {
+    const r = TarifaEngine.calcular({ entrada: d(15, 10), saida: d(18, 10), tarifa });
+    expect(r.motivo).toBe('diarias');
+    expect(r.valor).toBeCloseTo(75.0, 3);
+  });
+
+  it('72 h com pernoite, entrada 23h → nenhum bloco fecha a janela 22h–06h (3 tetos)', () => {
+    const r = TarifaEngine.calcular({ entrada: d(15, 23), saida: d(18, 23), tarifa });
+    expect(r.motivo).toBe('diarias');
+    expect(r.valor).toBeCloseTo(180.0, 3);
+  });
+
+  it('pernoite sem teto: 48 h desde as 10h → 2 pernoites', () => {
+    const r = TarifaEngine.calcular({
+      entrada: d(15, 10),
+      saida: d(17, 10),
+      tarifa: { ...tarifa, tetoDiaria: 0 },
+    });
+    expect(r.motivo).toBe('diarias');
+    expect(r.valor).toBeCloseTo(50.0, 3);
+  });
+
+  it('tarifa só de frações (sem teto, sem pernoite) não muda: 72 h = R$ 866', () => {
+    // 5 + ceil((4320 − 15) / 15) × 3 = 5 + 287 × 3
+    const r = TarifaEngine.calcular({ entrada: d(15, 10), saida: d(18, 10), tarifa: soFracoes });
+    expect(r.motivo).toBe('normal');
+    expect(r.valor).toBeCloseTo(866.0, 3);
+  });
+});
