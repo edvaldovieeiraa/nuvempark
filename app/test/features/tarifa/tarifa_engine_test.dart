@@ -313,5 +313,39 @@ void main() {
       expect(r.motivo, FareMotivo.normal);
       expect(r.valor, closeTo(866.00, 0.001));
     });
+
+    test('bordas: 48 h exatas, sobra fora da tolerância, sobra de 1 s com tolerância 0', () {
+      double c(DateTime e, DateTime s, TarifaConfig t) =>
+          TarifaEngine.calcular(entrada: e, saida: s, tarifa: t).valor;
+      expect(c(d(15, 10), d(17, 10), semPernoite), closeTo(120.00, 0.001));
+      // 24 h + 11 min: a sobra passa da tolerância (10) → fração inicial
+      expect(c(d(15, 10), d(16, 10, 11), semPernoite), closeTo(65.00, 0.001));
+      // tolerância 0: 1 s depois das 24 h já cobra a fração inicial
+      final tol0 = TarifaConfig(
+        id: 'test-tarifa',
+        operacaoId: 'op-zz',
+        nome: 'Padrão',
+        tipoVeiculo: 'carro',
+        ordem: 0,
+        visivelOperador: true,
+        fracaoInicialMinutos: 15,
+        fracaoInicialValor: 5.00,
+        fracaoAdicionalMinutos: 15,
+        fracaoAdicionalValor: 3.00,
+        tetoDiaria: 60.00,
+        toleranciaMinutos: 0,
+        pernoiteValor: 0,
+        pernoiteHoraInicio: 22,
+        pernoiteHoraFim: 6,
+        vigenciaInicio: DateTime.utc(2020),
+        vigenciaFim: null,
+      );
+      expect(c(d(15, 10), DateTime(2024, 1, 16, 10, 0, 1), tol0), closeTo(65.00, 0.001));
+    });
+
+    test('30 h desde as 10h com pernoite: bloco fecha a madrugada (R\$ 25) + 6 h no teto (R\$ 60)', () {
+      final r = TarifaEngine.calcular(entrada: d(15, 10), saida: d(16, 16), tarifa: tarifa);
+      expect(r.valor, closeTo(85.00, 0.001));
+    });
   });
 }

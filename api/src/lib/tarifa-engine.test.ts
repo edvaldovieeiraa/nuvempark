@@ -241,4 +241,20 @@ describe('TarifaEngine — estadias acima de 24 h', () => {
     expect(r.motivo).toBe('normal');
     expect(r.valor).toBeCloseTo(866.0, 3);
   });
+
+  it('bordas: 48 h exatas, sobra fora da tolerância, sobra de 1 s com tolerância 0', () => {
+    const c = (e: Date, sa: Date, t: TarifaConfig) =>
+      TarifaEngine.calcular({ entrada: e, saida: sa, tarifa: t }).valor;
+    expect(c(d(15, 10), d(17, 10), semPernoite)).toBeCloseTo(120.0, 3);
+    // 24 h + 11 min: a sobra passa da tolerância (10) → fração inicial
+    expect(c(d(15, 10), d(16, 10, 11), semPernoite)).toBeCloseTo(65.0, 3);
+    // tolerância 0: 1 s depois das 24 h já cobra a fração inicial
+    const tol0 = { ...semPernoite, toleranciaMinutos: 0 };
+    expect(c(d(15, 10), new Date(2024, 0, 16, 10, 0, 1), tol0)).toBeCloseTo(65.0, 3);
+  });
+
+  it('30 h desde as 10h com pernoite: bloco fecha a madrugada (R$ 25) + 6 h no teto (R$ 60)', () => {
+    const r = TarifaEngine.calcular({ entrada: d(15, 10), saida: d(16, 16), tarifa });
+    expect(r.valor).toBeCloseTo(85.0, 3);
+  });
 });
