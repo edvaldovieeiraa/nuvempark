@@ -1,0 +1,1187 @@
+{
+  "versao": 1,
+  "fuso": "America/Sao_Paulo",
+  "origem": "Simulador de contrato do CloudPark, pátio 1639 (fora de uso), contratos REF C1–C10, rodado em 2026-10-14. Dossiê: cloudpark-clone/docs/engenharia-reversa (06-grade-simulador.csv, golden/resultados.jsonl). C8 (hotel) e C9 (convênio) ficam fora: spec tarifa-contrato, decisão 2.",
+  "contratos": {
+    "C1": {
+      "versao": 1,
+      "mais_de_24h": false,
+      "diaria_centavos": null,
+      "cobrar_menor_valor": false,
+      "regras": [
+        {
+          "nome": "Padrão",
+          "inicio": null,
+          "fim": null,
+          "dias": null,
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 15,
+              "valor_centavos": 0
+            },
+            {
+              "ate_minutos": 60,
+              "valor_centavos": 1000
+            },
+            {
+              "ate_minutos": 120,
+              "valor_centavos": 1500
+            }
+          ],
+          "fracao": {
+            "minutos": 60,
+            "valor_centavos": 500
+          }
+        }
+      ]
+    },
+    "C2": {
+      "versao": 1,
+      "mais_de_24h": false,
+      "diaria_centavos": 4000,
+      "cobrar_menor_valor": false,
+      "regras": [
+        {
+          "nome": "Padrão",
+          "inicio": null,
+          "fim": null,
+          "dias": null,
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 15,
+              "valor_centavos": 0
+            },
+            {
+              "ate_minutos": 60,
+              "valor_centavos": 1000
+            },
+            {
+              "ate_minutos": 120,
+              "valor_centavos": 1500
+            }
+          ],
+          "fracao": {
+            "minutos": 60,
+            "valor_centavos": 500
+          }
+        }
+      ]
+    },
+    "C3": {
+      "versao": 1,
+      "mais_de_24h": false,
+      "diaria_centavos": null,
+      "cobrar_menor_valor": false,
+      "regras": [
+        {
+          "nome": "Padrão",
+          "inicio": null,
+          "fim": null,
+          "dias": null,
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": true,
+          "faixas": [
+            {
+              "ate_minutos": 60,
+              "valor_centavos": 1000
+            },
+            {
+              "ate_minutos": 180,
+              "valor_centavos": 2000
+            }
+          ],
+          "fracao": null
+        }
+      ]
+    },
+    "C4": {
+      "versao": 1,
+      "mais_de_24h": false,
+      "diaria_centavos": null,
+      "cobrar_menor_valor": false,
+      "regras": [
+        {
+          "nome": "Padrão",
+          "inicio": null,
+          "fim": null,
+          "dias": null,
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 60,
+              "valor_centavos": 1000
+            }
+          ],
+          "fracao": {
+            "minutos": 60,
+            "valor_centavos": 500
+          }
+        },
+        {
+          "nome": "Noturno",
+          "inicio": "20:00",
+          "fim": "06:00",
+          "dias": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 720,
+              "valor_centavos": 2500
+            }
+          ],
+          "fracao": {
+            "minutos": 60,
+            "valor_centavos": 500
+          }
+        }
+      ]
+    },
+    "C5": {
+      "versao": 1,
+      "mais_de_24h": false,
+      "diaria_centavos": null,
+      "cobrar_menor_valor": false,
+      "regras": [
+        {
+          "nome": "Padrão",
+          "inicio": null,
+          "fim": null,
+          "dias": null,
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 60,
+              "valor_centavos": 1000
+            }
+          ],
+          "fracao": {
+            "minutos": 60,
+            "valor_centavos": 500
+          }
+        },
+        {
+          "nome": "Noturno",
+          "inicio": "20:00",
+          "fim": "06:00",
+          "dias": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "usar_minutos_pagos": true,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 720,
+              "valor_centavos": 2500
+            }
+          ],
+          "fracao": {
+            "minutos": 60,
+            "valor_centavos": 500
+          }
+        }
+      ]
+    },
+    "C6": {
+      "versao": 1,
+      "mais_de_24h": false,
+      "diaria_centavos": null,
+      "cobrar_menor_valor": true,
+      "regras": [
+        {
+          "nome": "Padrão",
+          "inicio": null,
+          "fim": null,
+          "dias": null,
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 60,
+              "valor_centavos": 1000
+            }
+          ],
+          "fracao": {
+            "minutos": 60,
+            "valor_centavos": 500
+          }
+        },
+        {
+          "nome": "Noturno",
+          "inicio": "20:00",
+          "fim": "06:00",
+          "dias": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 720,
+              "valor_centavos": 2500
+            }
+          ],
+          "fracao": {
+            "minutos": 60,
+            "valor_centavos": 500
+          }
+        }
+      ]
+    },
+    "C7": {
+      "versao": 1,
+      "mais_de_24h": false,
+      "diaria_centavos": null,
+      "cobrar_menor_valor": false,
+      "regras": [
+        {
+          "nome": "Padrão",
+          "inicio": null,
+          "fim": null,
+          "dias": null,
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 60,
+              "valor_centavos": 1000
+            }
+          ],
+          "fracao": {
+            "minutos": 60,
+            "valor_centavos": 500
+          }
+        },
+        {
+          "nome": "FDS",
+          "inicio": "00:00",
+          "fim": "23:59",
+          "dias": [
+            6,
+            7
+          ],
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 60,
+              "valor_centavos": 1500
+            }
+          ],
+          "fracao": {
+            "minutos": 60,
+            "valor_centavos": 800
+          }
+        }
+      ]
+    },
+    "C10": {
+      "versao": 1,
+      "mais_de_24h": true,
+      "diaria_centavos": null,
+      "cobrar_menor_valor": false,
+      "regras": [
+        {
+          "nome": "Padrão",
+          "inicio": null,
+          "fim": null,
+          "dias": null,
+          "usar_minutos_pagos": false,
+          "recomecar_tabela": false,
+          "faixas": [
+            {
+              "ate_minutos": 1440,
+              "valor_centavos": 4000
+            },
+            {
+              "ate_minutos": 2880,
+              "valor_centavos": 7000
+            }
+          ],
+          "fracao": {
+            "minutos": 1440,
+            "valor_centavos": 3000
+          }
+        }
+      ]
+    }
+  },
+  "casos": [
+    {
+      "id": "S01",
+      "contrato": "C1",
+      "objetivo": "limite do item 0:15 (inclusivo?)",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 10:15",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T13:15:00Z",
+      "total_centavos": 0,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 0
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 0,00 por 0:15"
+    },
+    {
+      "id": "S02",
+      "contrato": "C1",
+      "objetivo": "1 min após o item 0:15",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 10:16",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T13:16:00Z",
+      "total_centavos": 1000,
+      "minutos_restantes": 44,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 10,00 por 0:16"
+    },
+    {
+      "id": "S03",
+      "contrato": "C1",
+      "objetivo": "limite do item 1:00",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 11:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T14:00:00Z",
+      "total_centavos": 1000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 10,00 por 1:00"
+    },
+    {
+      "id": "S04",
+      "contrato": "C1",
+      "objetivo": "1 min após 1:00",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 11:01",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T14:01:00Z",
+      "total_centavos": 1500,
+      "minutos_restantes": 59,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1500
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 15,00 por 1:01"
+    },
+    {
+      "id": "S05",
+      "contrato": "C1",
+      "objetivo": "limite do último item",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 12:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T15:00:00Z",
+      "total_centavos": 1500,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1500
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 15,00 por 2:00"
+    },
+    {
+      "id": "S06",
+      "contrato": "C1",
+      "objetivo": "1 min de fração adicional (arredonda?)",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 12:01",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T15:01:00Z",
+      "total_centavos": 2000,
+      "minutos_restantes": 59,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 2000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 20,00 por 2:01"
+    },
+    {
+      "id": "S07",
+      "contrato": "C1",
+      "objetivo": "meia fração",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 12:30",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T15:30:00Z",
+      "total_centavos": 2000,
+      "minutos_restantes": 30,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 2000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 20,00 por 2:30"
+    },
+    {
+      "id": "S08",
+      "contrato": "C1",
+      "objetivo": "fração completa",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 13:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T16:00:00Z",
+      "total_centavos": 2000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 2000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 20,00 por 3:00"
+    },
+    {
+      "id": "S09",
+      "contrato": "C1",
+      "objetivo": "1 min após 1 fração",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 13:01",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T16:01:00Z",
+      "total_centavos": 2500,
+      "minutos_restantes": 59,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 2500
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 25,00 por 3:01"
+    },
+    {
+      "id": "S10",
+      "contrato": "C2",
+      "objetivo": "14 h no mesmo dia (teto diária)",
+      "entrada_local": "2026-10-19 08:00",
+      "saida_local": "2026-10-19 22:00",
+      "entrada": "2026-10-19T11:00:00Z",
+      "saida": "2026-10-20T01:00:00Z",
+      "total_centavos": 4000,
+      "minutos_restantes": 600,
+      "fatias": [
+        {
+          "diarias": 1,
+          "valor_centavos": 4000
+        }
+      ],
+      "memoria_cloudpark": "Diária: R$ 40,00 por 1 diária"
+    },
+    {
+      "id": "S11",
+      "contrato": "C2",
+      "objetivo": "14 h virando a meia-noite (24 h corridas x calendário)",
+      "entrada_local": "2026-10-19 20:00",
+      "saida_local": "2026-10-20 10:00",
+      "entrada": "2026-10-19T23:00:00Z",
+      "saida": "2026-10-20T13:00:00Z",
+      "total_centavos": 4000,
+      "minutos_restantes": 600,
+      "fatias": [
+        {
+          "diarias": 1,
+          "valor_centavos": 4000
+        }
+      ],
+      "memoria_cloudpark": "Diária: R$ 40,00 por 1 diária"
+    },
+    {
+      "id": "S12",
+      "contrato": "C2",
+      "objetivo": "2 h virando a meia-noite",
+      "entrada_local": "2026-10-19 23:00",
+      "saida_local": "2026-10-20 01:00",
+      "entrada": "2026-10-20T02:00:00Z",
+      "saida": "2026-10-20T04:00:00Z",
+      "total_centavos": 1500,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1500
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 15,00 por 2:00"
+    },
+    {
+      "id": "S13",
+      "contrato": "C2",
+      "objetivo": "exatamente 24 h",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-20 10:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-20T13:00:00Z",
+      "total_centavos": 4000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "diarias": 1,
+          "valor_centavos": 4000
+        }
+      ],
+      "memoria_cloudpark": "Diária: R$ 40,00 por 1 diária"
+    },
+    {
+      "id": "S14",
+      "contrato": "C2",
+      "objetivo": "24 h + 1 min",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-20 10:01",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-20T13:01:00Z",
+      "total_centavos": 4000,
+      "minutos_restantes": 14,
+      "fatias": [
+        {
+          "diarias": 1,
+          "valor_centavos": 4000
+        },
+        {
+          "regra": "Padrão",
+          "valor_centavos": 0
+        }
+      ],
+      "memoria_cloudpark": "Diária: R$ 40,00 por 1 diária / Padrão: R$ 0,00 por 0:01"
+    },
+    {
+      "id": "S15",
+      "contrato": "C2",
+      "objetivo": "25 h",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-20 11:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-20T14:00:00Z",
+      "total_centavos": 5000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "diarias": 1,
+          "valor_centavos": 4000
+        },
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        }
+      ],
+      "memoria_cloudpark": "Diária: R$ 40,00 por 1 diária / Padrão: R$ 10,00 por 1:00"
+    },
+    {
+      "id": "S16",
+      "contrato": "C2",
+      "objetivo": "49 h",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-21 11:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-21T14:00:00Z",
+      "total_centavos": 9000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "diarias": 2,
+          "valor_centavos": 8000
+        },
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        }
+      ],
+      "memoria_cloudpark": "Diária: R$ 80,00 por 2 diárias / Padrão: R$ 10,00 por 1:00"
+    },
+    {
+      "id": "S17",
+      "contrato": "C3",
+      "objetivo": "fim da tabela",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 13:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T16:00:00Z",
+      "total_centavos": 2000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 2000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 20,00 por 3:00"
+    },
+    {
+      "id": "S18",
+      "contrato": "C3",
+      "objetivo": "1 min após o fim (recomeça?)",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 13:01",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T16:01:00Z",
+      "total_centavos": 3000,
+      "minutos_restantes": 59,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 3000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 30,00 por 3:01"
+    },
+    {
+      "id": "S19",
+      "contrato": "C3",
+      "objetivo": "1 h após o fim",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 14:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T17:00:00Z",
+      "total_centavos": 3000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 3000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 30,00 por 4:00"
+    },
+    {
+      "id": "S20",
+      "contrato": "C3",
+      "objetivo": "2 ciclos completos",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 16:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T19:00:00Z",
+      "total_centavos": 4000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 4000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 40,00 por 6:00"
+    },
+    {
+      "id": "S21",
+      "contrato": "C3",
+      "objetivo": "2 ciclos + 1 min",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 16:01",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T19:01:00Z",
+      "total_centavos": 5000,
+      "minutos_restantes": 59,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 5000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 50,00 por 6:01"
+    },
+    {
+      "id": "S22",
+      "contrato": "C3",
+      "objetivo": "2 ciclos + 1:30",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-19 17:30",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-19T20:30:00Z",
+      "total_centavos": 6000,
+      "minutos_restantes": 90,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 6000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 60,00 por 7:30"
+    },
+    {
+      "id": "S23",
+      "contrato": "C4",
+      "objetivo": "só Padrão (antes da regra)",
+      "entrada_local": "2026-10-19 18:00",
+      "saida_local": "2026-10-19 19:00",
+      "entrada": "2026-10-19T21:00:00Z",
+      "saida": "2026-10-19T22:00:00Z",
+      "total_centavos": 1000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 10,00 por 1:00"
+    },
+    {
+      "id": "S24",
+      "contrato": "C4",
+      "objetivo": "entra na Padrão, termina na Noturno",
+      "entrada_local": "2026-10-19 19:00",
+      "saida_local": "2026-10-19 21:00",
+      "entrada": "2026-10-19T22:00:00Z",
+      "saida": "2026-10-20T00:00:00Z",
+      "total_centavos": 3500,
+      "minutos_restantes": 540,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        },
+        {
+          "regra": "Noturno",
+          "valor_centavos": 2500
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 10,00 por 1:00 / Noturno: R$ 25,00 por 10:00"
+    },
+    {
+      "id": "S25",
+      "contrato": "C4",
+      "objetivo": "inteiro dentro da Noturno",
+      "entrada_local": "2026-10-19 21:00",
+      "saida_local": "2026-10-19 23:00",
+      "entrada": "2026-10-20T00:00:00Z",
+      "saida": "2026-10-20T02:00:00Z",
+      "total_centavos": 2500,
+      "minutos_restantes": 420,
+      "fatias": [
+        {
+          "regra": "Noturno",
+          "valor_centavos": 2500
+        }
+      ],
+      "memoria_cloudpark": "Noturno: R$ 25,00 por 9:00"
+    },
+    {
+      "id": "S26",
+      "contrato": "C4",
+      "objetivo": "Noturno e depois Padrão após 06:00",
+      "entrada_local": "2026-10-19 22:00",
+      "saida_local": "2026-10-20 07:00",
+      "entrada": "2026-10-20T01:00:00Z",
+      "saida": "2026-10-20T10:00:00Z",
+      "total_centavos": 3500,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Noturno",
+          "valor_centavos": 2500
+        },
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        }
+      ],
+      "memoria_cloudpark": "Noturno: R$ 25,00 por 8:00 / Padrão: R$ 10,00 por 1:00"
+    },
+    {
+      "id": "S27",
+      "contrato": "C4",
+      "objetivo": "começa na Noturno, termina na Padrão",
+      "entrada_local": "2026-10-20 05:00",
+      "saida_local": "2026-10-20 08:00",
+      "entrada": "2026-10-20T08:00:00Z",
+      "saida": "2026-10-20T11:00:00Z",
+      "total_centavos": 4000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Noturno",
+          "valor_centavos": 2500
+        },
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1500
+        }
+      ],
+      "memoria_cloudpark": "Noturno: R$ 25,00 por 1:00 / Padrão: R$ 15,00 por 2:00"
+    },
+    {
+      "id": "S28",
+      "contrato": "C5",
+      "objetivo": "só Padrão (antes da regra)",
+      "entrada_local": "2026-10-19 18:00",
+      "saida_local": "2026-10-19 19:00",
+      "entrada": "2026-10-19T21:00:00Z",
+      "saida": "2026-10-19T22:00:00Z",
+      "total_centavos": 1000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 10,00 por 1:00"
+    },
+    {
+      "id": "S29",
+      "contrato": "C5",
+      "objetivo": "entra na Padrão, termina na Noturno",
+      "entrada_local": "2026-10-19 19:00",
+      "saida_local": "2026-10-19 21:00",
+      "entrada": "2026-10-19T22:00:00Z",
+      "saida": "2026-10-20T00:00:00Z",
+      "total_centavos": 3500,
+      "minutos_restantes": 660,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        },
+        {
+          "regra": "Noturno",
+          "valor_centavos": 2500
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 10,00 por 1:00 / Noturno: R$ 25,00 por 12:00"
+    },
+    {
+      "id": "S30",
+      "contrato": "C5",
+      "objetivo": "inteiro dentro da Noturno",
+      "entrada_local": "2026-10-19 21:00",
+      "saida_local": "2026-10-19 23:00",
+      "entrada": "2026-10-20T00:00:00Z",
+      "saida": "2026-10-20T02:00:00Z",
+      "total_centavos": 2500,
+      "minutos_restantes": 600,
+      "fatias": [
+        {
+          "regra": "Noturno",
+          "valor_centavos": 2500
+        }
+      ],
+      "memoria_cloudpark": "Noturno: R$ 25,00 por 12:00"
+    },
+    {
+      "id": "S31",
+      "contrato": "C5",
+      "objetivo": "Noturno e depois Padrão após 06:00",
+      "entrada_local": "2026-10-19 22:00",
+      "saida_local": "2026-10-20 07:00",
+      "entrada": "2026-10-20T01:00:00Z",
+      "saida": "2026-10-20T10:00:00Z",
+      "total_centavos": 2500,
+      "minutos_restantes": 180,
+      "fatias": [
+        {
+          "regra": "Noturno",
+          "valor_centavos": 2500
+        }
+      ],
+      "memoria_cloudpark": "Noturno: R$ 25,00 por 12:00"
+    },
+    {
+      "id": "S32",
+      "contrato": "C5",
+      "objetivo": "começa na Noturno, termina na Padrão",
+      "entrada_local": "2026-10-20 05:00",
+      "saida_local": "2026-10-20 08:00",
+      "entrada": "2026-10-20T08:00:00Z",
+      "saida": "2026-10-20T11:00:00Z",
+      "total_centavos": 2500,
+      "minutos_restantes": 540,
+      "fatias": [
+        {
+          "regra": "Noturno",
+          "valor_centavos": 2500
+        }
+      ],
+      "memoria_cloudpark": "Noturno: R$ 25,00 por 12:00"
+    },
+    {
+      "id": "S33",
+      "contrato": "C6",
+      "objetivo": "só Padrão (antes da regra)",
+      "entrada_local": "2026-10-19 18:00",
+      "saida_local": "2026-10-19 19:00",
+      "entrada": "2026-10-19T21:00:00Z",
+      "saida": "2026-10-19T22:00:00Z",
+      "total_centavos": 1000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 10,00 por 1:00"
+    },
+    {
+      "id": "S34",
+      "contrato": "C6",
+      "objetivo": "entra na Padrão, termina na Noturno",
+      "entrada_local": "2026-10-19 19:00",
+      "saida_local": "2026-10-19 21:00",
+      "entrada": "2026-10-19T22:00:00Z",
+      "saida": "2026-10-20T00:00:00Z",
+      "total_centavos": 1500,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1500
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 15,00 por 2:00"
+    },
+    {
+      "id": "S35",
+      "contrato": "C6",
+      "objetivo": "inteiro dentro da Noturno",
+      "entrada_local": "2026-10-19 21:00",
+      "saida_local": "2026-10-19 23:00",
+      "entrada": "2026-10-20T00:00:00Z",
+      "saida": "2026-10-20T02:00:00Z",
+      "total_centavos": 1500,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1500
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 15,00 por 2:00"
+    },
+    {
+      "id": "S36",
+      "contrato": "C6",
+      "objetivo": "Noturno e depois Padrão após 06:00",
+      "entrada_local": "2026-10-19 22:00",
+      "saida_local": "2026-10-20 07:00",
+      "entrada": "2026-10-20T01:00:00Z",
+      "saida": "2026-10-20T10:00:00Z",
+      "total_centavos": 3500,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Noturno",
+          "valor_centavos": 2500
+        },
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        }
+      ],
+      "memoria_cloudpark": "Noturno: R$ 25,00 por 8:00 / Padrão: R$ 10,00 por 1:00"
+    },
+    {
+      "id": "S37",
+      "contrato": "C6",
+      "objetivo": "começa na Noturno, termina na Padrão",
+      "entrada_local": "2026-10-20 05:00",
+      "saida_local": "2026-10-20 08:00",
+      "entrada": "2026-10-20T08:00:00Z",
+      "saida": "2026-10-20T11:00:00Z",
+      "total_centavos": 2000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 2000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 20,00 por 3:00"
+    },
+    {
+      "id": "S38",
+      "contrato": "C7",
+      "objetivo": "sexta 23:00 → sábado 01:00",
+      "entrada_local": "2026-10-23 23:00",
+      "saida_local": "2026-10-24 01:00",
+      "entrada": "2026-10-24T02:00:00Z",
+      "saida": "2026-10-24T04:00:00Z",
+      "total_centavos": 2500,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        },
+        {
+          "regra": "FDS",
+          "valor_centavos": 1500
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 10,00 por 1:00 / FDS: R$ 15,00 por 1:00"
+    },
+    {
+      "id": "S39",
+      "contrato": "C7",
+      "objetivo": "sábado inteiro na regra",
+      "entrada_local": "2026-10-24 10:00",
+      "saida_local": "2026-10-24 11:00",
+      "entrada": "2026-10-24T13:00:00Z",
+      "saida": "2026-10-24T14:00:00Z",
+      "total_centavos": 1500,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "FDS",
+          "valor_centavos": 1500
+        }
+      ],
+      "memoria_cloudpark": "FDS: R$ 15,00 por 1:00"
+    },
+    {
+      "id": "S40",
+      "contrato": "C7",
+      "objetivo": "domingo 23:30 → segunda 00:30",
+      "entrada_local": "2026-10-25 23:30",
+      "saida_local": "2026-10-26 00:30",
+      "entrada": "2026-10-26T02:30:00Z",
+      "saida": "2026-10-26T03:30:00Z",
+      "total_centavos": 2500,
+      "minutos_restantes": 29,
+      "fatias": [
+        {
+          "regra": "FDS",
+          "valor_centavos": 1500
+        },
+        {
+          "regra": "Padrão",
+          "valor_centavos": 1000
+        }
+      ],
+      "memoria_cloudpark": "FDS: R$ 15,00 por 0:29 / Padrão: R$ 10,00 por 0:31"
+    },
+    {
+      "id": "S50",
+      "contrato": "C10",
+      "objetivo": "antes do 1º item",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-20 09:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-20T12:00:00Z",
+      "total_centavos": 4000,
+      "minutos_restantes": 60,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 4000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 40,00 por 23:00"
+    },
+    {
+      "id": "S51",
+      "contrato": "C10",
+      "objetivo": "limite 24:00",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-20 10:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-20T13:00:00Z",
+      "total_centavos": 4000,
+      "minutos_restantes": 0,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 4000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 40,00 por 1 dia"
+    },
+    {
+      "id": "S52",
+      "contrato": "C10",
+      "objetivo": "após 24:00",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-20 11:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-20T14:00:00Z",
+      "total_centavos": 7000,
+      "minutos_restantes": 1380,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 7000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 70,00 por 1 dia, 1:00"
+    },
+    {
+      "id": "S53",
+      "contrato": "C10",
+      "objetivo": "após 48:00 (fração de 24 h)",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-21 11:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-21T14:00:00Z",
+      "total_centavos": 10000,
+      "minutos_restantes": 1380,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 10000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 100,00 por 2 dias, 1:00"
+    },
+    {
+      "id": "S54",
+      "contrato": "C10",
+      "objetivo": "2 frações",
+      "entrada_local": "2026-10-19 10:00",
+      "saida_local": "2026-10-22 11:00",
+      "entrada": "2026-10-19T13:00:00Z",
+      "saida": "2026-10-22T14:00:00Z",
+      "total_centavos": 13000,
+      "minutos_restantes": 1380,
+      "fatias": [
+        {
+          "regra": "Padrão",
+          "valor_centavos": 13000
+        }
+      ],
+      "memoria_cloudpark": "Padrão: R$ 130,00 por 3 dias, 1:00"
+    }
+  ]
+}
