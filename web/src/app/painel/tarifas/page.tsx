@@ -21,6 +21,9 @@ export default async function TarifasPage({
       .select("*")
       .eq("patio_id", patioId)
       .eq("ativo", true)
+      // Contrato (motor v2) ainda não tem tela: o formulário daqui o
+      // regravaria como avulso.
+      .neq("modalidade", "contrato")
       .order("ordem")
       .order("nome"),
     supabase

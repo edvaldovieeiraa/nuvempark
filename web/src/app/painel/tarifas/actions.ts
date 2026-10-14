@@ -155,7 +155,12 @@ export async function atualizarTarifa(
     .eq("id", id)
     .maybeSingle();
 
-  const { error } = await sb.from("tarifas").update(valores).eq("id", id);
+  // Nunca regrava um contrato (motor v2) com os campos deste formulário.
+  const { error } = await sb
+    .from("tarifas")
+    .update(valores)
+    .eq("id", id)
+    .neq("modalidade", "contrato");
   if (error) {
     console.error("[painel/tarifas] atualizarTarifa:", error);
     return { ok: false, msg: "Não foi possível salvar a tarifa." };

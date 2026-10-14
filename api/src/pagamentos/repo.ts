@@ -174,12 +174,14 @@ export async function lerTarifaDoTicket(
   const campos =
     'fracao_inicial_minutos, fracao_inicial_valor, fracao_adicional_minutos, fracao_adicional_valor, teto_diaria, tolerancia_minutos, pernoite_valor, pernoite_hora_inicio, pernoite_hora_fim';
 
-  if (t.tabela_preco_id) {
-    const { data, error } = await servico
-      .from('tarifas')
-      .select(campos)
-      .eq('id', t.tabela_preco_id)
-      .maybeSingle();
+  const tabelaId = t.tabela_preco_id;
+  if (tabelaId) {
+    // Tabela `contrato` não tem frações: até o QR ganhar o motor por contrato,
+    // ela cai na reserva avulsa em vez de ser cobrada pelas colunas padrão.
+    // Banco sem db/42 não tem `modalidade` (nem contrato): sem filtro.
+    const porId = () => servico.from('tarifas').select(campos).eq('id', tabelaId);
+    let { data, error } = await porId().neq('modalidade', 'contrato').maybeSingle();
+    if (error) ({ data, error } = await porId().maybeSingle());
     if (error) throw error;
     if (data) return numerica(data);
   }

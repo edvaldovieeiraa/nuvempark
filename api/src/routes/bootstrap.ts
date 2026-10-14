@@ -3,6 +3,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
 import { getAssinaturaStatus } from '../lib/assinatura.js';
 import { flagsModoRapido } from '../lib/modo-rapido.js';
+import { modalidadesAceitas } from '../lib/modalidades.js';
 
 /**
  * GET /bootstrap?patio_id=... — hidrata a config offline do app.
@@ -60,14 +61,12 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
 
     // Tarifas ativas, ordenadas.
     //
-    // Tarifa de hóspede só vai para o app que diz entendê-la
-    // (`?modalidades=hospede`). Um app anterior a ela a mostraria como mais
-    // um chip de tabela avulsa e calcularia a saída pelas frações padrão.
-    const aceitaHospede = String(
-      (req.query as Record<string, string | undefined>).modalidades ?? '',
-    )
-      .split(',')
-      .includes('hospede');
+    // Cada modalidade além de `avulso` só vai para o app que diz entendê-la
+    // (`?modalidades=hospede,contrato`). Um app anterior a ela a mostraria como
+    // mais um chip de tabela avulsa e calcularia a saída pelas frações padrão.
+    const modalidades = modalidadesAceitas(
+      (req.query as Record<string, string | undefined>).modalidades,
+    );
     const consultaTarifas = () =>
       db
         .from('tarifas')
@@ -76,12 +75,14 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
         .eq('ativo', true)
         .order('ordem', { ascending: true })
         .order('nome', { ascending: true });
-    let { data: tarifas, error: erroTarifas } = aceitaHospede
-      ? await consultaTarifas()
-      : await consultaTarifas().eq('modalidade', 'avulso');
+    let { data: tarifas, error: erroTarifas } = await consultaTarifas().in(
+      'modalidade',
+      modalidades,
+    );
     // Banco ainda sem db/42 (API publicada antes do SQL): a coluna não existe e
-    // o filtro falha. Sem este retorno, TODO aparelho ficaria sem tarifa.
-    if (erroTarifas && !aceitaHospede) {
+    // o filtro falha. Sem este retorno, TODO aparelho ficaria sem tarifa — e
+    // sem a coluna também não existe tarifa de outra modalidade.
+    if (erroTarifas) {
       ({ data: tarifas, error: erroTarifas } = await consultaTarifas());
     }
 
