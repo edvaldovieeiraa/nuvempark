@@ -22,6 +22,9 @@ class ContratoInvalido implements Exception {
 const _msMinuto = 60000;
 const _minutosDia = 24 * 60;
 
+/// Acima disso é dado errado (entrada zerada, relógio quebrado), não estadia.
+const _maxMinutosEstadia = 10 * 366 * _minutosDia;
+
 /// Valor da estadia pelo contrato. Duração em minutos inteiros, truncando os
 /// segundos (como o motor v1); as janelas partem da entrada truncada ao minuto.
 ResultadoContrato calcular({
@@ -38,6 +41,7 @@ ResultadoContrato calcular({
 
   final msEntrada = entrada.millisecondsSinceEpoch;
   final minutos = (saida.millisecondsSinceEpoch - msEntrada) ~/ _msMinuto;
+  if (minutos > _maxMinutosEstadia) throw ArgumentError('estadia acima de 10 anos');
   final e = (msEntrada ~/ _msMinuto) * _msMinuto;
   final s = e + minutos * _msMinuto;
 

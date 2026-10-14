@@ -1,0 +1,54 @@
+{"caso":"S01","contrato":"C1","minutos":15,"raw":[0,0.0,0,0,[{"name":"Padrão","value":0.0,"description":"R$ 0,00 por 0:15"}]]}
+{"caso":"S02","contrato":"C1","minutos":16,"raw":[10.0,0.0,44,10.0,[{"name":"Padrão","value":10.0,"description":"R$ 10,00 por 0:16"}]]}
+{"caso":"S03","contrato":"C1","minutos":60,"raw":[10.0,0.0,0,10.0,[{"name":"Padrão","value":10.0,"description":"R$ 10,00 por 1:00"}]]}
+{"caso":"S04","contrato":"C1","minutos":61,"raw":[15.0,0.0,59,15.0,[{"name":"Padrão","value":15.0,"description":"R$ 15,00 por 1:01"}]]}
+{"caso":"S05","contrato":"C1","minutos":120,"raw":[15.0,0.0,0,15.0,[{"name":"Padrão","value":15.0,"description":"R$ 15,00 por 2:00"}]]}
+{"caso":"S06","contrato":"C1","minutos":121,"raw":[20.0,0,59,20.0,[{"name":"Padrão","value":20.0,"description":"R$ 20,00 por 2:01"}]]}
+{"caso":"S07","contrato":"C1","minutos":150,"raw":[20.0,0,30,20.0,[{"name":"Padrão","value":20.0,"description":"R$ 20,00 por 2:30"}]]}
+{"caso":"S08","contrato":"C1","minutos":180,"raw":[20.0,0,0,20.0,[{"name":"Padrão","value":20.0,"description":"R$ 20,00 por 3:00"}]]}
+{"caso":"S09","contrato":"C1","minutos":181,"raw":[25.0,0,59,25.0,[{"name":"Padrão","value":25.0,"description":"R$ 25,00 por 3:01"}]]}
+{"caso":"S10","contrato":"C2","entrada":"2026-10-19 08:00","validacao":"2026-10-19 22:00","raw":[40,0,600,40,[{"name":"Diária","value":40,"description":"R$ 40,00 por 1 diária"}]]}
+{"caso":"S11","contrato":"C2","entrada":"2026-10-19 20:00","validacao":"2026-10-20 10:00","raw":[40,0,600,40,[{"name":"Diária","value":40,"description":"R$ 40,00 por 1 diária"}]]}
+{"caso":"S12","contrato":"C2","entrada":"2026-10-19 23:00","validacao":"2026-10-20 01:00","raw":[15,0,0,15,[{"name":"Padrão","value":15,"description":"R$ 15,00 por 2:00"}]]}
+{"caso":"S13","contrato":"C2","entrada":"2026-10-19 10:00","validacao":"2026-10-20 10:00","raw":[40,0,0,40,[{"name":"Diária","value":40,"description":"R$ 40,00 por 1 diária"}]]}
+{"caso":"S14","contrato":"C2","entrada":"2026-10-19 10:00","validacao":"2026-10-20 10:01","raw":[40,0,14,40,[{"name":"Diária","value":40,"description":"R$ 40,00 por 1 diária"},{"name":"Padrão","value":0,"description":"R$ 0,00 por 0:01"}]]}
+{"caso":"S15","contrato":"C2","entrada":"2026-10-19 10:00","validacao":"2026-10-20 11:00","raw":[50,0,0,50,[{"name":"Diária","value":40,"description":"R$ 40,00 por 1 diária"},{"name":"Padrão","value":10,"description":"R$ 10,00 por 1:00"}]]}
+{"caso":"S16","contrato":"C2","entrada":"2026-10-19 10:00","validacao":"2026-10-21 11:00","raw":[90,0,0,90,[{"name":"Diária","value":80,"description":"R$ 80,00 por 2 diárias"},{"name":"Padrão","value":10,"description":"R$ 10,00 por 1:00"}]]}
+{"caso":"S17","contrato":"C3","entrada":"2026-10-19 10:00","validacao":"2026-10-19 13:00","raw":[20,0,0,20,[{"name":"Padrão","value":20,"description":"R$ 20,00 por 3:00"}]]}
+{"caso":"S18","contrato":"C3","entrada":"2026-10-19 10:00","validacao":"2026-10-19 13:01","raw":[30,0,59,30,[{"name":"Padrão","value":30,"description":"R$ 30,00 por 3:01"}]]}
+{"caso":"S19","contrato":"C3","entrada":"2026-10-19 10:00","validacao":"2026-10-19 14:00","raw":[30,0,0,30,[{"name":"Padrão","value":30,"description":"R$ 30,00 por 4:00"}]]}
+{"caso":"S20","contrato":"C3","entrada":"2026-10-19 10:00","validacao":"2026-10-19 16:00","raw":[40,0,0,40,[{"name":"Padrão","value":40,"description":"R$ 40,00 por 6:00"}]]}
+{"caso":"S21","contrato":"C3","entrada":"2026-10-19 10:00","validacao":"2026-10-19 16:01","raw":[50,0,59,50,[{"name":"Padrão","value":50,"description":"R$ 50,00 por 6:01"}]]}
+{"caso":"S22","contrato":"C3","entrada":"2026-10-19 10:00","validacao":"2026-10-19 17:30","raw":[60,0,90,60,[{"name":"Padrão","value":60,"description":"R$ 60,00 por 7:30"}]]}
+{"caso":"S23","contrato":"C4","entrada":"2026-10-19 18:00","validacao":"2026-10-19 19:00","raw":[10,0,0,10,[{"name":"Padrão","value":10,"description":"R$ 10,00 por 1:00"}]]}
+{"caso":"S24","contrato":"C4","entrada":"2026-10-19 19:00","validacao":"2026-10-19 21:00","raw":[35,0,540,35,[{"name":"Padrão","value":10,"description":"R$ 10,00 por 1:00"},{"name":"Noturno","value":25,"description":"R$ 25,00 por 10:00"}]]}
+{"caso":"S25","contrato":"C4","entrada":"2026-10-19 21:00","validacao":"2026-10-19 23:00","raw":[25,0,420,25,[{"name":"Noturno","value":25,"description":"R$ 25,00 por 9:00"}]]}
+{"caso":"S26","contrato":"C4","entrada":"2026-10-19 22:00","validacao":"2026-10-20 07:00","raw":[35,0,0,35,[{"name":"Noturno","value":25,"description":"R$ 25,00 por 8:00"},{"name":"Padrão","value":10,"description":"R$ 10,00 por 1:00"}]]}
+{"caso":"S27","contrato":"C4","entrada":"2026-10-20 05:00","validacao":"2026-10-20 08:00","raw":[40,0,0,40,[{"name":"Noturno","value":25,"description":"R$ 25,00 por 1:00"},{"name":"Padrão","value":15,"description":"R$ 15,00 por 2:00"}]]}
+{"caso":"S28","contrato":"C5","entrada":"2026-10-19 18:00","validacao":"2026-10-19 19:00","raw":[10,0,0,10,[{"name":"Padrão","value":10,"description":"R$ 10,00 por 1:00"}]]}
+{"caso":"S29","contrato":"C5","entrada":"2026-10-19 19:00","validacao":"2026-10-19 21:00","raw":[35,0,660,35,[{"name":"Padrão","value":10,"description":"R$ 10,00 por 1:00"},{"name":"Noturno","value":25,"description":"R$ 25,00 por 12:00"}]]}
+{"caso":"S30","contrato":"C5","entrada":"2026-10-19 21:00","validacao":"2026-10-19 23:00","raw":[25,0,600,25,[{"name":"Noturno","value":25,"description":"R$ 25,00 por 12:00"}]]}
+{"caso":"S31","contrato":"C5","entrada":"2026-10-19 22:00","validacao":"2026-10-20 07:00","raw":[25,0,180,25,[{"name":"Noturno","value":25,"description":"R$ 25,00 por 12:00"}]]}
+{"caso":"S32","contrato":"C5","entrada":"2026-10-20 05:00","validacao":"2026-10-20 08:00","raw":[25,0,540,25,[{"name":"Noturno","value":25,"description":"R$ 25,00 por 12:00"}]]}
+{"caso":"S33","contrato":"C6","entrada":"2026-10-19 18:00","validacao":"2026-10-19 19:00","raw":[10,0,0,10,[{"name":"Padrão","value":10,"description":"R$ 10,00 por 1:00"}]]}
+{"caso":"S34","contrato":"C6","entrada":"2026-10-19 19:00","validacao":"2026-10-19 21:00","raw":[15,0,0,15,[{"name":"Padrão","value":15,"description":"R$ 15,00 por 2:00"}]]}
+{"caso":"S35","contrato":"C6","entrada":"2026-10-19 21:00","validacao":"2026-10-19 23:00","raw":[15,0,0,15,[{"name":"Padrão","value":15,"description":"R$ 15,00 por 2:00"}]]}
+{"caso":"S36","contrato":"C6","entrada":"2026-10-19 22:00","validacao":"2026-10-20 07:00","raw":[35,0,0,35,[{"name":"Noturno","value":25,"description":"R$ 25,00 por 8:00"},{"name":"Padrão","value":10,"description":"R$ 10,00 por 1:00"}]]}
+{"caso":"S37","contrato":"C6","entrada":"2026-10-20 05:00","validacao":"2026-10-20 08:00","raw":[20,0,0,20,[{"name":"Padrão","value":20,"description":"R$ 20,00 por 3:00"}]]}
+{"caso":"S38","contrato":"C7","entrada":"2026-10-23 23:00","validacao":"2026-10-24 01:00","raw":[25,0,0,25,[{"name":"Padrão","value":10,"description":"R$ 10,00 por 1:00"},{"name":"FDS","value":15,"description":"R$ 15,00 por 1:00"}]]}
+{"caso":"S39","contrato":"C7","entrada":"2026-10-24 10:00","validacao":"2026-10-24 11:00","raw":[15,0,0,15,[{"name":"FDS","value":15,"description":"R$ 15,00 por 1:00"}]]}
+{"caso":"S40","contrato":"C7","entrada":"2026-10-25 23:30","validacao":"2026-10-26 00:30","raw":[25,0,29,25,[{"name":"FDS","value":15,"description":"R$ 15,00 por 0:29"},{"name":"Padrão","value":10,"description":"R$ 10,00 por 0:31"}]]}
+{"caso":"S41","contrato":"C8","entrada":"2026-10-19 15:00","validacao":"2026-10-20 11:00","raw":[50,0,0,50,[{"name":"Hotel","value":50,"description":"R$ 50,00 por 1 diária"}]]}
+{"caso":"S42","contrato":"C8","entrada":"2026-10-19 13:00","validacao":"2026-10-20 11:00","raw":[50,0,0,50,[{"name":"Hotel","value":50,"description":"R$ 50,00 por 1 diária"}]]}
+{"caso":"S43","contrato":"C8","entrada":"2026-10-19 15:00","validacao":"2026-10-20 13:00","raw":[100,0,0,100,[{"name":"Hotel","value":100,"description":"R$ 100,00 por 2 diárias"}]]}
+{"caso":"S44","contrato":"C8","entrada":"2026-10-19 15:00","validacao":"2026-10-19 18:00","raw":[50,0,0,50,[{"name":"Hotel","value":50,"description":"R$ 50,00 por 1 diária"}]]}
+{"caso":"S45","contrato":"C8","entrada":"2026-10-19 15:00","validacao":"2026-10-21 11:00","raw":[100,0,0,100,[{"name":"Hotel","value":100,"description":"R$ 100,00 por 2 diárias"}]]}
+{"caso":"S46","contrato":"C9","entrada":"2026-10-19 10:00","validacao":"2026-10-19 10:30","raw":[5,5,30,5,[{"name":"Padrão","value":5,"description":"R$ 5,00 por 0:30"}]]}
+{"caso":"S47","contrato":"C9","entrada":"2026-10-19 10:00","validacao":"2026-10-19 11:30","raw":[8,7,30,8,[{"name":"Padrão","value":8,"description":"R$ 8,00 por 1:30"}]]}
+{"caso":"S48","contrato":"C9","entrada":"2026-10-19 10:00","validacao":"2026-10-19 15:00","raw":[17,13,0,17,[{"name":"Padrão","value":17,"description":"R$ 17,00 por 5:00"}]]}
+{"caso":"S49","contrato":"C9","entrada":"2026-10-19 10:00","validacao":"2026-10-20 12:00","raw":[48,37,0,48,[{"name":"Diária","value":40,"description":"R$ 40,00 por 1 diária"},{"name":"Padrão","value":8,"description":"R$ 8,00 por 2:00"}]]}
+{"caso":"S50","contrato":"C10","entrada":"2026-10-19 10:00","validacao":"2026-10-20 09:00","raw":[40,0,60,40,[{"name":"Padrão","value":40,"description":"R$ 40,00 por 23:00"}]]}
+{"caso":"S51","contrato":"C10","entrada":"2026-10-19 10:00","validacao":"2026-10-20 10:00","raw":[40,0,0,40,[{"name":"Padrão","value":40,"description":"R$ 40,00 por 1 dia"}]]}
+{"caso":"S52","contrato":"C10","entrada":"2026-10-19 10:00","validacao":"2026-10-20 11:00","raw":[70,0,1380,70,[{"name":"Padrão","value":70,"description":"R$ 70,00 por 1 dia, 1:00"}]]}
+{"caso":"S53","contrato":"C10","entrada":"2026-10-19 10:00","validacao":"2026-10-21 11:00","raw":[100,0,1380,100,[{"name":"Padrão","value":100,"description":"R$ 100,00 por 2 dias, 1:00"}]]}
+{"caso":"S54","contrato":"C10","entrada":"2026-10-19 10:00","validacao":"2026-10-22 11:00","raw":[130,0,1380,130,[{"name":"Padrão","value":130,"description":"R$ 130,00 por 3 dias, 1:00"}]]}

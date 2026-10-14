@@ -3,7 +3,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
 import { getAssinaturaStatus } from '../lib/assinatura.js';
 import { flagsModoRapido } from '../lib/modo-rapido.js';
-import { modalidadesAceitas } from '../lib/modalidades.js';
+import { filtrarModalidades, modalidadesAceitas } from '../lib/modalidades.js';
 
 /**
  * GET /bootstrap?patio_id=... — hidrata a config offline do app.
@@ -80,11 +80,14 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       modalidades,
     );
     // Banco ainda sem db/42 (API publicada antes do SQL): a coluna não existe e
-    // o filtro falha. Sem este retorno, TODO aparelho ficaria sem tarifa — e
-    // sem a coluna também não existe tarifa de outra modalidade.
+    // o filtro falha. Sem este retorno, TODO aparelho ficaria sem tarifa. A
+    // nova tentativa vem sem filtro, então o resultado passa pela mesma lista
+    // de modalidades em código — senão uma falha passageira entregaria
+    // `contrato` a um app que não o entende.
     if (erroTarifas) {
       ({ data: tarifas, error: erroTarifas } = await consultaTarifas());
     }
+    tarifas = filtrarModalidades(tarifas ?? [], modalidades);
 
     // Clientes livre-passagem (p/ reconhecimento offline de placa).
     const { data: clientes } = await db

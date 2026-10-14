@@ -35,21 +35,26 @@ export function fatiar(e: number, s: number, regras: Regra[], fuso: string): Fat
   const padrao = regras[0];
   if (!padrao) throw new Error('contrato sem regras');
   const janelas = gerarJanelas(regras.slice(1), e, s, fuso);
-  const proximoInicio = (depoisDe: number) =>
-    janelas.find((j) => j.de > depoisDe)?.de ?? Number.POSITIVE_INFINITY;
 
   const fatias: Fatia[] = [];
   let cursor = e;
+  // As janelas não se sobrepõem (`validar`) e o cursor só avança: um ponteiro
+  // para a primeira janela que ainda não terminou basta.
+  let i = 0;
   for (;;) {
-    const janela = janelas.find((j) => j.de <= cursor && cursor < j.ate);
+    while (i < janelas.length && janelas[i]!.ate <= cursor) i++;
+    const atual = janelas[i];
+    const janela = atual && atual.de <= cursor ? atual : undefined;
+    const proxima = janela ? janelas[i + 1] : atual;
+    const proximoInicio = proxima ? proxima.de : Number.POSITIVE_INFINITY;
     const regra = janela ? janela.regra : padrao;
-    const limite = janela ? janela.ate : proximoInicio(cursor);
+    const limite = janela ? janela.ate : proximoInicio;
     const minutos = (Math.min(s, limite) - cursor) / MS_MINUTO;
     const preco = precoDaTabela(regra, minutos);
     const cobertoAte = cursor + preco.cobertoMinutos * MS_MINUTO;
     const fim =
       janela && regra.usarMinutosPagos
-        ? Math.min(cobertoAte, proximoInicio(cursor))
+        ? Math.min(cobertoAte, proximoInicio)
         : Math.min(cobertoAte, limite);
 
     fatias.push({

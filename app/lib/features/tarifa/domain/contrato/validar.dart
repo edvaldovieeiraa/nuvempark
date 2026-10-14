@@ -20,6 +20,11 @@ const limiteMinutos = 23 * 60 + 59;
 /// "Até 999 h", com "regras com mais de 24 horas".
 const limiteMinutosMais24h = 999 * 60;
 
+/// Teto de tamanho: o painel grava o JSON direto, e `validar` roda a cada
+/// cobrança.
+const maxRegras = 20;
+const maxFaixas = 50;
+
 const _minutosSemana = 7 * 24 * 60;
 
 List<ErroContrato> validar(Contrato c) {
@@ -28,6 +33,10 @@ List<ErroContrato> validar(Contrato c) {
 
   if (c.regras.isEmpty) {
     erro('regras', 'sem_regras');
+    return erros;
+  }
+  if (c.regras.length > maxRegras) {
+    erro('regras', 'regras_demais');
     return erros;
   }
 
@@ -99,7 +108,12 @@ void _validarTabela(
   int limite,
   void Function(String caminho, String codigo) erro,
 ) {
-  if (r.faixas.isEmpty) erro('$p.faixas', 'sem_faixas');
+  if (r.faixas.isEmpty) {
+    erro('$p.faixas', 'sem_faixas');
+  } else if (r.faixas.length > maxFaixas) {
+    erro('$p.faixas', 'faixas_demais');
+    return;
+  }
   for (var j = 0; j < r.faixas.length; j++) {
     final f = r.faixas[j];
     final q = '$p.faixas[$j]';

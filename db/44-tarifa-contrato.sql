@@ -14,6 +14,10 @@
 -- `?modalidades=contrato` e a página do QR a ignora. Pode ser aplicada a
 -- qualquer momento. O conteúdo do contrato é validado no código
 -- (`validar` do motor); o banco só garante que é um objeto.
+--
+-- ⚠️ NÃO reexecutar o db/42 depois deste: o 42 recria `tarifas_modalidade_check`
+-- só com ('avulso', 'hospede') — tiraria o 'contrato' do check (ou falharia se
+-- já houver linha 'contrato'). Se precisar, rode este 44 de novo em seguida.
 -- ============================================================================
 
 alter table public.tarifas add column if not exists contrato jsonb;

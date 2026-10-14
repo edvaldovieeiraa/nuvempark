@@ -99,6 +99,10 @@ function lerValores(
   };
 }
 
+/** Contrato (motor v2) ainda não tem tela; estas ações não o alteram. */
+const MSG_CONTRATO =
+  "Esta tarifa é um contrato e ainda não pode ser alterada por esta tela.";
+
 export async function criarTarifa(
   _prev: Resultado,
   formData: FormData,
@@ -156,6 +160,7 @@ export async function atualizarTarifa(
     .maybeSingle();
 
   // Nunca regrava um contrato (motor v2) com os campos deste formulário.
+  if (antes?.modalidade === "contrato") return { ok: false, msg: MSG_CONTRATO };
   const { error } = await sb
     .from("tarifas")
     .update(valores)
@@ -193,7 +198,13 @@ export async function atualizarTarifa(
 export async function reordenarTarifas(ids: string[]): Promise<Resultado> {
   const sb = await createClient();
   const updates = await Promise.all(
-    ids.map((id, i) => sb.from("tarifas").update({ ordem: i }).eq("id", id)),
+    ids.map((id, i) =>
+      sb
+        .from("tarifas")
+        .update({ ordem: i })
+        .eq("id", id)
+        .neq("modalidade", "contrato"),
+    ),
   );
   if (updates.some((u) => u.error))
     return { ok: false, msg: "Não foi possível salvar a ordem." };
@@ -219,11 +230,16 @@ export async function desativarTarifa(id: string): Promise<Resultado> {
   const sb = await createClient();
   const { data: antes } = await sb
     .from("tarifas")
-    .select("nome, tipo_veiculo, patio_id")
+    .select("nome, tipo_veiculo, patio_id, modalidade")
     .eq("id", id)
     .maybeSingle();
+  if (antes?.modalidade === "contrato") return { ok: false, msg: MSG_CONTRATO };
 
-  const { error } = await sb.from("tarifas").update({ ativo: false }).eq("id", id);
+  const { error } = await sb
+    .from("tarifas")
+    .update({ ativo: false })
+    .eq("id", id)
+    .neq("modalidade", "contrato");
   if (error) return { ok: false, msg: "Não foi possível desativar." };
 
   await registrarAuditoria({

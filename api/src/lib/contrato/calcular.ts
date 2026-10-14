@@ -5,6 +5,8 @@ import { validar, type ErroContrato } from './validar.js';
 
 const MS_MINUTO = 60_000;
 const MINUTOS_DIA = 24 * 60;
+/** Acima disso é dado errado (entrada zerada, relógio quebrado), não estadia. */
+const MAX_MINUTOS_ESTADIA = 10 * 366 * MINUTOS_DIA;
 
 export class ContratoInvalido extends Error {
   constructor(public readonly erros: ErroContrato[]) {
@@ -25,6 +27,9 @@ export function calcular(params: {
   fuso: string;
 }): ResultadoContrato {
   const { entrada, saida, contrato, fuso } = params;
+  if (!Number.isFinite(entrada.getTime()) || !Number.isFinite(saida.getTime())) {
+    throw new Error('data inválida');
+  }
   if (saida.getTime() < entrada.getTime()) {
     throw new Error('saida deve ser igual ou posterior à entrada');
   }
@@ -32,6 +37,7 @@ export function calcular(params: {
   if (erros.length > 0) throw new ContratoInvalido(erros);
 
   const minutos = Math.floor((saida.getTime() - entrada.getTime()) / MS_MINUTO);
+  if (minutos > MAX_MINUTOS_ESTADIA) throw new Error('estadia acima de 10 anos');
   const e = Math.floor(entrada.getTime() / MS_MINUTO) * MS_MINUTO;
   const s = e + minutos * MS_MINUTO;
 

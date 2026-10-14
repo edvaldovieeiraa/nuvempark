@@ -93,6 +93,27 @@ describe('validar', () => {
     });
   });
 
+  describe('tamanho', () => {
+    it('no máximo 20 regras e 50 faixas por regra', () => {
+      expect(
+        erros((c) => {
+          c.regras = [c.regras[0]!];
+          for (let h = 0; h < 20; h++) {
+            c.regras.push(regra({ nome: `R${h}`, inicio: h * 60, fim: h * 60 + 30, dias: [1] }));
+          }
+        }),
+      ).toEqual(['regras:regras_demais']);
+      expect(
+        erros((c) => {
+          c.regras[0]!.faixas = Array.from({ length: 51 }, (_, k) => ({
+            ateMinutos: k + 1,
+            valorCentavos: 100,
+          }));
+        }),
+      ).toEqual(['regras[0].faixas:faixas_demais']);
+    });
+  });
+
   describe('sobreposição', () => {
     it('duas regras no mesmo horário e dia', () => {
       expect(

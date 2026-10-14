@@ -91,4 +91,23 @@ describe('calcular — bordas', () => {
     ]);
     expect(r.pagoAte.toISOString()).toBe('2026-10-20T09:00:00.000Z');
   });
+
+  it('data inválida é erro', () => {
+    expect(() =>
+      calcular({ entrada: new Date('x'), saida: brt('2026-10-19T10:00'), contrato: contrato('C1'), fuso: SP }),
+    ).toThrow(/data inválida/);
+  });
+
+  it('estadia acima de 10 anos é erro (entrada zerada por bug não trava a API)', () => {
+    expect(() =>
+      calcular({ entrada: new Date(0), saida: brt('2026-10-19T10:00'), contrato: contrato('C4'), fuso: SP }),
+    ).toThrow(/10 anos/);
+  });
+
+  it('um ano no Noturno calcula rápido e soma um noturno por noite', () => {
+    const inicio = Date.now();
+    const r = calc('C4', '2026-01-05T20:00', '2027-01-04T20:00');
+    expect(Date.now() - inicio).toBeLessThan(2000);
+    expect(r.fatias.filter((f) => f.tipo === 'regra' && f.regra === 'Noturno')).toHaveLength(364);
+  });
 });

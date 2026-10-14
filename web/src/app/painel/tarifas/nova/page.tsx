@@ -37,7 +37,9 @@ export default async function NovaTarifaPage({
   const avulsas = erroTarifas
     ? []
     : (tarifas ?? [])
-        .filter((t) => t.modalidade !== "hospede")
+        // Lista positiva: hóspede e contrato (motor v2) não servem de tabela do
+        // atraso, que é cobrada pelas colunas de fração.
+        .filter((t) => (t.modalidade ?? "avulso") === "avulso")
         .map((t) => ({
           id: t.id as string,
           nome: t.nome as string,

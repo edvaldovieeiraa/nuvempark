@@ -16,6 +16,10 @@ export const LIMITE_MINUTOS = 23 * 60 + 59;
 /** "Até 999 h", com "regras com mais de 24 horas". */
 export const LIMITE_MINUTOS_MAIS_24H = 999 * 60;
 
+/** Teto de tamanho: o painel grava o JSON direto, e `validar` roda a cada cobrança. */
+export const MAX_REGRAS = 20;
+export const MAX_FAIXAS = 50;
+
 const MINUTOS_SEMANA = 7 * 24 * 60;
 
 export function validar(c: Contrato): ErroContrato[] {
@@ -24,6 +28,10 @@ export function validar(c: Contrato): ErroContrato[] {
 
   if (c.regras.length === 0) {
     erro('regras', 'sem_regras');
+    return erros;
+  }
+  if (c.regras.length > MAX_REGRAS) {
+    erro('regras', 'regras_demais');
     return erros;
   }
 
@@ -83,6 +91,9 @@ function validarTabela(
 ): void {
   if (r.faixas.length === 0) {
     erro(`${p}.faixas`, 'sem_faixas');
+  } else if (r.faixas.length > MAX_FAIXAS) {
+    erro(`${p}.faixas`, 'faixas_demais');
+    return;
   }
   r.faixas.forEach((f, j) => {
     const q = `${p}.faixas[${j}]`;

@@ -14,3 +14,22 @@ export function modalidadesAceitas(param: string | undefined): string[] {
     .map((m) => m.trim());
   return ['avulso', ...OPCIONAIS.filter((m) => pedidas.includes(m))];
 }
+
+/**
+ * Mantém só as linhas das modalidades aceitas. Linha sem `modalidade` (banco
+ * sem db/42) é avulsa. Aplicada também ao resultado da nova tentativa sem
+ * filtro do bootstrap: o filtro do banco sozinho vazaria no caminho de erro.
+ */
+export function filtrarModalidades<T extends { modalidade?: unknown }>(
+  linhas: T[],
+  aceitas: string[],
+): T[] {
+  return linhas.filter((l) =>
+    aceitas.includes(typeof l.modalidade === 'string' ? l.modalidade : 'avulso'),
+  );
+}
+
+/** Erro do Postgres "coluna não existe" (banco sem db/42). */
+export function semColunaModalidade(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '42703';
+}

@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import { env } from '../env.js';
+import { semColunaModalidade } from '../lib/modalidades.js';
 
 /**
  * ⚠️ EXCEÇÃO CONSCIENTE À REGRA DE OURO (ver src/supabase.ts).
@@ -180,8 +181,10 @@ export async function lerTarifaDoTicket(
     // ela cai na reserva avulsa em vez de ser cobrada pelas colunas padrão.
     // Banco sem db/42 não tem `modalidade` (nem contrato): sem filtro.
     const porId = () => servico.from('tarifas').select(campos).eq('id', tabelaId);
+    // Só a falta da coluna libera a consulta sem filtro; erro passageiro falha
+    // (melhor que cobrar o QR pela tabela errada).
     let { data, error } = await porId().neq('modalidade', 'contrato').maybeSingle();
-    if (error) ({ data, error } = await porId().maybeSingle());
+    if (semColunaModalidade(error)) ({ data, error } = await porId().maybeSingle());
     if (error) throw error;
     if (data) return numerica(data);
   }
@@ -201,7 +204,7 @@ export async function lerTarifaDoTicket(
   // A reserva é sempre uma tabela AVULSA: a de hóspede pode ter a menor
   // `ordem` e não tem frações. Banco sem db/42 não tem a coluna: sem filtro.
   let { data, error } = await reserva().eq('modalidade', 'avulso').maybeSingle();
-  if (error) ({ data, error } = await reserva().maybeSingle());
+  if (semColunaModalidade(error)) ({ data, error } = await reserva().maybeSingle());
 
   if (error) throw error;
   return data ? numerica(data) : null;

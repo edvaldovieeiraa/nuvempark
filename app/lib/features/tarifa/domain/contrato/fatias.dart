@@ -28,33 +28,28 @@ Fatiamento fatiar(int e, int s, List<Regra> regras, String fuso) {
   final padrao = regras.first;
   final janelas = _gerarJanelas(regras.sublist(1), e, s, fuso);
 
-  /// Início da primeira janela depois de [depoisDe]; nulo = nenhuma.
-  int? proximoInicio(int depoisDe) {
-    for (final j in janelas) {
-      if (j.de > depoisDe) return j.de;
-    }
-    return null;
-  }
-
   int menor(int a, int? b) => b == null ? a : math.min(a, b);
 
   final fatias = <Fatia>[];
   var cursor = e;
+  // As janelas não se sobrepõem (`validar`) e o cursor só avança: um ponteiro
+  // para a primeira janela que ainda não terminou basta.
+  var i = 0;
   for (;;) {
-    _Janela? janela;
-    for (final j in janelas) {
-      if (j.de <= cursor && cursor < j.ate) {
-        janela = j;
-        break;
-      }
+    while (i < janelas.length && janelas[i].ate <= cursor) {
+      i++;
     }
+    final atual = i < janelas.length ? janelas[i] : null;
+    final janela = atual != null && atual.de <= cursor ? atual : null;
+    final proxima = janela != null ? (i + 1 < janelas.length ? janelas[i + 1] : null) : atual;
+    final proximoInicio = proxima?.de;
     final regra = janela?.regra ?? padrao;
-    final limite = janela != null ? janela.ate : proximoInicio(cursor);
+    final limite = janela != null ? janela.ate : proximoInicio;
     final minutos = (menor(s, limite) - cursor) ~/ _msMinuto;
     final preco = precoDaTabela(regra, minutos);
     final cobertoAte = cursor + preco.cobertoMinutos * _msMinuto;
     final fim = janela != null && regra.usarMinutosPagos
-        ? menor(cobertoAte, proximoInicio(cursor))
+        ? menor(cobertoAte, proximoInicio)
         : menor(cobertoAte, limite);
 
     fatias.add(FatiaRegra(

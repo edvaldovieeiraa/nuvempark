@@ -93,4 +93,24 @@ void main() {
     );
     expect(r.pagoAte, DateTime.utc(2026, 10, 20, 9));
   });
+
+  // Dart não tem `Invalid Date`: o caso "data inválida" do TypeScript não existe aqui.
+  test('estadia acima de 10 anos é erro (entrada zerada por bug não trava o app)', () {
+    expect(
+      () => calcular(
+        entrada: DateTime.utc(1970),
+        saida: brt('2026-10-19T10:00'),
+        contrato: contrato('C4'),
+        fuso: sp,
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('um ano no Noturno calcula rápido e soma um noturno por noite', () {
+    final relogio = Stopwatch()..start();
+    final r = calc('C4', '2026-01-05T20:00', '2027-01-04T20:00');
+    expect(relogio.elapsedMilliseconds, lessThan(2000));
+    expect(r.fatias.whereType<FatiaRegra>().where((f) => f.regra == 'Noturno'), hasLength(364));
+  });
 }

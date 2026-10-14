@@ -72,6 +72,26 @@ void main() {
     });
   });
 
+  group('tamanho', () {
+    test('no máximo 20 regras e 50 faixas por regra', () {
+      expect(
+        _erros((c) {
+          c.regras = [c.regras[0]];
+          for (var h = 0; h < 20; h++) {
+            c.regras.add(_regra(nome: 'R$h', inicio: h * 60, fim: h * 60 + 30, dias: [1]));
+          }
+        }),
+        ['regras:regras_demais'],
+      );
+      expect(
+        _erros((c) => c.regras[0].faixas = [
+              for (var k = 0; k < 51; k++) Faixa(ateMinutos: k + 1, valorCentavos: 100),
+            ]),
+        ['regras[0].faixas:faixas_demais'],
+      );
+    });
+  });
+
   group('sobreposição', () {
     test('duas regras no mesmo horário e dia', () {
       expect(
