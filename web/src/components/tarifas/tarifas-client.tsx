@@ -21,8 +21,10 @@ import {
   ArrowUp,
   ArrowDown,
   Star,
+  FileSymlink,
 } from "lucide-react";
 import { ModalSimulador } from "./simulador-modal";
+import { ContratosSecao, type ContratoLinha } from "./contratos-secao";
 import {
   atualizarTarifa,
   desativarTarifa,
@@ -67,11 +69,14 @@ const moeda = new Intl.NumberFormat("pt-BR", {
 
 export function TarifasClient({
   tarifas,
+  contratos = [],
   patioId,
   patioNome,
   tipos,
 }: {
+  /** Avulsas e hóspede (as que cobram hoje). Contratos vêm à parte. */
   tarifas: Tarifa[];
+  contratos?: ContratoLinha[];
   patioId: string;
   patioNome: string;
   tipos: string[];
@@ -440,6 +445,17 @@ export function TarifasClient({
                               <Calculator className="w-4 h-4" />
                             </AcaoBtn>
                           )}
+                          {/* Converter: só avulsa (spec, requisito 11). */}
+                          {!ehHospede(t) && (
+                            <Link
+                              href={`/painel/tarifas/nova?patio=${patioId}&de=${t.id}`}
+                              aria-label={`Criar contrato a partir da tarifa ${t.nome}`}
+                              title="Criar contrato a partir desta tarifa"
+                              className="w-8 h-8 rounded-lg grid place-items-center text-[#8695A0] hover:text-[#16A34A] hover:bg-[#F1F4F6] transition-colors"
+                            >
+                              <FileSymlink className="w-4 h-4" />
+                            </Link>
+                          )}
                           <AcaoBtn
                             onClick={() => setEditando(t)}
                             aria-label={`Editar tarifa ${t.nome}`}
@@ -483,6 +499,8 @@ export function TarifasClient({
           — as mudanças chegam ao app na próxima sincronização.
         </p>
       )}
+
+      <ContratosSecao contratos={contratos} patioId={patioId} />
 
       <AnimatePresence>
         {editando && (

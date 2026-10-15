@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { lerContrato, type Contrato } from '../contrato';
-import { campoDoInstante, exemploDaRegra, instanteDoCampo, simular } from './descrever';
+import { campoDoInstante, exemploDaRegra, instanteDoCampo, resumoContrato, simular } from './descrever';
 
 const FUSO = 'America/Sao_Paulo';
 
@@ -204,5 +204,27 @@ describe('exemploDaRegra (exemplo ao vivo do editor)', () => {
   it('regra incompleta não tem exemplo', () => {
     expect(exemploDaRegra({ ...contrato('C1').regras[0]!, faixas: [] })).toBeNull();
     expect(exemploDaRegra({ ...contrato('C1').regras[0]!, fracao: null })).toBeNull();
+  });
+});
+
+describe('resumoContrato (lista de Tarifas)', () => {
+  it.each([
+    ['C1', 'Só a Padrão: 3 faixas, depois R$ 5,00 a cada 1:00'],
+    ['C2', 'Só a Padrão: 3 faixas, depois R$ 5,00 a cada 1:00 · diária R$ 40,00'],
+    ['C3', 'Só a Padrão: 2 faixas, depois recomeça a tabela'],
+    ['C4', 'Padrão + Noturno (20:00–06:00, todos os dias)'],
+    ['C6', 'Padrão + Noturno (20:00–06:00, todos os dias) · menor valor'],
+    ['C7', 'Padrão + FDS (00:00–23:59, sáb e dom)'],
+    ['C10', 'Só a Padrão: 2 faixas, depois R$ 30,00 a cada 24:00 · mais de 24 h'],
+  ])('%s', (nome, texto) => {
+    expect(resumoContrato(contrato(nome))).toBe(texto);
+  });
+
+  it('várias regras por horário', () => {
+    const c4 = contrato('C4');
+    const outra = { ...c4.regras[1]!, nome: 'Almoço', inicio: 720, fim: 840, dias: [1, 2, 3, 4, 5] };
+    expect(resumoContrato({ ...c4, regras: [...c4.regras, outra] })).toBe(
+      'Padrão + Noturno (20:00–06:00, todos os dias) + Almoço (12:00–14:00, seg a sex)',
+    );
   });
 });

@@ -21,9 +21,6 @@ export default async function TarifasPage({
       .select("*")
       .eq("patio_id", patioId)
       .eq("ativo", true)
-      // Contrato (motor v2) ainda não tem tela: o formulário daqui o
-      // regravaria como avulso.
-      .neq("modalidade", "contrato")
       .order("ordem")
       .order("nome"),
     supabase
@@ -37,9 +34,23 @@ export default async function TarifasPage({
     ? (config.tipos_veiculo as string[])
     : ["carro", "moto", "caminhonete", "van"];
 
+  // Contratos (motor v2, só simulação) vão para a seção própria: ficam fora da
+  // ordem, da tarifa padrão do app, dos KPIs e do formulário de edição das
+  // tarifas, que os regravaria como avulsos.
+  const todas = tarifas ?? [];
+  const contratos = todas
+    .filter((t) => t.modalidade === "contrato")
+    .map((t) => ({
+      id: String(t.id),
+      nome: String(t.nome),
+      tipo_veiculo: String(t.tipo_veiculo),
+      contrato: t.contrato as unknown,
+    }));
+
   return (
     <TarifasClient
-      tarifas={tarifas ?? []}
+      tarifas={todas.filter((t) => t.modalidade !== "contrato")}
+      contratos={contratos}
       patioId={patioId}
       patioNome={patioNome ?? ""}
       tipos={tipos}

@@ -37,40 +37,49 @@ const cssGrid3: React.CSSProperties = {
 const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+export type ModalidadeForm = "avulso" | "hospede" | "contrato";
+
 /**
- * "Como cobra": avulso (pelo tempo) ou diária de hóspede (db/42). É o primeiro
- * campo do formulário porque decide quais outros aparecem.
+ * "Como cobra": avulso (pelo tempo), diária de hóspede (db/42) ou contrato
+ * (motor v2, por enquanto só simula). É o primeiro campo do formulário porque
+ * decide quais outros aparecem. `travado`: só a opção escolhida fica ativa
+ * (contrato convertido de uma tarifa).
  */
 export function ComoCobra({
   valor,
   aoMudar,
+  travado = false,
 }: {
-  valor: "avulso" | "hospede";
-  aoMudar: (v: "avulso" | "hospede") => void;
+  valor: ModalidadeForm;
+  aoMudar: (v: ModalidadeForm) => void;
+  travado?: boolean;
 }) {
   const opcao = (
-    v: "avulso" | "hospede",
+    v: ModalidadeForm,
     titulo: string,
     descricao: string,
   ) => {
     const sel = valor === v;
+    const bloqueado = travado && !sel;
     return (
       <label
         style={{
           border: `2px solid ${sel ? "#16A34A" : "#E4E8EC"}`,
-          background: sel ? "#F0FDF4" : "#fff",
+          background: sel ? "#F0FDF4" : bloqueado ? "#F9FAFB" : "#fff",
           borderRadius: 14,
           padding: "12px 14px",
           display: "flex",
           gap: 10,
           alignItems: "flex-start",
-          cursor: "pointer",
+          cursor: bloqueado ? "not-allowed" : "pointer",
+          opacity: bloqueado ? 0.6 : 1,
         }}
       >
         <input
           type="radio"
           name="como_cobra"
           checked={sel}
+          disabled={bloqueado}
           onChange={() => aoMudar(v)}
           style={{ marginTop: 3, width: 16, height: 16, accentColor: "#15803D" }}
         />
@@ -100,6 +109,11 @@ export function ComoCobra({
           "hospede",
           "Diária de hóspede",
           "Paga na chegada, por diária. Entra e sai à vontade até vencer.",
+        )}
+        {opcao(
+          "contrato",
+          "Contrato",
+          "Faixas, regras por horário e diária. Por enquanto só simula: ainda não cobra no app.",
         )}
       </div>
     </fieldset>

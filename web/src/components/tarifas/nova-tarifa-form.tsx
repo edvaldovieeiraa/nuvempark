@@ -9,7 +9,13 @@ import { nomeAmigavel } from "@/lib/nome-amigavel";
 import type { TarifaSim } from "@/lib/tarifa-engine";
 import { useToast } from "@/components/ui/toast";
 import { ModalSimulador } from "@/components/tarifas/simulador-modal";
-import { ComoCobra, CamposHospede, type AvulsaAtraso } from "@/components/tarifas/campos-hospede";
+import {
+  ComoCobra,
+  CamposHospede,
+  type AvulsaAtraso,
+  type ModalidadeForm,
+} from "@/components/tarifas/campos-hospede";
+import { FormContrato, type ConversaoInicial } from "@/components/tarifas/campos-contrato";
 
 // ── Tokens do painel (fiéis ao protótipo Claude Design) ──
 const cssLabel: React.CSSProperties = {
@@ -168,20 +174,32 @@ function LinhaToggle({
   );
 }
 
+/** Contrato pré-preenchido a partir de uma tarifa avulsa (`?de=<id>`). */
+export type ConversaoTarifa = ConversaoInicial & {
+  nome: string;
+  tipoVeiculo: string;
+  /** Contrato em JSON (snake_case), como é gravado. */
+  json: unknown;
+};
+
 /** Formulário da página /painel/tarifas/nova — redireciona pra consulta ao salvar. */
 export function NovaTarifaForm({
   patioId,
   tipos,
   avulsas,
+  conversao,
 }: {
   patioId: string;
   tipos: string[];
   avulsas: AvulsaAtraso[];
+  conversao?: ConversaoTarifa;
 }) {
   const router = useRouter();
   const toast = useToast();
   const formRef = useRef<HTMLFormElement>(null);
-  const [modalidade, setModalidade] = useState<"avulso" | "hospede">("avulso");
+  const [modalidade, setModalidade] = useState<ModalidadeForm>(
+    conversao ? "contrato" : "avulso",
+  );
   const [tipo, setTipo] = useState(tipos[0] ?? "carro");
   const hospede = modalidade === "hospede";
   const [comTeto, setComTeto] = useState(false);
@@ -227,6 +245,24 @@ export function NovaTarifaForm({
       toast.erro("Não deu certo", estado.msg);
     }
   }, [estado, toast, router, patioId]);
+
+  // Contrato tem formulário e ação próprios: nunca passa por `criarTarifa`.
+  if (modalidade === "contrato") {
+    return (
+      <FormContrato
+        modo="criar"
+        patioId={patioId}
+        tipos={tipos}
+        topo={<ComoCobra valor={modalidade} aoMudar={setModalidade} travado={!!conversao} />}
+        inicial={
+          conversao
+            ? { nome: conversao.nome, tipoVeiculo: conversao.tipoVeiculo, json: conversao.json }
+            : undefined
+        }
+        conversao={conversao}
+      />
+    );
+  }
 
   return (
     <motion.section

@@ -264,3 +264,42 @@ export function exemploDaRegra(regra: Regra): string | null {
   const minutos = ultima.ateMinutos + regra.fracao.minutos + Math.floor(regra.fracao.minutos / 2);
   return `${duracaoTexto(minutos)} = ${brl(precoDaTabela(regra, minutos).valorCentavos)}`;
 }
+
+/** Dias ISO → "todos os dias", "seg a sex", "sáb e dom", "seg, qua e sex". */
+function diasTexto(dias: number[]): string {
+  const d = [...new Set(dias)].sort((a, b) => a - b);
+  if (d.length === 7) return 'todos os dias';
+  const nomes = d.map((x) => DIA_CURTO[x - 1] ?? '?');
+  const seguidos = d.length >= 3 && d.every((x, i) => i === 0 || x === d[i - 1]! + 1);
+  if (seguidos) return `${nomes[0]} a ${nomes[nomes.length - 1]}`;
+  if (nomes.length <= 1) return nomes.join('');
+  return `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`;
+}
+
+/** Uma linha para a lista de Tarifas: o que o contrato cobra, sem abrir o editor. */
+export function resumoContrato(c: Contrato): string {
+  const padrao = c.regras[0];
+  let texto: string;
+  if (c.regras.length > 1) {
+    texto = [
+      'Padrão',
+      ...c.regras.slice(1).map((r) => {
+        const janela =
+          r.inicio !== null && r.fim !== null ? `${horaRelogio(r.inicio)}–${horaRelogio(r.fim)}` : '?';
+        return `${r.nome} (${janela}, ${diasTexto(r.dias ?? [])})`;
+      }),
+    ].join(' + ');
+  } else {
+    const n = padrao?.faixas.length ?? 0;
+    const depois = padrao?.recomecarTabela
+      ? 'recomeça a tabela'
+      : padrao?.fracao
+        ? `${brl(padrao.fracao.valorCentavos)} a cada ${minutosParaHora(padrao.fracao.minutos)}`
+        : '?';
+    texto = `Só a Padrão: ${n} ${n === 1 ? 'faixa' : 'faixas'}, depois ${depois}`;
+  }
+  if (c.diariaCentavos !== null) texto += ` · diária ${brl(c.diariaCentavos)}`;
+  if (c.cobrarMenorValor) texto += ' · menor valor';
+  if (c.maisDe24h) texto += ' · mais de 24 h';
+  return texto;
+}
