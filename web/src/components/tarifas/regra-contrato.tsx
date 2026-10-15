@@ -5,6 +5,7 @@ import { Confirmar } from "@/components/ui/confirmar";
 import {
   adicionarFaixa,
   horaDoDia,
+  novaFaixa,
   type Disponibilidade,
   type ErroCampo,
   type RegraForm,
@@ -87,7 +88,8 @@ function CampoHora({
   placeholder = "1:00",
 }: {
   campo: string;
-  rotulo: string;
+  /** Sem rótulo visível por linha (faixas); com `<label>` visível, omitir. */
+  rotulo?: string;
   valor: string;
   erro: ErroCampo | undefined;
   aoMudar: (v: string) => void;
@@ -228,7 +230,6 @@ export function RegraContrato({
               </label>
               <CampoHora
                 campo={`${p}-inicio`}
-                rotulo={`${titulo}: começa às`}
                 valor={regra.inicio}
                 erro={erro(`${p}-inicio`)}
                 placeholder="20:00"
@@ -243,7 +244,6 @@ export function RegraContrato({
               </label>
               <CampoHora
                 campo={`${p}-fim`}
-                rotulo={`${titulo}: termina às`}
                 valor={regra.fim}
                 erro={erro(`${p}-fim`)}
                 placeholder="06:00"
@@ -361,7 +361,7 @@ export function RegraContrato({
           const gratis = j === 0 && /^\s*(R\$\s*)?0+([.,]0+)?\s*$/.test(f.valor);
           const etiqueta = origem?.(`regras[${indice}].faixas[${j}]`);
           return (
-            <div key={j}>
+            <div key={f.id}>
               <div
                 style={{
                   display: "grid",
@@ -429,7 +429,7 @@ export function RegraContrato({
             type="button"
             disabled={!!maisFaixa}
             aria-describedby={maisFaixa ? `${p}-faixa-motivo` : undefined}
-            onClick={() => mudar((r) => ({ ...r, faixas: [...r.faixas, { ate: "", valor: "" }] }))}
+            onClick={() => mudar((r) => ({ ...r, faixas: [...r.faixas, novaFaixa()] }))}
             className="disabled:opacity-50"
             style={{ ...cssBtnOutline, color: COR.verde }}
           >
@@ -452,10 +452,23 @@ export function RegraContrato({
           role="radiogroup"
           aria-labelledby={`${p}-depois-rotulo`}
           aria-describedby={recomecar ? `${p}-recomecar-motivo` : undefined}
+          onKeyDown={(e) => {
+            // Radiogroup: as setas trocam a escolha (o Tab entra só na escolhida).
+            if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+            e.preventDefault();
+            const proximo = !regra.recomecarTabela;
+            if (proximo && recomecar) return;
+            mudar((r) => ({ ...r, recomecarTabela: proximo }), `${p}-depois`);
+            requestAnimationFrame(() =>
+              document.getElementById(`${p}-depois-${proximo ? "recomecar" : "fracao"}`)?.focus(),
+            );
+          }}
           style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
         >
           <Chip
             papel="radio"
+            id={`${p}-depois-fracao`}
+            tabIndex={regra.recomecarTabela ? -1 : 0}
             selecionado={!regra.recomecarTabela}
             aoClicar={() => mudar((r) => ({ ...r, recomecarTabela: false }), `${p}-depois`)}
           >
@@ -463,6 +476,8 @@ export function RegraContrato({
           </Chip>
           <Chip
             papel="radio"
+            id={`${p}-depois-recomecar`}
+            tabIndex={regra.recomecarTabela ? 0 : -1}
             selecionado={regra.recomecarTabela}
             desabilitado={!!recomecar && !regra.recomecarTabela}
             aoClicar={() => mudar((r) => ({ ...r, recomecarTabela: true }), `${p}-depois`)}

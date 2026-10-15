@@ -17,6 +17,8 @@ import { mensagem } from './mensagens';
  * digitação ("1:") e o resto do formulário continua precisando de validação.
  */
 export interface FaixaForm {
+  /** Chave estável para o React e para as etiquetas de origem; não vai para o banco. */
+  id: string;
   ate: string;
   valor: string;
 }
@@ -56,6 +58,10 @@ export const TODOS_OS_DIAS = [1, 2, 3, 4, 5, 6, 7];
 let ultimoId = 0;
 const novoId = () => `regra-${++ultimoId}`;
 
+export function novaFaixa(ate = '', valor = ''): FaixaForm {
+  return { id: `faixa-${++ultimoId}`, ate, valor };
+}
+
 export function formVazio(): ContratoForm {
   return {
     maisDe24h: false,
@@ -71,7 +77,7 @@ export function formVazio(): ContratoForm {
         dias: [],
         usarMinutosPagos: false,
         recomecarTabela: false,
-        faixas: [{ ate: '1:00', valor: '10,00' }],
+        faixas: [novaFaixa('1:00', '10,00')],
         fracaoMinutos: '1:00',
         fracaoValor: '5,00',
       },
@@ -93,10 +99,9 @@ export function formDeContrato(c: Contrato): ContratoForm {
       dias: r.dias ? [...r.dias] : [],
       usarMinutosPagos: r.usarMinutosPagos,
       recomecarTabela: r.recomecarTabela,
-      faixas: r.faixas.map((f) => ({
-        ate: minutosParaHora(f.ateMinutos),
-        valor: centavosParaTexto(f.valorCentavos),
-      })),
+      faixas: r.faixas.map((f) =>
+        novaFaixa(minutosParaHora(f.ateMinutos), centavosParaTexto(f.valorCentavos)),
+      ),
       fracaoMinutos: r.fracao ? minutosParaHora(r.fracao.minutos) : '1:00',
       fracaoValor: r.fracao ? centavosParaTexto(r.fracao.valorCentavos) : '',
     })),
@@ -250,7 +255,7 @@ export function adicionarRegra(f: ContratoForm): { form: ContratoForm; avisos: s
     dias: [...TODOS_OS_DIAS],
     usarMinutosPagos: false,
     recomecarTabela: false,
-    faixas: [{ ate: '1:00', valor: '' }],
+    faixas: [novaFaixa('1:00')],
     fracaoMinutos: '1:00',
     fracaoValor: '',
   };

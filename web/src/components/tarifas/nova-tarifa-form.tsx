@@ -200,6 +200,11 @@ export function NovaTarifaForm({
   const [modalidade, setModalidade] = useState<ModalidadeForm>(
     conversao ? "contrato" : "avulso",
   );
+  const [contratoAberto, setContratoAberto] = useState(!!conversao);
+  function mudarModalidade(v: ModalidadeForm) {
+    if (v === "contrato") setContratoAberto(true);
+    setModalidade(v);
+  }
   const [tipo, setTipo] = useState(tipos[0] ?? "carro");
   const hospede = modalidade === "hospede";
   const [comTeto, setComTeto] = useState(false);
@@ -247,13 +252,16 @@ export function NovaTarifaForm({
   }, [estado, toast, router, patioId]);
 
   // Contrato tem formulário e ação próprios: nunca passa por `criarTarifa`.
-  if (modalidade === "contrato") {
-    return (
+  // Depois de aberto, os dois formulários ficam montados (um escondido), para
+  // trocar o "Como cobra" não apagar o rascunho de nenhum deles.
+  const contrato = modalidade === "contrato";
+  const formContrato = contratoAberto && (
+    <div hidden={!contrato}>
       <FormContrato
         modo="criar"
         patioId={patioId}
         tipos={tipos}
-        topo={<ComoCobra valor={modalidade} aoMudar={setModalidade} travado={!!conversao} />}
+        topo={<ComoCobra valor={modalidade} aoMudar={mudarModalidade} travado={!!conversao} />}
         inicial={
           conversao
             ? { nome: conversao.nome, tipoVeiculo: conversao.tipoVeiculo, json: conversao.json }
@@ -261,11 +269,14 @@ export function NovaTarifaForm({
         }
         conversao={conversao}
       />
-    );
-  }
+    </div>
+  );
 
   return (
+    <>
+    {formContrato}
     <motion.section
+      hidden={contrato}
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: 0.08 }}
@@ -279,10 +290,10 @@ export function NovaTarifaForm({
     >
       <form ref={formRef} action={agir}>
         <input type="hidden" name="patio_id" value={patioId} />
-        <input type="hidden" name="modalidade" value={modalidade} />
+        <input type="hidden" name="modalidade" value={contrato ? "avulso" : modalidade} />
 
         {/* ── Como cobra: muda o formulário, por isso vem primeiro ── */}
-        <ComoCobra valor={modalidade} aoMudar={setModalidade} />
+        <ComoCobra valor={modalidade} aoMudar={mudarModalidade} />
 
         {/* ── Básico ── */}
         <div style={{ ...cssGrid3, marginTop: 18 }}>
@@ -520,5 +531,6 @@ export function NovaTarifaForm({
         )}
       </AnimatePresence>
     </motion.section>
+    </>
   );
 }

@@ -112,8 +112,8 @@ export function FormContrato({
   const [opcoesAbertas, setOpcoesAbertas] = useState(true);
   const [simulando, setSimulando] = useState<Contrato | null>(null);
   const [sujo, setSujo] = useState(false);
-  const faixasConvertidas = form?.regras[0]?.faixas.length;
-  const [faixasOriginais] = useState(faixasConvertidas);
+  // Etiquetas de origem da conversão valem enquanto a faixa for a mesma (id).
+  const [faixasOriginais] = useState(() => form?.regras[0]?.faixas.map((f) => f.id) ?? []);
 
   const { contrato, erros } = useMemo(
     () => ({ contrato: form ? lerForm(form).contrato : null, erros: errosDe(form, nome) }),
@@ -200,15 +200,21 @@ export function FormContrato({
   const disp = form ? disponibilidade(form) : null;
   const origem = (caminho: string) => {
     if (!conversao) return undefined;
-    // Faixas mudaram de lugar: as etiquetas não valem mais.
-    if (caminho.includes(".faixas[") && faixasConvertidas !== faixasOriginais) return undefined;
+    const faixa = /^regras\[0\]\.faixas\[(\d+)\]$/.exec(caminho);
+    if (faixa) {
+      const j = Number(faixa[1]);
+      if (form?.regras[0]?.faixas[j]?.id !== faixasOriginais[j]) return undefined;
+    }
     return conversao.origem[caminho];
   };
 
   const nErros = erros.length;
   const porque = `Corrija ${nErros === 1 ? "1 item" : `${nErros} itens`} para salvar e simular.`;
 
+  // O simulador fica FORA do <form>: Enter num campo de data dele faria o
+  // envio implícito do contrato.
   return (
+    <>
     <form
       action={agir}
       noValidate
@@ -432,7 +438,7 @@ export function FormContrato({
       >
         <button
           type="submit"
-          disabled={pendente || !podeSalvar}
+          disabled={pendente || !podeSalvar || !!estado?.ok}
           aria-describedby={!podeSalvar ? "ct-porque" : undefined}
           className="w-full sm:w-auto"
           style={{
@@ -513,23 +519,24 @@ export function FormContrato({
         )}
       </div>
 
-      <AnimatePresence>
-        {simulando && (
-          <ModalSimuladorContrato
-            nome={nome.trim() || "Contrato sem nome"}
-            contrato={simulando}
-            naoSalvo={modo === "criar" || sujo}
-            fechar={() => setSimulando(null)}
-          />
-        )}
-      </AnimatePresence>
-
       {estado && !estado.ok && !estado.erros?.length && (
         <p role="status" className="sr-only">
           {estado.msg}
         </p>
       )}
     </form>
+
+    <AnimatePresence>
+      {simulando && (
+        <ModalSimuladorContrato
+          nome={nome.trim() || "Contrato sem nome"}
+          contrato={simulando}
+          naoSalvo={modo === "criar" || sujo}
+          fechar={() => setSimulando(null)}
+        />
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 

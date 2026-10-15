@@ -18,7 +18,8 @@ export const cssLabel: React.CSSProperties = {
 };
 export const cssInput: React.CSSProperties = {
   width: "100%",
-  height: 42,
+  // 44 px: alvo de toque do design (o formulário avulso usa 42).
+  height: 44,
   borderRadius: 11,
   border: "1px solid #E4E8EC",
   background: "#FAFBFC",
@@ -88,7 +89,7 @@ export function MensagemErro({ erro }: { erro: ErroCampo | undefined }) {
 export function BlocoNaoSuportado({ erro }: { erro: ErroCampo }) {
   return (
     <div
-      id={`${erro.campo}-erro`}
+      id={`${erro.campo}-${erro.codigo}`}
       style={{
         border: `1px solid ${COR.ambar.borda}`,
         background: COR.ambar.fundo,

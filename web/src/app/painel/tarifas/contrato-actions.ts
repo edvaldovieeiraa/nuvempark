@@ -77,6 +77,10 @@ export async function criarContrato(
   if (!campos.ok) return campos.resultado;
   const { nome, tipoVeiculo, json } = campos;
 
+  // O pátio vem do navegador: só grava num pátio que a RLS deixa este gestor ver.
+  const { data: patio } = await sb.from("patios").select("id").eq("id", patioId).maybeSingle();
+  if (!patio) return { ok: false, msg: "Pátio não encontrado." };
+
   const { error } = await sb.from("tarifas").insert({
     tenant_id: tenantId,
     patio_id: patioId,
@@ -130,6 +134,7 @@ export async function atualizarContrato(
     .from("tarifas")
     .update({ nome, tipo_veiculo: tipoVeiculo, contrato: json })
     .eq("id", id)
+    .eq("ativo", true)
     .eq("modalidade", "contrato")
     .select("id");
   if (error || !gravadas?.length) {

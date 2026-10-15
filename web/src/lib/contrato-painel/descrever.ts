@@ -39,7 +39,11 @@ const MS_MINUTO = 60_000;
 const MAX_MINUTOS_ESTADIA = 10 * 366 * 1440;
 const DIA_CURTO = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
 
-/** Calcula e descreve; nunca lança para entrada ruim (spec, requisito 14). */
+/**
+ * Calcula e descreve. Entrada ruim (datas, saída antes da entrada, 10 anos,
+ * contrato inválido) vira mensagem (spec, requisito 14); só erro de programa
+ * (ex.: fuso inexistente) ainda lança.
+ */
 export function simular(params: {
   entrada: Date;
   saida: Date;

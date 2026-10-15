@@ -93,3 +93,32 @@ describe('prepararContrato', () => {
     });
   });
 });
+
+describe('tamanho máximo', () => {
+  it('20 regras × 50 faixas com os maiores valores cabe no limite', () => {
+    const faixas = Array.from({ length: 50 }, (_, j) => ({
+      ate_minutos: 1 + j,
+      valor_centavos: 9_999_950 + j,
+    }));
+    const regras = Array.from({ length: 20 }, (_, i) => ({
+      nome: i === 0 ? 'Padrão' : `Regra por horário número ${String(i).padStart(2, '0')}`,
+      inicio: i === 0 ? null : `${String(i).padStart(2, '0')}:00`,
+      fim: i === 0 ? null : `${String(i).padStart(2, '0')}:30`,
+      dias: i === 0 ? null : [1],
+      usar_minutos_pagos: false,
+      recomecar_tabela: false,
+      faixas,
+      fracao: { minutos: 60, valor_centavos: 9_999_999 },
+    }));
+    const json = JSON.stringify({
+      versao: 1,
+      mais_de_24h: false,
+      diaria_centavos: null,
+      cobrar_menor_valor: true,
+      regras,
+    });
+    expect(json.length).toBeLessThan(MAX_JSON);
+    const r = prepararContrato(json);
+    expect(r.ok ? [] : r.erros).toEqual([]);
+  });
+});
