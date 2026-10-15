@@ -275,6 +275,7 @@ export function NovaTarifaForm({
   return (
     <>
     {formContrato}
+    {/* `hidden` só esconde porque a section não define `display`. */}
     <motion.section
       hidden={contrato}
       initial={{ opacity: 0, y: 16 }}
