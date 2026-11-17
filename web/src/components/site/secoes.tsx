@@ -509,6 +509,7 @@ export function SiteFooter() {
       links: [
         { href: "/#sobre", label: "Sobre nós" },
         { href: "/#contato", label: "Contato" },
+        { href: "/privacidade", label: "Política de privacidade", interno: true },
       ],
     },
     {

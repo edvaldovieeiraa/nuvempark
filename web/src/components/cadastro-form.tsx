@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { criarContaTrial, type ResultadoCadastro } from "@/app/cadastro/actions";
 import { formatarTelefone, telefoneValido } from "@/lib/telefone";
+import { urlSite } from "@/lib/urls";
 import { BotaoGoogle } from "@/components/botao-google";
 import { CadastroStyle } from "@/components/cadastro-style";
 
@@ -410,13 +411,16 @@ export function CadastroForm() {
                   <b>✓</b>Cancele quando quiser
                 </span>
               </div>
-              {/* O protótipo linkava /termos e /privacidade. As duas rotas NÃO
-                  existem no app (nem sob outro nome, nem no rodapé do site), e
-                  link morto para o jurídico numa tela de cadastro é pior que
-                  link nenhum. Texto puro até as páginas existirem — aí é só
-                  reenvolver em <Link>. */}
+              {/* /termos ainda NÃO existe — fica em texto puro (link morto para
+                  o jurídico numa tela de cadastro é pior que link nenhum).
+                  /privacidade existe e mora no host do SITE: o cadastro roda
+                  no host do painel, então o link é absoluto (urlSite). */}
               <p className="legal">
-                Ao continuar você aceita os Termos e a Política de Privacidade.
+                Ao continuar você aceita os Termos e a{" "}
+                <a href={urlSite("/privacidade")} target="_blank" rel="noopener">
+                  Política de Privacidade
+                </a>
+                .
               </p>
               <div className="login">
                 Já tem conta? <Link href="/login">Entrar →</Link>

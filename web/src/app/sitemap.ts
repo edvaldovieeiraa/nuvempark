@@ -28,6 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Google, e listar as duas seria pedir para ele escolher uma.
   const institucionais: MetadataRoute.Sitemap = [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
+    { url: `${SITE_URL}/privacidade`, changeFrequency: "yearly", priority: 0.2 },
   ];
 
   // As páginas de solução (o silo de busca). Prioridade alta e logo abaixo da
