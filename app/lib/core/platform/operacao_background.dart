@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// Operação em segundo plano: mantém heartbeat e sync vivos com a tela apagada.
 ///
@@ -59,6 +60,23 @@ class OperacaoBackground {
       return await _channel.invokeMethod<bool>('pedirIsencaoBateria') ?? false;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Android 13+: pede a permissão de notificação. Sem ela o foreground
+  /// service RODA, mas o sistema esconde a notificação "NuvemPark em operação"
+  /// — e é essa notificação que a declaração de FGS da Play promete ao usuário.
+  ///
+  /// Abre diálogo do sistema: chamar ANTES do quiosque (o LockTask barra telas
+  /// do sistema). Não insiste se o operador negou de vez; abaixo do Android 13
+  /// o plugin já responde "concedida" sem mostrar nada.
+  static Future<void> pedirPermissaoNotificacao() async {
+    try {
+      final status = await Permission.notification.status;
+      if (status.isGranted || status.isPermanentlyDenied) return;
+      await Permission.notification.request();
+    } catch (_) {
+      // plataforma sem suporte / plugin indisponível: segue sem notificação
     }
   }
 

@@ -67,7 +67,11 @@ class _MainShellState extends ConsumerState<MainShell>
     //
     // `pedirIsencaoBateria` já é no-op se o app é Device Owner (isento por
     // padrão) ou se a isenção já foi dada — então não incomoda a cada abertura.
+    //
+    // A permissão de notificação (Android 13+) entra antes pelo mesmo motivo:
+    // também é diálogo do sistema. Sem ela a notificação do serviço some.
     Future.microtask(() async {
+      await OperacaoBackground.pedirPermissaoNotificacao();
       await OperacaoBackground.pedirIsencaoBateria();
       final patio = await ref.read(patioNotifierProvider.future);
       await _aplicarQuiosque(patio);
@@ -113,9 +117,11 @@ class _MainShellState extends ConsumerState<MainShell>
     _troca.forward(from: 0);
   }
 
-  /// Liga/desliga o quiosque conforme a config do pátio (default ligado).
+  /// Liga/desliga o quiosque conforme a config do pátio. Default DESLIGADO
+  /// (db/45): fora de aparelho Device Owner o Android mostra o aviso "App
+  /// fixado" a cada abertura — inclusive para o revisor da Google Play.
   Future<void> _aplicarQuiosque(PatioModel? patio) async {
-    if (patio?.modoQuiosque ?? true) {
+    if (patio?.modoQuiosque ?? false) {
       await LockTask.iniciar();
     } else {
       await LockTask.parar();

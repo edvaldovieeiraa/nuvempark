@@ -226,7 +226,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
           (patio as { foto_recibo_modo?: string }).foto_recibo_modo ??
           'desativada',
         modo_quiosque:
-          (patio as { modo_quiosque?: boolean }).modo_quiosque ?? true,
+          (patio as { modo_quiosque?: boolean }).modo_quiosque ?? false,
         // Modo rápido de entrada: o pátio libera e diz se imprime o cupom.
         ...flagsModoRapido(
           patio as {

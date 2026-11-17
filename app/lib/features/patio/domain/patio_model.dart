@@ -16,7 +16,7 @@ class PatioModel {
     required this.tarifas,
     required this.sincronizadoEm,
     this.fotoReciboModo = 'desativada',
-    this.modoQuiosque = true,
+    this.modoQuiosque = false,
     this.modoRapidoEntrada = false,
   });
 
@@ -48,7 +48,7 @@ class PatioModel {
       tarifas: tarifas,
       sincronizadoEm: sincronizadoEm,
       fotoReciboModo: (config['foto_recibo_modo'] as String?) ?? 'desativada',
-      modoQuiosque: (config['modo_quiosque'] as bool?) ?? true,
+      modoQuiosque: (config['modo_quiosque'] as bool?) ?? false,
       modoRapidoEntrada: (config['modo_rapido_entrada'] as bool?) ?? false,
     );
   }

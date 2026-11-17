@@ -37,7 +37,7 @@ export default async function ParametrizacaoPage({
       patioId={atual?.id ?? null}
       patioNome={atual?.nome ?? null}
       modoInicial={normalizarModo(atual?.foto_recibo_modo)}
-      quiosqueInicial={atual?.modo_quiosque ?? true}
+      quiosqueInicial={atual?.modo_quiosque ?? false}
       rapidoInicial={atual?.modo_rapido_entrada ?? false}
     />
   );
