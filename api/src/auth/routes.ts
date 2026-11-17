@@ -353,6 +353,53 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
           ip,
         });
         // segue para emitir tokens
+      } else if (avaliacao.acao === 'criar_cortesia') {
+        // Conta de revisão da loja (db/44): qualquer aparelho novo entra
+        // ativo como cortesia — sem slot incluso, sem fila de aprovação.
+        const { error: insErr } = await db.from('dispositivos').insert(
+          compact({
+            tenant_id: tenant.id,
+            patio_id: bindPatioId,
+            device_uuid,
+            status: 'ativo',
+            licenca: 'cortesia',
+            vinculado_em: agora,
+            ultimo_acesso: agora,
+            android_id_hash: hash,
+            fabricante,
+            modelo,
+            so_versao,
+            app_versao,
+          }),
+        );
+        if (insErr) {
+          req.log.error({ err: insErr }, 'falha ao inserir dispositivo cortesia (conta de revisão)');
+          return reply.code(500).send({ error: 'Falha ao registrar dispositivo' });
+        }
+        registrarEvento(db, {
+          patioId: bindPatioId,
+          tenantId: tenant.id,
+          deviceUuid: device_uuid,
+          operadorId: operador.id,
+          evento: 'vinculado',
+          motivo: 'conta_revisao',
+          fabricante,
+          modelo,
+          appVersao: app_versao,
+          ip,
+        });
+        registrarEvento(db, {
+          patioId: bindPatioId,
+          tenantId: tenant.id,
+          deviceUuid: device_uuid,
+          operadorId: operador.id,
+          evento: 'login_ok',
+          fabricante,
+          modelo,
+          appVersao: app_versao,
+          ip,
+        });
+        // segue para emitir tokens
       } else if (avaliacao.acao === 'criar_pendente') {
         const codigo = await inserirPendente();
         registrarEvento(db, {

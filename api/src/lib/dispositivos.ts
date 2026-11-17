@@ -16,6 +16,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export type DispositivoAcao =
   | 'permitir'
   | 'criar_incluso'
+  // Conta de revisão da loja (tenants.conta_revisao, db/44): todo aparelho
+  // novo entra ativo com licença 'cortesia' — o revisor da Google usa vários.
+  | 'criar_cortesia'
   | 'criar_pendente'
   | 'negar';
 
@@ -46,6 +49,7 @@ export function hashAndroidId(androidId: string): string {
 const ACOES: readonly DispositivoAcao[] = [
   'permitir',
   'criar_incluso',
+  'criar_cortesia',
   'criar_pendente',
   'negar',
 ];
