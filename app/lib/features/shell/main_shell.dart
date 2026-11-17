@@ -94,9 +94,11 @@ class _MainShellState extends ConsumerState<MainShell>
 
   @override
   void dispose() {
+    // Primeiro o que não depende de `ref`: no Riverpod 3 usar `ref` no
+    // dispose pode lançar, e o serviço ficaria rodando depois do logout.
+    OperacaoBackground.parar();
     ref.read(syncLoopProvider).parar();
     ref.read(heartbeatServiceProvider).parar();
-    OperacaoBackground.parar();
     _troca.dispose();
     super.dispose();
   }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/platform/lock_task.dart';
+import '../../../../core/platform/operacao_background.dart';
 import '../../../../core/di/providers.dart';
 import '../../data/auth_repository.dart';
 import '../../data/token_storage.dart';
@@ -171,6 +172,9 @@ class AuthController extends Notifier<AuthState> {
   // ── Logout ──────────────────────────────────────────────────────────────
   Future<void> logout() async {
     await LockTask.parar(); // libera o app antes de sair
+    // Derruba o serviço de operação e a notificação "NuvemPark em operação".
+    // Explícito aqui: o dispose do MainShell não é confiável para isso.
+    await OperacaoBackground.parar();
     await _repo.logout();
     ref.read(assinaturaControllerProvider.notifier).limpar();
     ref.read(dispositivoControllerProvider.notifier).limpar();
