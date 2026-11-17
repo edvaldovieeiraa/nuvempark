@@ -1,5 +1,11 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- O plugin camera_android_camerax declara RECORD_AUDIO (para vídeo). O
+         app só tira foto, com enableAudio: false — sem esta remoção a Play
+         mostra "Microfone" nas permissões e a Política de Privacidade
+         (nuvempark.com/privacidade) ficaria inconsistente com o AAB. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
     <!-- Câmera: OCR de placa + foto de entrada -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>

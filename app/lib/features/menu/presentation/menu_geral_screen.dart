@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
@@ -28,6 +29,26 @@ class MenuGeralScreen extends ConsumerStatefulWidget {
 class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
   static final _hora = DateFormat('HH:mm');
 
+  /// Mesma URL cadastrada no Play Console → Política de Privacidade.
+  static final _urlPrivacidade = Uri.parse('https://nuvempark.com/privacidade');
+
+  Future<void> _abrirPrivacidade() async {
+    bool abriu;
+    try {
+      abriu = await launchUrl(
+        _urlPrivacidade,
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {
+      abriu = false; // aparelho sem navegador / intent recusada
+    }
+    if (!abriu && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Não foi possível abrir o navegador. '
+            'Acesse nuvempark.com/privacidade'),
+      ));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +105,14 @@ class _MenuGeralScreenState extends ConsumerState<MenuGeralScreen> {
                 titulo: 'Sobre o pátio e o app',
                 neutro: true,
                 onTap: () => context.push(Routes.sobre),
+              ),
+              // Exigência da Google Play: o link da política precisa estar
+              // DENTRO do app, não só na página da loja.
+              _item(
+                icone: Icons.privacy_tip_outlined,
+                titulo: 'Política de privacidade',
+                neutro: true,
+                onTap: _abrirPrivacidade,
               ),
               _item(
                 icone: Icons.logout,

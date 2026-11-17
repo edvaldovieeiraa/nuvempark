@@ -1,7 +1,7 @@
 name: nuvempark_app
 description: "NuvemPark — Operação de Pátio (offline-first, multi-tenant)"
 publish_to: none
-version: 1.0.0+19
+version: 1.0.0+20
 
 environment:
   sdk: ^3.12.1
@@ -52,6 +52,8 @@ dependencies:
   google_mlkit_text_recognition: ^0.15.1
   # Decode/crop/orientação em memória (recorte da ROI antes do OCR)
   image: ^4.3.0
+  # Abre a Política de Privacidade (exigência da Google Play) no navegador
+  url_launcher: ^6.3.3
 
   cupertino_icons: ^1.0.8
 
