@@ -8,30 +8,6 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>NuvemPark</string>
-	<!-- Permissões: o iOS ENCERRA o app na hora se ele tocar numa dessas APIs
-	     sem a descrição correspondente aqui. Os textos aparecem no alerta que
-	     o usuário vê, então dizem o porquê em português.
-	     Câmera: foto da placa, OCR e leitura do QR do ticket (o microfone NÃO
-	     entra — o CameraController usa enableAudio: false).
-	     Bluetooth: impressora térmica ESC/POS. -->
-	<!-- Rede local: exigidas para DEPURAR no aparelho. O Flutter conversa com o
-	     app pela rede local (Dart VM Service) e, sem estas chaves, o iOS 14+
-	     encerra o app no lançamento — o sintoma é "abre e fecha", com
-	     "Dart VM Service was not discovered" no terminal. O alerta que o texto
-	     abaixo acompanha NÃO aparece em build de release. -->
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Permite que as ferramentas do Flutter, no computador do desenvolvedor, se conectem ao app para depuração. Este aviso não aparece na versão publicada.</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_dartVmService._tcp</string>
-		<string>_dartobservatory._tcp</string>
-	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>O NuvemPark usa a câmera para fotografar a placa do veículo, ler a placa automaticamente e escanear o QR Code do ticket na saída.</string>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>O NuvemPark usa o Bluetooth para se conectar à impressora térmica e imprimir o ticket.</string>
-	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>O NuvemPark usa o Bluetooth para se conectar à impressora térmica e imprimir o ticket.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -48,8 +24,27 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>O NuvemPark usa o Bluetooth para se conectar à impressora térmica e imprimir o ticket.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>O NuvemPark usa o Bluetooth para se conectar à impressora térmica e imprimir o ticket.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartVmService._tcp</string>
+		<string>_dartobservatory._tcp</string>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>O NuvemPark usa a câmera para fotografar a placa do veículo, ler a placa automaticamente e escanear o QR Code do ticket na saída.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Permite que as ferramentas do Flutter, no computador do desenvolvedor, se conectem ao app para depuração. Este aviso não aparece na versão publicada.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>O NuvemPark não grava áudio. A câmera é usada só para fotos do veículo e leitura da placa.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O NuvemPark pode usar a galeria apenas se você escolher uma foto do veículo já tirada.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

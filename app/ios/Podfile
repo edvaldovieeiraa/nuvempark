@@ -41,5 +41,14 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # permission_handler no iOS só COMPILA a estratégia de cada permissão
+    # habilitada aqui. Sem PERMISSION_CAMERA=1, Permission.camera.request()
+    # responde "negado" sem perguntar — a câmera de placa nunca abriria.
+    # Bluetooth não entra: a tela da impressora não usa o permission_handler
+    # no iOS (o plugin da impressora dispara o pedido do sistema).
+    target.build_configurations.each do |config|
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'PERMISSION_CAMERA=1'
+    end
   end
 end

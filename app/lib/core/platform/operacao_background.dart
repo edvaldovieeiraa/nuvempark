@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -71,6 +73,10 @@ class OperacaoBackground {
   /// do sistema). Não insiste se o operador negou de vez; abaixo do Android 13
   /// o plugin já responde "concedida" sem mostrar nada.
   static Future<void> pedirPermissaoNotificacao() async {
+    // Só Android: o serviço de operação não existe no iOS, e pedir permissão
+    // de notificação sem notificação nenhuma é motivo de questionamento na
+    // revisão da Apple.
+    if (!Platform.isAndroid) return;
     try {
       final status = await Permission.notification.status;
       if (status.isGranted || status.isPermanentlyDenied) return;
