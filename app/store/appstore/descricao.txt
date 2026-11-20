@@ -1,0 +1,40 @@
+NuvemPark é o aplicativo de operação para estacionamentos. O operador registra entradas e saídas, cobra e fecha o caixa pelo celular, mesmo sem internet. O gestor acompanha tudo pelo painel web.
+
+Importante: o app é usado pela equipe de estacionamentos que contratam o NuvemPark. O acesso é feito com o código do pátio e o usuário criados pelo gestor no painel (nuvempark.com).
+
+ENTRADA RÁPIDA
+• Fotografe a placa: a câmera lê e preenche para você
+• Ou digite a placa, se preferir
+• Escolha o tipo de veículo: carro, moto, caminhonete ou van
+• Registre avarias com fotos já na entrada
+
+SAÍDA E PAGAMENTO
+• Encontre o veículo pelo QR Code do ticket, pela placa ou pela foto
+• Tarifa calculada automaticamente: fração inicial, horas adicionais, tolerância, diária e pernoite
+• Receba em dinheiro, cartão ou Pix
+• Gere o QR Code Pix na tela para o cliente pagar com o app do banco
+
+PÁTIO EM TEMPO REAL
+• Veja os veículos no pátio, há quanto tempo cada um está e as vagas livres
+• Busque qualquer placa em segundos
+• Histórico de movimentos do pátio
+
+CAIXA DO TURNO
+• Abra o caixa com o fundo inicial
+• Lance sangrias e acompanhe o saldo esperado
+• Feche o caixa com o detalhamento do turno
+
+MENSALISTAS E CONVÊNIOS
+• Mensalistas com placas vinculadas
+• Tabelas de preço diferentes, como a de clientes de uma loja parceira
+
+FUNCIONA SEM INTERNET
+Pátio costuma ser subsolo ou galpão com sinal ruim. O NuvemPark grava cada entrada, saída e pagamento no próprio aparelho e envia ao servidor quando a conexão volta, com o app aberto.
+
+IMPRESSÃO DE TICKET NO IPHONE
+No iPhone, o NuvemPark imprime em impressoras térmicas com Bluetooth LE (Bluetooth de baixo consumo). Impressoras que usam só o Bluetooth clássico não são reconhecidas pelo iPhone. A impressão é opcional: sem impressora, a saída é feita pela placa.
+
+PARA O GESTOR
+Pelo painel web, em qualquer navegador, o gestor cadastra pátios, tarifas e operadores, autoriza os aparelhos da equipe e acompanha faturamento, caixa e movimento de cada unidade.
+
+Política de privacidade: https://nuvempark.com/privacidade

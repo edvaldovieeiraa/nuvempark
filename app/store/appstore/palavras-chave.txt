@@ -1,0 +1,1 @@
+estacionamento,pátio,placa,ticket,caixa,mensalista,pix,valet,garagem,parking,operador,tarifa

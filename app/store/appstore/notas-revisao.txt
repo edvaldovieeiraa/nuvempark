@@ -1,0 +1,27 @@
+NuvemPark is a B2B tool for parking lot attendants in Brazil. Parking businesses subscribe to NuvemPark on our website (nuvempark.com). The manager then creates the parking lot and the attendants' accounts in the web dashboard. The iPhone app is used only by those attendants to run the lot: register vehicle entries (the camera reads the license plate on the device), calculate the fee at exit, take payment (cash, card or Pix QR code) and close the cash register.
+
+There is no sign-up, no in-app purchase and no payment for the service inside the app. Accounts are provisioned by the business, not created in the app.
+
+SIGN IN (demo parking lot "Demo Parking", with test data):
+The login screen has THREE fields:
+1) "Código do pátio" (parking lot code): 6718
+2) "Usuário" (username): REVIEWER
+3) "Senha" (password): see the password field of this form
+Any number of devices can sign in with this account; no approval is needed.
+
+HOW TO TEST
+1. Open the cash register first: "Caixa" tab > open it (any opening amount, e.g. 0). Exits require an open cash register.
+2. Home ("Início"): tap "Entrada" to register a vehicle. Point the camera at a license plate, or type any plate in the "ou digite" field (e.g. ABC1D23), choose "Carro" and tap "Registrar entrada".
+3. Tap "Saída" on Home, find the vehicle by plate, choose "Dinheiro" (cash) and confirm. The first 15 minutes are free, so a quick test exit costs R$ 0,00.
+4. "Pátio" tab lists the vehicles in the lot. "Caixa" tab shows the cash register totals.
+
+Note: "Gerar QR Pix na tela" (Pix QR code, Brazilian instant payment) needs the parking business's own payment account, which is not set up in this demo lot; please use cash in the demo.
+
+PERMISSIONS
+- Camera: photo of the vehicle at entry and license plate reading. OCR runs on the device (Google ML Kit); images are not sent for recognition.
+- Bluetooth: only to connect an optional Bluetooth LE thermal receipt printer (Menu > Impressora). Printing is optional; the app works without a printer.
+
+EXTERNAL SERVICES
+Our own API (api.nuvempark.com) for data sync. Payments of parking fees are processed by Asaas, a Brazilian payment institution, through our server. Google ML Kit runs on the device for plate reading.
+
+Privacy policy: https://nuvempark.com/privacidade

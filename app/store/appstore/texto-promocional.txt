@@ -1,0 +1,1 @@
+Entrada pela câmera, saída com tarifa calculada e Pix com QR Code. Funciona sem internet e sincroniza sozinho.
