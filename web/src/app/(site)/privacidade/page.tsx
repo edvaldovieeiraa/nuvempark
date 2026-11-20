@@ -14,7 +14,7 @@ import { urlSite } from "@/lib/urls";
  * uma coluna com dado pessoal, atualize a seção correspondente e a data.
  */
 
-const ATUALIZADA_EM = "17 de novembro de 2026";
+const ATUALIZADA_EM = "19 de novembro de 2026";
 const EMAIL = "contato@nuvempark.com";
 
 export const metadata: Metadata = {
@@ -87,8 +87,8 @@ export default function PrivacidadePage() {
 
       <p style={p}>
         Esta política explica como o <strong>NuvemPark</strong> trata dados
-        pessoais no aplicativo Android NuvemPark (usado por operadores de
-        estacionamento), no painel de gestão em dashboard.nuvempark.com e no
+        pessoais no aplicativo NuvemPark para Android e iPhone (usado por
+        operadores de estacionamento), no painel de gestão em dashboard.nuvempark.com e no
         site nuvempark.com. Ela segue a Lei Geral de Proteção de Dados (Lei nº
         13.709/2018 — LGPD).
       </p>
@@ -138,10 +138,14 @@ export default function PrivacidadePage() {
       <h3 style={h3}>2.2 Aparelho em que o app é usado</h3>
       <ul style={ul}>
         <li style={li}>
-          Identificador do aparelho (Android ID), fabricante, modelo e versão do
-          sistema, enviados no login para licenciar o aparelho no
-          estacionamento. O Android ID é guardado apenas como hash (nunca o
-          valor original).
+          Um identificador gerado pelo próprio app na instalação, enviado no
+          login para licenciar o aparelho no estacionamento.
+        </li>
+        <li style={li}>
+          No Android, também o identificador do aparelho (Android ID),
+          fabricante, modelo e versão do sistema. O Android ID é guardado
+          apenas como hash (nunca o valor original). No iPhone, o app não lê
+          identificadores do aparelho.
         </li>
         <li style={li}>Endereço IP e data/hora dos acessos à API.</li>
         <li style={li}>
@@ -184,7 +188,7 @@ export default function PrivacidadePage() {
         </li>
       </ul>
 
-      <h2 style={h2}>3. Permissões do app Android e para que servem</h2>
+      <h2 style={h2}>3. Permissões do app e para que servem</h2>
       <ul style={ul}>
         <li style={li}>
           <strong>Câmera:</strong> fotografar a placa e o veículo na entrada,
@@ -198,7 +202,7 @@ export default function PrivacidadePage() {
         </li>
         <li style={li}>
           <strong>Notificações, serviço em primeiro plano e otimização de
-          bateria:</strong> manter a sincronização e o sinal de funcionamento
+          bateria (só no Android):</strong> manter a sincronização e o sinal de funcionamento
           ativos com a tela apagada. A notificação fixa é a exigida pelo
           Android para indicar que o serviço está rodando.
         </li>
@@ -206,6 +210,11 @@ export default function PrivacidadePage() {
           <strong>Armazenamento (só no Android 9 ou anterior):</strong>{" "}
           exigido pelo componente de câmera para gravar a foto antes do envio.
           O app não lê seus arquivos pessoais.
+        </li>
+        <li style={li}>
+          <strong>Galeria de fotos e microfone (iPhone):</strong> o iPhone pede
+          a descrição dessas permissões porque o componente de câmera as
+          prevê, mas o app não grava áudio nem lê a galeria por conta própria.
         </li>
         <li style={li}>
           <strong>Internet:</strong> sincronizar os dados com o servidor. O app
@@ -263,7 +272,8 @@ export default function PrivacidadePage() {
       <p style={p}>
         Os dados trafegam por conexão criptografada (HTTPS). As fotos ficam em
         armazenamento privado, acessível só por links temporários. No aparelho,
-        as credenciais de acesso ficam no armazenamento seguro do Android. O
+        as credenciais de acesso ficam no armazenamento seguro do sistema
+        (Keystore no Android, Keychain no iPhone). O
         acesso aos dados é separado por estacionamento e por perfil de usuário,
         e as ações relevantes ficam registradas em auditoria.
       </p>
