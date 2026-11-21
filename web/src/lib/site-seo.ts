@@ -55,11 +55,11 @@ export function schemaSoftware(): Schema {
     alternateName: "NuvemPark — Sistema para Estacionamento",
     applicationCategory: "BusinessApplication",
     applicationSubCategory: "Sistema para estacionamento",
-    operatingSystem: "Android, Web",
+    operatingSystem: "Android, iOS, Web",
     url: SITE_URL,
     inLanguage: "pt-BR",
     description:
-      "Sistema para estacionamento na nuvem: o operador registra entradas, saídas e pagamentos por um aplicativo Android que funciona offline, e o gestor acompanha faturamento, ocupação e caixa em tempo real por um painel web.",
+      "Sistema para estacionamento na nuvem: o operador registra entradas, saídas e pagamentos por um aplicativo para Android e iPhone que funciona offline, e o gestor acompanha faturamento, ocupação e caixa em tempo real por um painel web.",
     publisher: { "@id": `${SITE_URL}/#organizacao` },
     featureList: [
       "Operação offline com sincronização automática",

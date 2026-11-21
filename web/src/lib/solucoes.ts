@@ -591,12 +591,12 @@ export const APLICATIVO: PaginaSolucao = {
     {
       pergunta: "Funciona em iPhone?",
       resposta:
-        "O aplicativo de operação é Android. O painel do gestor é web e abre normalmente no iPhone, no iPad ou em qualquer navegador.",
+        "Sim. O aplicativo de operação está na App Store para iPhone e também roda em Android. O painel do gestor é web e abre no iPhone, no iPad ou em qualquer navegador. No iPhone, a impressão do ticket funciona com impressoras térmicas Bluetooth LE.",
     },
     {
       pergunta: "Preciso comprar celular novo para a equipe?",
       resposta:
-        "Não. O aplicativo foi feito para rodar no celular Android que a equipe já usa. O único item opcional é uma impressora térmica Bluetooth comum, se você quiser entregar ticket impresso.",
+        "Não. O aplicativo roda no celular que a equipe já usa, Android ou iPhone. O único item opcional é uma impressora térmica Bluetooth, se você quiser entregar ticket impresso.",
     },
     {
       pergunta: "Como o operador entra no aplicativo?",
@@ -606,7 +606,7 @@ export const APLICATIVO: PaginaSolucao = {
     {
       pergunta: "Qual impressora funciona com o aplicativo?",
       resposta:
-        "Impressoras térmicas Bluetooth comuns, do mesmo tipo usado em delivery. O ticket sai com QR Code e o nome do seu pátio.",
+        "Impressoras térmicas Bluetooth comuns, do mesmo tipo usado em delivery. O ticket sai com QR Code e o nome do seu pátio. No iPhone, a impressão funciona com impressoras térmicas Bluetooth LE.",
     },
   ],
   migalhas: [

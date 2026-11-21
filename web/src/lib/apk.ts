@@ -1,3 +1,5 @@
+import { APP_STORE } from "@/lib/app-links";
+
 /**
  * O APK do app do operador, no bucket público `downloads` do Storage.
  *
@@ -27,7 +29,8 @@ export function textoCredenciais(p: {
   return [
     `NuvemPark — acesso ao app (${p.patioNome})`,
     "",
-    `1) Baixe o app: ${APK_URL}`,
+    `1) Baixe o app — Android: ${APK_URL}`,
+    `   iPhone: ${APP_STORE.url}`,
     `2) Código do estacionamento: ${p.codigo}`,
     `3) Usuário: ${p.usuario}`,
     `4) Senha: ${p.senha}`,

@@ -14,7 +14,7 @@ export const FAQ_HOME = [
   {
     pergunta: "Preciso instalar cancela ou equipamento?",
     resposta:
-      "Não. O NuvemPark roda no celular Android que o operador já tem e no navegador do gestor. Sem cancela, sem servidor local, sem obra.",
+      "Não. O NuvemPark roda no celular que o operador já tem, Android ou iPhone, e no navegador do gestor. Sem cancela, sem servidor local, sem obra.",
   },
   {
     pergunta: "E se a internet cair no meio da operação?",

@@ -35,7 +35,7 @@ function cabecalho(): string {
   return `# NuvemPark
 
 > Sistema de gestão de estacionamento na nuvem. Um painel web para o gestor e um
-> aplicativo Android para o operador do pátio, que registra entrada e saída,
+> aplicativo para Android e iPhone para o operador do pátio, que registra entrada e saída,
 > lê a placa pela câmera do celular, calcula a tarifa e imprime o ticket —
 > funcionando mesmo sem internet e sincronizando quando a conexão volta.
 
@@ -43,7 +43,7 @@ function cabecalho(): string {
 
 O NuvemPark substitui a comanda de papel e o sistema instalado em servidor
 local. Não exige cancela, obra, câmera fixa nem servidor no pátio: a operação
-roda no celular Android que a equipe já tem, e o gestor acompanha o faturamento
+roda no celular que a equipe já tem (Android ou iPhone), e o gestor acompanha o faturamento
 em tempo real pelo navegador.
 
 Principais recursos:

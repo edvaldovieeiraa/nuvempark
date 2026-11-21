@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { APK_URL } from "@/lib/apk";
+import { SelosLojas } from "@/components/site/selos-lojas";
 
 const PASSOS: { Icone: typeof ShieldQuestion; titulo: string; texto: string }[] = [
   {
@@ -62,7 +63,7 @@ export default function DownloadPage() {
       >
         <h1 className="text-[26px] font-black tracking-tight">Baixar o app</h1>
         <p className="text-sm text-texto-2">
-          Instale o app do operador nos aparelhos que vão trabalhar nos seus pátios (Android).
+          Instale o app do operador nos aparelhos que vão trabalhar nos seus pátios — Android ou iPhone.
         </p>
       </motion.header>
 
@@ -110,6 +111,25 @@ export default function DownloadPage() {
           Dica: o jeito mais fácil é abrir <b>esta página no próprio aparelho</b> onde o app vai ser
           instalado (use “Copiar link” e cole no navegador do celular/tablet).
         </p>
+      </motion.section>
+
+      {/* iPhone: vem da App Store, sem APK nem permissão de fonte desconhecida */}
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.09 }}
+        className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-6"
+      >
+        <div className="flex flex-col sm:flex-row items-center gap-5">
+          <div className="flex-1 text-center sm:text-left">
+            <div className="font-extrabold text-lg">No iPhone</div>
+            <div className="text-[13px] text-texto-2">
+              Baixe o NuvemPark na App Store, como qualquer app. A impressão do ticket no iPhone
+              funciona com impressoras térmicas Bluetooth LE.
+            </div>
+          </div>
+          <SelosLojas altura={44} />
+        </div>
       </motion.section>
 
       {/* Tutorial */}

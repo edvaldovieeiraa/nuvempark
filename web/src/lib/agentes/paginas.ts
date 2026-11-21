@@ -34,7 +34,7 @@ export type PaginaAgente = {
 };
 
 const INICIO = `NuvemPark é um sistema de gestão de estacionamento (SaaS brasileiro) para
-operadores e redes de pátios. A operação acontece num app Android que funciona
+operadores e redes de pátios. A operação acontece num app para Android e iPhone que funciona
 100% offline; o gestor acompanha faturamento, ocupação e caixa em tempo real por
 um painel web.
 
@@ -76,7 +76,7 @@ um painel web.
    https://dashboard.nuvempark.com/cadastro — confirmado o e-mail, o painel abre
    com 15 dias liberados.
 2. **Cadastrar pátios e operadores** no painel. Os operadores instalam o app no
-   Android e entram com o código do pátio — sem obra e sem técnico.
+   celular, Android ou iPhone, e entram com o código do pátio — sem obra e sem técnico.
 3. **Operar.** Carro chega, câmera lê a placa, ticket sai impresso e o valor
    aparece no painel do gestor na hora.
 
@@ -89,8 +89,8 @@ operador, sem fidelidade e sem multa de cancelamento.
 ## Perguntas frequentes
 
 **Preciso instalar cancela ou equipamento?**
-Não. Roda no celular Android que o operador já tem e no navegador do gestor. Sem
-cancela, sem servidor local, sem obra.
+Não. Roda no celular que o operador já tem, Android ou iPhone, e no navegador do
+gestor. Sem cancela, sem servidor local, sem obra.
 
 **E se a internet cair no meio da operação?**
 A fila continua andando. O app registra entradas, saídas e pagamentos offline e
@@ -172,7 +172,7 @@ Veja também: [Estacionamento de hotel e pousada](${urlSite("/sistema-de-estacio
 1. **Crie sua conta em 1 minuto** — cadastro grátis, sem cartão e sem vendedor.
    Confirmou o e-mail, o painel abre com 15 dias liberados.
 2. **Baixe o app e chame a equipe** — cadastre pátios e operadores no painel;
-   eles entram no app Android com o código do pátio.
+   eles baixam o app no celular, Android ou iPhone, e entram com o código do pátio.
 3. **Opere e acompanhe ao vivo** — carro chega, câmera lê a placa, ticket sai
    impresso, e cada real aparece no painel.`;
 
@@ -207,8 +207,9 @@ Antes disso, **15 dias grátis** com todos os recursos e sem cartão de crédito
 ## Perguntas frequentes sobre o preço
 
 **Preciso comprar algum equipamento?**
-Não. Funciona em qualquer celular Android. Para imprimir tickets, basta uma
-impressora térmica Bluetooth comum — a mesma usada em deliveries.
+Não. Funciona no celular que a equipe já tem, Android ou iPhone. Para imprimir
+tickets, basta uma impressora térmica Bluetooth comum — a mesma usada em
+deliveries. No iPhone, a impressão funciona com impressoras Bluetooth LE.
 
 **E se a internet do pátio cair?**
 A operação continua normalmente. O app funciona 100% offline e sincroniza tudo
@@ -224,7 +225,7 @@ exportação.
 
 **Quanto tempo leva para começar?**
 Minutos, e você mesmo faz. Cria a conta grátis no site, cadastra os operadores
-no painel e eles baixam o app no Android. Na primeira entrada já está cobrando.
+no painel e eles baixam o app no celular, Android ou iPhone. Na primeira entrada já está cobrando.
 
 **As atualizações são cobradas à parte?**
 Nunca. Todos os novos recursos entram automaticamente no plano.`;
@@ -388,7 +389,7 @@ export const PAGINAS_AGENTE: readonly PaginaAgente[] = [
     caminho: "/",
     titulo: "NuvemPark — gestão de estacionamento na nuvem",
     resumo:
-      "O site inteiro: visão geral, recursos, preços (R$ 79,90/mês por pátio), roadmap, quem somos e contato. App Android offline-first para o operador, painel web em tempo real para o gestor.",
+      "O site inteiro: visão geral, recursos, preços (R$ 79,90/mês por pátio), roadmap, quem somos e contato. App para Android e iPhone, offline-first, para o operador, painel web em tempo real para o gestor.",
     corpo: HOME,
   },
   ...[...SOLUCOES, ...CIDADES].map((s) => ({

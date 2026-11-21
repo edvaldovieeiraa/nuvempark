@@ -20,6 +20,7 @@ import { SOLUCOES } from "@/lib/solucoes";
 import { urlApp } from "@/lib/urls";
 import { MONO, WHATSAPP, eyebrow, h2, pill, listItem, btnPrimary, btnGhostDark } from "@/components/site/tokens";
 import { Marca } from "@/components/marca";
+import { SelosLojas } from "@/components/site/selos-lojas";
 
 /* Re-exports para as sub-páginas do site continuarem importando de "secoes". */
 export { WHATSAPP } from "@/components/site/tokens";
@@ -59,7 +60,7 @@ export function Numeros() {
 export function ComoFunciona() {
   const passos = [
     { n: "01", Icone: UserPlus, numCor: "#DCFCE7", grad: "linear-gradient(135deg,#16A34A,#166534)", sombra: "0 8px 20px -8px rgba(21,128,61,.6)", titulo: "Crie sua conta em 1 minuto", texto: "Cadastro grátis, sem cartão e sem vendedor. Confirmou o e-mail, seu painel já abre — com 15 dias liberados na hora." },
-    { n: "02", Icone: Smartphone, numCor: "#BAE6FD", grad: "linear-gradient(135deg,#0EA5E9,#166534)", sombra: "0 8px 20px -8px rgba(14,165,233,.6)", titulo: "Baixe o app e chame a equipe", texto: "Cadastre pátios e operadores no painel. Eles baixam o app no Android e entram com o código do pátio — sem obra, sem técnico." },
+    { n: "02", Icone: Smartphone, numCor: "#BAE6FD", grad: "linear-gradient(135deg,#0EA5E9,#166534)", sombra: "0 8px 20px -8px rgba(14,165,233,.6)", titulo: "Baixe o app e chame a equipe", texto: "Cadastre pátios e operadores no painel. Eles baixam o app no celular, Android ou iPhone, e entram com o código do pátio — sem obra, sem técnico.", lojas: true },
     { n: "03", Icone: RefreshCw, numCor: "#E9D5FF", grad: "linear-gradient(135deg,#8B5CF6,#0EA5E9)", sombra: "0 8px 20px -8px rgba(139,92,246,.6)", titulo: "Opere e acompanhe ao vivo", texto: "Carro chega, câmera lê a placa, ticket sai impresso. Cada real aparece no seu painel na hora." },
   ];
 
@@ -89,6 +90,11 @@ export function ComoFunciona() {
                 </div>
                 <h3 style={{ margin: "20px 0 0", fontSize: 18, fontWeight: 800, color: "#1F2937" }}>{p.titulo}</h3>
                 <p style={{ margin: "8px 0 0", fontSize: 15, lineHeight: 1.6, color: "#6B7280" }}>{p.texto}</p>
+                {"lojas" in p && p.lojas && (
+                  <div style={{ marginTop: 18 }}>
+                    <SelosLojas altura={40} alinhar="start" />
+                  </div>
+                )}
               </div>
             </Reveal>
           ))}
@@ -541,6 +547,9 @@ export function SiteFooter() {
               O sistema que cabe no bolso do operador — e coloca o faturamento do
               pátio na sua mão.
             </p>
+            <div style={{ marginTop: 20 }}>
+              <SelosLojas altura={40} alinhar="start" />
+            </div>
           </div>
 
           {colunas.map((c) => (

@@ -24,8 +24,9 @@ import type { PaginaSolucao } from "@/lib/solucoes";
  *   `ticket_repository.dart` (`reconhecerPlaca`) e `reconhecimento_cliente.dart`.
  *
  * O que NÃO pode ser escrito enquanto não for verdade: taxa de acerto em
- * porcentagem, leitura sem operador, integração com câmera fixa ou cancela,
- * app de iPhone. A placa de moto (caracteres em duas linhas) não casa com a
+ * porcentagem, leitura sem operador, integração com câmera fixa ou cancela.
+ * (App de iPhone passou a ser verdade em 20/11/2026: a leitura de placa foi
+ * testada no aparelho e o app está na App Store.) A placa de moto (caracteres em duas linhas) não casa com a
  * análise por linha do OCR — por isso o FAQ avisa que ela pode exigir
  * digitação.
  */
@@ -194,7 +195,7 @@ export const LEITURA_PLACA: PaginaSolucao = {
     {
       pergunta: "Funciona em iPhone?",
       resposta:
-        "O aplicativo de operação, onde a leitura acontece, é Android. O painel do gestor é web e abre normalmente no iPhone ou em qualquer navegador.",
+        "Sim. O aplicativo de operação, onde a leitura acontece, está na App Store para iPhone e também roda em Android; nos dois, a placa é lida no próprio aparelho, sem internet. O painel do gestor é web e abre em qualquer navegador.",
     },
   ],
   migalhas: [

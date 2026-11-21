@@ -22,6 +22,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { APK_URL, textoCredenciais } from "@/lib/apk";
+import { APP_STORE } from "@/lib/app-links";
 import {
   concluirOnboarding,
   type DadosOnboarding,
@@ -757,7 +758,16 @@ function PassarParaOperador({
           <Num n={1} />
           <div className="min-w-0 flex-1">
             <span>
-              Instale o app <b>NuvemPark</b> no Android
+              Instale o app <b>NuvemPark</b> no celular. No iPhone, pela{" "}
+              <a
+                href={APP_STORE.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-brand-700 hover:underline"
+              >
+                App Store
+              </a>
+              ; no Android, pelo APK abaixo
             </span>
             {/* QR ao LADO dos botões, não embaixo: empilhado ele custava ~100px
                 e empurrava o "Abrir meu painel" para fora do modal. */}

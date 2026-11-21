@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { urlApp } from "@/lib/urls";
+import { SelosLojas } from "@/components/site/selos-lojas";
 import { MONO, WHATSAPP, btnPrimary, btnGhostDark } from "@/components/site/tokens";
 
 /* =========================================================
@@ -170,6 +171,16 @@ export function Hero() {
               ),
             )}
           </p>
+
+          {/* Selos das lojas: prova de que o app da equipe existe e é baixado da
+              loja oficial. Tamanho fixo e sem `priority` — imagem no hero já
+              custou LCP/CLS uma vez (PERFORMANCE.md). */}
+          <div style={{ marginTop: 28 }}>
+            <p style={{ margin: "0 0 10px", fontSize: 12, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "rgba(255,255,255,.55)" }}>
+              App da equipe
+            </p>
+            <SelosLojas altura={40} />
+          </div>
         </div>
 
         {/* palco: produto aceso */}
