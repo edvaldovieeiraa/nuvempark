@@ -39,7 +39,7 @@ export const LEITURA_PLACA: PaginaSolucao = {
   subtitulo:
     "A placa entra pela câmera do celular que o operador já segura — sem poste, sem câmera fixa e sem digitar sete caracteres com a fila andando.",
   resposta:
-    "Leitura de placa para estacionamento (LPR) é o reconhecimento automático dos caracteres da placa a partir da imagem do veículo. No NuvemPark, quem lê é a câmera do celular Android do operador, no próprio aparelho e sem internet; a leitura é uma sugestão que o operador confirma antes de registrar. Não depende de câmera fixa.",
+    "Leitura de placa para estacionamento (LPR) é o reconhecimento automático dos caracteres da placa a partir da imagem do veículo. No NuvemPark, quem lê é a câmera do celular do operador, Android ou iPhone, no próprio aparelho e sem internet; a leitura é uma sugestão que o operador confirma antes de registrar. Não depende de câmera fixa.",
   secoes: [
     {
       h2: "Como funciona a leitura de placa no NuvemPark",
@@ -78,7 +78,7 @@ export const LEITURA_PLACA: PaginaSolucao = {
           [
             "Equipamento",
             "Câmera dedicada em poste ou pórtico, em geral ligada a uma cancela",
-            "O celular Android que a equipe já usa",
+            "O celular que a equipe já usa, Android ou iPhone",
           ],
           [
             "Instalação",
@@ -165,7 +165,7 @@ export const LEITURA_PLACA: PaginaSolucao = {
     {
       pergunta: "Preciso comprar câmera para ter leitura de placa?",
       resposta:
-        "Não. A leitura é feita pela câmera do celular Android que o operador já usa. Não há câmera fixa, cancela, servidor nem computador no pátio. O único equipamento opcional do sistema é uma impressora térmica Bluetooth, para quem quer entregar ticket impresso.",
+        "Não. A leitura é feita pela câmera do celular que o operador já usa, Android ou iPhone. Não há câmera fixa, cancela, servidor nem computador no pátio. O único equipamento opcional do sistema é uma impressora térmica Bluetooth, para quem quer entregar ticket impresso.",
     },
     {
       pergunta: "Preciso de internet no pátio para a leitura funcionar?",

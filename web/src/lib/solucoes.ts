@@ -84,7 +84,7 @@ export const PILAR: PaginaSolucao = {
   subtitulo:
     "O poder de um sistema caro, sem a cancela, o servidor e a instalação que ninguém quer.",
   resposta:
-    "Um sistema para estacionamento é o software que registra a entrada e a saída de cada veículo, calcula a tarifa, emite o ticket e controla o caixa do pátio. No NuvemPark isso acontece num aplicativo Android que funciona mesmo sem internet, com o faturamento aparecendo ao vivo no painel do gestor.",
+    "Um sistema para estacionamento é o software que registra a entrada e a saída de cada veículo, calcula a tarifa, emite o ticket e controla o caixa do pátio. No NuvemPark isso acontece num aplicativo para Android e iPhone que funciona mesmo sem internet, com o faturamento aparecendo ao vivo no painel do gestor.",
   secoes: [
     {
       h2: "O que um sistema para estacionamento precisa ter",
@@ -194,7 +194,7 @@ export const PILAR: PaginaSolucao = {
     {
       pergunta: "Preciso instalar cancela ou algum equipamento?",
       resposta:
-        "Não. O NuvemPark roda no celular Android que o operador já tem e no navegador do gestor. Sem cancela, sem servidor local e sem obra. A única compra opcional é uma impressora térmica Bluetooth comum, a mesma usada em delivery, se você quiser entregar ticket impresso.",
+        "Não. O NuvemPark roda no celular que o operador já tem, Android ou iPhone, e no navegador do gestor. Sem cancela, sem servidor local e sem obra. A única compra opcional é uma impressora térmica Bluetooth comum, a mesma usada em delivery, se você quiser entregar ticket impresso; no iPhone, ela precisa ser Bluetooth LE.",
     },
     {
       pergunta: "O sistema funciona sem internet?",
@@ -479,7 +479,7 @@ export const CONTROLE: PaginaSolucao = {
     {
       pergunta: "Dá para controlar o estacionamento pelo celular?",
       resposta:
-        "Sim. A operação inteira acontece num aplicativo Android — entrada, saída, cálculo da tarifa, pagamento e impressão do ticket. O gestor acompanha pelo painel web, que também abre no celular.",
+        "Sim. A operação inteira acontece num aplicativo para Android e iPhone — entrada, saída, cálculo da tarifa, pagamento e impressão do ticket. O gestor acompanha pelo painel web, que também abre no celular.",
     },
     {
       pergunta: "Consigo localizar um carro que saiu semanas atrás?",
@@ -518,11 +518,11 @@ export const APLICATIVO: PaginaSolucao = {
   h1: "Aplicativo para estacionamento",
   titulo: "Aplicativo para Estacionamento: opera offline | NuvemPark",
   descricao:
-    "Aplicativo Android para estacionamento: lê a placa pela câmera, calcula a tarifa, imprime o ticket por Bluetooth e funciona sem internet.",
+    "Aplicativo para estacionamento, Android e iPhone: lê a placa pela câmera, calcula a tarifa, imprime o ticket por Bluetooth e funciona sem internet.",
   subtitulo:
     "O sistema inteiro cabe no celular que a sua equipe já tem no bolso.",
   resposta:
-    "O aplicativo para estacionamento do NuvemPark é um app Android usado pelo operador dentro do pátio. Ele lê a placa pela câmera, calcula a tarifa na saída, recebe o pagamento, imprime o ticket numa impressora Bluetooth e continua funcionando quando não há internet.",
+    "O aplicativo para estacionamento do NuvemPark é um app para Android e iPhone usado pelo operador dentro do pátio. Ele lê a placa pela câmera, calcula a tarifa na saída, recebe o pagamento, imprime o ticket numa impressora Bluetooth e continua funcionando quando não há internet.",
   secoes: [
     {
       h2: "O que o aplicativo faz dentro do pátio",
@@ -563,9 +563,9 @@ export const APLICATIVO: PaginaSolucao = {
       tabela: {
         cabecalho: ["Item", "Necessário?"],
         linhas: [
-          ["Celular Android", "Sim — o que a equipe já tem serve"],
+          ["Celular Android ou iPhone", "Sim — o que a equipe já tem serve"],
           ["Internet no pátio", "Não para operar; só para sincronizar"],
-          ["Impressora térmica Bluetooth", "Opcional, para ticket impresso"],
+          ["Impressora térmica Bluetooth", "Opcional, para ticket impresso (no iPhone, modelo Bluetooth LE)"],
           ["Cancela ou controlador", "Não"],
           ["Servidor ou computador no pátio", "Não"],
           ["Treinamento técnico", "Não — entra com o código do pátio"],
@@ -747,7 +747,7 @@ export const VALIDACAO: PaginaSolucao = {
     {
       pergunta: "O lojista precisa instalar algum aplicativo?",
       resposta:
-        "Não. O acesso do parceiro é uma página web, que abre no computador do caixa ou no celular. O aplicativo Android é só do operador do pátio.",
+        "Não. O acesso do parceiro é uma página web, que abre no computador do caixa ou no celular. O aplicativo de celular é só do operador do pátio.",
     },
     {
       pergunta: "Dá para limitar quantas liberações cada parceiro pode fazer?",

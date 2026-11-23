@@ -189,7 +189,7 @@ export const HOTEL: PaginaSolucao = {
     {
       pergunta: "Preciso de cancela ou de algum equipamento?",
       resposta:
-        "Não. O sistema roda no celular Android que o operador já usa e no navegador do gestor. A impressora térmica Bluetooth é opcional, para entregar o cupom impresso.",
+        "Não. O sistema roda no celular que o operador já usa, Android ou iPhone, e no navegador do gestor. A impressora térmica Bluetooth é opcional, para entregar o cupom impresso.",
     },
     {
       pergunta: "Quanto custa a diária de hóspede?",

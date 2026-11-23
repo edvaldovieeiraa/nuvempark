@@ -193,8 +193,9 @@ O NuvemPark lê pela câmera do celular do operador, no aparelho, e a leitura é
 como a de cancela faz com a integração.
 
 O que **não pode** ser escrito ali enquanto não for verdade: taxa de acerto em
-porcentagem, leitura sem operador, integração com câmera fixa ou cancela, app
-de iPhone. Cada afirmação da página aponta para o arquivo do app que a sustenta
+porcentagem, leitura sem operador, integração com câmera fixa ou cancela. (App
+de iPhone saiu desta lista em 20/11/2026: está na App Store e a leitura de placa
+foi testada no aparelho.) Cada afirmação da página aponta para o arquivo do app que a sustenta
 — a lista está no topo de `lib/solucoes-leitura-placa.ts`. Mudou o OCR do app
 (formatos, teto de correção, moldura, saída pela placa), confira a página.
 

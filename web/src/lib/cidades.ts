@@ -62,7 +62,7 @@ function faqComum({ nome, locativo }: Cidade): PaginaSolucao["faq"] {
     {
       pergunta: "Precisa de técnico indo até o pátio?",
       resposta:
-        "Não. Não há servidor para instalar, cabo para passar nem obra para fazer. A operação roda no celular Android que a equipe já tem e o painel do gestor abre em qualquer navegador.",
+        "Não. Não há servidor para instalar, cabo para passar nem obra para fazer. A operação roda no celular que a equipe já tem — Android ou iPhone — e o painel do gestor abre em qualquer navegador.",
     },
     {
       pergunta: "Como funciona o suporte?",
@@ -238,7 +238,7 @@ const RECIFE: PaginaSolucao = {
   subtitulo:
     "O NuvemPark não foi desenhado numa reunião sobre estacionamentos. Nasceu dentro de uma operação de pátio aqui na região.",
   resposta:
-    "O NuvemPark é um sistema para estacionamento criado em Pernambuco, dentro de uma operação real de pátios, e hoje disponível para qualquer estacionamento de Recife. A equipe registra entradas e saídas por um aplicativo Android que funciona sem internet, e o gestor acompanha o faturamento ao vivo pelo navegador.",
+    "O NuvemPark é um sistema para estacionamento criado em Pernambuco, dentro de uma operação real de pátios, e hoje disponível para qualquer estacionamento de Recife. A equipe registra entradas e saídas por um aplicativo de celular, para Android e iPhone, que funciona sem internet, e o gestor acompanha o faturamento ao vivo pelo navegador.",
   secoes: [
     {
       h2: "Feito por quem opera pátio, não por quem visitou um",
@@ -299,7 +299,7 @@ const OLINDA: PaginaSolucao = {
   subtitulo:
     "No sítio histórico não se faz obra — e num pátio que existe por uma semana de carnaval, nenhuma instalação se paga.",
   resposta:
-    "Em Olinda, um sistema para estacionamento precisa funcionar sem obra e sem equipamento fixo: boa parte da cidade é sítio histórico e uma fatia relevante do movimento é sazonal. O NuvemPark roda inteiramente no celular Android do operador, o que permite montar e desmontar a operação de um pátio sem instalar nada.",
+    "Em Olinda, um sistema para estacionamento precisa funcionar sem obra e sem equipamento fixo: boa parte da cidade é sítio histórico e uma fatia relevante do movimento é sazonal. O NuvemPark roda inteiramente no celular do operador (Android ou iPhone), o que permite montar e desmontar a operação de um pátio sem instalar nada.",
   secoes: [
     {
       h2: "Onde não se pode furar o chão, o sistema tem que caber no bolso",
@@ -345,7 +345,7 @@ const OLINDA: PaginaSolucao = {
     {
       pergunta: "Preciso instalar alguma coisa no terreno?",
       resposta:
-        "Não. Nada é fixado, cabeado ou alimentado por energia no local. A operação acontece no celular Android do operador — o que resolve as restrições de obra do sítio histórico e o caso do terreno alugado.",
+        "Não. Nada é fixado, cabeado ou alimentado por energia no local. A operação acontece no celular do operador, seja Android ou iPhone — o que resolve as restrições de obra do sítio histórico e o caso do terreno alugado.",
     },
     ...faqComum(OLI),
   ],
@@ -392,7 +392,7 @@ const JABOATAO: PaginaSolucao = {
     {
       h2: "Um carro por dia paga o sistema",
       texto:
-        "São R$ 79,90 por mês, por pátio, com tudo incluso — sem taxa de instalação, sem cobrança por operador e sem fidelidade. Não há investimento em equipamento: o aplicativo roda no celular Android que a equipe já tem. Para um pátio de bairro, é a diferença entre um sistema caber no orçamento e não caber.",
+        "São R$ 79,90 por mês, por pátio, com tudo incluso — sem taxa de instalação, sem cobrança por operador e sem fidelidade. Não há investimento em equipamento: o aplicativo roda no celular que a equipe já tem, seja Android ou iPhone. Para um pátio de bairro, é a diferença entre um sistema caber no orçamento e não caber.",
       link: {
         href: "/blog/quanto-fatura-um-estacionamento",
         texto: "Quanto fatura um estacionamento",

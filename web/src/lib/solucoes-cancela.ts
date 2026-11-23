@@ -140,7 +140,7 @@ export const CANCELA: PaginaSolucao = {
     {
       pergunta: "Preciso de cancela para usar o NuvemPark?",
       resposta:
-        "Não. O sistema foi feito para operar sem cancela, sem servidor local e sem obra: a operação acontece num aplicativo Android no celular que a equipe já tem.",
+        "Não. O sistema foi feito para operar sem cancela, sem servidor local e sem obra: a operação acontece num aplicativo, para Android ou iPhone, no celular que a equipe já tem.",
     },
     {
       pergunta: "Sem cancela, o que impede alguém de sair sem pagar?",
