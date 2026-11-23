@@ -21,8 +21,8 @@ import {
   Sparkles,
   AlertTriangle,
 } from "lucide-react";
-import { APK_URL, textoCredenciais } from "@/lib/apk";
-import { APP_STORE } from "@/lib/app-links";
+import { URL_APP, textoCredenciais } from "@/lib/app-links";
+import { SelosLojas } from "@/components/site/selos-lojas";
 import {
   concluirOnboarding,
   type DadosOnboarding,
@@ -36,7 +36,7 @@ const CHAVE_ADIADO = "np-onboarding-adiado";
    ONBOARDING — primeiro acesso do gestor (rede sem pátios).
    Passos 1-4 são formulário, com envio único no final: o gestor
    pode voltar e revisar tudo antes de criar. O passo 5 ("App")
-   vem depois do envio e é o momento-chave — baixar o APK e as
+   vem depois do envio e é o momento-chave — baixar o app e as
    credenciais que o operador usa para entrar.
    ========================================================= */
 
@@ -709,8 +709,9 @@ function Num({ n }: { n: number }) {
  * hash bcrypt. Este é literalmente o único instante em que ela existe em texto
  * — daí o aviso e o botão de copiar tudo de uma vez.
  *
- * O QR aponta para o APK e é gerado no cliente, como no ticket público: o
- * gestor costuma estar no desktop e quem instala é o operador, no celular.
+ * O QR aponta para `URL_APP` (nuvempark.com/app), que abre a loja certa em
+ * qualquer celular, e é gerado no cliente, como no ticket público: o gestor
+ * costuma estar no desktop e quem instala é o operador, no celular.
  */
 function PassarParaOperador({
   patioNome,
@@ -728,7 +729,7 @@ function PassarParaOperador({
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
   useEffect(() => {
-    QRCode.toDataURL(APK_URL, { width: 480, margin: 1 })
+    QRCode.toDataURL(URL_APP, { width: 480, margin: 1 })
       .then(setQr)
       .catch(() => setQr(null));
   }, []);
@@ -758,44 +759,24 @@ function PassarParaOperador({
           <Num n={1} />
           <div className="min-w-0 flex-1">
             <span>
-              Instale o app <b>NuvemPark</b> no celular. No iPhone, pela{" "}
-              <a
-                href={APP_STORE.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-brand-700 hover:underline"
-              >
-                App Store
-              </a>
-              ; no Android, pelo APK abaixo
+              Instale o app <b>NuvemPark</b> pela loja do celular — Google Play no Android, App
+              Store no iPhone
             </span>
             {/* QR ao LADO dos botões, não embaixo: empilhado ele custava ~100px
                 e empurrava o "Abrir meu painel" para fora do modal. */}
             <div className="mt-2 flex items-start gap-3">
               <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
-                <a
-                  href={APK_URL}
-                  className="h-9 px-3 rounded-lg bg-brand-600 text-white text-xs font-bold inline-flex items-center gap-1.5 hover:brightness-110 transition-all"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Baixar APK
-                </a>
+                <SelosLojas altura={40} alinhar="start" />
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(APK_URL);
-                    toast.sucesso("Link copiado!", "Cole no navegador do celular.");
+                    navigator.clipboard.writeText(URL_APP);
+                    toast.sucesso("Link copiado!", "Abre a loja certa no celular do operador.");
                   }}
                   className="h-9 px-3 rounded-lg border border-borda text-xs font-bold text-texto-2 inline-flex items-center gap-1.5 hover:border-brand-300 hover:text-brand-700 transition-all"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   Copiar link
                 </button>
-                <Link
-                  href="/painel/download"
-                  className="text-xs font-bold text-brand-700 hover:underline"
-                >
-                  Como instalar →
-                </Link>
                 {qr && (
                   <span className="w-full text-[11px] text-texto-3 leading-snug">
                     Ou aponte a câmera do celular para o QR →

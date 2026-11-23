@@ -1,46 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  Download,
-  Smartphone,
-  Copy,
-  Check,
-  ShieldQuestion,
-  FolderOpen,
-  CheckCircle2,
-  RefreshCw,
-} from "lucide-react";
+import { Smartphone, Copy, Check, RefreshCw, TriangleAlert } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
-import { APK_URL } from "@/lib/apk";
+import { URL_APP } from "@/lib/app-links";
 import { SelosLojas } from "@/components/site/selos-lojas";
 
-const PASSOS: { Icone: typeof ShieldQuestion; titulo: string; texto: string }[] = [
-  {
-    Icone: Download,
-    titulo: "Baixe o arquivo",
-    texto:
-      "Toque em “Baixar APK”. Se o navegador avisar que o arquivo “pode ser prejudicial”, é normal para instaladores — toque em “Baixar mesmo assim”.",
-  },
-  {
-    Icone: FolderOpen,
-    titulo: "Abra o arquivo baixado",
-    texto:
-      "Toque na notificação de download concluído, ou abra o app “Arquivos” → Downloads e toque no nuvempark.apk.",
-  },
-  {
-    Icone: ShieldQuestion,
-    titulo: "Permita a instalação (só na 1ª vez)",
-    texto:
-      "O Android vai pedir permissão para “instalar apps desconhecidos”. Toque em “Configurações”, ative “Permitir desta fonte” e volte.",
-  },
-  {
-    Icone: CheckCircle2,
-    titulo: "Instale e abra",
-    texto:
-      "Toque em “Instalar” e aguarde. Ao terminar, toque em “Abrir” — pronto, o app está no aparelho.",
-  },
+/**
+ * O app do operador só se instala pelas lojas (Google Play e App Store). O APK
+ * solto que esta página distribuía saiu em 22/11/2026, quando a Play publicou.
+ *
+ * Quem ainda roda o APK antigo precisa trocar: a versão da Play é assinada com
+ * outra chave, então não instala por cima — e, no Android 8+, o ANDROID_ID muda
+ * junto com a chave. O servidor reconhece reinstalação pelo ANDROID_ID
+ * (`mergePorAndroidId`, na API), então o mesmo celular volta como aparelho
+ * NOVO. Por isso o passo de revogar o antigo em Dispositivos ANTES de entrar:
+ * com o slot incluso livre, o celular entra nele sem cobrança extra.
+ */
+const TROCA_APK: string[] = [
+  "Abra o app antigo com internet e espere sincronizar, para não perder nada que ainda não subiu.",
+  "Em Dispositivos, aqui no painel, revogue esse celular. Assim ele volta a ocupar a vaga incluída, sem cobrança extra.",
+  "Desinstale o app antigo e instale o NuvemPark pela Google Play.",
+  "Entre com o código do estacionamento, o usuário e a senha de sempre.",
 ];
 
 export default function DownloadPage() {
@@ -48,9 +31,9 @@ export default function DownloadPage() {
   const [copiado, setCopiado] = useState(false);
 
   function copiarLink() {
-    navigator.clipboard.writeText(APK_URL);
+    navigator.clipboard.writeText(URL_APP);
     setCopiado(true);
-    toast.sucesso("Link copiado!", "Cole no navegador do aparelho onde vai instalar.");
+    toast.sucesso("Link copiado!", "Abre a loja certa em qualquer celular, Android ou iPhone.");
     setTimeout(() => setCopiado(false), 2000);
   }
 
@@ -63,11 +46,12 @@ export default function DownloadPage() {
       >
         <h1 className="text-[26px] font-black tracking-tight">Baixar o app</h1>
         <p className="text-sm text-texto-2">
-          Instale o app do operador nos aparelhos que vão trabalhar nos seus pátios — Android ou iPhone.
+          Instale o app do operador pela loja oficial do celular — Google Play no Android, App Store
+          no iPhone.
         </p>
       </motion.header>
 
-      {/* Card de download */}
+      {/* Lojas */}
       <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -81,82 +65,71 @@ export default function DownloadPage() {
           <div className="flex-1 text-center sm:text-left">
             <div className="font-extrabold text-lg">App do operador · NuvemPark</div>
             <div className="text-[13px] text-texto-2">
-              Android · atualização instala por cima (mantém os dados do aparelho)
+              Android e iPhone · procure por “NuvemPark” na loja ou toque no selo
             </div>
           </div>
         </div>
 
-        {/* `flex-1` só a partir do sm: na coluna do celular ele vira flex-basis 0
-            e o botão ignora a altura, encolhendo para a linha do texto. */}
-        <div className="mt-5 flex flex-col sm:flex-row gap-2.5">
-          <motion.a
-            whileTap={{ scale: 0.97 }}
-            href={APK_URL}
-            download="nuvempark.apk"
-            className="sm:flex-1 inline-flex items-center justify-center gap-2.5 h-14 sm:h-12 px-6 rounded-xl font-bold text-base sm:text-sm text-white bg-gradient-to-r from-brand-600 to-brand-500 shadow-[var(--shadow-brand)] hover:brightness-110 transition-all"
-          >
-            <Download className="w-6 h-6 sm:w-5 sm:h-5" />
-            Baixar APK
-          </motion.a>
+        <div className="mt-5">
+          <SelosLojas altura={48} />
+        </div>
+
+        <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-2.5">
           <button
             onClick={copiarLink}
             className="inline-flex items-center justify-center gap-2 h-12 px-5 rounded-xl font-bold text-sm border border-borda text-texto-2 hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50 transition-all"
           >
             {copiado ? <Check className="w-4 h-4 text-brand-600" /> : <Copy className="w-4 h-4" />}
-            {copiado ? "Copiado" : "Copiar link"}
+            {copiado ? "Copiado" : "Copiar link para o operador"}
           </button>
         </div>
 
-        <p className="mt-3 text-[12px] text-texto-3">
-          Dica: o jeito mais fácil é abrir <b>esta página no próprio aparelho</b> onde o app vai ser
-          instalado (use “Copiar link” e cole no navegador do celular/tablet).
+        <p className="mt-3 text-[12px] text-texto-3 text-center">
+          O link <b>{URL_APP.replace(/^https?:\/\//, "")}</b> abre a loja certa sozinho: Google Play
+          no Android, App Store no iPhone. Mande pelo WhatsApp para quem vai operar.
+        </p>
+        <p className="mt-2 text-[12px] text-texto-3 text-center">
+          No iPhone, a impressão do ticket funciona com impressoras térmicas Bluetooth LE.
         </p>
       </motion.section>
 
-      {/* iPhone: vem da App Store, sem APK nem permissão de fonte desconhecida */}
-      <motion.section
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.09 }}
-        className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] p-6"
-      >
-        <div className="flex flex-col sm:flex-row items-center gap-5">
-          <div className="flex-1 text-center sm:text-left">
-            <div className="font-extrabold text-lg">No iPhone</div>
-            <div className="text-[13px] text-texto-2">
-              Baixe o NuvemPark na App Store, como qualquer app. A impressão do ticket no iPhone
-              funciona com impressoras térmicas Bluetooth LE.
-            </div>
-          </div>
-          <SelosLojas altura={44} />
-        </div>
-      </motion.section>
-
-      {/* Tutorial */}
+      {/* Quem ainda está no APK antigo */}
       <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.12 }}
-        className="bg-superficie border border-borda rounded-2xl shadow-[var(--shadow-card)] overflow-hidden"
+        className="bg-superficie border border-aviso/30 rounded-2xl shadow-[var(--shadow-card)] overflow-hidden"
       >
-        <div className="px-5 py-3.5 border-b border-borda">
-          <h2 className="font-extrabold text-sm">Como instalar no Android</h2>
+        <div className="flex items-start gap-3 px-5 py-4 bg-aviso-bg/60 border-b border-aviso/20">
+          <TriangleAlert className="w-5 h-5 text-aviso shrink-0 mt-0.5" />
+          <div>
+            <h2 className="font-extrabold text-sm">Seu Android ainda usa o app instalado por APK?</h2>
+            <p className="text-[13px] text-texto-2 mt-0.5">
+              A versão da Google Play não instala por cima da antiga. Faça a troca uma vez em cada
+              celular:
+            </p>
+          </div>
         </div>
         <ol className="divide-y divide-borda">
-          {PASSOS.map((p, i) => (
-            <li key={i} className="flex items-start gap-4 px-5 py-4">
-              <span className="relative shrink-0">
-                <span className="w-10 h-10 rounded-xl bg-brand-50 grid place-items-center">
-                  <p.Icone className="w-5 h-5 text-brand-600" />
-                </span>
-                <span className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-brand-600 text-white text-[11px] font-black grid place-items-center">
-                  {i + 1}
-                </span>
+          {TROCA_APK.map((texto, i) => (
+            <li key={i} className="flex items-start gap-4 px-5 py-3.5">
+              <span className="w-6 h-6 rounded-full bg-brand-600 text-white text-[12px] font-black grid place-items-center shrink-0">
+                {i + 1}
               </span>
-              <div className="min-w-0">
-                <div className="font-bold text-sm">{p.titulo}</div>
-                <p className="text-[13px] text-texto-2 leading-relaxed mt-0.5">{p.texto}</p>
-              </div>
+              <p className="text-[13px] text-texto-2 leading-relaxed">
+                {i === 1 ? (
+                  <>
+                    Em{" "}
+                    <Link href="/painel/dispositivos" className="font-bold text-brand-700 hover:underline">
+                      Dispositivos
+                    </Link>
+                    , aqui no painel, revogue esse celular. Assim ele volta a ocupar a vaga incluída,
+                    sem cobrança extra.
+                  </>
+                ) : (
+                  texto
+                )}
+              </p>
             </li>
           ))}
         </ol>
@@ -166,8 +139,8 @@ export default function DownloadPage() {
       <div className="flex items-start gap-3 rounded-2xl border border-info/20 bg-info-bg/50 px-4 py-3">
         <RefreshCw className="w-4 h-4 text-info shrink-0 mt-0.5" />
         <p className="text-[13px] text-texto-2">
-          <b>Atualizar o app:</b> quando sair uma versão nova, baixe daqui de novo e instale por cima
-          — os dados do aparelho (tickets pendentes, caixa) são preservados.
+          <b>Atualizações:</b> chegam pela própria loja, como em qualquer app. Os dados do aparelho
+          (tickets pendentes, caixa) são preservados.
         </p>
       </div>
     </div>
