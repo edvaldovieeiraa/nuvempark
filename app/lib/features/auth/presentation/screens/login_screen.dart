@@ -5,6 +5,7 @@ import 'package:nuvempark_core/nuvempark_core.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/sem_acesso_card.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -76,7 +77,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ],
             ),
             child: SizedBox(
-              height: 208,
+              height: 172,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -115,7 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           // ---- Corpo do formulário ----
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 26, 24, 28),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -255,7 +256,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 16),
+
+                    // Quem chegou pela loja sem conta (operador ou dono)
+                    const SemAcessoCard(),
+                    const SizedBox(height: 24),
 
                     // Rodapé de marca
                     Row(
