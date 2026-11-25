@@ -25,3 +25,6 @@ EXTERNAL SERVICES
 Our own API (api.nuvempark.com) for data sync. Payments of parking fees are processed by Asaas, a Brazilian payment institution, through our server. Google ML Kit runs on the device for plate reading.
 
 Privacy policy: https://nuvempark.com/privacidade
+
+
+NEW IN 1.0.1: the login screen now has a short "Ainda não tem acesso?" (No access yet?) note for people who download the app without an account. It tells attendants to ask their manager for the lot code, username and password, and says the business account is created by the manager at nuvempark.com. On iOS it is text only: there is no link, button or price in the app.
