@@ -263,6 +263,11 @@ declare
   v_recentes  int;
 begin
   begin
+    -- Dois envios simultâneos do mesmo contato: um espera o outro, e o segundo
+    -- já enxerga o primeiro (lock por e-mail e por telefone).
+    perform pg_advisory_xact_lock(hashtext('crm:' || lower(btrim(new.email))));
+    perform pg_advisory_xact_lock(hashtext('crm:' || new.telefone));
+
     select c.lead_id into v_existente
       from public.fn_crm_casar(new.email, new.telefone) c
      where c.lead_id <> new.id
@@ -467,9 +472,10 @@ begin
     return 'nao_encontrado';
   end if;
 
+  -- clock_timestamp(): a nota fica depois da linha do sistema, que usa now().
   if v_texto is not null then
-    insert into public.lead_interacoes (lead_id, tipo, texto)
-    values (p_id, 'nota', v_texto);
+    insert into public.lead_interacoes (lead_id, tipo, texto, criado_em)
+    values (p_id, 'nota', v_texto, clock_timestamp());
   end if;
 
   return 'ok';
@@ -594,11 +600,72 @@ begin
   values (v_id, 'sistema', 'Lead cadastrado à mão em ' || public.fn_crm_rotulo_estagio(p_status));
 
   if v_nota is not null then
-    insert into public.lead_interacoes (lead_id, tipo, texto)
-    values (v_id, 'nota', left(v_nota, 4000));
+    insert into public.lead_interacoes (lead_id, tipo, texto, criado_em)
+    values (v_id, 'nota', left(v_nota, 4000), clock_timestamp());
   end if;
 
   return jsonb_build_object('ok', true, 'id', v_id);
+end $$;
+
+-- Edita nome, empresa e contatos de um lead. Mesma regra do lead manual:
+-- pelo menos um contato e nenhum outro lead com o mesmo e-mail ou telefone,
+-- checado e gravado sob o mesmo lock (não há janela entre os dois).
+-- Retorno:
+--   {"ok": true}
+--   {"ok": false, "nao_encontrado": true}
+--   {"ok": false, "duplicados": [{"id","nome","empresa","status","casou_por"}]}
+create or replace function public.fn_crm_editar_contato(
+  p_id       uuid,
+  p_nome     text,
+  p_empresa  text,
+  p_email    text,
+  p_telefone text
+) returns jsonb
+language plpgsql
+set search_path = public, pg_temp
+as $$
+declare
+  v_nome    text := btrim(coalesce(p_nome, ''));
+  v_empresa text := nullif(btrim(coalesce(p_empresa, '')), '');
+  v_email   text := nullif(lower(btrim(coalesce(p_email, ''))), '');
+  v_tel     text := nullif(regexp_replace(coalesce(p_telefone, ''), '[^0-9]', '', 'g'), '');
+  v_dups    jsonb;
+begin
+  if length(v_nome) not between 1 and 120 then
+    raise exception 'nome obrigatório (até 120 caracteres)' using errcode = '22023';
+  end if;
+  if v_email is null and v_tel is null then
+    raise exception 'informe pelo menos um contato' using errcode = '22023';
+  end if;
+
+  if v_email is not null then
+    perform pg_advisory_xact_lock(hashtext('crm:' || v_email));
+  end if;
+  if v_tel is not null then
+    perform pg_advisory_xact_lock(hashtext('crm:' || v_tel));
+  end if;
+
+  if not exists (select 1 from public.leads_site where id = p_id) then
+    return jsonb_build_object('ok', false, 'nao_encontrado', true);
+  end if;
+
+  select jsonb_agg(jsonb_build_object(
+           'id', l.id, 'nome', l.nome, 'empresa', l.empresa,
+           'status', l.status, 'casou_por', c.casou_por)
+         order by c.criado_em desc)
+    into v_dups
+    from (select * from public.fn_crm_casar(v_email, v_tel) where lead_id <> p_id
+           order by criado_em desc limit 2) c
+    join public.leads_site l on l.id = c.lead_id;
+
+  if v_dups is not null then
+    return jsonb_build_object('ok', false, 'duplicados', v_dups);
+  end if;
+
+  update public.leads_site
+     set nome = v_nome, empresa = v_empresa, email = v_email, telefone = v_tel
+   where id = p_id;
+  return jsonb_build_object('ok', true);
 end $$;
 
 -- Apaga de vez um lead de spam (Revisão 3): só do formulário, sem rede ligada
@@ -685,12 +752,14 @@ revoke all on function public.fn_crm_mover(uuid, text, text, text, text) from pu
 revoke all on function public.fn_crm_registrar_interacao(uuid, text, text, boolean) from public, anon, authenticated;
 revoke all on function public.fn_crm_criar_lead_manual(text, text, text, text, text, text, text, timestamptz) from public, anon, authenticated;
 revoke all on function public.fn_crm_excluir_spam(uuid)                from public, anon, authenticated;
+revoke all on function public.fn_crm_editar_contato(uuid, text, text, text, text) from public, anon, authenticated;
 
 grant execute on function public.fn_crm_casar(text, text)                 to service_role;
 grant execute on function public.fn_crm_mover(uuid, text, text, text, text) to service_role;
 grant execute on function public.fn_crm_registrar_interacao(uuid, text, text, boolean) to service_role;
 grant execute on function public.fn_crm_criar_lead_manual(text, text, text, text, text, text, text, timestamptz) to service_role;
 grant execute on function public.fn_crm_excluir_spam(uuid)                to service_role;
+grant execute on function public.fn_crm_editar_contato(uuid, text, text, text, text) to service_role;
 
 -- ============================================================================
 -- VALIDAÇÃO: db/49-crm-teste-schema.sql (ensaio: begin; 47; 47; 49; rollback;)

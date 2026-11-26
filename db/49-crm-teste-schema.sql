@@ -389,6 +389,38 @@ begin
     end;
     if v_ok then raise exception 'FALHOU: lead manual sem contato foi aceito'; end if;
 
+    -- editar contato: recusa e-mail/telefone de outro lead, aceita o próprio
+    v_json := public.fn_crm_editar_contato(v_lead3, 'Teste 49 manual', 'Rede Manual', upper(v_email), null);
+    if (v_json->>'ok')::boolean or jsonb_array_length(v_json->'duplicados') <> 1
+       or (v_json->'duplicados'->0->>'id')::uuid <> v_lead then
+      raise exception 'FALHOU: editar contato com e-mail de outro lead (%)', v_json;
+    end if;
+    select email into v_txt from public.leads_site where id = v_lead3;
+    if v_txt is not null then raise exception 'FALHOU: editar duplicado gravou o e-mail'; end if;
+    select telefone into v_txt from public.leads_site where id = v_lead3;
+    v_json := public.fn_crm_editar_contato(v_lead3, ' Teste 49 editado ', '', 'Novo-' || v_tag || '@Exemplo.invalid', v_txt);
+    if not (v_json->>'ok')::boolean then raise exception 'FALHOU: editar contato válido (%)', v_json; end if;
+    select * into r from public.leads_site where id = v_lead3;
+    if r.nome <> 'Teste 49 editado' or r.empresa is not null or r.email <> 'novo-' || v_tag || '@exemplo.invalid' then
+      raise exception 'FALHOU: edição de contato gravou %', to_jsonb(r);
+    end if;
+    begin
+      perform public.fn_crm_editar_contato(v_lead3, 'X', null, null, null);
+      v_ok := true;
+    exception when invalid_parameter_value then v_ok := false;
+    end;
+    if v_ok then raise exception 'FALHOU: editar contato deixou o lead sem contato'; end if;
+    if (public.fn_crm_editar_contato(gen_random_uuid(), 'X', null, 'x-' || v_tag || '@exemplo.invalid', null)->>'ok')::boolean then
+      raise exception 'FALHOU: editar contato de lead inexistente';
+    end if;
+
+    -- a nota humana vem depois da linha do sistema na mesma operação (ordem fixa)
+    select count(*) into v_n from (
+      select tipo, row_number() over (order by criado_em desc, id desc) as pos
+        from public.lead_interacoes where lead_id = v_lead3
+    ) x where (x.tipo = 'nota' and x.pos = 1);
+    if v_n <> 1 then raise exception 'FALHOU: nota do lead manual não ficou acima da linha do sistema'; end if;
+
     -- spam: recusa lead com nota, lead manual e lead com rede; apaga o limpo
     if public.fn_crm_excluir_spam(v_lead) then
       raise exception 'FALHOU: excluiu como spam um lead com nota humana';
@@ -433,7 +465,7 @@ begin
     select count(*) into v_n from pg_proc p
       join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
      where p.proname like 'fn\_crm\_%';
-    if v_n < 9 then raise exception 'FALHOU: só % funções fn_crm_* no catálogo', v_n; end if;
+    if v_n < 10 then raise exception 'FALHOU: só % funções fn_crm_* no catálogo', v_n; end if;
 
     for r in select * from (values ('anon'), ('authenticated')) as t(rolname) loop
       if has_table_privilege(r.rolname, 'public.crm_leads_v', 'select') then
