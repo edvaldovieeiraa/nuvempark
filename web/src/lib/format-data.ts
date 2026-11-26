@@ -70,6 +70,22 @@ export function formatarData(valor: ValorData): string {
   return d ? _dataSo.format(d) : VAZIO;
 }
 
+const _hora = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: FUSO,
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+/**
+ * `HH:mm` em São Paulo, para acompanhar uma data já mostrada ao lado
+ * (ex.: "Hoje às 15:00"). Inválido/nulo → `—`.
+ */
+export function formatarHora(valor: ValorData): string {
+  const d = paraDate(valor);
+  return d ? _hora.format(d) : VAZIO;
+}
+
 const _rel = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });
 
 const _UNIDADES: ReadonlyArray<readonly [Intl.RelativeTimeFormatUnit, number]> = [

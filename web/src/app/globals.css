@@ -91,6 +91,37 @@
   --color-info: #3B82F6;
   --color-info-bg: #EEF4FF;
 
+  /* CRM (.planning/designs/crm-painel-master.md, "Cores de estágio e de
+     alerta"). Âmbar e vermelho ficam só para alerta. Todos os -texto passam
+     de 4,5:1 sobre o -fundo deles; o -ponto é só a bolinha, nunca texto. */
+  --color-estagio-novo-ponto: var(--color-info);
+  --color-estagio-novo-texto: #1D4ED8;
+  --color-estagio-novo-fundo: var(--color-info-bg);
+  --color-estagio-contato-ponto: var(--color-violeta);
+  --color-estagio-contato-texto: #6D28D9;
+  --color-estagio-contato-fundo: #F3EFFE;
+  /* Teal escuro, separado do verde de Ganho (inclusive para deuteranopia). */
+  --color-estagio-trial-ponto: #0F766E;
+  --color-estagio-trial-texto: #0F766E;
+  --color-estagio-trial-fundo: #E6F7F5;
+  --color-estagio-ganho-ponto: var(--color-brand-500);
+  --color-estagio-ganho-texto: var(--color-brand-700);
+  --color-estagio-ganho-fundo: var(--color-brand-50);
+  --color-estagio-perdido-ponto: var(--color-texto-3);
+  --color-estagio-perdido-texto: var(--color-texto-2);
+  --color-estagio-perdido-fundo: #EEF1EF;
+  /* Alerta âmbar: texto sobre aviso-bg, borda aviso-borda. */
+  --color-aviso-texto: #92400E;
+  --color-aviso-forte: #78350F;
+  --color-aviso-borda: #F5D9A0;
+  /* Alerta vermelho: texto sobre perigo-bg, borda perigo-borda. */
+  --color-perigo-texto: #B91C1C;
+  --color-perigo-borda: #F3C4C4;
+  /* Borda do card do kanban SÓ quando algo venceu ou expirou. */
+  --color-borda-vencido: #E9A3A3;
+  /* Borda de botão e campo (~1,5:1; `borda` fica para divisórias e cartões). */
+  --color-borda-campo: #C9D4CC;
+
   /* Sombras suaves em camadas */
   --shadow-card: 0 1px 2px rgb(16 27 20 / 0.04), 0 4px 16px -4px rgb(16 27 20 / 0.06);
   --shadow-card-hover: 0 2px 4px rgb(16 27 20 / 0.05), 0 12px 32px -8px rgb(16 27 20 / 0.14);
@@ -433,4 +464,21 @@ input, select, textarea {
 .cad-dot { animation: cadpulse 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   .cad-dot { animation: none; }
+}
+
+/* ============================================================
+   Folha (components/ui/folha.tsx): entra pela direita a partir de 640 px
+   e de baixo na tela cheia. O quadro final é `transform: none` de propósito:
+   um transform que sobra cria bloco de contenção e prende o `position: fixed`
+   de quem estiver dentro (o `Confirmar`, por exemplo).
+   ============================================================ */
+@keyframes folha-sobe { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes folha-lateral { from { transform: translateX(48px); opacity: 0; } to { transform: none; opacity: 1; } }
+.folha-fundo { animation: fade-in 0.2s ease both; }
+.folha-painel { animation: folha-sobe 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (min-width: 640px) {
+  .folha-painel { animation-name: folha-lateral; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .folha-fundo, .folha-painel { animation: none; }
 }
