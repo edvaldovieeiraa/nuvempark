@@ -55,7 +55,10 @@ end $$;
 -- achar, liga e guarda o estágio de antes (para o rollback do cadastro). Se
 -- não achar, cria o card com o nome da rede.
 --
--- Um lead em Ganho nunca volta de estágio sozinho (req. 5): é só ligado.
+-- O estágio segue a assinatura (req. 4 e 26), inclusive para um Ganho marcado
+-- à mão antes do CRM: sem isso, Ganho ligado a rede deixaria de bater com as
+-- redes pagantes. O "Ganho nunca volta sozinho" (req. 5) vale para lead que já
+-- está ligado, e esse caminho não passa por aqui.
 -- `p_estagio_em` é a data real do estágio (a importação informa; o trigger
 -- passa now()). `p_texto` vira a interação `sistema`.
 -- Retorna o id do lead.
@@ -91,7 +94,7 @@ begin
    limit 1;
 
   if v_lead.id is not null then
-    v_novo := case when v_lead.status = 'ganho' then 'ganho' else p_alvo end;
+    v_novo := p_alvo;
 
     if v_novo is distinct from v_lead.status then
       perform set_config('crm.motivo', left(p_texto, 4000), true);

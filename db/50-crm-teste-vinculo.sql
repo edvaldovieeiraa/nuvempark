@@ -58,7 +58,7 @@ begin
     for r in select unnest(array['liga_email','liga_tel','cria','cancela','perdido','master',
                                  'revisao','falha','del_cria','del_nota','del_falha',
                                  'imp31','imp29','imp_ganho','imp_ativa','imp_cancel',
-                                 'imp_revisao','imp_casa']) as caso
+                                 'imp_revisao','imp_casa','ganho_manual','imp_ganho_manual']) as caso
     loop
       f := f || jsonb_build_object(r.caso, '00' || lpad((floor(random() * 1e9))::bigint::text, 9, '0'));
       e := e || jsonb_build_object(r.caso, 'crm50-' || v_tag || '-' || replace(r.caso, '_', '') || '@exemplo.invalid');
@@ -195,6 +195,22 @@ begin
     select * into l from public.leads_site where id = v_lead;
     if l.status <> 'trial' or l.motivo_perda is not null or l.estagio_antes_vinculo <> 'perdido' then
       raise exception 'FALHOU: perdido que criou conta ficou % / % / %', l.status, l.motivo_perda, l.estagio_antes_vinculo;
+    end if;
+
+    -- Ganho marcado à mão antes do CRM, sem rede, cria conta trial → segue a
+    -- assinatura (req. 26): vai para Trial. Senão o "Pronto quando" não fecha.
+    insert into public.leads_site (nome, telefone, email, assunto)
+    values ('Teste 50 ganho manual', f->>'ganho_manual', e->>'ganho_manual', 'Quero testar')
+    returning id into v_lead;
+    update public.leads_site set status = 'ganho' where id = v_lead;
+    insert into public.tenants (nome, codigo, telefone)
+    values ('Teste 50 Rede Ganho Manual', public.fn_gerar_codigo_tenant(), f->>'ganho_manual')
+    returning id into v_t;
+    insert into public.assinaturas (tenant_id, estado, trial_expira_em, origem)
+    values (v_t, 'trial', now() + interval '15 days', 'signup');
+    select * into l from public.leads_site where id = v_lead;
+    if l.tenant_id is distinct from v_t or l.status <> 'trial' then
+      raise exception 'FALHOU: ganho manual que criou conta trial ficou em % (rede %)', l.status, l.tenant_id;
     end if;
 
     ---------------------------------------------------------------------------
@@ -368,10 +384,22 @@ begin
     insert into public.assinaturas (tenant_id, estado, trial_expira_em, origem)
     values (v_t, 'trial', now() + interval '12 days', 'signup');
 
+    -- ganho marcado à mão, sem rede, que casa com uma rede cancelada
+    insert into public.leads_site (nome, telefone, email, assunto)
+    values ('Teste 50 imp ganho manual', f->>'imp_ganho_manual', e->>'imp_ganho_manual', 'Quero testar')
+    returning id into v_lead;
+    update public.leads_site set status = 'ganho' where id = v_lead;
+    insert into public.tenants (nome, codigo, telefone, criado_em)
+    values ('Teste 50 Imp Ganho Manual', public.fn_gerar_codigo_tenant(), f->>'imp_ganho_manual', '2025-01-01T12:00:00Z')
+    returning id into v_t;
+    t := t || jsonb_build_object('imp_ganho_manual', v_t);
+    insert into public.assinaturas (tenant_id, estado, origem, criado_em, atualizado_em)
+    values (v_t, 'cancelada', 'signup', '2025-01-01T12:00:00Z', '2025-09-01T12:00:00Z');
+
     execute 'alter table public.assinaturas enable trigger trg_assinaturas_crm_vinculo';
 
     v_n := public.fn_crm_importar_base();
-    if v_n < 6 then raise exception 'FALHOU: importação pegou % redes (esperado ao menos 6)', v_n; end if;
+    if v_n < 7 then raise exception 'FALHOU: importação pegou % redes (esperado ao menos 7)', v_n; end if;
 
     -- trial expirado há 31 dias → Perdido/sem_retorno desde a expiração
     select * into l from public.leads_site where tenant_id = (t->>'imp31')::uuid;
@@ -408,6 +436,12 @@ begin
     select * into l from public.leads_site where tenant_id = (t->>'imp_cancel')::uuid;
     if l.status <> 'perdido' or l.motivo_perda <> 'cancelou' or l.estagio_em <> '2025-08-01T12:00:00Z'::timestamptz then
       raise exception 'FALHOU: cancelada importada como % / % desde %', l.status, l.motivo_perda, l.estagio_em;
+    end if;
+
+    -- ganho manual ligado a rede cancelada → Perdido/cancelou, como a assinatura
+    select * into l from public.leads_site where tenant_id = (t->>'imp_ganho_manual')::uuid;
+    if l.status <> 'perdido' or l.motivo_perda <> 'cancelou' or l.estagio_antes_vinculo <> 'ganho' then
+      raise exception 'FALHOU: ganho manual importado com rede cancelada ficou % / %', l.status, l.motivo_perda;
     end if;
 
     -- conta de revisão fora
