@@ -1,7 +1,7 @@
 import { normalizarEmail, normalizarTelefone, temWhatsApp } from "@/lib/crm/contato";
 
 /**
- * Links dos atalhos do lead (os mesmos de `leads-client.tsx`): WhatsApp só
+ * Links dos atalhos do lead (os mesmos da antiga tela de leads do site): WhatsApp só
  * com celular (11 dígitos), ligar com qualquer telefone, e-mail com e-mail.
  */
 export function linksContato(lead: { telefone: string | null; email: string | null }) {

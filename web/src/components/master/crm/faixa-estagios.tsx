@@ -20,7 +20,7 @@ export function FaixaEstagios({
   onSelecionar: (e: Estagio | null) => void;
 }) {
   return (
-    <div role="group" aria-label="Leads por estágio" className="flex flex-wrap gap-2">
+    <div role="group" aria-label="Leads por estágio" className="flex flex-wrap lg:flex-nowrap gap-2">
       {ESTAGIOS.map((e) => {
         const ativo = selecionado === e;
         const janela = ESTAGIOS_COM_JANELA.includes(e);
@@ -30,7 +30,7 @@ export function FaixaEstagios({
             type="button"
             aria-pressed={ativo}
             onClick={() => onSelecionar(ativo ? null : e)}
-            className={`flex-[1_1_150px] flex flex-col items-start gap-0.5 rounded-2xl border px-3.5 py-2.5 text-left transition-colors ${FOCO} ${
+            className={`flex-[1_1_150px] lg:min-w-0 flex flex-col items-start gap-0.5 rounded-2xl border px-3.5 py-2.5 text-left transition-colors ${FOCO} ${
               ativo
                 ? "bg-brand-50 border-brand-200"
                 : "bg-superficie border-borda hover:border-brand-300"

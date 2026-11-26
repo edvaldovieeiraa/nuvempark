@@ -2,6 +2,7 @@
 
 import { CalendarClock, Clock, Loader2, Lock, MoreVertical } from "lucide-react";
 import { alertaTrial, temAlertaVencido, varianteProximaAcao } from "@/lib/crm/prazos";
+import { EXPLICACAO_TRIAL } from "@/lib/crm/menu-estagio";
 import { destinosPossiveis, motivoSemDestino } from "@/lib/crm/regras";
 import {
   rodapeCard,
@@ -33,8 +34,6 @@ const TOM_ACAO = {
   sem: "text-texto-2",
 } as const;
 
-const AVISO_TRIAL =
-  "Trial é automático: o card chega aqui quando a conta é criada. À mão, só vai para Perdido.";
 const AVISO_GANHO = "Ganho é automático: o card chega aqui quando a assinatura é ativada.";
 
 /**
@@ -68,11 +67,12 @@ export function CrmCard({
   // com rede fora do trial também não tem destino manual e mostra o motivo.
   const aviso =
     lead.status === "trial"
-      ? AVISO_TRIAL
+      ? EXPLICACAO_TRIAL
       : (motivoSemDestino(lead) ?? (lead.status === "ganho" ? AVISO_GANHO : null));
 
   return (
     <article
+      data-lead-id={lead.id}
       aria-busy={movendo || undefined}
       className={`relative flex flex-col gap-2 rounded-xl border bg-superficie pl-3 pr-2.5 pt-3 pb-2.5 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-card-hover)] ${
         vencido ? "border-borda-vencido" : "border-borda"

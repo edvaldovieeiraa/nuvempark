@@ -108,3 +108,19 @@ export async function carregarCrm(
   }
   return { leads: ((data as unknown as LinhaCrm[] | null) ?? []).map(montarLead), erro: false };
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Um lead pelo id, fora da janela: o `?lead=` de um "Abrir" de duplicado ou
+ * de um recarregar pode apontar para um Ganho ou Perdido antigo.
+ */
+export async function carregarLead(sb: Admin, id: string): Promise<LeadCrm | null> {
+  if (!UUID.test(id)) return null;
+  const { data, error } = await sb.from("crm_leads_v").select(COLUNAS).eq("id", id).maybeSingle();
+  if (error) {
+    console.error("[master/crm] select lead:", error.message);
+    return null;
+  }
+  return data ? montarLead(data as unknown as LinhaCrm) : null;
+}

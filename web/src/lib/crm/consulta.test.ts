@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inicioJanela, montarLead, type LinhaCrm } from "@/lib/crm/consulta";
+import { carregarLead, inicioJanela, montarLead, type LinhaCrm } from "@/lib/crm/consulta";
 
 const linha: LinhaCrm = {
   id: "l1",
@@ -56,5 +56,41 @@ describe("montarLead", () => {
 describe("inicioJanela", () => {
   it("30 dias antes de agora (Ganho e Perdido do kanban)", () => {
     expect(inicioJanela(new Date("2026-11-30T12:00:00Z"))).toBe("2026-10-31T12:00:00.000Z");
+  });
+});
+
+describe("carregarLead", () => {
+  function stub(data: unknown, error: { message: string } | null = null) {
+    const chamadas: string[] = [];
+    const sb = {
+      from(t: string) {
+        chamadas.push(t);
+        return {
+          select: () => ({
+            eq: (_c: string, v: string) => {
+              chamadas.push(v);
+              return { maybeSingle: async () => ({ data, error }) };
+            },
+          }),
+        };
+      },
+    };
+    return { sb: sb as unknown as Parameters<typeof carregarLead>[0], chamadas };
+  }
+  const ID = "52884e97-edbd-4881-9ef1-6bb6712d8615";
+
+  it("id que não é UUID nem chega ao banco", async () => {
+    const { sb, chamadas } = stub({ ...linha });
+    expect(await carregarLead(sb, "1 or 1=1")).toBeNull();
+    expect(chamadas).toEqual([]);
+  });
+  it("monta o lead da view pelo id", async () => {
+    const { sb, chamadas } = stub({ ...linha, id: ID });
+    expect((await carregarLead(sb, ID))?.id).toBe(ID);
+    expect(chamadas).toEqual(["crm_leads_v", ID]);
+  });
+  it("sem linha ou com erro → null", async () => {
+    expect(await carregarLead(stub(null).sb, ID)).toBeNull();
+    expect(await carregarLead(stub(null, { message: "x" }).sb, ID)).toBeNull();
   });
 });

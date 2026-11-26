@@ -14,6 +14,8 @@ type Props = {
   /** ISO vindo da página do servidor; o kanban nunca lê o relógio. */
   agora: string;
   praHoje: boolean;
+  /** Estágio escolhido na faixa: no desktop, só essa coluna aparece. */
+  estagio?: Estagio | null;
   movendoId: string | null;
   /** Aba visível abaixo de 1024 px. */
   abaAtiva: Estagio;
@@ -35,6 +37,7 @@ export function CrmKanban({
   leads,
   agora,
   praHoje,
+  estagio = null,
   movendoId,
   abaAtiva,
   onTrocarAba,
@@ -53,8 +56,13 @@ export function CrmKanban({
     return por;
   }, [leads, agora]);
 
-  // Com "Pra hoje", colunas vazias somem (design doc, "Estados").
-  const visiveis = praHoje ? ESTAGIOS.filter((e) => colunas[e].length > 0) : [...ESTAGIOS];
+  // Estágio escolhido na faixa: só a coluna dele. Com "Pra hoje", colunas
+  // vazias somem (design doc, "Estados").
+  const visiveis = estagio
+    ? [estagio]
+    : praHoje
+      ? ESTAGIOS.filter((e) => colunas[e].length > 0)
+      : [...ESTAGIOS];
 
   const cards = (e: Estagio) =>
     colunas[e].length === 0 ? (
@@ -87,7 +95,11 @@ export function CrmKanban({
         ) : (
           <div
             className="grid gap-3 items-start"
-            style={{ gridTemplateColumns: `repeat(${visiveis.length}, minmax(180px, 1fr))` }}
+            // Poucas colunas (estágio escolhido, "Pra hoje") não esticam a
+            // tela toda: um card de 900 px de largura não se lê.
+            style={{
+              gridTemplateColumns: `repeat(${visiveis.length}, minmax(176px, ${visiveis.length <= 2 ? "360px" : "1fr"}))`,
+            }}
           >
             {visiveis.map((e) => (
               <Coluna key={e} estagio={e} total={colunas[e].length} onVerTodos={onVerTodos}>
@@ -160,7 +172,7 @@ function Coluna({
   return (
     <section
       aria-labelledby={id}
-      className="min-w-0 max-h-[calc(100dvh-14rem)] min-h-[240px] overflow-y-auto [scrollbar-width:thin] rounded-2xl border border-borda bg-fundo"
+      className="min-w-0 max-h-[calc(100dvh-19rem)] min-h-[240px] overflow-y-auto [scrollbar-width:thin] rounded-2xl border border-borda bg-fundo"
     >
       <header className="sticky top-0 z-30 bg-fundo px-3 pt-3 pb-2 border-b border-borda">
         <h2 id={id} className="flex items-center gap-1.5 text-sm font-extrabold text-texto">

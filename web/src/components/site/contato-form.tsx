@@ -7,7 +7,7 @@ import { formatarTelefone, soDigitosTelefone, telefoneValido } from "@/lib/telef
 
 /**
  * Formulário de contato do site. Substituiu o cartão de `mailto:` —
- * o lead cai em `leads_site` (db/39) e aparece em /master/leads.
+ * o lead cai em `leads_site` (db/39) e aparece em /master/crm.
  *
  * Os estilos são inline como no resto do site público: esta parte do produto
  * não usa os tokens Tailwind do app (verde diferente, ver components/site/tokens).
