@@ -48,7 +48,8 @@ void main() {
     expect(await db.ticketsDao.getById('sem-foto'), isNotNull);
 
     final versao = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(versao.read<int>('user_version'), 6);
+    // A migração segue até a versão atual (v7+); o que este teste garante é a v6.
+    expect(versao.read<int>('user_version'), db.schemaVersion);
     await db.close();
   });
 }

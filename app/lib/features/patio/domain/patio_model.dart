@@ -122,14 +122,27 @@ class PatioModel {
   ///
   /// Tabela de hóspede fica de fora de propósito: ela não tem frações — cobrar
   /// uma saída avulsa por ela daria o valor das frações padrão do banco.
+  ///
+  /// Tabela com regra feita para um app mais novo ([TarifaConfig.exigeAppNovo])
+  /// fica de fora de TODAS as listas: este app não sabe cobrar por ela.
   List<TarifaConfig> tarifasVigentes(String tipoVeiculo) => tarifas
-      .where((t) => !t.isHospede && _atendeTipo(t, tipoVeiculo) && t.vigente)
+      .where((t) =>
+          !t.isHospede &&
+          !t.exigeAppNovo &&
+          _atendeTipo(t, tipoVeiculo) &&
+          t.vigente)
       .toList();
+
+  /// Há tabela do tipo que este app não sabe cobrar? (a saída avisa para
+  /// atualizar o app em vez de "nenhuma tarifa").
+  bool temTabelaQueExigeAppNovo(String tipoVeiculo) =>
+      tarifas.any((t) => t.exigeAppNovo && _atendeTipo(t, tipoVeiculo));
 
   List<TarifaConfig> _visiveis(String tipoVeiculo, {required bool hospede}) =>
       tarifas
           .where((t) =>
               t.isHospede == hospede &&
+              !t.exigeAppNovo &&
               _atendeTipo(t, tipoVeiculo) &&
               t.vigente &&
               t.visivelOperador)
@@ -155,7 +168,7 @@ class PatioModel {
     final configurada = hospede.tarifaAtrasoId;
     if (configurada != null) {
       for (final t in tarifas) {
-        if (t.id == configurada && !t.isHospede) return t;
+        if (t.id == configurada && !t.isHospede && !t.exigeAppNovo) return t;
       }
     }
     final avulsas = tabelasVisiveis(hospede.tipoVeiculo);

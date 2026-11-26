@@ -6,6 +6,15 @@ import 'package:drift/drift.dart';
 import '../../../core/config/env.dart';
 import '../../../database/app_database.dart';
 import '../../auth/data/token_storage.dart';
+import '../../tarifa/domain/regra_horario.dart';
+
+/// `tarifas.regras_horario` (jsonb) como texto para o Drift. Ausente/nulo ou
+/// formato inesperado → "[]" (tabela sem regras).
+String _jsonDasRegras(Object? v) => switch (v) {
+      List l => jsonEncode(l),
+      String s when s.trim().startsWith('[') => s,
+      _ => '[]',
+    };
 
 /// Baixa a config do pátio (config + tarifas + clientes) e grava no Drift.
 /// O endpoint NuvemPark recebe `patio_id`; internamente o Drift usa a coluna
@@ -33,9 +42,13 @@ class BootstrapRepository {
   Future<void> sincronizar(String patioId) async {
     final resp = await dio.get<Map<String, dynamic>>(
       Env.bootstrapUrl,
-      // `modalidades=hospede`: este app sabe tratar a tabela de diária de
-      // hóspede. Sem o parâmetro (app antigo) a API não a manda.
-      queryParameters: {'patio_id': patioId, 'modalidades': 'hospede'},
+      // `modalidades`: o que este app sabe cobrar. `hospede` = tabela de diária
+      // de hóspede; `regras_horario_v1` = regras de horário versão 1. Sem eles
+      // (app antigo) a API não manda essas tabelas.
+      queryParameters: {
+        'patio_id': patioId,
+        'modalidades': 'hospede,regras_horario_v$regrasHorarioVersaoSuportada',
+      },
     );
     final data = resp.data!;
     final patioJson = data['patio'] as Map<String, dynamic>;
@@ -114,6 +127,8 @@ class BootstrapRepository {
         diariaValor: Value(_numOuNulo(m['diaria_valor'])?.toDouble()),
         diariaHoras: Value(_numOuNulo(m['diaria_horas'])?.toInt()),
         tarifaAtrasoId: Value(m['tarifa_atraso_id'] as String?),
+        // db/47: API anterior não manda → sem regras (mesmo preço o dia todo).
+        regrasHorario: Value(_jsonDasRegras(m['regras_horario'])),
       ));
     }
     await db.operacaoDao.replaceTarifas(patioId, tarifasComp);

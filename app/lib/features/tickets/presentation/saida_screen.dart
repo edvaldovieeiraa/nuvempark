@@ -28,6 +28,7 @@ import '../data/ticket_repository.dart';
 import '../domain/ticket_model.dart';
 import 'navegacao_saida.dart';
 import 'providers/ticket_provider.dart';
+import 'widgets/como_chegamos_card.dart';
 import 'widgets/hero_saida.dart';
 import '../../estadias/presentation/estadia_saida_panel.dart';
 
@@ -638,7 +639,12 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
   Widget _buildCobranca(PatioModel patio, TicketModel ticket) {
     final opcoes = _opcoes(patio, ticket);
     if (opcoes.isEmpty) {
-      return const ErrorState(mensagem: 'Nenhuma tarifa vigente para este veículo.');
+      return ErrorState(
+        mensagem: patio.temTabelaQueExigeAppNovo(ticket.tipoVeiculo)
+            ? 'A tabela de preço deste veículo exige uma versão mais nova do '
+                'NuvemPark. Atualize o app pela loja para cobrar a saída.'
+            : 'Nenhuma tarifa vigente para este veículo.',
+      );
     }
     // Auto-seleciona se só há uma opção.
     _tarifaSelecionada ??= opcoes.length == 1 ? opcoes.first : opcoes.first;
@@ -879,6 +885,22 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
                   onSelected: (_) => setState(() => _tarifaSelecionada = t),
                 );
               }).toList(),
+            ),
+          ],
+
+          // ── Regras de horário: de onde veio o valor ─────────────────────
+          // Só com regras (vários trechos ou um trecho de regra). Os trechos
+          // vêm do cálculo SEM voucher; voucher e QR viram linhas de ajuste.
+          if (!livre && fareBruto.temDetalheDeRegras) ...[
+            const SizedBox(height: 14),
+            ComoChegamosCard(
+              fare: fareBruto,
+              descontoVoucher: (comVoucher != null && !comVoucher.semEfeito)
+                  ? comVoucher.valorAbatido
+                  : null,
+              jaPagoOnline: diferenca == null
+                  ? null
+                  : (fare.valor - diferenca).clamp(0, double.infinity).toDouble(),
             ),
           ],
 

@@ -71,7 +71,8 @@ class AppDatabase extends _$AppDatabase {
   // diária em tarifas; estadia_id em tickets; estadia_pagamento_id no caixa.
   // v6: fotos_envio — fila durável das fotos de entrada e de avaria; as fotos
   // de entrada ainda não enviadas entram nela na migração.
-  int get schemaVersion => 6;
+  // v7: regras de horário — coluna regras_horario (JSON) em tarifas.
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -106,6 +107,9 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(fotosEnvio);
             await _criarIndicesFotos(m);
             await _backfillFotosEntrada(m);
+          }
+          if (from < 7) {
+            await m.addColumn(tarifas, tarifas.regrasHorario);
           }
         },
       );

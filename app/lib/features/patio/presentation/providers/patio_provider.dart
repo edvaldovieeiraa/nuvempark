@@ -6,6 +6,7 @@ import '../../../../core/di/providers.dart';
 import '../../../../database/app_database.dart';
 import '../../domain/patio_model.dart';
 import '../../domain/tarifa_config.dart';
+import '../../../tarifa/domain/regra_horario.dart';
 import '../../data/bootstrap_repository.dart';
 
 // ── BootstrapRepository provider ─────────────────────────────────────────────
@@ -71,6 +72,7 @@ class PatioNotifier extends AsyncNotifier<PatioModel?> {
         diariaValor: t.diariaValor,
         diariaHoras: t.diariaHoras,
         tarifaAtrasoId: t.tarifaAtrasoId,
+        regras: RegraHorario.listaDoJson(t.regrasHorario),
       );
 
   /// Baixa a config atualizada do servidor e recarrega o cache.

@@ -663,6 +663,18 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _regrasHorarioMeta = const VerificationMeta(
+    'regrasHorario',
+  );
+  @override
+  late final GeneratedColumn<String> regrasHorario = GeneratedColumn<String>(
+    'regras_horario',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -686,6 +698,7 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
     diariaValor,
     diariaHoras,
     tarifaAtrasoId,
+    regrasHorario,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -893,6 +906,15 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
         ),
       );
     }
+    if (data.containsKey('regras_horario')) {
+      context.handle(
+        _regrasHorarioMeta,
+        regrasHorario.isAcceptableOrUnknown(
+          data['regras_horario']!,
+          _regrasHorarioMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -986,6 +1008,10 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
         DriftSqlType.string,
         data['${effectivePrefix}tarifa_atraso_id'],
       ),
+      regrasHorario: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}regras_horario'],
+      )!,
     );
   }
 
@@ -1017,6 +1043,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
   final double? diariaValor;
   final int? diariaHoras;
   final String? tarifaAtrasoId;
+  final String regrasHorario;
   const Tarifa({
     required this.id,
     required this.operacaoId,
@@ -1039,6 +1066,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     this.diariaValor,
     this.diariaHoras,
     this.tarifaAtrasoId,
+    required this.regrasHorario,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1072,6 +1100,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     if (!nullToAbsent || tarifaAtrasoId != null) {
       map['tarifa_atraso_id'] = Variable<String>(tarifaAtrasoId);
     }
+    map['regras_horario'] = Variable<String>(regrasHorario);
     return map;
   }
 
@@ -1106,6 +1135,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
       tarifaAtrasoId: tarifaAtrasoId == null && nullToAbsent
           ? const Value.absent()
           : Value(tarifaAtrasoId),
+      regrasHorario: Value(regrasHorario),
     );
   }
 
@@ -1146,6 +1176,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
       diariaValor: serializer.fromJson<double?>(json['diariaValor']),
       diariaHoras: serializer.fromJson<int?>(json['diariaHoras']),
       tarifaAtrasoId: serializer.fromJson<String?>(json['tarifaAtrasoId']),
+      regrasHorario: serializer.fromJson<String>(json['regrasHorario']),
     );
   }
   @override
@@ -1173,6 +1204,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
       'diariaValor': serializer.toJson<double?>(diariaValor),
       'diariaHoras': serializer.toJson<int?>(diariaHoras),
       'tarifaAtrasoId': serializer.toJson<String?>(tarifaAtrasoId),
+      'regrasHorario': serializer.toJson<String>(regrasHorario),
     };
   }
 
@@ -1198,6 +1230,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     Value<double?> diariaValor = const Value.absent(),
     Value<int?> diariaHoras = const Value.absent(),
     Value<String?> tarifaAtrasoId = const Value.absent(),
+    String? regrasHorario,
   }) => Tarifa(
     id: id ?? this.id,
     operacaoId: operacaoId ?? this.operacaoId,
@@ -1225,6 +1258,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     tarifaAtrasoId: tarifaAtrasoId.present
         ? tarifaAtrasoId.value
         : this.tarifaAtrasoId,
+    regrasHorario: regrasHorario ?? this.regrasHorario,
   );
   Tarifa copyWithCompanion(TarifasCompanion data) {
     return Tarifa(
@@ -1285,6 +1319,9 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
       tarifaAtrasoId: data.tarifaAtrasoId.present
           ? data.tarifaAtrasoId.value
           : this.tarifaAtrasoId,
+      regrasHorario: data.regrasHorario.present
+          ? data.regrasHorario.value
+          : this.regrasHorario,
     );
   }
 
@@ -1311,7 +1348,8 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
           ..write('modalidade: $modalidade, ')
           ..write('diariaValor: $diariaValor, ')
           ..write('diariaHoras: $diariaHoras, ')
-          ..write('tarifaAtrasoId: $tarifaAtrasoId')
+          ..write('tarifaAtrasoId: $tarifaAtrasoId, ')
+          ..write('regrasHorario: $regrasHorario')
           ..write(')'))
         .toString();
   }
@@ -1339,6 +1377,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     diariaValor,
     diariaHoras,
     tarifaAtrasoId,
+    regrasHorario,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1364,7 +1403,8 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
           other.modalidade == this.modalidade &&
           other.diariaValor == this.diariaValor &&
           other.diariaHoras == this.diariaHoras &&
-          other.tarifaAtrasoId == this.tarifaAtrasoId);
+          other.tarifaAtrasoId == this.tarifaAtrasoId &&
+          other.regrasHorario == this.regrasHorario);
 }
 
 class TarifasCompanion extends UpdateCompanion<Tarifa> {
@@ -1389,6 +1429,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
   final Value<double?> diariaValor;
   final Value<int?> diariaHoras;
   final Value<String?> tarifaAtrasoId;
+  final Value<String> regrasHorario;
   final Value<int> rowid;
   const TarifasCompanion({
     this.id = const Value.absent(),
@@ -1412,6 +1453,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     this.diariaValor = const Value.absent(),
     this.diariaHoras = const Value.absent(),
     this.tarifaAtrasoId = const Value.absent(),
+    this.regrasHorario = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TarifasCompanion.insert({
@@ -1436,6 +1478,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     this.diariaValor = const Value.absent(),
     this.diariaHoras = const Value.absent(),
     this.tarifaAtrasoId = const Value.absent(),
+    this.regrasHorario = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        operacaoId = Value(operacaoId),
@@ -1472,6 +1515,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     Expression<double>? diariaValor,
     Expression<int>? diariaHoras,
     Expression<String>? tarifaAtrasoId,
+    Expression<String>? regrasHorario,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1502,6 +1546,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
       if (diariaValor != null) 'diaria_valor': diariaValor,
       if (diariaHoras != null) 'diaria_horas': diariaHoras,
       if (tarifaAtrasoId != null) 'tarifa_atraso_id': tarifaAtrasoId,
+      if (regrasHorario != null) 'regras_horario': regrasHorario,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1528,6 +1573,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     Value<double?>? diariaValor,
     Value<int?>? diariaHoras,
     Value<String?>? tarifaAtrasoId,
+    Value<String>? regrasHorario,
     Value<int>? rowid,
   }) {
     return TarifasCompanion(
@@ -1553,6 +1599,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
       diariaValor: diariaValor ?? this.diariaValor,
       diariaHoras: diariaHoras ?? this.diariaHoras,
       tarifaAtrasoId: tarifaAtrasoId ?? this.tarifaAtrasoId,
+      regrasHorario: regrasHorario ?? this.regrasHorario,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1627,6 +1674,9 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     if (tarifaAtrasoId.present) {
       map['tarifa_atraso_id'] = Variable<String>(tarifaAtrasoId.value);
     }
+    if (regrasHorario.present) {
+      map['regras_horario'] = Variable<String>(regrasHorario.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1657,6 +1707,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
           ..write('diariaValor: $diariaValor, ')
           ..write('diariaHoras: $diariaHoras, ')
           ..write('tarifaAtrasoId: $tarifaAtrasoId, ')
+          ..write('regrasHorario: $regrasHorario, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10794,6 +10845,7 @@ typedef $$TarifasTableCreateCompanionBuilder =
       Value<double?> diariaValor,
       Value<int?> diariaHoras,
       Value<String?> tarifaAtrasoId,
+      Value<String> regrasHorario,
       Value<int> rowid,
     });
 typedef $$TarifasTableUpdateCompanionBuilder =
@@ -10819,6 +10871,7 @@ typedef $$TarifasTableUpdateCompanionBuilder =
       Value<double?> diariaValor,
       Value<int?> diariaHoras,
       Value<String?> tarifaAtrasoId,
+      Value<String> regrasHorario,
       Value<int> rowid,
     });
 
@@ -10933,6 +10986,11 @@ class $$TarifasTableFilterComposer
 
   ColumnFilters<String> get tarifaAtrasoId => $composableBuilder(
     column: $table.tarifaAtrasoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get regrasHorario => $composableBuilder(
+    column: $table.regrasHorario,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11050,6 +11108,11 @@ class $$TarifasTableOrderingComposer
     column: $table.tarifaAtrasoId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get regrasHorario => $composableBuilder(
+    column: $table.regrasHorario,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TarifasTableAnnotationComposer
@@ -11159,6 +11222,11 @@ class $$TarifasTableAnnotationComposer
     column: $table.tarifaAtrasoId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get regrasHorario => $composableBuilder(
+    column: $table.regrasHorario,
+    builder: (column) => column,
+  );
 }
 
 class $$TarifasTableTableManager
@@ -11210,6 +11278,7 @@ class $$TarifasTableTableManager
                 Value<double?> diariaValor = const Value.absent(),
                 Value<int?> diariaHoras = const Value.absent(),
                 Value<String?> tarifaAtrasoId = const Value.absent(),
+                Value<String> regrasHorario = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TarifasCompanion(
                 id: id,
@@ -11233,6 +11302,7 @@ class $$TarifasTableTableManager
                 diariaValor: diariaValor,
                 diariaHoras: diariaHoras,
                 tarifaAtrasoId: tarifaAtrasoId,
+                regrasHorario: regrasHorario,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11258,6 +11328,7 @@ class $$TarifasTableTableManager
                 Value<double?> diariaValor = const Value.absent(),
                 Value<int?> diariaHoras = const Value.absent(),
                 Value<String?> tarifaAtrasoId = const Value.absent(),
+                Value<String> regrasHorario = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TarifasCompanion.insert(
                 id: id,
@@ -11281,6 +11352,7 @@ class $$TarifasTableTableManager
                 diariaValor: diariaValor,
                 diariaHoras: diariaHoras,
                 tarifaAtrasoId: tarifaAtrasoId,
+                regrasHorario: regrasHorario,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

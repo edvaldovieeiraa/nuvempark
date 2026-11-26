@@ -24,7 +24,8 @@ void main() {
 
     await BootstrapRepository(dio: dio, db: db).sincronizar('p1');
 
-    expect(query!['modalidades'], 'hospede');
+    // A API confere com split(',').includes('hospede'): o token novo não atrapalha.
+    expect((query!['modalidades'] as String).split(','), contains('hospede'));
     final tarifas = {
       for (final t in await db.operacaoDao.getTarifasByOperacaoId('p1')) t.id: t
     };

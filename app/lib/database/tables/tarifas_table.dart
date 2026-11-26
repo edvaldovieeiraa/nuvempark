@@ -23,6 +23,8 @@ class Tarifas extends Table {
   RealColumn get diariaValor => real().nullable()();
   IntColumn get diariaHoras => integer().nullable()();
   TextColumn get tarifaAtrasoId => text().nullable()();
+  // Regras de horário (v7): o JSON de `tarifas.regras_horario` como veio da API.
+  TextColumn get regrasHorario => text().withDefault(const Constant('[]'))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
