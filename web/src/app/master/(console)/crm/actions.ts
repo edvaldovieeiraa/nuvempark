@@ -218,10 +218,15 @@ export async function definirProximaAcao(
 
 const POR_PAGINA = 20;
 
-/** Linha do tempo, 20 por vez, da mais nova para a mais antiga. */
+/**
+ * Linha do tempo, 20 por vez, da mais nova para a mais antiga. A página
+ * seguinte começa depois do último item (`criado_em`, `id`): várias interações
+ * têm o mesmo `criado_em` (o trigger e a RPC gravam no mesmo `now()`), então
+ * cortar só por data pularia itens na virada da página.
+ */
 export async function carregarLinhaDoTempo(
   leadId: string,
-  antesDe?: string | null,
+  depoisDe?: { criadoEm: string; id: string } | null,
 ): Promise<{ ok: true; itens: InteracaoCrm[]; temMais: boolean } | { ok: false; msg: string }> {
   if (!(await sessaoMasterAtiva())) return SESSAO_EXPIRADA;
   if (!UUID.test(leadId)) return { ok: false, msg: "Lead não encontrado." };
@@ -234,7 +239,16 @@ export async function carregarLinhaDoTempo(
     .order("criado_em", { ascending: false })
     .order("id", { ascending: false })
     .limit(POR_PAGINA + 1);
-  if (antesDe && !Number.isNaN(Date.parse(antesDe))) q = q.lt("criado_em", antesDe);
+  if (depoisDe) {
+    if (Number.isNaN(Date.parse(depoisDe.criadoEm)) || !UUID.test(depoisDe.id))
+      return { ok: false, msg: "Não foi possível carregar a linha do tempo." };
+    // O valor do banco como veio: `toISOString()` cortaria os microssegundos
+    // e o `eq` nunca casaria. Só passa texto de data (sem vírgula nem parêntese).
+    if (!/^[0-9T:.+\- Z]+$/.test(depoisDe.criadoEm))
+      return { ok: false, msg: "Não foi possível carregar a linha do tempo." };
+    const c = depoisDe.criadoEm;
+    q = q.or(`criado_em.lt.${c},and(criado_em.eq.${c},id.lt.${depoisDe.id})`);
+  }
 
   const { data, error } = await q;
   if (error) {

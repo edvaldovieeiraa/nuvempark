@@ -51,10 +51,11 @@ export function LinhaDoTempo({ leadId }: { leadId: string }) {
 
   function verAnteriores() {
     if (estado.fase !== "pronto" || estado.itens.length === 0) return;
-    const antesDe = estado.itens[estado.itens.length - 1].criadoEm;
+    const ultimo = estado.itens[estado.itens.length - 1];
+    const depoisDe = { criadoEm: ultimo.criadoEm, id: ultimo.id };
     setMaisErro(null);
     comecar(async () => {
-      const r = await carregarLinhaDoTempo(leadId, antesDe);
+      const r = await carregarLinhaDoTempo(leadId, depoisDe);
       if (!r.ok) {
         setMaisErro(r.msg);
         return;
