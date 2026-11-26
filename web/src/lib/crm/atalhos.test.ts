@@ -29,3 +29,10 @@ describe("linksContato", () => {
     });
   });
 });
+
+describe("linksContato — e-mail vindo do formulário anônimo", () => {
+  it("não deixa o e-mail injetar cc/body no mailto", () => {
+    const l = linksContato({ telefone: null, email: "a@b.co?cc=x@y.com&body=oi" });
+    expect(l.mailto).toBe("mailto:a@b.co%3Fcc%3Dx@y.com%26body%3Doi");
+  });
+});

@@ -90,23 +90,42 @@ export function montarLead(l: LinhaCrm): LeadCrm {
   };
 }
 
+/**
+ * O PostgREST do Supabase devolve no máximo 1000 linhas por pedido
+ * (`max-rows`), e um `.limit()` maior é cortado em silêncio. Por isso a
+ * leitura pagina de 1000 em 1000 até uma página vir incompleta.
+ */
+const POR_PAGINA = 1000;
+const MAX_PAGINAS = 50;
+
 export async function carregarCrm(
   sb: Admin,
   opcoes: { estagio?: "ganho" | "perdido" | null; agora?: Date } = {},
 ): Promise<{ leads: LeadCrm[]; erro: boolean }> {
-  let q = sb.from("crm_leads_v").select(COLUNAS);
-  if (opcoes.estagio) {
-    q = q.eq("status", opcoes.estagio);
-  } else {
-    const desde = inicioJanela(opcoes.agora ?? new Date());
-    q = q.or(`status.in.(novo,em_contato,trial),estagio_em.gte.${desde}`);
+  const desde = inicioJanela(opcoes.agora ?? new Date());
+  const linhas: LinhaCrm[] = [];
+
+  for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
+    let q = sb.from("crm_leads_v").select(COLUNAS);
+    q = opcoes.estagio
+      ? q.eq("status", opcoes.estagio)
+      : q.or(`status.in.(novo,em_contato,trial),estagio_em.gte.${desde}`);
+    const de = pagina * POR_PAGINA;
+    const { data, error } = await q
+      .order("criado_em", { ascending: false })
+      .order("id", { ascending: false })
+      .range(de, de + POR_PAGINA - 1);
+    if (error) {
+      console.error("[master/crm] select:", error.message);
+      return { leads: [], erro: true };
+    }
+    const pag = (data as unknown as LinhaCrm[] | null) ?? [];
+    linhas.push(...pag);
+    if (pag.length < POR_PAGINA) break;
+    if (pagina === MAX_PAGINAS - 1)
+      console.warn(`[master/crm] mais de ${MAX_PAGINAS * POR_PAGINA} leads: a lista foi cortada`);
   }
-  const { data, error } = await q.order("criado_em", { ascending: false }).limit(3000);
-  if (error) {
-    console.error("[master/crm] select:", error.message);
-    return { leads: [], erro: true };
-  }
-  return { leads: ((data as unknown as LinhaCrm[] | null) ?? []).map(montarLead), erro: false };
+  return { leads: linhas.map(montarLead), erro: false };
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

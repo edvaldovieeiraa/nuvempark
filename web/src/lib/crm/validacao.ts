@@ -56,9 +56,31 @@ export function validarProximaAcao(
   const texto = String(entrada.proximaAcao ?? "").trim();
   if (!texto) return { ok: false, msg: "Escreva qual é a próxima ação." };
   if (texto.length > LIMITE_ACAO) return { ok: false, msg: `A próxima ação passou de ${LIMITE_ACAO} caracteres.` };
-  const d = new Date(String(entrada.proximaAcaoEm ?? ""));
-  if (Number.isNaN(d.getTime())) return { ok: false, msg: "Escolha a data e a hora da próxima ação." };
+  // Só com fuso explícito (Z ou ±hh:mm): sem ele, a data seria lida no fuso
+  // do servidor. A tela manda ISO em UTC (`localSPParaIso`).
+  const bruto = String(entrada.proximaAcaoEm ?? "");
+  const d = new Date(bruto);
+  if (!/(Z|[+-]\d{2}:\d{2})$/.test(bruto) || Number.isNaN(d.getTime()))
+    return { ok: false, msg: "Escolha a data e a hora da próxima ação." };
   return { ok: true, proximaAcao: texto, proximaAcaoEm: d.toISOString() };
+}
+
+/** Nome, empresa e contatos de um lead (edição de contato; req. 18). */
+export function validarContatoLead(entrada: {
+  nome: string;
+  empresa?: string | null;
+  telefone?: string | null;
+  email?: string | null;
+}):
+  | { ok: true; dados: { nome: string; empresa: string | null; email: string | null; telefone: string | null } }
+  | Falha {
+  const nome = String(entrada.nome ?? "").trim();
+  if (!nome) return { ok: false, msg: "Informe o nome." };
+  if (nome.length > 120) return { ok: false, msg: "O nome passou de 120 caracteres." };
+  const contato = normalizarContato({ email: entrada.email, telefone: entrada.telefone });
+  if (!contato.ok) return contato;
+  const empresa = String(entrada.empresa ?? "").trim().slice(0, 120) || null;
+  return { ok: true, dados: { nome, empresa, email: contato.email, telefone: contato.telefone } };
 }
 
 export type EntradaLeadManual = {
@@ -86,16 +108,12 @@ export type DadosLeadManual = {
 export function validarLeadManual(
   entrada: EntradaLeadManual,
 ): { ok: true; dados: DadosLeadManual } | Falha {
-  const nome = String(entrada.nome ?? "").trim();
-  if (!nome) return { ok: false, msg: "Informe o nome." };
-  if (nome.length > 120) return { ok: false, msg: "O nome passou de 120 caracteres." };
+  const base = validarContatoLead(entrada);
+  if (!base.ok) return base;
   if (entrada.status !== "novo" && entrada.status !== "em_contato")
     return { ok: false, msg: "O lead manual começa em Novo ou Em contato." };
+  const { nome, empresa, email, telefone } = base.dados;
 
-  const contato = normalizarContato({ email: entrada.email, telefone: entrada.telefone });
-  if (!contato.ok) return contato;
-
-  const empresa = String(entrada.empresa ?? "").trim().slice(0, 120) || null;
   const nota = String(entrada.nota ?? "").trim();
   if (nota.length > LIMITE_TEXTO) return { ok: false, msg: "A observação ficou longa demais." };
 
@@ -115,8 +133,8 @@ export function validarLeadManual(
     dados: {
       nome,
       empresa,
-      telefone: contato.telefone,
-      email: contato.email,
+      telefone,
+      email,
       nota: nota || null,
       proximaAcao,
       proximaAcaoEm,

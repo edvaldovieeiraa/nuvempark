@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { carregarLead, inicioJanela, montarLead, type LinhaCrm } from "@/lib/crm/consulta";
+import { carregarCrm, carregarLead, inicioJanela, montarLead, type LinhaCrm } from "@/lib/crm/consulta";
 
 const linha: LinhaCrm = {
   id: "l1",
@@ -92,5 +92,39 @@ describe("carregarLead", () => {
   it("sem linha ou com erro → null", async () => {
     expect(await carregarLead(stub(null).sb, ID)).toBeNull();
     expect(await carregarLead(stub(null, { message: "x" }).sb, ID)).toBeNull();
+  });
+});
+
+describe("carregarCrm — teto de linhas do PostgREST", () => {
+  // Cliente falso que devolve no máximo 1000 linhas por pedido, como o Supabase.
+  function stubPaginado(total: number) {
+    const faixas: [number, number][] = [];
+    const q = {
+      select: () => q,
+      eq: () => q,
+      or: () => q,
+      order: () => q,
+      range: (de: number, ate: number) => {
+        faixas.push([de, ate]);
+        const fim = Math.min(ate, total - 1, de + 999);
+        const data = de > fim ? [] : Array.from({ length: fim - de + 1 }, (_, i) => ({ ...linha, id: `l${de + i}` }));
+        return Promise.resolve({ data, error: null });
+      },
+    };
+    return { sb: { from: () => q } as unknown as Parameters<typeof carregarCrm>[0], faixas };
+  }
+
+  it("junta as páginas até a última (2500 linhas → 3 pedidos)", async () => {
+    const { sb, faixas } = stubPaginado(2500);
+    const r = await carregarCrm(sb);
+    expect(r.erro).toBe(false);
+    expect(r.leads).toHaveLength(2500);
+    expect(faixas).toEqual([[0, 999], [1000, 1999], [2000, 2999]]);
+  });
+
+  it("base vazia: um pedido só", async () => {
+    const { sb, faixas } = stubPaginado(0);
+    expect((await carregarCrm(sb)).leads).toEqual([]);
+    expect(faixas).toHaveLength(1);
   });
 });

@@ -12,6 +12,8 @@ export function linksContato(lead: { telefone: string | null; email: string | nu
     email,
     whatsapp: telefone && temWhatsApp(telefone) ? `https://wa.me/55${telefone}` : null,
     tel: telefone ? `tel:+55${telefone}` : null,
-    mailto: email ? `mailto:${email}` : null,
+    // Codificado (menos o @): o e-mail vem do formulário anônimo e um `?cc=`
+    // ou `&body=` nele viraria um e-mail pré-preenchido para o master.
+    mailto: email ? `mailto:${encodeURIComponent(email).replace(/%40/g, "@")}` : null,
   };
 }

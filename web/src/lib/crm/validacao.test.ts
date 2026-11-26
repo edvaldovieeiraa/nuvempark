@@ -4,6 +4,7 @@ import {
   validarLeadManual,
   validarMovimento,
   validarProximaAcao,
+  validarContatoLead,
 } from "@/lib/crm/validacao";
 
 describe("validarMovimento", () => {
@@ -87,5 +88,25 @@ describe("validarLeadManual", () => {
     expect(
       validarLeadManual({ ...base, proximaAcaoEm: "2026-11-11T09:00:00-03:00" }),
     ).toMatchObject({ ok: true, dados: { proximaAcao: null, proximaAcaoEm: null } });
+  });
+});
+
+describe("validarContatoLead", () => {
+  it("normaliza nome, empresa e contatos", () => {
+    expect(
+      validarContatoLead({ nome: "  Ana ", empresa: " ", email: " A@B.co ", telefone: "(81) 3333-0000" }),
+    ).toEqual({ ok: true, dados: { nome: "Ana", empresa: null, email: "a@b.co", telefone: "8133330000" } });
+  });
+  it("nome obrigatório e até 120; pelo menos um contato", () => {
+    expect(validarContatoLead({ nome: " ", email: "a@b.co" }).ok).toBe(false);
+    expect(validarContatoLead({ nome: "x".repeat(121), email: "a@b.co" }).ok).toBe(false);
+    expect(validarContatoLead({ nome: "Ana", email: "", telefone: "" }).ok).toBe(false);
+  });
+});
+
+describe("validarProximaAcao — fuso explícito", () => {
+  it("recusa data sem fuso (seria lida no fuso do servidor)", () => {
+    expect(validarProximaAcao({ proximaAcao: "Ligar", proximaAcaoEm: "2026-11-11T09:00" }).ok).toBe(false);
+    expect(validarProximaAcao({ proximaAcao: "Ligar", proximaAcaoEm: "2026-11-11T12:00:00Z" }).ok).toBe(true);
   });
 });

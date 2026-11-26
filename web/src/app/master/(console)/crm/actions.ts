@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sessaoMasterAtiva } from "@/lib/master-auth";
-import { normalizarContato } from "@/lib/crm/contato";
 import { podeExcluirComoSpam, podeMoverPara, type DestinoManual } from "@/lib/crm/regras";
 import type {
   Estagio,
@@ -18,6 +17,7 @@ import {
   validarLeadManual,
   validarMovimento,
   validarProximaAcao,
+  validarContatoLead,
   type EntradaLeadManual,
 } from "@/lib/crm/validacao";
 
@@ -321,50 +321,37 @@ export async function editarContatoLead(entrada: {
 }): Promise<ResultadoLeadManual> {
   if (!(await sessaoMasterAtiva())) return SESSAO_EXPIRADA;
   if (!UUID.test(entrada.id)) return { ok: false, msg: "Lead não encontrado." };
+  const v = validarContatoLead(entrada);
+  if (!v.ok) return v;
 
-  const nome = String(entrada.nome ?? "").trim();
-  if (!nome) return { ok: false, msg: "Informe o nome." };
-  if (nome.length > 120) return { ok: false, msg: "O nome passou de 120 caracteres." };
-  const contato = normalizarContato({ email: entrada.email, telefone: entrada.telefone });
-  if (!contato.ok) return contato;
-  const empresa = String(entrada.empresa ?? "").trim().slice(0, 120) || null;
-
+  // Checagem de duplicado e gravação na mesma função, sob o mesmo lock.
   const sb = createAdminClient();
-  const { data: casados, error: erroCasar } = await sb.rpc("fn_crm_casar", {
-    p_email: contato.email,
-    p_telefone: contato.telefone,
+  const { data, error } = await sb.rpc("fn_crm_editar_contato", {
+    p_id: entrada.id,
+    p_nome: v.dados.nome,
+    p_empresa: v.dados.empresa,
+    p_email: v.dados.email,
+    p_telefone: v.dados.telefone,
   });
-  if (erroCasar) {
-    console.error("[master/crm] editar (casar):", erroCasar.message);
-    return { ok: false, msg: "Não foi possível salvar o contato." };
-  }
-  const outros = ((casados ?? []) as { lead_id: string; casou_por: Duplicado["casouPor"] }[]).filter(
-    (c) => c.lead_id !== entrada.id,
-  );
-  if (outros.length) {
-    const ids = outros.slice(0, 2).map((o) => o.lead_id);
-    const { data: ls } = await sb.from("leads_site").select("id, nome, empresa, status").in("id", ids);
-    const porId = new Map(((ls ?? []) as Omit<Duplicado, "casouPor">[]).map((l) => [l.id, l]));
-    return {
-      ok: false,
-      msg: "Contato não salvo: esse e-mail ou telefone já está em outro lead.",
-      duplicados: outros
-        .slice(0, 2)
-        .filter((o) => porId.has(o.lead_id))
-        .map((o) => ({ ...(porId.get(o.lead_id) as Omit<Duplicado, "casouPor">), casouPor: o.casou_por })),
-    };
-  }
-
-  const { data, error } = await sb
-    .from("leads_site")
-    .update({ nome, empresa, email: contato.email, telefone: contato.telefone })
-    .eq("id", entrada.id)
-    .select("id");
   if (error) {
     console.error("[master/crm] editar:", error.message);
     return { ok: false, msg: "Não foi possível salvar o contato." };
   }
-  if (!data?.length) return { ok: false, msg: "Lead não encontrado." };
+  const r = data as { ok: boolean; nao_encontrado?: boolean; duplicados?: DuplicadoBanco[] };
+  if (r.nao_encontrado) return { ok: false, msg: "Lead não encontrado." };
+  if (!r.ok) {
+    return {
+      ok: false,
+      msg: "Contato não salvo: esse e-mail ou telefone já está em outro lead.",
+      duplicados: (r.duplicados ?? []).map((x) => ({
+        id: x.id,
+        nome: x.nome,
+        empresa: x.empresa,
+        status: x.status,
+        casouPor: x.casou_por,
+      })),
+    };
+  }
 
   revalidatePath(ROTA);
   return { ok: true, msg: "Contato salvo.", id: entrada.id };
