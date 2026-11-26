@@ -468,14 +468,15 @@ input, select, textarea {
 
 /* ============================================================
    Folha (components/ui/folha.tsx): entra pela direita a partir de 640 px
-   e de baixo na tela cheia. O quadro final é `transform: none` de propósito:
-   um transform que sobra cria bloco de contenção e prende o `position: fixed`
-   de quem estiver dentro (o `Confirmar`, por exemplo).
+   e de baixo na tela cheia. Preenchimento `backwards`, não `both`: segurado
+   no fim, até o `transform: none` do último quadro vira matriz identidade, cria
+   bloco de contenção e prende o `position: fixed` de quem estiver dentro (o
+   diálogo de excluir ficava centrado no drawer, não na tela).
    ============================================================ */
 @keyframes folha-sobe { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes folha-lateral { from { transform: translateX(48px); opacity: 0; } to { transform: none; opacity: 1; } }
 .folha-fundo { animation: fade-in 0.2s ease both; }
-.folha-painel { animation: folha-sobe 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.folha-painel { animation: folha-sobe 0.24s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
 @media (min-width: 640px) {
   .folha-painel { animation-name: folha-lateral; }
 }

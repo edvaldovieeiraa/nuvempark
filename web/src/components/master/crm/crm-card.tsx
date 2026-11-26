@@ -34,7 +34,6 @@ const TOM_ACAO = {
   sem: "text-texto-2",
 } as const;
 
-const AVISO_GANHO = "Ganho é automático: o card chega aqui quando a assinatura é ativada.";
 
 /**
  * Card do kanban (design doc, tela 1). O nome é o botão que abre o painel, e
@@ -68,7 +67,7 @@ export function CrmCard({
   const aviso =
     lead.status === "trial"
       ? EXPLICACAO_TRIAL
-      : (motivoSemDestino(lead) ?? (lead.status === "ganho" ? AVISO_GANHO : null));
+      : motivoSemDestino(lead);
 
   return (
     <article

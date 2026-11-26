@@ -254,12 +254,6 @@ export function Folha({
         style={
           {
             "--folha-largura": `${largura}px`,
-            // O `both` do globals.css segura o último quadro, e o `transform:
-            // none` dele chega como matriz identidade: isso ainda cria bloco de
-            // contenção e prende o `position: fixed` de dentro (o diálogo de
-            // excluir ficava centrado no drawer, não na tela). Sem o preenchimento
-            // final, o transform volta a ser `none` quando a animação acaba.
-            animationFillMode: "backwards",
           } as CSSProperties
         }
         className="folha-painel absolute inset-0 sm:left-auto w-full sm:w-[min(var(--folha-largura),100vw)] h-dvh flex flex-col bg-superficie shadow-[var(--shadow-pop)] outline-none pl-[env(safe-area-inset-left)] sm:pl-0 pr-[env(safe-area-inset-right)]"

@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sessaoMasterAtiva } from "@/lib/master-auth";
 import { carregarCrm, carregarLead } from "@/lib/crm/consulta";
 import type { LeadCrm } from "@/lib/crm/tipos";
 import { CrmClient } from "@/components/master/crm/crm-client";
@@ -7,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * CRM do console master (db/47, db/48). Só o service_role lê `crm_leads_v`,
- * e ele só existe atrás da senha master (o layout do console confere).
+ * e ele só existe atrás da senha master. A página confere a sessão ela mesma:
+ * o layout não roda de novo em toda navegação do lado do cliente.
  *
  * - sem `?estagio`: a janela (Novo, Em contato, Trial e os Ganho/Perdido dos
  *   últimos 30 dias);
@@ -24,6 +27,7 @@ function um(v: string | string[] | undefined): string | null {
 }
 
 export default async function CrmPage({ searchParams }: { searchParams: Busca }) {
+  if (!(await sessaoMasterAtiva())) redirect("/master/login");
   const sp = await searchParams;
   const e = um(sp.estagio);
   const estagio = e === "ganho" || e === "perdido" ? e : null;
