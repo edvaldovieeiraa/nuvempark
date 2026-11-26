@@ -19,6 +19,7 @@ import { estaPraHoje } from "@/lib/crm/prazos";
 import { ROTULO_FONTE } from "@/lib/crm/rotulos";
 import type { Estagio, Fonte, LeadCrm, MotivoPerda } from "@/lib/crm/tipos";
 import { useToast } from "@/components/ui/toast";
+import { chamarAction } from "@/components/master/crm/chamar-action";
 import { COR_ESTAGIO, FOCO } from "@/components/master/crm/cores-estagio";
 import { CrmKanban } from "@/components/master/crm/crm-kanban";
 import { CrmLista, CrmVazio } from "@/components/master/crm/crm-lista";
@@ -198,13 +199,17 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
       focarCardRef.current = lead.id;
       startTransition(async () => {
         moverOtimista({ id: lead.id, status: para });
-        const r = await moverEstagio({
-          id: lead.id,
-          de: lead.status,
-          para,
-          motivoPerda: motivo?.motivo ?? null,
-          texto: motivo?.texto ?? null,
-        });
+        // Sem rede, a action rejeita: sem o chamarAction o spinner do card e o
+        // "Marcar como perdido" ficavam presos (o resolver nunca era chamado).
+        const r = await chamarAction(() =>
+          moverEstagio({
+            id: lead.id,
+            de: lead.status,
+            para,
+            motivoPerda: motivo?.motivo ?? null,
+            texto: motivo?.texto ?? null,
+          }),
+        );
         setMovendoId(null);
         if (r.ok) toast.sucesso(r.msg);
         else toast.erro(r.msg);

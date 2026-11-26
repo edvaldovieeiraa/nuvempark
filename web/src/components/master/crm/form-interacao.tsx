@@ -7,6 +7,7 @@ import { ROTULO_TIPO } from "@/lib/crm/rotulos";
 import { TIPOS_INTERACAO_MANUAL, type LeadCrm, type TipoInteracaoManual } from "@/lib/crm/tipos";
 import { LIMITE_TEXTO, validarInteracao } from "@/lib/crm/validacao";
 import { useToast } from "@/components/ui/toast";
+import { chamarAction } from "@/components/master/crm/chamar-action";
 import { AREA_TEXTO, BTN_PRIMARIO, ERRO, PILULA_RADIO, ROTULO } from "@/components/master/crm/estilos";
 
 /**
@@ -44,12 +45,14 @@ export function FormInteracao({
     }
     setErro(null);
     comecar(async () => {
-      const r = await registrarInteracao({
-        leadId: lead.id,
-        tipo: v.tipo,
-        texto: v.texto,
-        concluirProximaAcao: temAcao && concluir,
-      });
+      const r = await chamarAction(() =>
+        registrarInteracao({
+          leadId: lead.id,
+          tipo: v.tipo,
+          texto: v.texto,
+          concluirProximaAcao: temAcao && concluir,
+        }),
+      );
       if (!r.ok) {
         setErro(r.msg);
         return;

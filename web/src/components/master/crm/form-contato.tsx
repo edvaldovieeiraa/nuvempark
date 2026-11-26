@@ -7,6 +7,7 @@ import { normalizarContato } from "@/lib/crm/contato";
 import type { LeadCrm } from "@/lib/crm/tipos";
 import { formatarTelefone } from "@/lib/telefone";
 import { useToast } from "@/components/ui/toast";
+import { chamarAction } from "@/components/master/crm/chamar-action";
 import { AvisoDuplicados, CamposContato, type ValoresContato } from "@/components/master/crm/campos-contato";
 import { BTN_FANTASMA, BTN_PRIMARIO, ERRO } from "@/components/master/crm/estilos";
 
@@ -53,13 +54,15 @@ export function FormContato({
     }
     setErro(null);
     comecar(async () => {
-      const r = await editarContatoLead({
-        id: lead.id,
-        nome: valores.nome,
-        empresa: valores.empresa,
-        telefone: c.telefone,
-        email: c.email,
-      });
+      const r = await chamarAction(() =>
+        editarContatoLead({
+          id: lead.id,
+          nome: valores.nome,
+          empresa: valores.empresa,
+          telefone: c.telefone,
+          email: c.email,
+        }),
+      );
       if (r.ok) {
         toast.sucesso(r.msg);
         onSalvo();

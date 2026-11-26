@@ -3,6 +3,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useSyncExternalStore,
   type CSSProperties,
@@ -22,7 +23,10 @@ import { X } from "lucide-react";
  * - Esc fecha; o foco volta ao gatilho (`focoAoFechar` ou, sem ele, o que
  *   estava focado ao abrir);
  * - folhas aninhadas (o menu de estágio sobre o lead no celular) funcionam:
- *   cada uma desfaz só o `inert` que ela mesma pôs.
+ *   cada uma desfaz só o `inert` que ela mesma pôs;
+ * - com o teclado do celular aberto, o painel acompanha o `visualViewport`
+ *   (a área que sobra visível), para o campo e o rodapé não ficarem atrás
+ *   do teclado. Com zoom de pinça (`scale` > 1) não mexe.
  *
  * Tudo o que for interativo enquanto a folha está aberta precisa ser
  * renderizado dentro dela: o resto da página não recebe clique nem foco.
@@ -54,6 +58,42 @@ const FOCAVEIS =
   '[contenteditable]:not([contenteditable="false"]), [tabindex]:not([tabindex="-1"])';
 
 const semInscricao = () => () => {};
+
+/** Painel ancorado na área visível quando o teclado encolhe o `visualViewport`. */
+function acompanharTeclado(raiz: HTMLElement, painel: HTMLElement): () => void {
+  const vv = window.visualViewport;
+  if (!vv) return () => {};
+  const viewport = vv;
+  function ajustar() {
+    const alturaLayout = raiz.clientHeight;
+    // Teclado: a área visível encolhe sem zoom. Pinça (scale > 1) fica de fora,
+    // senão a folha encolheria junto com o zoom e ampliar não adiantaria nada.
+    const teclado =
+      Math.abs(viewport.scale - 1) < 0.01 &&
+      (viewport.height < alturaLayout - 1 || viewport.offsetTop > 0);
+    if (!teclado) {
+      painel.style.top = "";
+      painel.style.height = "";
+      return;
+    }
+    painel.style.top = `${viewport.offsetTop}px`;
+    painel.style.height = `${viewport.height}px`;
+    // O painel encolheu: o campo focado volta para dentro da área que rola.
+    const ativo = document.activeElement;
+    if (ativo instanceof HTMLElement && painel.contains(ativo) && ativo.matches("input, textarea, select")) {
+      ativo.scrollIntoView({ block: "nearest" });
+    }
+  }
+  ajustar();
+  viewport.addEventListener("resize", ajustar);
+  viewport.addEventListener("scroll", ajustar);
+  return () => {
+    viewport.removeEventListener("resize", ajustar);
+    viewport.removeEventListener("scroll", ajustar);
+    painel.style.top = "";
+    painel.style.height = "";
+  };
+}
 
 /** false no servidor e na hidratação; true depois. Sem setState em efeito. */
 function useNoNavegador(): boolean {
@@ -103,12 +143,26 @@ export function Folha({
 
   const visivel = aberta && noNavegador;
 
+  // O que tinha o foco antes de a folha abrir, lido antes dos efeitos dos
+  // filhos: um menu de dentro que foca o primeiro item no próprio useEffect
+  // roda antes do efeito daqui, e aí o `activeElement` já é o item.
+  const focoAntesRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (!visivel) return;
+    focoAntesRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }, [visivel]);
+
   useEffect(() => {
     if (!visivel) return;
     const raiz = raizRef.current;
-    if (!raiz) return;
+    const painel = painelRef.current;
+    if (!raiz || !painel) return;
 
-    const anterior = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const ativo = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    // Um filho já focou algo dentro (o menu de estágio foca o primeiro item):
+    // a folha não toma o foco dele, e o "anterior" é o de antes de abrir.
+    const filhoFocou = !!ativo && painel.contains(ativo);
+    const anterior = filhoFocou ? focoAntesRef.current : ativo;
 
     // `inert` em todos os irmãos do portal; guarda só os que mudamos.
     const mudados: HTMLElement[] = [];
@@ -122,7 +176,9 @@ export function Folha({
     folhasAbertas += 1;
     document.body.style.overflow = "hidden";
 
-    (focoInicialRef.current?.current ?? painelRef.current)?.focus({ preventScroll: true });
+    if (!filhoFocou) (focoInicialRef.current?.current ?? painel).focus({ preventScroll: true });
+
+    const pararTeclado = acompanharTeclado(raiz, painel);
 
     // Esc com o foco fora do diálogo: um botão que ficou desabilitado durante
     // o envio (ou sumiu) joga o foco no <body>, e o onKeyDown do portal não
@@ -136,6 +192,7 @@ export function Folha({
     document.addEventListener("keydown", escFora);
 
     return () => {
+      pararTeclado();
       document.removeEventListener("keydown", escFora);
       for (const el of mudados) el.inert = false;
       folhasAbertas -= 1;
@@ -194,7 +251,17 @@ export function Folha({
         aria-modal="true"
         aria-labelledby={idTitulo}
         tabIndex={-1}
-        style={{ "--folha-largura": `${largura}px` } as CSSProperties}
+        style={
+          {
+            "--folha-largura": `${largura}px`,
+            // O `both` do globals.css segura o último quadro, e o `transform:
+            // none` dele chega como matriz identidade: isso ainda cria bloco de
+            // contenção e prende o `position: fixed` de dentro (o diálogo de
+            // excluir ficava centrado no drawer, não na tela). Sem o preenchimento
+            // final, o transform volta a ser `none` quando a animação acaba.
+            animationFillMode: "backwards",
+          } as CSSProperties
+        }
         className="folha-painel absolute inset-0 sm:left-auto w-full sm:w-[min(var(--folha-largura),100vw)] h-dvh flex flex-col bg-superficie shadow-[var(--shadow-pop)] outline-none pl-[env(safe-area-inset-left)] sm:pl-0 pr-[env(safe-area-inset-right)]"
       >
         <header className="shrink-0 flex items-start gap-3 px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))] border-b border-borda">

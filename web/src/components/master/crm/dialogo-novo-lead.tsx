@@ -8,6 +8,7 @@ import { ROTULO_ESTAGIO } from "@/lib/crm/rotulos";
 import { LIMITE_ACAO, LIMITE_TEXTO, validarLeadManual, type EntradaLeadManual } from "@/lib/crm/validacao";
 import { Folha } from "@/components/ui/folha";
 import { useToast } from "@/components/ui/toast";
+import { chamarAction } from "@/components/master/crm/chamar-action";
 import { AvisoDuplicados, CamposContato, type ValoresContato } from "@/components/master/crm/campos-contato";
 import {
   AREA_TEXTO,
@@ -76,7 +77,7 @@ function NovoLeadAberto({ onFechar, onCriado, onAbrirLead }: Props) {
     }
     setErro(null);
     comecar(async () => {
-      const r = await criarLeadManual(v.dados);
+      const r = await chamarAction(() => criarLeadManual(v.dados));
       if (r.ok) {
         toast.sucesso(r.msg);
         onCriado(r.id);

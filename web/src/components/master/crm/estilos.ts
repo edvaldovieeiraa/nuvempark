@@ -14,12 +14,17 @@ export const BTN_FANTASMA = `inline-flex items-center justify-center gap-2 h-11 
 /** Botão pequeno (36 px) dentro de blocos; alvo de 44 px no toque. */
 export const BTN_PEQUENO = `toque-44 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg border border-borda-campo bg-superficie text-xs font-bold text-texto-2 hover:text-brand-700 hover:border-brand-300 transition-colors disabled:opacity-60 disabled:pointer-events-none ${FOCO}`;
 
-/** Campo: borda `borda-campo`; foco e erro com borda de 4,5:1 (design doc). */
+/**
+ * Campo: borda `borda-campo`; foco e erro com borda de 4,5:1 (design doc).
+ * 16 px abaixo de 1024 px (celular em pé e deitado): o Safari do iPhone dá
+ * zoom ao focar campo com fonte menor, e com zoom a folha deixa de acompanhar
+ * o teclado.
+ */
 export const CAMPO =
-  "w-full h-11 px-3.5 rounded-xl border border-borda-campo bg-superficie text-sm text-texto placeholder:text-texto-3 outline-none focus:border-brand-700 focus:ring-4 focus:ring-brand-500/15 aria-[invalid=true]:border-perigo-texto disabled:bg-fundo disabled:text-texto-2";
+  "w-full h-11 px-3.5 rounded-xl border border-borda-campo bg-superficie text-base lg:text-sm text-texto placeholder:text-texto-3 outline-none focus:border-brand-700 focus:ring-4 focus:ring-brand-500/15 aria-[invalid=true]:border-perigo-texto disabled:bg-fundo disabled:text-texto-2";
 
 export const AREA_TEXTO =
-  "w-full min-h-24 px-3.5 py-2.5 rounded-xl border border-borda-campo bg-superficie text-sm text-texto leading-relaxed placeholder:text-texto-3 outline-none focus:border-brand-700 focus:ring-4 focus:ring-brand-500/15 aria-[invalid=true]:border-perigo-texto";
+  "w-full min-h-24 px-3.5 py-2.5 rounded-xl border border-borda-campo bg-superficie text-base lg:text-sm text-texto leading-relaxed placeholder:text-texto-3 outline-none focus:border-brand-700 focus:ring-4 focus:ring-brand-500/15 aria-[invalid=true]:border-perigo-texto";
 
 export const ROTULO = "block text-xs font-bold text-texto-2 mb-1.5";
 

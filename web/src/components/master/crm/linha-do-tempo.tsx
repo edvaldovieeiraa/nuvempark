@@ -6,6 +6,7 @@ import { carregarLinhaDoTempo } from "@/app/master/(console)/crm/actions";
 import { ROTULO_TIPO } from "@/lib/crm/rotulos";
 import type { InteracaoCrm, TipoInteracao } from "@/lib/crm/tipos";
 import { formatarDataHora } from "@/lib/format-data";
+import { chamarAction } from "@/components/master/crm/chamar-action";
 import { BTN_PEQUENO, ERRO, SECAO_TITULO } from "@/components/master/crm/estilos";
 
 const ICONE: Record<TipoInteracao, LucideIcon> = {
@@ -55,7 +56,7 @@ export function LinhaDoTempo({ leadId }: { leadId: string }) {
     const depoisDe = { criadoEm: ultimo.criadoEm, id: ultimo.id };
     setMaisErro(null);
     comecar(async () => {
-      const r = await carregarLinhaDoTempo(leadId, depoisDe);
+      const r = await chamarAction(() => carregarLinhaDoTempo(leadId, depoisDe));
       if (!r.ok) {
         setMaisErro(r.msg);
         return;

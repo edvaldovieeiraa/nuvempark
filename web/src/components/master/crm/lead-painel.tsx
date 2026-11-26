@@ -92,6 +92,10 @@ function PainelAberto({
   const [menuAberto, setMenuAberto] = useState(false);
   const [btnEstagio, setBtnEstagio] = useState<HTMLButtonElement | null>(null);
   const [folhaEstagio, setFolhaEstagio] = useState(false);
+  // Botões da barra de baixo: para onde o foco volta quando a folha de cima
+  // fecha (o item do menu que tinha o foco some junto com ela).
+  const [btnBarraEstagio, setBtnBarraEstagio] = useState<HTMLButtonElement | null>(null);
+  const [btnBarraInteracao, setBtnBarraInteracao] = useState<HTMLButtonElement | null>(null);
   const [folhaInteracao, setFolhaInteracao] = useState(false);
   const [editandoContato, setEditandoContato] = useState(false);
   // Bumpa a cada mudança feita daqui: remonta a linha do tempo.
@@ -174,6 +178,7 @@ function PainelAberto({
   const rodape = celular ? (
     <div className="flex gap-3">
       <button
+        ref={setBtnBarraEstagio}
         type="button"
         onClick={() => setFolhaEstagio(true)}
         className={`${BTN_FANTASMA} flex-1`}
@@ -181,7 +186,12 @@ function PainelAberto({
         <Shuffle className="w-4 h-4" aria-hidden />
         Estágio
       </button>
-      <button type="button" onClick={() => setFolhaInteracao(true)} className={`${BTN_PRIMARIO} flex-[2]`}>
+      <button
+        ref={setBtnBarraInteracao}
+        type="button"
+        onClick={() => setFolhaInteracao(true)}
+        className={`${BTN_PRIMARIO} flex-[2]`}
+      >
         <MessageSquarePlus className="w-4 h-4" aria-hidden />
         Registrar interação
       </button>
@@ -238,7 +248,12 @@ function PainelAberto({
       </div>
 
       {celular && (
-        <Folha aberta={folhaEstagio} onFechar={() => setFolhaEstagio(false)} titulo="Mudar estágio">
+        <Folha
+          aberta={folhaEstagio}
+          onFechar={() => setFolhaEstagio(false)}
+          titulo="Mudar estágio"
+          focoAoFechar={btnBarraEstagio}
+        >
           <MenuEstagio
             lead={lead}
             ancora={null}
@@ -257,6 +272,7 @@ function PainelAberto({
           onFechar={() => setFolhaInteracao(false)}
           titulo="Registrar interação"
           focoInicial={textoInteracaoRef}
+          focoAoFechar={btnBarraInteracao}
         >
           <FormInteracao
             lead={lead}
@@ -284,7 +300,8 @@ function Contato({ lead, celular, onEditar }: { lead: LeadCrm; celular: boolean;
       .catch(() => toast.erro("Não foi possível copiar."));
   }
 
-  const alturaAtalho = celular ? "h-16 flex-col gap-1" : "h-10";
+  // 44 px também no drawer: entre 640 e 1023 px ele abre em tablet, no toque.
+  const alturaAtalho = celular ? "h-16 flex-col gap-1" : "h-11";
   const atalho = (href: string | null, icone: ReactNode, rotulo: string, motivo: string, externo = false) =>
     href ? (
       <a

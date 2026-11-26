@@ -9,6 +9,7 @@ import { textoProximaAcao } from "@/lib/crm/textos-card";
 import type { LeadCrm } from "@/lib/crm/tipos";
 import { LIMITE_ACAO, validarProximaAcao } from "@/lib/crm/validacao";
 import { useToast } from "@/components/ui/toast";
+import { chamarAction } from "@/components/master/crm/chamar-action";
 import {
   BTN_FANTASMA,
   BTN_PEQUENO,
@@ -88,7 +89,7 @@ export function BlocoProximaAcao({
     }
     const nova = { proximaAcao: v.proximaAcao ?? "", proximaAcaoEm: v.proximaAcaoEm ?? "" };
     comecar(async () => {
-      const r = await definirProximaAcao(lead.id, nova);
+      const r = await chamarAction(() => definirProximaAcao(lead.id, nova));
       if (!r.ok) {
         setErro(r.msg);
         return;
@@ -103,7 +104,7 @@ export function BlocoProximaAcao({
   function concluir() {
     if (pendente) return;
     comecar(async () => {
-      const r = await definirProximaAcao(lead.id, null);
+      const r = await chamarAction(() => definirProximaAcao(lead.id, null));
       if (!r.ok) {
         toast.erro(r.msg);
         return;

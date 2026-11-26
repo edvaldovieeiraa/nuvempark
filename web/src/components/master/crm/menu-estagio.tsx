@@ -10,13 +10,13 @@ import {
   type KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { Check, Loader2, Lock, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, Loader2, Lock, Trash2 } from "lucide-react";
 import { excluirLeadSpam, reabrirLead } from "@/app/master/(console)/crm/actions";
 import { indiceAoTeclar, itensMenuEstagio, type DestinoMenu } from "@/lib/crm/menu-estagio";
 import type { LeadCrm } from "@/lib/crm/tipos";
-import { Confirmar } from "@/components/ui/confirmar";
 import { calcularPosMenu, estiloMenu, useFecharAoRolar } from "@/components/ui/menu-flutuante";
 import { useToast } from "@/components/ui/toast";
+import { chamarAction } from "@/components/master/crm/chamar-action";
 import { COR_ESTAGIO, FOCO } from "@/components/master/crm/cores-estagio";
 
 type Props = {
@@ -48,11 +48,13 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
   const idExplicacao = useId();
   const modelo = itensMenuEstagio(lead);
   const caixaRef = useRef<HTMLDivElement>(null);
-  /** Caixa + diálogo do Confirmar: o clique fora ignora os dois. */
+  /** Caixa + confirmação de excluir: o clique fora ignora as duas. */
   const raizRef = useRef<HTMLDivElement>(null);
   const itensRef = useRef<(HTMLButtonElement | null)[]>([]);
   const [focado, setFocado] = useState(0);
   const [pendente, comecar] = useTransition();
+  const [confirmando, setConfirmando] = useState(false);
+  const [excluindo, comecarExclusao] = useTransition();
   const flutuante = modo === "flutuante";
 
   const totalItens = modelo.itens.length + (modelo.podeExcluir ? 1 : 0);
@@ -97,7 +99,8 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
     document.addEventListener("pointerdown", fora);
     return () => document.removeEventListener("pointerdown", fora);
   }, [flutuante, ancora]);
-  useFecharAoRolar(flutuante, onFechar);
+  // Com a confirmação aberta, rolar a página por trás não derruba o diálogo.
+  useFecharAoRolar(flutuante && !confirmando, onFechar);
 
   function aoTeclar(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key === "Escape") {
@@ -119,7 +122,7 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
 
   function reabrir() {
     comecar(async () => {
-      const r = await reabrirLead(lead.id);
+      const r = await chamarAction(() => reabrirLead(lead.id));
       if (r.ok) {
         toast.sucesso(r.msg);
         onAtualizado?.();
@@ -130,15 +133,23 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
     });
   }
 
-  async function excluir() {
-    const r = await excluirLeadSpam(lead.id);
-    if (r.ok) {
-      toast.sucesso(r.msg);
-      onAtualizado?.();
-      onFechar();
-    } else {
-      toast.erro(r.msg);
-    }
+  function fecharConfirmacao() {
+    setConfirmando(false);
+    itensRef.current[modelo.itens.length]?.focus({ preventScroll: true });
+  }
+
+  function excluir() {
+    comecarExclusao(async () => {
+      const r = await chamarAction(() => excluirLeadSpam(lead.id));
+      if (r.ok) {
+        toast.sucesso(r.msg);
+        onAtualizado?.();
+        onFechar();
+      } else {
+        toast.erro(r.msg);
+        fecharConfirmacao();
+      }
+    });
   }
 
   const ITEM = `toque-44 w-full flex items-center gap-2.5 min-h-10 px-3 rounded-lg text-left text-sm font-semibold text-texto hover:bg-fundo focus:bg-fundo outline-none ${FOCO}`;
@@ -147,7 +158,7 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
     ? "fixed z-[70] w-64 max-w-[calc(100vw-16px)] rounded-xl border border-borda bg-superficie p-1.5 shadow-[var(--shadow-pop)] invisible"
     : "rounded-xl border border-borda bg-superficie p-1.5";
 
-  const conteudo = (abrirConfirmar: () => void) => (
+  const conteudo = (
     <div ref={caixaRef} className={caixaClasse} onKeyDown={aoTeclar} tabIndex={-1}>
       {modelo.itens.length === 0 && !modelo.podeExcluir ? (
         <p className="flex items-start gap-2 px-2.5 py-2 text-sm text-texto-2">
@@ -211,7 +222,7 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
                   tabIndex={focado === modelo.itens.length ? 0 : -1}
                   disabled={pendente}
                   onFocus={() => setFocado(modelo.itens.length)}
-                  onClick={abrirConfirmar}
+                  onClick={() => setConfirmando(true)}
                   className={`${ITEM} text-perigo-texto hover:bg-perigo-bg focus:bg-perigo-bg`}
                 >
                   <Trash2 className="w-4 h-4 shrink-0" aria-hidden />
@@ -230,23 +241,121 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
     </div>
   );
 
-  // O Confirmar fica em volta da caixa inteira: o diálogo nasce irmão dela,
-  // fora do role="menu" (as setas do menu não comem as teclas dele) e, no
-  // modo embutido, dentro da Folha (fora dela, tudo está inert).
+  // A confirmação nasce irmã da caixa: fora do role="menu" (as setas do menu
+  // não comem as teclas dela) e, no modo embutido, dentro da Folha (fora
+  // dela, tudo está inert).
   const menu = (
     <div ref={raizRef}>
-    <Confirmar
-      titulo="Excluir de vez?"
-      descricao="Use só para spam: perdido guarda o histórico."
-      rotuloConfirmar="Excluir"
-      aoConfirmar={excluir}
-    >
       {conteudo}
-    </Confirmar>
+      {confirmando && (
+        <ConfirmarExclusao pendente={excluindo} onCancelar={fecharConfirmacao} onConfirmar={excluir} />
+      )}
     </div>
   );
 
   if (!flutuante) return menu;
   if (typeof document === "undefined") return null;
   return createPortal(menu, document.body);
+}
+
+/**
+ * "Excluir de vez?" (design doc, "Estados"). Tem o visual do `Confirmar` do
+ * console, mas é daqui porque aquele não trata teclado: o Esc subia até a
+ * Folha e fechava o painel inteiro, e o foco ficava atrás do fundo escuro.
+ * Aqui o foco entra no Cancelar, o Tab gira só entre os dois botões e o Esc
+ * fecha só a confirmação (o foco volta ao "Excluir: é spam").
+ */
+function ConfirmarExclusao({
+  pendente,
+  onCancelar,
+  onConfirmar,
+}: {
+  pendente: boolean;
+  onCancelar: () => void;
+  onConfirmar: () => void;
+}) {
+  const id = useId();
+  const caixaRef = useRef<HTMLDivElement>(null);
+  const cancelarRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    cancelarRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  function aoTeclar(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Escape") {
+      // preventDefault: a Folha e o listener de Esc do documento deixam passar.
+      e.preventDefault();
+      e.stopPropagation();
+      if (!pendente) onCancelar();
+      return;
+    }
+    if (e.key !== "Tab") return;
+    e.stopPropagation();
+    const botoes = Array.from(caixaRef.current?.querySelectorAll<HTMLButtonElement>("button:not([disabled])") ?? []);
+    if (botoes.length === 0) {
+      e.preventDefault();
+      return;
+    }
+    const primeiro = botoes[0];
+    const ultimo = botoes[botoes.length - 1];
+    if (e.shiftKey && document.activeElement === primeiro) {
+      e.preventDefault();
+      ultimo.focus();
+    } else if (!e.shiftKey && document.activeElement === ultimo) {
+      e.preventDefault();
+      primeiro.focus();
+    } else if (!caixaRef.current?.contains(document.activeElement)) {
+      e.preventDefault();
+      primeiro.focus();
+    }
+  }
+
+  return (
+    <div
+      className="folha-fundo fixed inset-0 z-[90] grid place-items-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-noite/50 backdrop-blur-sm touch-none"
+      onClick={() => !pendente && onCancelar()}
+      onKeyDown={aoTeclar}
+    >
+      <div
+        ref={caixaRef}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={`${id}-titulo`}
+        aria-describedby={`${id}-desc`}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-2xl bg-superficie shadow-[var(--shadow-pop)] p-6"
+      >
+        <div className="w-12 h-12 rounded-2xl bg-perigo-bg grid place-items-center mb-4">
+          <AlertTriangle className="w-6 h-6 text-perigo" aria-hidden />
+        </div>
+        <h3 id={`${id}-titulo`} className="text-lg font-extrabold">
+          Excluir de vez?
+        </h3>
+        <p id={`${id}-desc`} className="text-sm text-texto-2 mt-1.5 leading-relaxed">
+          Use só para spam: perdido guarda o histórico.
+        </p>
+        <div className="flex gap-3 mt-6">
+          <button
+            ref={cancelarRef}
+            type="button"
+            onClick={onCancelar}
+            disabled={pendente}
+            className={`flex-1 h-11 rounded-xl border border-borda text-sm font-bold text-texto-2 hover:bg-fundo transition-colors ${FOCO}`}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirmar}
+            disabled={pendente}
+            className={`flex-1 h-11 rounded-xl bg-perigo text-white text-sm font-bold hover:brightness-110 transition-all inline-flex items-center justify-center gap-2 disabled:opacity-70 ${FOCO}`}
+          >
+            {pendente && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}
+            Excluir
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
