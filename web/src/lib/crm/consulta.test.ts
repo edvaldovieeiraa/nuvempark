@@ -97,7 +97,7 @@ describe("carregarLead", () => {
 
 describe("carregarCrm — teto de linhas do PostgREST", () => {
   // Cliente falso que devolve no máximo 1000 linhas por pedido, como o Supabase.
-  function stubPaginado(total: number) {
+  function stubPaginado(total: number, teto = 1000) {
     const faixas: [number, number][] = [];
     const q = {
       select: () => q,
@@ -106,7 +106,7 @@ describe("carregarCrm — teto de linhas do PostgREST", () => {
       order: () => q,
       range: (de: number, ate: number) => {
         faixas.push([de, ate]);
-        const fim = Math.min(ate, total - 1, de + 999);
+        const fim = Math.min(ate, total - 1, de + teto - 1);
         const data = de > fim ? [] : Array.from({ length: fim - de + 1 }, (_, i) => ({ ...linha, id: `l${de + i}` }));
         return Promise.resolve({ data, error: null });
       },
@@ -114,12 +114,17 @@ describe("carregarCrm — teto de linhas do PostgREST", () => {
     return { sb: { from: () => q } as unknown as Parameters<typeof carregarCrm>[0], faixas };
   }
 
-  it("junta as páginas até a última (2500 linhas → 3 pedidos)", async () => {
+  it("junta as páginas até uma vazia (2500 linhas → 4 pedidos)", async () => {
     const { sb, faixas } = stubPaginado(2500);
     const r = await carregarCrm(sb);
     expect(r.erro).toBe(false);
     expect(r.leads).toHaveLength(2500);
-    expect(faixas).toEqual([[0, 999], [1000, 1999], [2000, 2999]]);
+    expect(faixas).toEqual([[0, 999], [1000, 1999], [2000, 2999], [2500, 3499]]);
+  });
+
+  it("teto menor que 1000 no servidor (ex.: 500) não corta a lista", async () => {
+    const { sb } = stubPaginado(1800, 500);
+    expect((await carregarCrm(sb)).leads).toHaveLength(1800);
   });
 
   it("base vazia: um pedido só", async () => {

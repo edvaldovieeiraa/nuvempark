@@ -91,12 +91,13 @@ export function montarLead(l: LinhaCrm): LeadCrm {
 }
 
 /**
- * O PostgREST do Supabase devolve no máximo 1000 linhas por pedido
- * (`max-rows`), e um `.limit()` maior é cortado em silêncio. Por isso a
- * leitura pagina de 1000 em 1000 até uma página vir incompleta.
+ * O PostgREST do Supabase devolve no máximo `max-rows` linhas por pedido (1000
+ * no padrão do projeto hospedado), e um `.limit()` maior é cortado em silêncio.
+ * Por isso a leitura pagina: pede 1000, avança pelo que realmente veio e só
+ * para numa página vazia. Assim funciona mesmo se o teto do servidor for menor.
  */
-const POR_PAGINA = 1000;
-const MAX_PAGINAS = 50;
+const POR_PEDIDO = 1000;
+const MAX_LINHAS = 50_000;
 
 export async function carregarCrm(
   sb: Admin,
@@ -105,26 +106,26 @@ export async function carregarCrm(
   const desde = inicioJanela(opcoes.agora ?? new Date());
   const linhas: LinhaCrm[] = [];
 
-  for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
+  while (linhas.length < MAX_LINHAS) {
     let q = sb.from("crm_leads_v").select(COLUNAS);
     q = opcoes.estagio
       ? q.eq("status", opcoes.estagio)
       : q.or(`status.in.(novo,em_contato,trial),estagio_em.gte.${desde}`);
-    const de = pagina * POR_PAGINA;
+    const de = linhas.length;
     const { data, error } = await q
       .order("criado_em", { ascending: false })
       .order("id", { ascending: false })
-      .range(de, de + POR_PAGINA - 1);
+      .range(de, de + POR_PEDIDO - 1);
     if (error) {
       console.error("[master/crm] select:", error.message);
       return { leads: [], erro: true };
     }
     const pag = (data as unknown as LinhaCrm[] | null) ?? [];
+    if (pag.length === 0) break;
     linhas.push(...pag);
-    if (pag.length < POR_PAGINA) break;
-    if (pagina === MAX_PAGINAS - 1)
-      console.warn(`[master/crm] mais de ${MAX_PAGINAS * POR_PAGINA} leads: a lista foi cortada`);
   }
+  if (linhas.length >= MAX_LINHAS)
+    console.warn(`[master/crm] ${MAX_LINHAS} leads ou mais: a lista pode ter sido cortada`);
   return { leads: linhas.map(montarLead), erro: false };
 }
 
