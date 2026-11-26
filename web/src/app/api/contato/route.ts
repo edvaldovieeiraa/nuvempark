@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { soDigitosTelefone, telefoneValido } from "@/lib/telefone";
+import { COOKIE_ORIGEM, lerOrigem, utmParaLead } from "@/lib/crm/origem";
 
 /**
  * POST /api/contato — formulário de contato do site.
@@ -128,6 +129,18 @@ export async function POST(request: NextRequest) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // UTM de primeiro toque (req. 20). Sem cookie, ou com cookie ilegível, o
+  // insert fica idêntico ao de antes. Com cookie, os valores já saem cortados
+  // em 100 — acima disso a policy recusaria o envio e o lead se perderia.
+  // `origem` continua sendo a página do formulário, vinda do corpo.
+  let utm: ReturnType<typeof utmParaLead> | Record<string, never> = {};
+  try {
+    const primeiroToque = lerOrigem(request.cookies.get(COOKIE_ORIGEM)?.value);
+    if (primeiroToque) utm = utmParaLead(primeiroToque);
+  } catch (e) {
+    console.error("[contato] leitura do cookie de origem falhou:", e);
+  }
+
   // Sem `.select()`: a policy não dá SELECT, então pedir a linha de volta faria
   // o INSERT bem-sucedido retornar erro de permissão.
   const { error } = await supabase.from("leads_site").insert({
@@ -138,6 +151,7 @@ export async function POST(request: NextRequest) {
     origem,
     ip: ip === "desconhecido" ? null : ip.slice(0, 60),
     user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
+    ...utm,
   });
 
   if (error) {

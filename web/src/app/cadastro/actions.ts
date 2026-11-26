@@ -6,6 +6,7 @@ import { enviarEmail, emailConfigurado } from "@/lib/email";
 import { emailConfirmacao } from "@/lib/email-templates";
 import { criarTenantComTrial, desfazerTenant } from "@/lib/criar-conta";
 import { soDigitosTelefone, telefoneValido } from "@/lib/telefone";
+import { enriquecerLeadDoCadastro, origemDoCadastro } from "@/lib/crm/enriquecer";
 
 export type ResultadoCadastro =
   | { ok: true; email: string }
@@ -99,7 +100,15 @@ export async function criarContaTrial(
     };
   }
 
-  // 3) e-mail de confirmação. Geramos o link no Supabase e o enviamos por
+  // 3) lead da rede no CRM: nome do responsável + origem/UTM (req. 13). Nunca
+  //    lança — se falhar, é só log e o cadastro segue.
+  await enriquecerLeadDoCadastro(sb, {
+    tenantId: conta.tenantId,
+    nomeResponsavel: nomeResp,
+    origem: await origemDoCadastro(),
+  });
+
+  // 4) e-mail de confirmação. Geramos o link no Supabase e o enviamos por
   //    Resend (não depende do SMTP do Supabase estar configurado).
   const site = process.env.NEXT_PUBLIC_SITE_URL || "https://nuvempark.com";
   const { data: linkData } = await sb.auth.admin.generateLink({

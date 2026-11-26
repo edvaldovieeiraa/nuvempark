@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/secoes";
 import { GoogleAnalytics } from "@/components/site/google-analytics";
+import { OrigemPrimeiroToque } from "@/components/site/origem-primeiro-toque";
 
 /**
  * Toda página do site revalida em 1 hora.
@@ -34,6 +35,7 @@ export default function SiteLayout({
       <main className="flex-1">{children}</main>
       <SiteFooter />
       <GoogleAnalytics />
+      <OrigemPrimeiroToque />
     </>
   );
 }

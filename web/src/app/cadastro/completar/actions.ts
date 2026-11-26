@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { criarTenantComTrial, desfazerTenant } from "@/lib/criar-conta";
 import { soDigitosTelefone, telefoneValido } from "@/lib/telefone";
+import { enriquecerLeadDoCadastro, origemDoCadastro } from "@/lib/crm/enriquecer";
 
 export type ResultadoCompletar = { ok: boolean; msg: string } | null;
 
@@ -60,6 +61,15 @@ export async function completarCadastro(input: {
     await desfazerTenant(admin, conta.tenantId);
     return { ok: false, msg: "Não foi possível concluir. Tente de novo." };
   }
+
+  // Lead da rede no CRM: nome do responsável (campo do formulário, que vem
+  // preenchido com o nome do perfil do Google) + origem/UTM do cookie, que
+  // sobrevive ao redirect do OAuth (req. 13 e 20). Nunca lança.
+  await enriquecerLeadDoCadastro(admin, {
+    tenantId: conta.tenantId,
+    nomeResponsavel: nome,
+    origem: await origemDoCadastro(),
+  });
 
   // O tenant_id só passa a valer no PRÓXIMO token. Sem este refresh o
   // middleware leria a sessão antiga e mandaria direto pro /painel/bloqueado.

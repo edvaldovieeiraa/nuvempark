@@ -1,5 +1,6 @@
 import { CadastroForm } from "@/components/cadastro-form";
 import { GoogleAnalytics } from "@/components/site/google-analytics";
+import { OrigemPrimeiroToque } from "@/components/site/origem-primeiro-toque";
 
 export const metadata = {
   title: "Criar conta grátis · NuvemPark",
@@ -11,6 +12,8 @@ export default function CadastroPage() {
     <>
       <CadastroForm />
       <GoogleAnalytics />
+      {/* quem chega por anúncio pode cair direto aqui, sem passar pelo site */}
+      <OrigemPrimeiroToque />
     </>
   );
 }
