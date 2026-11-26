@@ -111,7 +111,9 @@ let overflowOriginal = "";
 
 function focaveis(raiz: HTMLElement): HTMLElement[] {
   return Array.from(raiz.querySelectorAll<HTMLElement>(FOCAVEIS)).filter(
-    (el) => !el.closest("[inert]") && el.getClientRects().length > 0,
+    // tabIndex < 0 fica fora: num menu com tabindex rotativo, só o item ativo é
+    // parada de Tab, e o "último" precisa ser uma parada real para o Tab girar.
+    (el) => el.tabIndex >= 0 && !el.closest("[inert]") && el.getClientRects().length > 0,
   );
 }
 

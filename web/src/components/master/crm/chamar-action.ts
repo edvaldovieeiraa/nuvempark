@@ -14,7 +14,8 @@ export const MSG_SEM_CONEXAO = "Não consegui falar com o servidor. Confira a co
 export async function chamarAction<T extends { ok: boolean }>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
-  } catch {
+  } catch (e) {
+    console.error("[master/crm] action falhou:", e);
     // Todo resultado de action do CRM tem um ramo `{ ok: false; msg: string }`.
     return { ok: false, msg: MSG_SEM_CONEXAO } as unknown as T;
   }

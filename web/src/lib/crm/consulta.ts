@@ -126,7 +126,10 @@ export async function carregarCrm(
   }
   if (linhas.length >= MAX_LINHAS)
     console.warn(`[master/crm] ${MAX_LINHAS} leads ou mais: a lista pode ter sido cortada`);
-  return { leads: linhas.map(montarLead), erro: false };
+  // Paginação por posição: um lead criado entre dois pedidos empurra uma linha
+  // para a página seguinte e ela viria duas vezes. Fica a primeira.
+  const unicas = new Map(linhas.map((l) => [l.id, l] as const));
+  return { leads: [...unicas.values()].map(montarLead), erro: false };
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
