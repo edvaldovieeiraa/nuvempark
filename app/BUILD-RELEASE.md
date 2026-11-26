@@ -1,4 +1,26 @@
-# NuvemPark — Build de release do APK
+# NuvemPark — Build de release
+
+## Lojas (Google Play e App Store) — o caminho atual
+
+O app sai SÓ pelas lojas desde 22/11/2026. Número do build = `3000 + N` (N = o
+`+N` do `pubspec.yaml`), sempre subindo. São **três** `--dart-define`
+obrigatórios; o `APP_VERSION` é o que o aparelho informa ao servidor (sem ele,
+todo aparelho diz "1.0.0" e o painel não sabe quem está desatualizado).
+
+```sh
+V=$(grep '^version:' pubspec.yaml | sed 's/version: //; s/+.*//')   # ex.: 1.0.2
+N=$(grep '^version:' pubspec.yaml | sed 's/.*+//')                  # ex.: 22
+DEFS="--dart-define=API_BASE_URL=https://api.nuvempark.com --dart-define=TICKET_PUBLIC_BASE_URL=https://nuvempark.com/t --dart-define=APP_VERSION=$V"
+flutter build appbundle --release --build-number=30$N $DEFS        # Play
+flutter build ios --release --no-codesign --build-number=30$N $DEFS  # App Store (depois: archive/export/altool)
+```
+
+Antes de enviar, conferir no binário as duas URLs de produção, a versão e a
+ausência do `10.0.2.2:8080`.
+
+---
+
+## APK avulso (histórico — não é mais distribuído)
 
 APK do operador apontando para a **API de produção** (`https://api.nuvempark.com`).
 
