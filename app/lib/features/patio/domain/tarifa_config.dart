@@ -1,3 +1,5 @@
+import '../../tarifa/domain/regra_horario.dart';
+
 class TarifaConfig {
   const TarifaConfig({
     required this.id,
@@ -21,6 +23,7 @@ class TarifaConfig {
     this.diariaValor,
     this.diariaHoras,
     this.tarifaAtrasoId,
+    this.regras = const [],
   });
 
   static const modalidadeAvulso = 'avulso';
@@ -52,6 +55,14 @@ class TarifaConfig {
   final double? diariaValor;
   final int? diariaHoras;
   final String? tarifaAtrasoId;
+
+  /// Regras de horário da tabela (vazio = mesmo preço o dia todo).
+  final List<RegraHorario> regras;
+
+  /// Alguma regra foi feita para um app mais novo: esta tabela não pode ser
+  /// cobrada aqui (sai das listas do operador — ver PatioModel).
+  bool get exigeAppNovo =>
+      regras.any((r) => r.requer > regrasHorarioVersaoSuportada);
 
   bool get isHospede => modalidade == modalidadeHospede;
 

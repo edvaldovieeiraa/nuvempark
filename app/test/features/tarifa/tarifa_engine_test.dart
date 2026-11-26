@@ -124,8 +124,10 @@ void main() {
     test('Cenário 7 — pernoite (20h → 08h do dia seguinte) → R\$ 25,00', () {
       // Janela: 22h de D até 06h de D+1.
       // Entrada 20h ≤ 22h e saída 08h ≥ 06h → pernoite
-      final entrada = DateTime(2024, 1, 15, 20, 0);
-      final saida = DateTime(2024, 1, 16, 8, 0);
+      // Horário de Brasília explícito: o pernoite segue o relógio de Brasília
+      // qualquer que seja o fuso do aparelho (spec regras-horario, req. 9).
+      final entrada = DateTime.parse('2024-01-15T20:00:00-03:00');
+      final saida = DateTime.parse('2024-01-16T08:00:00-03:00');
 
       final result = TarifaEngine.calcular(
         entrada: entrada,
