@@ -11,12 +11,9 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Check, Trash2 } from "lucide-react";
-import { excluirLead } from "@/app/master/(console)/crm/actions";
 import { indiceAoTeclar, itensMenuEstagio, type DestinoMenu } from "@/lib/crm/menu-estagio";
 import type { LeadCrm } from "@/lib/crm/tipos";
 import { calcularPosMenu, estiloMenu, useFecharAoRolar } from "@/components/ui/menu-flutuante";
-import { useToast } from "@/components/ui/toast";
-import { chamarAction } from "@/components/master/crm/chamar-action";
 import { COR_ESTAGIO, FOCO } from "@/components/master/crm/cores-estagio";
 import { ConfirmarAcao, descricaoExcluirLead } from "@/components/master/crm/confirmar-acao";
 
@@ -29,8 +26,8 @@ type Props = {
   onFechar: () => void;
   /** O pai move (otimista). "perdido" quer dizer: abra o DialogoPerda. */
   onEscolher: (destino: DestinoMenu) => void;
-  /** Logo antes de excluir (este menu chama a action): o pai guarda para onde o foco vai. */
-  onExcluindo?: (id: string) => void;
+  /** O pai exclui (action, foco e painel); true = excluído. */
+  onExcluir: (lead: LeadCrm) => Promise<boolean>;
 };
 
 /**
@@ -44,8 +41,7 @@ export function MenuEstagio(props: Props) {
   return <MenuAberto key={props.lead.id} {...props} />;
 }
 
-function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, onExcluindo }: Props) {
-  const toast = useToast();
+function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, onExcluir }: Props) {
   const idExplicacao = useId();
   const modelo = itensMenuEstagio(lead);
   const caixaRef = useRef<HTMLDivElement>(null);
@@ -126,16 +122,9 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
   }
 
   function excluir() {
-    onExcluindo?.(lead.id);
     comecarExclusao(async () => {
-      const r = await chamarAction(() => excluirLead(lead.id));
-      if (r.ok) {
-        toast.sucesso(r.msg);
-        onFechar();
-      } else {
-        toast.erro(r.msg);
-        fecharConfirmacao();
-      }
+      if (await onExcluir(lead)) onFechar();
+      else fecharConfirmacao();
     });
   }
 

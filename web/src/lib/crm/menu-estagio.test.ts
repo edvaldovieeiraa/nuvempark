@@ -37,10 +37,6 @@ describe("itensMenuEstagio", () => {
     expect(itensMenuEstagio(lead("novo")).explicacao).toMatch(/sozinh/i);
   });
 
-  it("conta que no computador também dá para arrastar", () => {
-    expect(itensMenuEstagio(lead("novo")).explicacao).toMatch(/arrastar o card/);
-  });
-
   it("não tem mais regra de spam: o Excluir vale para qualquer lead", () => {
     expect(itensMenuEstagio(lead("novo", { fonte: "manual" })) as object).not.toHaveProperty("podeExcluir");
   });

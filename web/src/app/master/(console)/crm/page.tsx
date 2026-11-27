@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
  *   inteiro. A janela continua vindo para a faixa e o kanban contarem os 30
  *   dias que dizem contar;
  * - com `?lead=<id>` fora disso (duplicado antigo, recarregar): esse lead também.
- *   Se ele estiver excluído (db/54), vai à parte (`leadAvulso`): abre o painel
+ *   Se ele estiver excluído (db/56), vai à parte (`leadAvulso`): abre o painel
  *   em modo leitura, mas não entra no quadro nem nas contagens;
  * - com `?visao=excluidos`: também os excluídos, para a visão deles.
  */

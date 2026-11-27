@@ -20,7 +20,7 @@ export const MOTIVOS_PERDA = [
 ] as const;
 export type MotivoPerda = (typeof MOTIVOS_PERDA)[number];
 
-/** Marcada à mão no CRM (db/54). Null no lead = sem marca. */
+/** Marcada à mão no CRM (db/56). Null no lead = sem marca. */
 export const TEMPERATURAS = ["quente", "morno", "frio"] as const;
 export type Temperatura = (typeof TEMPERATURAS)[number];
 

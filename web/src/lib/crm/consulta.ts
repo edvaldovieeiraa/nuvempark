@@ -3,9 +3,9 @@ import { localizacaoPorTelefone } from "@/lib/ddd";
 import type { EstadoAssinatura, Estagio, Fonte, LeadCrm, MotivoPerda, Temperatura } from "@/lib/crm/tipos";
 
 /**
- * Leitura do CRM: `crm_leads_v` (db/47 e db/54), só service_role.
+ * Leitura do CRM: `crm_leads_v` (db/47 e db/56), só service_role.
  *
- * A view não filtra excluídos (db/54). O quadro pede `excluido_em is null`;
+ * A view não filtra excluídos (db/56). O quadro pede `excluido_em is null`;
  * a visão "Excluídos" pede o contrário; o lead por id vem de qualquer jeito,
  * porque o painel abre o excluído em modo leitura.
  *

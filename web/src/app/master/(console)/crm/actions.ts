@@ -16,8 +16,6 @@ import { validarTemperatura } from "@/lib/crm/temperatura";
 import {
   ESTAGIOS,
   type Estagio,
-  EstadoAssinatura,
-  Fonte,
   InteracaoCrm,
   MotivoPerda,
   Temperatura,
@@ -33,7 +31,7 @@ import {
 } from "@/lib/crm/validacao";
 
 /**
- * Server actions do CRM (db/47 e db/54).
+ * Server actions do CRM (db/47 e db/56).
  *
  * Tudo roda com service_role, então CADA action revalida a sessão master antes
  * de tocar no banco: uma server action é um endpoint HTTP como qualquer outro.
@@ -49,7 +47,7 @@ export type Duplicado = {
   empresa: string | null;
   status: Estagio;
   casouPor: "email" | "telefone" | "ambos";
-  /** Excluído do CRM: o aviso oferece "Restaurar e abrir" (db/54). */
+  /** Excluído do CRM: o aviso oferece "Restaurar e abrir" (db/56). */
   excluido: boolean;
   excluidoEm: string | null;
 };
@@ -64,36 +62,11 @@ const LEAD_EXCLUIDO = { ok: false, msg: "Este lead foi excluído. Recarregue." }
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Admin = ReturnType<typeof createAdminClient>;
-type LeadParaAcao = {
-  status: Estagio;
-  tenantId: string | null;
-  assinaturaEstado: EstadoAssinatura | null;
-  fonte: Fonte;
-  temInteracaoHumana: boolean;
-};
-
-async function lerLead(sb: Admin, id: string): Promise<LeadParaAcao | null> {
+/** O que o `validarMovimento` precisa: só o estágio atual. */
+async function lerStatus(sb: Admin, id: string): Promise<{ status: Estagio } | null> {
   if (!UUID.test(id)) return null;
-  const { data } = await sb
-    .from("crm_leads_v")
-    .select("status, tenant_id, assinatura_estado, fonte, tem_interacao_humana")
-    .eq("id", id)
-    .maybeSingle();
-  if (!data) return null;
-  const d = data as {
-    status: Estagio;
-    tenant_id: string | null;
-    assinatura_estado: EstadoAssinatura | null;
-    fonte: Fonte;
-    tem_interacao_humana: boolean;
-  };
-  return {
-    status: d.status,
-    tenantId: d.tenant_id,
-    assinaturaEstado: d.assinatura_estado,
-    fonte: d.fonte,
-    temInteracaoHumana: d.tem_interacao_humana,
-  };
+  const { data } = await sb.from("leads_site").select("status").eq("id", id).maybeSingle();
+  return data ? { status: (data as { status: Estagio }).status } : null;
 }
 
 function mensagemDoMover(res: string | null): Resultado | null {
@@ -126,7 +99,7 @@ export async function moverEstagio(entrada: {
     return { ok: false, msg: "Estágio inválido." };
 
   const sb = createAdminClient();
-  const lead = await lerLead(sb, entrada.id);
+  const lead = await lerStatus(sb, entrada.id);
   if (!lead) return { ok: false, msg: "Lead não encontrado." };
 
   const v = validarMovimento(lead, entrada);
@@ -165,6 +138,7 @@ export async function registrarInteracao(entrada: {
 }): Promise<Resultado> {
   if (!(await sessaoMasterAtiva())) return SESSAO_EXPIRADA;
   if (!UUID.test(entrada.leadId)) return { ok: false, msg: "Lead não encontrado." };
+  entrada = { ...entrada, leadId: entrada.leadId.toLowerCase() };
   const caminhos = Array.isArray(entrada.anexos) ? entrada.anexos.map(String) : [];
   if (caminhos.length > LIMITE_PRINTS) return { ok: false, msg: `Até ${LIMITE_PRINTS} prints por nota.` };
   if (new Set(caminhos).size !== caminhos.length || !caminhos.every((c) => caminhoDoLead(entrada.leadId, c)))
@@ -211,7 +185,7 @@ export async function enviarAnexoCrm(
   form: FormData,
 ): Promise<{ ok: true; caminho: string } | { ok: false; msg: string }> {
   if (!(await sessaoMasterAtiva())) return SESSAO_EXPIRADA;
-  const leadId = String(form.get("leadId") ?? "");
+  const leadId = String(form.get("leadId") ?? "").toLowerCase();
   const arquivo = form.get("arquivo");
   if (!UUID.test(leadId)) return { ok: false, msg: "Lead não encontrado." };
   if (!(arquivo instanceof Blob)) return { ok: false, msg: "Print vazio." };
@@ -228,7 +202,11 @@ export async function enviarAnexoCrm(
 export async function descartarAnexosCrm(entrada: { leadId: string; caminhos: string[] }): Promise<Resultado> {
   if (!(await sessaoMasterAtiva())) return SESSAO_EXPIRADA;
   if (!UUID.test(entrada.leadId) || !Array.isArray(entrada.caminhos)) return { ok: false, msg: "Pedido inválido." };
-  await descartarOrfaos(createAdminClient(), entrada.leadId, entrada.caminhos.map(String).slice(0, LIMITE_PRINTS));
+  await descartarOrfaos(
+    createAdminClient(),
+    entrada.leadId.toLowerCase(),
+    entrada.caminhos.map(String).slice(0, LIMITE_PRINTS),
+  );
   return { ok: true, msg: "Prints descartados." };
 }
 

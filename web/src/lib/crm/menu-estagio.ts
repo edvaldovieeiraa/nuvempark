@@ -4,7 +4,7 @@ import { ESTAGIOS, type Estagio } from "@/lib/crm/tipos";
 /**
  * O que o menu de estágio mostra (design doc, tela 4, com o movimento livre de
  * `regras.ts`): os cinco estágios na ordem do funil, o atual marcado. Perdido
- * abre o diálogo do motivo. "Excluir…" vale para qualquer lead (db/54: excluir
+ * abre o diálogo do motivo. "Excluir…" vale para qualquer lead (db/56: excluir
  * guarda o histórico), então não depende do lead.
  */
 
@@ -21,8 +21,7 @@ export type MenuEstagioModelo = {
 };
 
 export const EXPLICACAO_AUTOMATICOS =
-  "Trial e Ganho também mudam sozinhos: conta criada vira Trial; assinatura ativada vira Ganho. " +
-  "No computador, também dá para arrastar o card.";
+  "Trial e Ganho também mudam sozinhos: conta criada vira Trial; assinatura ativada vira Ganho.";
 
 export function itensMenuEstagio(lead: { status: Estagio }): MenuEstagioModelo {
   return {

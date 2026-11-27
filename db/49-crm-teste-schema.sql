@@ -429,7 +429,7 @@ begin
     if v_n <> 1 then raise exception 'FALHOU: nota do lead manual não ficou acima da linha do sistema'; end if;
 
     -- spam: recusa lead com nota, lead manual e lead com rede; apaga o limpo.
-    -- A db/54 tirou fn_crm_excluir_spam; depois dela, este bloco é pulado.
+    -- A db/56 tirou fn_crm_excluir_spam; depois dela, este bloco é pulado.
     if to_regprocedure('public.fn_crm_excluir_spam(uuid)') is not null then
     if public.fn_crm_excluir_spam(v_lead) then
       raise exception 'FALHOU: excluiu como spam um lead com nota humana';

@@ -116,7 +116,11 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial, e
     ),
   );
 
-  const [visao, setVisao] = useState<Visao>(visaoInicial);
+  // Kanban/Lista é estado da tela; "Excluídos" vem dos dados da página
+  // (`excluidos` só chega com `?visao=excluidos`), e segue o Voltar do navegador.
+  const [visao, setVisao] = useState<Exclude<Visao, "excluidos">>(
+    visaoInicial === "lista" ? "lista" : "kanban",
+  );
   const [busca, setBusca] = useState("");
   const [fonte, setFonte] = useState<Fonte | null>(null);
   const [praca, setPraca] = useState<string | null>(null);
@@ -194,7 +198,7 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial, e
     trocarQuery((p) => p.delete("lead"));
   }
 
-  // Lead que sumiu dos dados novos (spam excluído) fecha o painel. Só depois de
+  // Lead que sumiu dos dados novos fecha o painel. Só depois de
   // ter sido visto: logo após criar, o id chega antes dos dados.
   const vistoRef = useRef<string | null>(null);
   const temLeadAberto = !!leadAberto;
@@ -274,7 +278,8 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial, e
   // `de` é o que o servidor confirmou (a prop `leads`), não o valor otimista.
   function marcarTemperatura(lead: LeadCrm, para: Temperatura | null) {
     if (temperaturaPendente) return;
-    const de = leads.find((l) => l.id === lead.id)?.temperatura ?? lead.temperatura;
+    const doServidor = leads.find((l) => l.id === lead.id);
+    const de = doServidor ? doServidor.temperatura : lead.temperatura;
     setTemperaturaPendente(lead.id);
     startTransition(async () => {
       aplicarOtimista({ tipo: "temperatura", id: lead.id, temperatura: para });
@@ -335,12 +340,10 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial, e
 
   // Excluídos é outro conjunto de dados: a página carrega do servidor.
   function irParaExcluidos() {
-    setVisao("excluidos");
     navegar(() => router.push("/master/crm?visao=excluidos", { scroll: false }));
   }
   function voltarDosExcluidos() {
-    setVisao("kanban");
-    navegar(() => router.push("/master/crm", { scroll: false }));
+    navegar(() => router.push(visao === "lista" ? "/master/crm?visao=lista" : "/master/crm", { scroll: false }));
   }
 
   function selecionarEstagio(e: Estagio | null) {
@@ -471,7 +474,7 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial, e
     />
   );
 
-  const naVisaoExcluidos = visao === "excluidos" && excluidos !== null;
+  const naVisaoExcluidos = excluidos !== null;
 
   let conteudo: React.ReactNode;
   if (erro) conteudo = null;
@@ -649,7 +652,10 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial, e
           aberto
           onFechar={() => setMenu(null)}
           onEscolher={(d) => escolher(menu.lead, d)}
-          onExcluindo={prepararFocoAposSumir}
+          onExcluir={(l) => {
+            prepararFocoAposSumir(l.id);
+            return excluir(l);
+          }}
         />
       )}
 

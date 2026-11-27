@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -149,11 +149,28 @@ function PainelAberto({
     });
   }
 
+  // "Excluir…" do menu de estágio (dentro do painel): o mesmo caminho do botão.
+  function excluirPeloMenu(l: LeadCrm) {
+    onExcluindo(l.id);
+    return onExcluir(l);
+  }
+
   function restaurar() {
     comecarRestauracao(async () => {
-      await onRestaurar(lead);
+      if (await onRestaurar(lead)) focarAposRestaurar.current = true;
     });
   }
+
+  // Restaurado: o botão Restaurar some com a faixa. O foco vai para o
+  // "Mudar estágio" (ou o "Estágio" da barra do celular), não para o <body>.
+  const focarAposRestaurar = useRef(false);
+  useEffect(() => {
+    if (excluido || !focarAposRestaurar.current) return;
+    const alvo = celular ? btnBarraEstagio : btnEstagio;
+    if (!alvo) return;
+    focarAposRestaurar.current = false;
+    alvo.focus({ preventScroll: true });
+  }, [excluido, celular, btnEstagio, btnBarraEstagio]);
 
   const seletorTemperatura = (
     <SeletorTemperatura
@@ -240,7 +257,7 @@ function PainelAberto({
           modo="embutido"
           onFechar={() => setMenuAberto(false)}
           onEscolher={escolher}
-          onExcluindo={onExcluindo}
+          onExcluir={excluirPeloMenu}
         />
       )}
     </div>
@@ -348,7 +365,7 @@ function PainelAberto({
             modo="embutido"
             onFechar={() => setFolhaEstagio(false)}
             onEscolher={escolher}
-            onExcluindo={onExcluindo}
+            onExcluir={excluirPeloMenu}
           />
         </Folha>
       )}
@@ -504,7 +521,7 @@ function FaixaExcluido({
   celular: boolean;
 }) {
   return (
-    <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-borda bg-[#EEF1EF] px-3.5 py-2.5">
+    <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-borda bg-estagio-perdido-fundo px-3.5 py-2.5">
       <p className="flex-1 min-w-40 text-sm text-texto">
         <b>Excluído em {formatarDataHora(excluidoEm)}.</b> Só leitura até restaurar.
       </p>

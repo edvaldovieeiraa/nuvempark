@@ -1,5 +1,5 @@
 -- ============================================================================
--- NuvemPark — 54: CRM com temperatura, exclusão que guarda e prints nas notas
+-- NuvemPark — 56: CRM com temperatura, exclusão que guarda e prints nas notas
 -- Spec: .planning/specs/crm-temperatura-arrastar-prints.md
 -- Plano: .planning/plans/crm-temperatura-arrastar-prints.md
 --
@@ -10,7 +10,8 @@
 --      prints (no bucket PRIVADO `crm-anexos`);
 --   3) funções novas: temperatura, excluir, restaurar, remover print;
 --   4) o banco respeita o excluído: o formulário e a conta criada o trazem de
---      volta; a assinatura de uma rede excluída não cria outro card;
+--      volta; a assinatura de uma rede excluída não cria outro card; apagar a
+--      rede só desliga o lead excluído, nunca o apaga;
 --   5) sai `fn_crm_excluir_spam`: nada mais é apagado de vez pela interface.
 --
 -- Ordem em produção: aplicar LOGO ANTES do deploy 1. A tela que está no ar
@@ -19,7 +20,7 @@
 --
 -- Não reaplicar a 47 depois desta: a 47 recria a versão antiga das funções.
 -- Sem begin/commit: o ensaio roda esta migração dentro de `begin; … rollback;`.
--- Prova: db/55-crm-teste-temperatura-exclusao-anexos.sql.
+-- Prova: db/57-crm-teste-temperatura-exclusao-anexos.sql.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
@@ -855,6 +856,68 @@ begin
 end $$;
 
 -- ----------------------------------------------------------------------------
+-- 12b) Rede apagada: um lead excluído nunca é apagado
+--
+-- Igual à 48, mais `excluido_em is null` na condição do DELETE. A interação
+-- "Excluído do CRM" é de sistema, então um card de Trial nascido do vínculo,
+-- sem nota humana e excluído, cairia no DELETE e perderia o histórico ("excluir
+-- guarda"). Excluído, ele é só desligado, como os outros, e continua excluído.
+-- ----------------------------------------------------------------------------
+create or replace function public.fn_crm_desfaz_tenant()
+returns trigger
+language plpgsql security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_lead  record;
+  v_texto text;
+begin
+  begin
+    select l.* into v_lead from public.leads_site l where l.tenant_id = old.id;
+    if v_lead.id is null then
+      return old;
+    end if;
+
+    if v_lead.vinculo_criou_lead
+       and v_lead.status = 'trial'
+       and v_lead.excluido_em is null
+       and coalesce(btrim(v_lead.observacao), '') = ''
+       and not exists (select 1 from public.lead_interacoes i
+                        where i.lead_id = v_lead.id and i.tipo <> 'sistema') then
+      delete from public.leads_site where id = v_lead.id;
+      return old;
+    end if;
+
+    v_texto := format('Conta da rede removida: %s (código %s)', old.nome, old.codigo);
+
+    if v_lead.estagio_antes_vinculo is not null
+       and v_lead.estagio_antes_vinculo is distinct from v_lead.status then
+      perform set_config('crm.motivo', v_texto, true);
+      update public.leads_site
+         set tenant_id = null,
+             status = estagio_antes_vinculo,
+             motivo_perda = null,
+             estagio_antes_vinculo = null,
+             vinculo_criou_lead = false
+       where id = v_lead.id;
+      perform set_config('crm.motivo', '', true);
+    else
+      update public.leads_site
+         set tenant_id = null,
+             estagio_antes_vinculo = null,
+             vinculo_criou_lead = false
+       where id = v_lead.id;
+      insert into public.lead_interacoes (lead_id, tipo, texto)
+      values (v_lead.id, 'sistema', v_texto);
+    end if;
+  exception when others then
+    perform set_config('crm.motivo', '', true);
+    raise warning '[crm] rollback do lead da rede % falhou: % %', old.id, sqlstate, sqlerrm;
+  end;
+  return old;
+end $$;
+
+-- ----------------------------------------------------------------------------
 -- 13) Sai a exclusão de spam (apagava de vez)
 -- ----------------------------------------------------------------------------
 drop function if exists public.fn_crm_excluir_spam(uuid);
@@ -874,6 +937,7 @@ revoke all on function public.fn_crm_remover_anexo(uuid)                        
 revoke all on function public.fn_crm_criar_lead_manual(text, text, text, text, text, text, text, timestamptz) from public, anon, authenticated;
 revoke all on function public.fn_crm_editar_contato(uuid, text, text, text, text)        from public, anon, authenticated;
 revoke all on function public.fn_crm_dedupe_contato()                                    from public, anon, authenticated;
+revoke all on function public.fn_crm_desfaz_tenant()                                     from public, anon, authenticated;
 revoke all on function public.fn_crm_ligar_ou_criar(uuid, text, text, text, text, timestamptz, timestamptz, text) from public, anon, authenticated;
 
 grant execute on function public.fn_crm_casar(text, text)                                   to service_role;

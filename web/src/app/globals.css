@@ -122,7 +122,7 @@
   /* Borda de botão e campo (~1,5:1; `borda` fica para divisórias e cartões). */
   --color-borda-campo: #C9D4CC;
 
-  /* Temperatura do lead (db/54; design crm-temperatura, revisão 1). Rosa e
+  /* Temperatura do lead (db/56; design crm-temperatura, revisão 1). Rosa e
      ardósia: nenhum estágio nem alerta usa essas famílias. Quente cheio,
      Morno em contorno (o fundo rosa claro lia como selo de perigo), Frio claro.
      Contrastes: branco/#BE185D 6,04:1; #9D174D/branco 7,88:1; #334155/#F1F5F9 9,45:1. */

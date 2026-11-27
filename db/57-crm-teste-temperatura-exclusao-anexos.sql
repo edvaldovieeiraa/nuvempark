@@ -1,16 +1,16 @@
 -- ============================================================================
--- NuvemPark — 55: Prova da db/54 (temperatura, exclusão que guarda, prints)
--- Rodar no SQL Editor DEPOIS da 54. Não deixa nenhum dado: tudo roda numa
+-- NuvemPark — 57: Prova da db/56 (temperatura, exclusão que guarda, prints)
+-- Rodar no SQL Editor DEPOIS da 56. Não deixa nenhum dado: tudo roda numa
 -- subtransação que é desfeita no fim, com ou sem `begin … rollback` em volta.
 --
 -- COMO LER O RESULTADO
---   ✅ a última linha mostra "✅ CRM OK (db/54)";
+--   ✅ a última linha mostra "✅ CRM OK (db/56)";
 --   ❌ qualquer falha para o script com "FALHOU: <o quê>". Nada fica gravado.
 --
 -- Dados de teste: e-mails @exemplo.invalid e telefones com DDD 00.
 --
 -- Ensaio antes de aplicar de verdade:
---   begin;  <db/54>  <db/55>  rollback;
+--   begin;  <db/56>  <db/57>  rollback;
 -- ============================================================================
 
 do $$
@@ -35,7 +35,7 @@ begin
     for r in select unnest(array['l1','l2','l3','l4','l5','l6','l7','l8','x','y','a','b']) as caso
     loop
       f := f || jsonb_build_object(r.caso, '00' || lpad((floor(random() * 1e9))::bigint::text, 9, '0'));
-      e := e || jsonb_build_object(r.caso, 'crm55-' || v_tag || '-' || r.caso || '@exemplo.invalid');
+      e := e || jsonb_build_object(r.caso, 'crm57-' || v_tag || '-' || r.caso || '@exemplo.invalid');
     end loop;
 
     ---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ begin
     begin
       perform set_config('role', 'anon', true);
       insert into public.leads_site (nome, telefone, email, assunto, origem, temperatura)
-      values ('Teste 55 anon', f->>'a', e->>'a', 'Contato com temperatura', '/teste-55', 'quente');
+      values ('Teste 57 anon', f->>'a', e->>'a', 'Contato com temperatura', '/teste-55', 'quente');
     exception when insufficient_privilege or check_violation then v_ok := false;
     end;
     perform set_config('role', 'postgres', true);
@@ -55,7 +55,7 @@ begin
     begin
       perform set_config('role', 'anon', true);
       insert into public.leads_site (nome, telefone, email, assunto, origem, excluido_em)
-      values ('Teste 55 anon', f->>'b', e->>'b', 'Contato já excluído', '/teste-55', now());
+      values ('Teste 57 anon', f->>'b', e->>'b', 'Contato já excluído', '/teste-55', now());
     exception when insufficient_privilege or check_violation then v_ok := false;
     end;
     perform set_config('role', 'postgres', true);
@@ -65,7 +65,7 @@ begin
     -- 2) Temperatura
     ---------------------------------------------------------------------------
     insert into public.leads_site (nome, telefone, email, assunto, fonte)
-    values ('Teste 55 L1', f->>'l1', e->>'l1', 'Lead para temperatura', 'manual')
+    values ('Teste 57 L1', f->>'l1', e->>'l1', 'Lead para temperatura', 'manual')
     returning id into l1;
 
     if public.fn_crm_definir_temperatura(l1, null, 'quente') <> 'ok' then
@@ -126,7 +126,7 @@ begin
     end if;
 
     -- lead manual com o contato de um excluído: duplicado marcado como excluído
-    v_j := public.fn_crm_criar_lead_manual('Teste 55 manual', null, e->>'l1', null, 'novo');
+    v_j := public.fn_crm_criar_lead_manual('Teste 57 manual', null, e->>'l1', null, 'novo');
     if (v_j->>'ok')::boolean
        or not coalesce((v_j->'duplicados'->0->>'excluido')::boolean, false) then
       raise exception 'FALHOU: duplicado excluído não veio marcado: %', v_j;
@@ -146,7 +146,7 @@ begin
     -- 4) Formulário do site traz o excluído de volta
     ---------------------------------------------------------------------------
     insert into public.leads_site (nome, telefone, email, assunto)
-    values ('Teste 55 L3', f->>'l3', e->>'l3', 'Primeiro contato')
+    values ('Teste 57 L3', f->>'l3', e->>'l3', 'Primeiro contato')
     returning id into l3;
     if public.fn_crm_mover(l3, 'novo', 'perdido', 'preco') <> 'ok' then
       raise exception 'FALHOU: preparo do L3';
@@ -156,7 +156,7 @@ begin
 
     perform set_config('role', 'anon', true);
     insert into public.leads_site (nome, telefone, email, assunto, origem)
-    values ('Teste 55 L3 de novo', f->>'l3', e->>'l3', 'Voltei a procurar', '/teste-55');
+    values ('Teste 57 L3 de novo', f->>'l3', e->>'l3', 'Voltei a procurar', '/teste-55');
     perform set_config('role', 'postgres', true);
 
     select * into l from public.leads_site where id = l3;
@@ -175,14 +175,14 @@ begin
 
     -- precedência: e-mail casa com um ativo, telefone com um excluído → vale o ativo
     insert into public.leads_site (nome, telefone, email, assunto, fonte)
-    values ('Teste 55 L4 ativo', f->>'l4', e->>'x', 'Ativo', 'manual') returning id into l4;
+    values ('Teste 57 L4 ativo', f->>'l4', e->>'x', 'Ativo', 'manual') returning id into l4;
     insert into public.leads_site (nome, telefone, email, assunto, fonte, criado_em)
-    values ('Teste 55 L5 excluído', f->>'y', e->>'l5', 'Excluído', 'manual', now() + interval '1 second')
+    values ('Teste 57 L5 excluído', f->>'y', e->>'l5', 'Excluído', 'manual', now() + interval '1 second')
     returning id into l5;
     perform public.fn_crm_excluir(l5);
     perform set_config('role', 'anon', true);
     insert into public.leads_site (nome, telefone, email, assunto, origem)
-    values ('Teste 55 X/Y', f->>'y', e->>'x', 'Casa com os dois', '/teste-55');
+    values ('Teste 57 X/Y', f->>'y', e->>'x', 'Casa com os dois', '/teste-55');
     perform set_config('role', 'postgres', true);
     if not exists (select 1 from public.lead_interacoes where lead_id = l4
                     and texto = 'Novo contato pelo site: Casa com os dois') then
@@ -196,12 +196,12 @@ begin
     -- 5) Rede: conta criada liga e restaura; assinatura de excluído não cria card
     ---------------------------------------------------------------------------
     insert into public.leads_site (nome, telefone, email, assunto)
-    values ('Teste 55 L7', f->>'l7', e->>'l7', 'Vou criar conta')
+    values ('Teste 57 L7', f->>'l7', e->>'l7', 'Vou criar conta')
     returning id into l7;
     perform public.fn_crm_excluir(l7);
 
     insert into public.tenants (nome, codigo, telefone)
-    values ('Teste 55 Rede 7', public.fn_gerar_codigo_tenant(),
+    values ('Teste 57 Rede 7', public.fn_gerar_codigo_tenant(),
             '00' || lpad((floor(random() * 1e9))::bigint::text, 9, '0'))
     returning id into v_t;
     insert into public.assinaturas (tenant_id, estado, trial_expira_em, origem, email_cobranca)
@@ -229,7 +229,7 @@ begin
     -- formulário de um excluído COM rede: volta, mas fica no estágio da assinatura
     perform set_config('role', 'anon', true);
     insert into public.leads_site (nome, telefone, email, assunto, origem)
-    values ('Teste 55 L7 form', f->>'l7', e->>'l7', 'Sou cliente e voltei', '/teste-55');
+    values ('Teste 57 L7 form', f->>'l7', e->>'l7', 'Sou cliente e voltei', '/teste-55');
     perform set_config('role', 'postgres', true);
     select * into l from public.leads_site where id = l7;
     if l.excluido_em is not null or l.status <> 'ganho' then
@@ -238,16 +238,16 @@ begin
 
     -- ativo ligado a OUTRA rede + excluído sem rede, mesmo e-mail → liga o excluído
     insert into public.leads_site (nome, telefone, email, assunto, fonte)
-    values ('Teste 55 L8 ativo de outra rede', f->>'l8', e->>'l8', 'Ativo', 'manual')
+    values ('Teste 57 L8 ativo de outra rede', f->>'l8', e->>'l8', 'Ativo', 'manual')
     returning id into l8;
-    insert into public.tenants (nome, codigo) values ('Teste 55 Rede 8', public.fn_gerar_codigo_tenant())
+    insert into public.tenants (nome, codigo) values ('Teste 57 Rede 8', public.fn_gerar_codigo_tenant())
     returning id into v_t2;
     update public.leads_site set tenant_id = v_t2 where id = l8;
     insert into public.leads_site (nome, telefone, email, assunto, fonte, criado_em)
-    values ('Teste 55 L9 excluído sem rede', f->>'x', e->>'l8', 'Excluído', 'manual', now() + interval '2 seconds')
+    values ('Teste 57 L9 excluído sem rede', f->>'x', e->>'l8', 'Excluído', 'manual', now() + interval '2 seconds')
     returning id into l9;
     perform public.fn_crm_excluir(l9);
-    insert into public.tenants (nome, codigo) values ('Teste 55 Rede 9', public.fn_gerar_codigo_tenant())
+    insert into public.tenants (nome, codigo) values ('Teste 57 Rede 9', public.fn_gerar_codigo_tenant())
     returning id into v_t;
     insert into public.assinaturas (tenant_id, estado, trial_expira_em, origem, email_cobranca)
     values (v_t, 'trial', now() + interval '15 days', 'signup', e->>'l8');
@@ -259,11 +259,37 @@ begin
       raise exception 'FALHOU: a rede nova roubou o card da outra rede';
     end if;
 
+    -- rede apagada com o card excluído: o lead é desligado, não apagado
+    -- (Trial nascido do vínculo, sem nota humana: sem a exclusão, seria apagado)
+    insert into public.tenants (nome, codigo) values ('Teste 57 Rede Apagada', public.fn_gerar_codigo_tenant())
+    returning id into v_t;
+    insert into public.assinaturas (tenant_id, estado, trial_expira_em, origem, email_cobranca)
+    values (v_t, 'trial', now() + interval '15 days', 'signup', 'crm57-' || v_tag || '-apagada@exemplo.invalid');
+    select id into v_id from public.leads_site where tenant_id = v_t;
+    if v_id is null then raise exception 'FALHOU: preparo do card da rede apagada'; end if;
+    perform public.fn_crm_excluir(v_id);
+    delete from public.tenants where id = v_t;
+    select * into l from public.leads_site where id = v_id;
+    if l.id is null then raise exception 'FALHOU: apagar a rede apagou o lead excluído'; end if;
+    if l.tenant_id is not null or l.excluido_em is null then
+      raise exception 'FALHOU: rede apagada deixou o lead % / %', l.tenant_id, l.excluido_em;
+    end if;
+    -- sem a exclusão, o mesmo caso continua apagando (regra da 48)
+    insert into public.tenants (nome, codigo) values ('Teste 57 Rede Apagada 2', public.fn_gerar_codigo_tenant())
+    returning id into v_t;
+    insert into public.assinaturas (tenant_id, estado, trial_expira_em, origem, email_cobranca)
+    values (v_t, 'trial', now() + interval '15 days', 'signup', 'crm57-' || v_tag || '-apagada2@exemplo.invalid');
+    select id into v_id from public.leads_site where tenant_id = v_t;
+    delete from public.tenants where id = v_t;
+    if exists (select 1 from public.leads_site where id = v_id) then
+      raise exception 'FALHOU: rede apagada não apagou mais o card vazio de trial';
+    end if;
+
     ---------------------------------------------------------------------------
     -- 6) Prints na nota
     ---------------------------------------------------------------------------
     insert into public.leads_site (nome, telefone, email, assunto, fonte)
-    values ('Teste 55 L2', f->>'l2', e->>'l2', 'Lead dos prints', 'manual')
+    values ('Teste 57 L2', f->>'l2', e->>'l2', 'Lead dos prints', 'manual')
     returning id into l2;
 
     v_ok := true;
@@ -394,4 +420,4 @@ begin
   end;
 end $$;
 
-select '✅ CRM OK (db/54)' as resultado;
+select '✅ CRM OK (db/56)' as resultado;

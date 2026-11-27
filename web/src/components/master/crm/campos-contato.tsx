@@ -115,7 +115,7 @@ const CASOU_POR: Record<Duplicado["casouPor"], string> = {
 
 /**
  * "Esse contato já está no CRM": até 2 leads, cada um com "Abrir". Um excluído
- * (db/54) vem marcado, com "Restaurar e abrir".
+ * (db/56) vem marcado, com "Restaurar e abrir".
  */
 export function AvisoDuplicados({
   id,
