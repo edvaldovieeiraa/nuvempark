@@ -308,6 +308,13 @@ async function esvaziarPasta(
 export async function excluirTenant(
   tenantId: string,
   codigoDigitado: string,
+  /**
+   * `false` quando quem chama é a ficha da rede: o revalidatePath re-renderiza
+   * a rota atual na resposta da action, e a ficha de uma rede que acabou de
+   * sumir cai no notFound() antes de o cliente navegar para a lista. As telas
+   * do master são force-dynamic, então a lista já chega fresca na navegação.
+   */
+  revalidar: boolean = true,
 ): Promise<Resultado> {
   if (!(await sessaoMasterAtiva()))
     return { ok: false, msg: "Sessão master expirada." };
@@ -439,10 +446,12 @@ export async function excluirTenant(
     cobrancas,
   });
 
-  revalidatePath("/master/tenants");
-  revalidatePath("/master/assinaturas");
-  revalidatePath("/master/financeiro");
-  revalidatePath("/master/crm");
+  if (revalidar) {
+    revalidatePath("/master/tenants");
+    revalidatePath("/master/assinaturas");
+    revalidatePath("/master/financeiro");
+    revalidatePath("/master/crm");
+  }
 
   const logins = gestores + parceiros;
   return {

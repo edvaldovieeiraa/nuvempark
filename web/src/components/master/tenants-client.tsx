@@ -416,13 +416,18 @@ function MenuItem({
  * Confirmação da exclusão definitiva. Mostra o que some junto (o que o master
  * precisaria ter perguntado antes) e só libera o botão com o código da rede
  * digitado. As mesmas guardas rodam de novo na action e no banco.
+ *
+ * Usado na lista e na ficha da rede. Com `aoExcluir` (a ficha), a action não
+ * revalida a rota atual e quem chamou decide para onde ir depois.
  */
-function ModalExcluirTenant({
+export function ModalExcluirTenant({
   tenantId,
   fechar,
+  aoExcluir,
 }: {
   tenantId: string;
   fechar: () => void;
+  aoExcluir?: () => void;
 }) {
   const toast = useToast();
   const [resumo, setResumo] = useState<ResumoExclusao | null>(null);
@@ -452,10 +457,11 @@ function ModalExcluirTenant({
   function confirmar() {
     if (!confere || pendente) return;
     comecar(async () => {
-      const r = await excluirTenant(tenantId, codigo);
+      const r = await excluirTenant(tenantId, codigo, !aoExcluir);
       if (r?.ok) {
         toast.sucesso("Rede excluída", r.msg);
         fechar();
+        aoExcluir?.();
       } else {
         toast.erro("Não excluída", r?.msg ?? "Erro inesperado.");
       }

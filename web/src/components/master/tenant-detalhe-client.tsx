@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   Building2,
@@ -25,8 +26,10 @@ import {
   Car,
   FileText,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { ModalExcluirTenant } from "@/components/master/tenants-client";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { moeda } from "@/lib/financeiro";
 import { labelAssinaturaEstado } from "@/lib/status-labels";
@@ -196,6 +199,8 @@ const TIPO_EVENTO: Record<Evento["tipo"], { cls: string; ponto: string }> = {
 
 export function TenantDetalheClient(props: Props) {
   const toast = useToast();
+  const router = useRouter();
+  const [excluindo, setExcluindo] = useState(false);
   const { tenant, assinatura, local, gestores, patios, operadores, uso } = props;
 
   const dispositivos = useMemo(
@@ -276,8 +281,26 @@ export function TenantDetalheClient(props: Props) {
           <span className={`inline-block text-xs font-bold px-3 py-1 rounded-full border ${estadoCls}`}>
             {labelAssinaturaEstado(assinatura.estado)}
           </span>
+          <button
+            type="button"
+            onClick={() => setExcluindo(true)}
+            className="toque-44 inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border border-perigo/25 text-perigo hover:bg-perigo-bg transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Excluir rede
+          </button>
         </div>
       </motion.header>
+
+      <AnimatePresence>
+        {excluindo && (
+          <ModalExcluirTenant
+            tenantId={tenant.id}
+            fechar={() => setExcluindo(false)}
+            aoExcluir={() => router.replace("/master/tenants")}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── Os quatro sinais ────────────────────────────────────────────── */}
       <motion.div
