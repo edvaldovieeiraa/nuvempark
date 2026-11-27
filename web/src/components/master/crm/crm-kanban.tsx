@@ -172,10 +172,12 @@ function Coluna({
   return (
     <section
       aria-labelledby={id}
+      data-coluna={estagio}
       className="min-w-0 max-h-[calc(100dvh-19rem)] min-h-[240px] overflow-y-auto [scrollbar-width:thin] rounded-2xl border border-borda bg-fundo"
     >
       <header className="sticky top-0 z-30 bg-fundo px-3 pt-3 pb-2 border-b border-borda">
-        <h2 id={id} className="flex items-center gap-1.5 text-sm font-extrabold text-texto">
+        {/* tabIndex -1: recebe o foco quando o último card da coluna é excluído. */}
+        <h2 id={id} tabIndex={-1} data-coluna-titulo={estagio} className="flex items-center gap-1.5 text-sm font-extrabold text-texto outline-none">
           <span aria-hidden className={`w-2 h-2 rounded-full ${COR_ESTAGIO[estagio].ponto}`} />
           {ROTULO_ESTAGIO[estagio]}
           <span className="ml-auto min-w-[22px] h-[22px] px-1.5 rounded-full grid place-items-center bg-superficie border border-borda text-xs font-extrabold tabular-nums text-texto-2">
@@ -345,7 +347,14 @@ function Abas({
           }`}
         />
       </div>
-      <div role="tabpanel" id={idPainel} aria-labelledby={idAba(abaAtiva)} tabIndex={0} className={`rounded-xl ${FOCO}`}>
+      <div
+        role="tabpanel"
+        id={idPainel}
+        aria-labelledby={idAba(abaAtiva)}
+        tabIndex={0}
+        data-coluna-titulo={abaAtiva}
+        className={`rounded-xl ${FOCO}`}
+      >
         {children}
       </div>
     </>

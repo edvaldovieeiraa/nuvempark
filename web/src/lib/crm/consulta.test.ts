@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { carregarCrm, carregarLead, inicioJanela, montarLead, type LinhaCrm } from "@/lib/crm/consulta";
+import {
+  carregarCrm,
+  carregarExcluidos,
+  carregarLead,
+  inicioJanela,
+  montarLead,
+  type LinhaCrm,
+} from "@/lib/crm/consulta";
 
 const linha: LinhaCrm = {
   id: "l1",
@@ -28,6 +35,8 @@ const linha: LinhaCrm = {
   assinatura_estado: "trial",
   trial_expira_em: "2026-11-16T10:00:00Z",
   tem_interacao_humana: false,
+  temperatura: null,
+  excluido_em: null,
 };
 
 describe("montarLead", () => {
@@ -50,6 +59,13 @@ describe("montarLead", () => {
   });
   it("sem telefone → sem praça", () => {
     expect(montarLead({ ...linha, telefone: null }).praca).toBeNull();
+  });
+  it("temperatura e exclusão", () => {
+    expect(montarLead(linha)).toMatchObject({ temperatura: null, excluidoEm: null });
+    expect(montarLead({ ...linha, temperatura: "quente", excluido_em: "2026-11-27T14:02:00Z" })).toMatchObject({
+      temperatura: "quente",
+      excluidoEm: "2026-11-27T14:02:00Z",
+    });
   });
 });
 
@@ -99,11 +115,14 @@ describe("carregarCrm — teto de linhas do PostgREST", () => {
   // Cliente falso que devolve no máximo 1000 linhas por pedido, como o Supabase.
   function stubPaginado(total: number, teto = 1000) {
     const faixas: [number, number][] = [];
+    const filtros: string[] = [];
     const q = {
       select: () => q,
       eq: () => q,
       or: () => q,
-      order: () => q,
+      is: (c: string, v: unknown) => (filtros.push(`${c} is ${v}`), q),
+      not: (c: string, op: string, v: unknown) => (filtros.push(`${c} not ${op} ${v}`), q),
+      order: (c: string, o: { ascending: boolean }) => (filtros.push(`order ${c} ${o.ascending ? "asc" : "desc"}`), q),
       range: (de: number, ate: number) => {
         faixas.push([de, ate]);
         const fim = Math.min(ate, total - 1, de + teto - 1);
@@ -111,7 +130,7 @@ describe("carregarCrm — teto de linhas do PostgREST", () => {
         return Promise.resolve({ data, error: null });
       },
     };
-    return { sb: { from: () => q } as unknown as Parameters<typeof carregarCrm>[0], faixas };
+    return { sb: { from: () => q } as unknown as Parameters<typeof carregarCrm>[0], faixas, filtros };
   }
 
   it("junta as páginas até uma vazia (2500 linhas → 4 pedidos)", async () => {
@@ -125,6 +144,23 @@ describe("carregarCrm — teto de linhas do PostgREST", () => {
   it("teto menor que 1000 no servidor (ex.: 500) não corta a lista", async () => {
     const { sb } = stubPaginado(1800, 500);
     expect((await carregarCrm(sb)).leads).toHaveLength(1800);
+  });
+
+  it("o quadro nunca traz excluído", async () => {
+    const { sb, filtros } = stubPaginado(10);
+    await carregarCrm(sb);
+    expect(filtros).toContain("excluido_em is null");
+  });
+
+  it("Excluídos: só os excluídos, do mais recente, paginado", async () => {
+    const { sb, faixas, filtros } = stubPaginado(1200);
+    const r = await carregarExcluidos(sb);
+    expect(r.erro).toBe(false);
+    expect(r.leads).toHaveLength(1200);
+    expect(faixas[0]).toEqual([0, 999]);
+    expect(filtros).toContain("excluido_em not is null");
+    expect(filtros.indexOf("order excluido_em desc")).toBeGreaterThanOrEqual(0);
+    expect(filtros).not.toContain("excluido_em is null");
   });
 
   it("base vazia: um pedido só", async () => {

@@ -37,12 +37,12 @@ describe("itensMenuEstagio", () => {
     expect(itensMenuEstagio(lead("novo")).explicacao).toMatch(/sozinh/i);
   });
 
-  it("excluir como spam só para lead do formulário sem rede e sem interação humana", () => {
-    expect(itensMenuEstagio(lead("novo", { fonte: "contato" })).podeExcluir).toBe(true);
-    expect(itensMenuEstagio(lead("novo", { fonte: "manual" })).podeExcluir).toBe(false);
-    expect(
-      itensMenuEstagio(lead("novo", { fonte: "contato", temInteracaoHumana: true })).podeExcluir,
-    ).toBe(false);
+  it("conta que no computador também dá para arrastar", () => {
+    expect(itensMenuEstagio(lead("novo")).explicacao).toMatch(/arrastar o card/);
+  });
+
+  it("não tem mais regra de spam: o Excluir vale para qualquer lead", () => {
+    expect(itensMenuEstagio(lead("novo", { fonte: "manual" })) as object).not.toHaveProperty("podeExcluir");
   });
 });
 

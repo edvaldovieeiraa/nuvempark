@@ -7,7 +7,7 @@ import {
   opcoesFonte,
   opcoesPraca,
 } from "@/lib/crm/filtros";
-import type { Estagio, Fonte } from "@/lib/crm/tipos";
+import type { Estagio, Fonte, Temperatura } from "@/lib/crm/tipos";
 
 const AGORA = new Date("2026-11-26T12:00:00Z");
 
@@ -21,6 +21,7 @@ type L = {
   fonte: Fonte;
   praca: string | null;
   estagioEm: string;
+  temperatura: Temperatura | null;
 };
 
 function lead(p: Partial<L> = {}): L {
@@ -34,6 +35,7 @@ function lead(p: Partial<L> = {}): L {
     fonte: "contato",
     praca: "Recife · PE",
     estagioEm: "2026-11-20T12:00:00Z",
+    temperatura: null,
     ...p,
   };
 }
@@ -93,6 +95,19 @@ describe("aplicarFiltros", () => {
     expect(aplicarFiltros(leads, { fonte: "trial" }).map((l) => l.id)).toEqual(["b"]);
     expect(aplicarFiltros(leads, { praca: "São Paulo · SP" }).map((l) => l.id)).toEqual(["c"]);
     expect(aplicarFiltros(leads, { busca: "carla", fonte: "contato" })).toEqual([]);
+  });
+
+  it("temperatura: um nível, sem marca e combinada com os outros", () => {
+    const t = [
+      lead({ id: "q", temperatura: "quente", fonte: "contato" }),
+      lead({ id: "m", temperatura: "morno" }),
+      lead({ id: "s", temperatura: null, fonte: "manual" }),
+      lead({ id: "q2", temperatura: "quente", fonte: "manual" }),
+    ];
+    expect(aplicarFiltros(t, { temperatura: "quente" }).map((l) => l.id)).toEqual(["q", "q2"]);
+    expect(aplicarFiltros(t, { temperatura: "sem" }).map((l) => l.id)).toEqual(["s"]);
+    expect(aplicarFiltros(t, { temperatura: null }).map((l) => l.id)).toEqual(["q", "m", "s", "q2"]);
+    expect(aplicarFiltros(t, { temperatura: "quente", fonte: "manual" }).map((l) => l.id)).toEqual(["q2"]);
   });
 });
 

@@ -3,6 +3,7 @@
 import { CheckCircle2, Inbox, SearchX } from "lucide-react";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { COR_ESTAGIO, FOCO } from "@/components/master/crm/cores-estagio";
+import { SeloTemperatura } from "@/components/master/crm/selo-temperatura";
 import { ordenarLista, ordenarPraHoje } from "@/lib/crm/ordenacao";
 import { varianteProximaAcao } from "@/lib/crm/prazos";
 import { ROTULO_ESTAGIO, rotuloFonte } from "@/lib/crm/rotulos";
@@ -176,6 +177,11 @@ function LinhaLead({
           {lead.nome}
         </button>
         {empresa && <div className="text-xs text-texto-2 break-words">{empresa}</div>}
+        {lead.temperatura && (
+          <div className="mt-1">
+            <SeloTemperatura temperatura={lead.temperatura} />
+          </div>
+        )}
       </td>
       <td className="px-4 py-3">
         <span

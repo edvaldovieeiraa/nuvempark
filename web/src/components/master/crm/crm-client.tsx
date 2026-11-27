@@ -11,17 +11,31 @@ import {
   useTransition,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, Columns3, List, Loader2, Plus, Search, SlidersHorizontal } from "lucide-react";
-import { moverEstagio } from "@/app/master/(console)/crm/actions";
-import { aplicarFiltros, contarPorEstagio, naJanela, opcoesFonte, opcoesPraca } from "@/lib/crm/filtros";
+import { AlertTriangle, Archive, Columns3, List, Loader2, Plus, Search, SlidersHorizontal } from "lucide-react";
+import {
+  definirTemperatura,
+  excluirLead,
+  moverEstagio,
+  restaurarLead,
+} from "@/app/master/(console)/crm/actions";
+import {
+  aplicarFiltros,
+  contarPorEstagio,
+  naJanela,
+  opcoesFonte,
+  opcoesPraca,
+  type FiltroTemperatura,
+} from "@/lib/crm/filtros";
 import type { DestinoMenu } from "@/lib/crm/menu-estagio";
 import { estaPraHoje } from "@/lib/crm/prazos";
 import { ROTULO_FONTE } from "@/lib/crm/rotulos";
-import type { Estagio, Fonte, LeadCrm, MotivoPerda } from "@/lib/crm/tipos";
+import { ROTULO_TEMPERATURA } from "@/lib/crm/temperatura";
+import { TEMPERATURAS, type Estagio, type Fonte, type LeadCrm, type MotivoPerda, type Temperatura } from "@/lib/crm/tipos";
 import { useToast } from "@/components/ui/toast";
 import { chamarAction } from "@/components/master/crm/chamar-action";
 import { COR_ESTAGIO, FOCO } from "@/components/master/crm/cores-estagio";
 import { CrmKanban } from "@/components/master/crm/crm-kanban";
+import { CrmExcluidos } from "@/components/master/crm/crm-excluidos";
 import { CrmLista, CrmVazio } from "@/components/master/crm/crm-lista";
 import { DialogoNovoLead } from "@/components/master/crm/dialogo-novo-lead";
 import { DialogoPerda } from "@/components/master/crm/dialogo-perda";
@@ -30,7 +44,7 @@ import { LeadPainel } from "@/components/master/crm/lead-painel";
 import { MenuEstagio } from "@/components/master/crm/menu-estagio";
 import { BTN_PRIMARIO, CAMPO } from "@/components/master/crm/estilos";
 
-type Visao = "kanban" | "lista";
+type Visao = "kanban" | "lista" | "excluidos";
 type EstagioCompleto = "ganho" | "perdido";
 type MotivoManual = Exclude<MotivoPerda, "cancelou">;
 
@@ -43,6 +57,13 @@ type Props = {
   /** Estágio que o servidor carregou inteiro (`?estagio=ganho|perdido`). */
   estagioCompleto: EstagioCompleto | null;
   visaoInicial: Visao;
+  /** `?visao=excluidos`: os excluídos (outro conjunto, carregado pelo servidor). */
+  excluidos: LeadCrm[] | null;
+  /**
+   * Lead do `?lead=` que não está em `leads` e não deve entrar nas contagens:
+   * um excluído aberto por link, ou qualquer um na visão Excluídos.
+   */
+  leadAvulso: LeadCrm | null;
 };
 
 /** Troca a query sem ida ao servidor; o `useSearchParams` acompanha (Next 16). */
@@ -73,7 +94,11 @@ const SELECT = `${CAMPO} pr-8 lg:w-40 xl:w-44`;
  * O movimento de estágio é otimista (`useOptimistic`): o card muda de coluna
  * na hora e volta sozinho se a action falhar.
  */
-export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }: Props) {
+type MudancaOtimista =
+  | { tipo: "mover"; id: string; status: Estagio }
+  | { tipo: "temperatura"; id: string; temperatura: Temperatura | null };
+
+export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial, excluidos, leadAvulso }: Props) {
   const router = useRouter();
   const params = useSearchParams();
   const toast = useToast();
@@ -81,16 +106,23 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
   const idFiltros = useId();
   const agoraD = useMemo(() => new Date(agora), [agora]);
 
-  const [leadsVis, moverOtimista] = useOptimistic(
-    leads,
-    (atual: LeadCrm[], m: { id: string; status: Estagio }) =>
-      atual.map((l) => (l.id === m.id ? { ...l, status: m.status, estagioEm: agora } : l)),
+  const [leadsVis, aplicarOtimista] = useOptimistic(leads, (atual: LeadCrm[], m: MudancaOtimista) =>
+    atual.map((l) =>
+      l.id !== m.id
+        ? l
+        : m.tipo === "mover"
+          ? { ...l, status: m.status, estagioEm: agora }
+          : { ...l, temperatura: m.temperatura },
+    ),
   );
 
   const [visao, setVisao] = useState<Visao>(visaoInicial);
   const [busca, setBusca] = useState("");
   const [fonte, setFonte] = useState<Fonte | null>(null);
   const [praca, setPraca] = useState<string | null>(null);
+  const [temperatura, setTemperatura] = useState<FiltroTemperatura | null>(null);
+  const [temperaturaPendente, setTemperaturaPendente] = useState<string | null>(null);
+  const [restaurandoId, setRestaurandoId] = useState<string | null>(null);
   const [praHoje, setPraHoje] = useState(false);
   const [estagioSel, setEstagioSel] = useState<Estagio | null>(estagioCompleto);
   const [abaAtiva, setAbaAtiva] = useState<Estagio>(estagioCompleto ?? "novo");
@@ -105,13 +137,17 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
 
   const urlEstagio = params.get("estagio");
   const idAberto = params.get("lead");
-  const leadAberto = idAberto ? (leadsVis.find((l) => l.id === idAberto) ?? null) : null;
+  const leadAberto = idAberto
+    ? (leadsVis.find((l) => l.id === idAberto) ??
+      excluidos?.find((l) => l.id === idAberto) ??
+      (leadAvulso?.id === idAberto ? leadAvulso : null))
+    : null;
 
   // ── Dados derivados ───────────────────────────────────────────────────
   const janela = useMemo(() => leadsVis.filter((l) => naJanela(l, agoraD)), [leadsVis, agoraD]);
   const filtrados = useMemo(
-    () => aplicarFiltros(janela, { busca, fonte, praca }),
-    [janela, busca, fonte, praca],
+    () => aplicarFiltros(janela, { busca, fonte, praca, temperatura }),
+    [janela, busca, fonte, praca, temperatura],
   );
   // O total do "Pra hoje" segue busca, fonte e praça, mas não o próprio botão.
   const totalPraHoje = useMemo(
@@ -132,21 +168,21 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
     if (!completo) return base.filter((l) => l.status === estagioSel);
     const doEstagio = aplicarFiltros(
       leadsVis.filter((l) => l.status === estagioSel),
-      { busca, fonte, praca },
+      { busca, fonte, praca, temperatura },
     );
     return praHoje ? doEstagio.filter((l) => estaPraHoje(l, agoraD)) : doEstagio;
-  }, [base, estagioSel, completo, leadsVis, busca, fonte, praca, praHoje, agoraD]);
+  }, [base, estagioSel, completo, leadsVis, busca, fonte, praca, temperatura, praHoje, agoraD]);
 
-  const algumFiltro = !!busca.trim() || !!fonte || !!praca || praHoje;
+  const algumFiltro = !!busca.trim() || !!fonte || !!praca || !!temperatura || praHoje;
 
   const fontes = useMemo(() => opcoesFonte(leadsVis), [leadsVis]);
   const pracas = useMemo(() => opcoesPraca(leadsVis), [leadsVis]);
-  const nFiltrosExtras = (fonte ? 1 : 0) + (praca ? 1 : 0);
+  const nFiltrosExtras = (fonte ? 1 : 0) + (praca ? 1 : 0) + (temperatura ? 1 : 0);
 
   // ── Painel do lead ────────────────────────────────────────────────────
   function abrir(id: string, de: HTMLElement | null) {
     setGatilho(de);
-    if (leadsVis.some((l) => l.id === id)) {
+    if (leadsVis.some((l) => l.id === id) || excluidos?.some((l) => l.id === id)) {
       trocarQuery((p) => p.set("lead", id));
     } else {
       // Fora da janela (ex.: duplicado num Perdido antigo): a página carrega.
@@ -175,19 +211,74 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
 
   // ── Movimento de estágio ──────────────────────────────────────────────
   // O card muda de coluna e remonta: o ⋮ que tinha o foco sai da página. Se o
-  // foco cair no <body>, volta para o card do lead movido.
+  // foco cair no <body>, volta para o card do lead movido. Depois de excluir,
+  // o alvo é o card vizinho, ou o título da coluna (`coluna:<estágio>`).
   const focarCardRef = useRef<string | null>(null);
   useEffect(() => {
     const id = focarCardRef.current;
     if (!id || perda || leadAberto || menu) return;
-    focarCardRef.current = null;
     const ativo = document.activeElement;
-    if (ativo && ativo !== document.body) return;
+    if (ativo && ativo !== document.body && document.body.contains(ativo)) {
+      focarCardRef.current = null;
+      return;
+    }
+    const seletor = id.startsWith("coluna:")
+      ? `[data-coluna-titulo="${CSS.escape(id.slice(7))}"]`
+      : `[data-lead-id="${CSS.escape(id)}"] h3 button`;
     // O kanban tem o card duas vezes (colunas e abas); vale o que está visível.
-    Array.from(document.querySelectorAll<HTMLButtonElement>(`[data-lead-id="${CSS.escape(id)}"] h3 button`))
-      .find((b) => b.getClientRects().length > 0)
-      ?.focus({ preventScroll: true });
+    const alvo = Array.from(document.querySelectorAll<HTMLElement>(seletor)).find(
+      (b) => b.getClientRects().length > 0,
+    );
+    if (!alvo) return; // os dados novos ainda não chegaram
+    focarCardRef.current = null;
+    alvo.focus({ preventScroll: true });
   });
+
+  /** Antes de excluir: o vizinho do card na mesma coluna, ou o título dela. */
+  function prepararFocoAposSumir(id: string) {
+    const card = Array.from(document.querySelectorAll<HTMLElement>(`[data-lead-id="${CSS.escape(id)}"]`)).find(
+      (c) => c.getClientRects().length > 0,
+    );
+    const li = card?.closest("li");
+    const vizinho =
+      li?.nextElementSibling?.querySelector<HTMLElement>("[data-lead-id]") ??
+      li?.previousElementSibling?.querySelector<HTMLElement>("[data-lead-id]");
+    const lead = leadsVis.find((l) => l.id === id);
+    focarCardRef.current = vizinho?.dataset.leadId ?? (lead ? `coluna:${lead.status}` : null);
+  }
+
+  async function excluir(lead: LeadCrm): Promise<boolean> {
+    const r = await chamarAction(() => excluirLead(lead.id));
+    if (r.ok) toast.sucesso(r.msg);
+    else {
+      toast.erro(r.msg);
+      focarCardRef.current = null;
+    }
+    return r.ok;
+  }
+
+  async function restaurar(lead: LeadCrm): Promise<boolean> {
+    setRestaurandoId(lead.id);
+    const r = await chamarAction(() => restaurarLead(lead.id));
+    setRestaurandoId(null);
+    if (r.ok) toast.sucesso(r.msg);
+    else toast.erro(r.msg);
+    return r.ok;
+  }
+
+  // ── Temperatura ───────────────────────────────────────────────────────
+  // `de` é o que o servidor confirmou (a prop `leads`), não o valor otimista.
+  function marcarTemperatura(lead: LeadCrm, para: Temperatura | null) {
+    if (temperaturaPendente) return;
+    const de = leads.find((l) => l.id === lead.id)?.temperatura ?? lead.temperatura;
+    setTemperaturaPendente(lead.id);
+    startTransition(async () => {
+      aplicarOtimista({ tipo: "temperatura", id: lead.id, temperatura: para });
+      const r = await chamarAction(() => definirTemperatura({ id: lead.id, de, para }));
+      setTemperaturaPendente(null);
+      if (!r.ok) toast.erro(r.msg);
+    });
+  }
 
   function mover(
     lead: LeadCrm,
@@ -198,7 +289,7 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
       setMovendoId(lead.id);
       focarCardRef.current = lead.id;
       startTransition(async () => {
-        moverOtimista({ id: lead.id, status: para });
+        aplicarOtimista({ tipo: "mover", id: lead.id, status: para });
         // Sem rede, a action rejeita: sem o chamarAction o spinner do card e o
         // "Marcar como perdido" ficavam presos (o resolver nunca era chamado).
         const r = await chamarAction(() =>
@@ -233,9 +324,19 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
   }
 
   // ── Filtros e visão ───────────────────────────────────────────────────
-  function trocarVisao(v: Visao) {
+  function trocarVisao(v: Exclude<Visao, "excluidos">) {
     setVisao(v);
     trocarQuery((p) => (v === "lista" ? p.set("visao", "lista") : p.delete("visao")));
+  }
+
+  // Excluídos é outro conjunto de dados: a página carrega do servidor.
+  function irParaExcluidos() {
+    setVisao("excluidos");
+    navegar(() => router.push("/master/crm?visao=excluidos", { scroll: false }));
+  }
+  function voltarDosExcluidos() {
+    setVisao("kanban");
+    navegar(() => router.push("/master/crm", { scroll: false }));
   }
 
   function selecionarEstagio(e: Estagio | null) {
@@ -308,6 +409,34 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
     </select>
   );
 
+  const selectTemperatura = (
+    <select
+      aria-label="Temperatura"
+      value={temperatura ?? ""}
+      onChange={(e) => setTemperatura((e.target.value || null) as FiltroTemperatura | null)}
+      className={SELECT}
+    >
+      <option value="">Todas as temperaturas</option>
+      {TEMPERATURAS.map((t) => (
+        <option key={t} value={t}>
+          {ROTULO_TEMPERATURA[t]}
+        </option>
+      ))}
+      <option value="sem">Sem marca</option>
+    </select>
+  );
+
+  const linkExcluidos = (
+    <button
+      type="button"
+      onClick={irParaExcluidos}
+      className={`toque-44 relative inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg text-sm font-bold text-texto-2 hover:text-brand-700 hover:bg-fundo ${FOCO}`}
+    >
+      <Archive className="w-4 h-4" aria-hidden />
+      Excluídos
+    </button>
+  );
+
   const selectPraca = (
     <select
       aria-label="Praça"
@@ -338,8 +467,20 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
     />
   );
 
+  const naVisaoExcluidos = visao === "excluidos" && excluidos !== null;
+
   let conteudo: React.ReactNode;
   if (erro) conteudo = null;
+  else if (naVisaoExcluidos)
+    conteudo = (
+      <CrmExcluidos
+        leads={excluidos}
+        restaurandoId={restaurandoId}
+        onAbrir={abrir}
+        onRestaurar={(l) => void restaurar(l)}
+        onVoltar={voltarDosExcluidos}
+      />
+    );
   else if (total === 0) conteudo = <CrmVazio />;
   else if (visao === "lista")
     conteudo = (
@@ -385,8 +526,12 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
           {navegando && (
             <Loader2 className="w-4 h-4 animate-spin text-brand-700" aria-label="Carregando" />
           )}
-          <div className="ml-auto hidden lg:flex items-center gap-3">
-            {seletorVisao}
+          <div className="ml-auto flex items-center gap-2">
+            {/* Link secundário, fora do grupo Kanban/Lista (revisão 1, item 21). */}
+            {!naVisaoExcluidos && linkExcluidos}
+          </div>
+          <div className="hidden lg:flex items-center gap-3">
+            {!naVisaoExcluidos && seletorVisao}
             <button type="button" onClick={() => setNovoLead(true)} className={BTN_PRIMARIO}>
               <Plus className="w-4 h-4" aria-hidden />
               Novo lead
@@ -394,7 +539,7 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
           </div>
         </div>
 
-        <div className="flex flex-wrap lg:flex-nowrap items-center gap-2">
+        <div className={`flex flex-wrap lg:flex-nowrap items-center gap-2 ${naVisaoExcluidos ? "hidden" : ""}`}>
           <div className="relative basis-full sm:basis-auto sm:flex-1 sm:min-w-[180px] lg:max-w-md">
             <Search
               className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-texto-2"
@@ -413,6 +558,7 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
           <div className="hidden lg:contents">
             {selectFonte}
             {selectPraca}
+            {selectTemperatura}
           </div>
           <AlternarPraHoje ativo={praHoje} total={totalPraHoje} onAlternar={() => setPraHoje((v) => !v)} />
           <button
@@ -441,12 +587,13 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
         {/* < 1024 px: fonte, praça e a troca de visão ficam aqui dentro. */}
         <div
           id={idFiltros}
-          hidden={!filtrosAbertos}
+          hidden={!filtrosAbertos || naVisaoExcluidos}
           className="lg:hidden rounded-2xl border border-borda bg-superficie p-3 space-y-3"
         >
           <div className="grid gap-2 sm:grid-cols-2">
             {selectFonte}
             {selectPraca}
+            {selectTemperatura}
           </div>
           {seletorVisao}
         </div>
@@ -466,7 +613,7 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
         </div>
       )}
 
-      {!erro && total > 0 && (
+      {!erro && total > 0 && !naVisaoExcluidos && (
         // No celular o kanban tem as abas com contagem; a faixa fica para a lista.
         <div className={visao === "kanban" ? "hidden lg:block" : undefined}>
           <FaixaEstagios contagens={contagens} selecionado={estagioSel} onSelecionar={selecionarEstagio} />
@@ -484,6 +631,7 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
       <button
         type="button"
         onClick={() => setNovoLead(true)}
+        hidden={naVisaoExcluidos}
         className={`lg:hidden fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 inline-flex items-center gap-2 h-14 pl-4 pr-5 rounded-full bg-brand-700 text-white text-sm font-bold shadow-[var(--shadow-pop)] ${FOCO}`}
       >
         <Plus className="w-5 h-5" aria-hidden />
@@ -497,6 +645,7 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
           aberto
           onFechar={() => setMenu(null)}
           onEscolher={(d) => escolher(menu.lead, d)}
+          onExcluindo={prepararFocoAposSumir}
         />
       )}
 
@@ -508,6 +657,11 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial }:
         onFechar={fecharPainel}
         onEscolherEstagio={escolher}
         onAbrirLead={(id) => abrir(id, gatilho)}
+        temperaturaPendente={!!leadAberto && temperaturaPendente === leadAberto.id}
+        onDefinirTemperatura={marcarTemperatura}
+        onExcluindo={prepararFocoAposSumir}
+        onExcluir={excluir}
+        onRestaurar={restaurar}
       />
 
       <DialogoPerda

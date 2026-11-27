@@ -12,6 +12,7 @@ import {
 } from "@/lib/crm/textos-card";
 import type { LeadCrm } from "@/lib/crm/tipos";
 import { FOCO } from "@/components/master/crm/cores-estagio";
+import { SeloTemperatura } from "@/components/master/crm/selo-temperatura";
 
 const TOM_SELO: Record<TomSelo, string> = {
   aviso: "bg-aviso-bg text-aviso-texto border-aviso-borda",
@@ -95,13 +96,16 @@ export function CrmCard({
         </button>
       </div>
 
-      {selo && (
-        <div>
-          <span
-            className={`inline-flex items-center h-[22px] px-2 rounded-full border text-[11px] font-bold whitespace-nowrap ${TOM_SELO[selo.tom]}`}
-          >
-            {selo.texto}
-          </span>
+      {(selo || lead.temperatura) && (
+        <div className="flex flex-wrap gap-1.5">
+          <SeloTemperatura temperatura={lead.temperatura} />
+          {selo && (
+            <span
+              className={`inline-flex items-center h-[22px] px-2 rounded-full border text-[11px] font-bold whitespace-nowrap ${TOM_SELO[selo.tom]}`}
+            >
+              {selo.texto}
+            </span>
+          )}
         </div>
       )}
 

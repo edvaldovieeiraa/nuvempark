@@ -1,4 +1,4 @@
-import { ESTAGIOS, type Estagio, type Fonte, type MotivoPerda } from "@/lib/crm/tipos";
+import { ESTAGIOS, type Estagio, type MotivoPerda } from "@/lib/crm/tipos";
 
 /**
  * Movimento de estágio do CRM. Decisão de 26/11/2026 (substitui a matriz da
@@ -31,16 +31,3 @@ export const MOTIVOS_MANUAIS: readonly Exclude<MotivoPerda, "cancelou">[] = [
   "desistiu",
   "outro",
 ];
-
-/**
- * "Excluir: é spam" (Revisão 3): só lead do formulário, sem rede e sem nenhuma
- * interação humana. O resto vai para Perdido, que guarda o histórico. O banco
- * repete a condição no próprio DELETE (`fn_crm_excluir_spam`).
- */
-export function podeExcluirComoSpam(lead: {
-  fonte: Fonte;
-  tenantId: string | null;
-  temInteracaoHumana: boolean;
-}): boolean {
-  return lead.fonte === "contato" && !lead.tenantId && !lead.temInteracaoHumana;
-}

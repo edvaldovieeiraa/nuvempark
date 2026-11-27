@@ -1,8 +1,8 @@
 import { inicioJanela } from "@/lib/crm/consulta";
-import { ESTAGIOS, FONTES, type Estagio, type Fonte } from "@/lib/crm/tipos";
+import { ESTAGIOS, FONTES, type Estagio, type Fonte, type Temperatura } from "@/lib/crm/tipos";
 
 /**
- * Filtros da tela do CRM (req. 21): busca, fonte, praça e a janela de 30 dias
+ * Filtros da tela do CRM (req. 21): busca, fonte, praça, temperatura e a janela de 30 dias
  * de Ganho e Perdido (req. 22). Puro; nenhuma função muda o array recebido.
  */
 
@@ -40,20 +40,29 @@ export function naJanela(lead: { status: Estagio; estagioEm: string }, agora: Da
   return Date.parse(lead.estagioEm) >= Date.parse(inicioJanela(agora));
 }
 
+/** Um nível, ou "sem" para os leads sem marca; null = todas. */
+export type FiltroTemperatura = Temperatura | "sem";
+
 export type FiltrosCrm = {
   busca?: string;
   fonte?: Fonte | null;
   praca?: string | null;
+  temperatura?: FiltroTemperatura | null;
 };
 
-export function aplicarFiltros<T extends LeadBuscavel & { fonte: Fonte; praca: string | null }>(
-  leads: readonly T[],
-  f: FiltrosCrm,
-): T[] {
+function casaTemperatura(t: Temperatura | null, f: FiltroTemperatura | null | undefined): boolean {
+  if (!f) return true;
+  return f === "sem" ? t === null : t === f;
+}
+
+export function aplicarFiltros<
+  T extends LeadBuscavel & { fonte: Fonte; praca: string | null; temperatura: Temperatura | null },
+>(leads: readonly T[], f: FiltrosCrm): T[] {
   return leads.filter(
     (l) =>
       (!f.fonte || l.fonte === f.fonte) &&
       (!f.praca || l.praca === f.praca) &&
+      casaTemperatura(l.temperatura, f.temperatura) &&
       casaBusca(l, f.busca ?? ""),
   );
 }

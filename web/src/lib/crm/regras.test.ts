@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   destinosPossiveis,
-  podeExcluirComoSpam,
   podeMoverPara,
   MOTIVOS_MANUAIS,
 } from "@/lib/crm/regras";
@@ -46,24 +45,5 @@ describe("MOTIVOS_MANUAIS", () => {
       "desistiu",
       "outro",
     ]);
-  });
-});
-
-describe("podeExcluirComoSpam — Revisão 3", () => {
-  const base = { fonte: "contato" as const, tenantId: null, temInteracaoHumana: false };
-
-  it("só lead do formulário, sem rede e sem interação humana", () => {
-    expect(podeExcluirComoSpam(base)).toBe(true);
-  });
-  it("recusa lead com rede ligada", () => {
-    expect(podeExcluirComoSpam({ ...base, tenantId: "t1" })).toBe(false);
-  });
-  it("recusa lead com interação humana", () => {
-    expect(podeExcluirComoSpam({ ...base, temInteracaoHumana: true })).toBe(false);
-  });
-  it("recusa lead que não veio do formulário", () => {
-    for (const fonte of ["trial", "master", "manual", "importacao"] as const) {
-      expect(podeExcluirComoSpam({ ...base, fonte })).toBe(false);
-    }
   });
 });

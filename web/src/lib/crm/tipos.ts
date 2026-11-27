@@ -20,6 +20,10 @@ export const MOTIVOS_PERDA = [
 ] as const;
 export type MotivoPerda = (typeof MOTIVOS_PERDA)[number];
 
+/** Marcada à mão no CRM (db/54). Null no lead = sem marca. */
+export const TEMPERATURAS = ["quente", "morno", "frio"] as const;
+export type Temperatura = (typeof TEMPERATURAS)[number];
+
 export const ESTADOS_ASSINATURA = ["trial", "ativa", "atrasada", "suspensa", "cancelada"] as const;
 export type EstadoAssinatura = (typeof ESTADOS_ASSINATURA)[number];
 
@@ -68,6 +72,18 @@ export type LeadCrm = {
   praca: string | null;
   /** Lead criado pelo vínculo que ainda tem o nome da rede como nome (Revisão 10). */
   semResponsavel: boolean;
+  temperatura: Temperatura | null;
+  /** Excluído do CRM (some do quadro, o histórico fica). Null = no quadro. */
+  excluidoEm: string | null;
+};
+
+/** Print de uma nota, com link assinado de 1 h. */
+export type AnexoCrm = {
+  id: string;
+  url: string;
+  largura: number | null;
+  altura: number | null;
+  bytes: number;
 };
 
 export type InteracaoCrm = {
@@ -75,4 +91,7 @@ export type InteracaoCrm = {
   tipo: TipoInteracao;
   texto: string;
   criadoEm: string;
+  anexos: AnexoCrm[];
+  /** Quantos prints desta nota foram removidos (só o contador fica). */
+  anexosRemovidos: number;
 };

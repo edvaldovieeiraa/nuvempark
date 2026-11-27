@@ -122,6 +122,18 @@
   /* Borda de botão e campo (~1,5:1; `borda` fica para divisórias e cartões). */
   --color-borda-campo: #C9D4CC;
 
+  /* Temperatura do lead (db/54; design crm-temperatura, revisão 1). Rosa e
+     ardósia: nenhum estágio nem alerta usa essas famílias. Quente cheio,
+     Morno em contorno (o fundo rosa claro lia como selo de perigo), Frio claro.
+     Contrastes: branco/#BE185D 6,04:1; #9D174D/branco 7,88:1; #334155/#F1F5F9 9,45:1. */
+  --color-temp-quente-fundo: #BE185D;
+  --color-temp-quente-texto: #FFFFFF;
+  --color-temp-morno-borda: #DB2777;
+  --color-temp-morno-texto: #9D174D;
+  --color-temp-frio-fundo: #F1F5F9;
+  --color-temp-frio-borda: #CBD5E1;
+  --color-temp-frio-texto: #334155;
+
   /* Sombras suaves em camadas */
   --shadow-card: 0 1px 2px rgb(16 27 20 / 0.04), 0 4px 16px -4px rgb(16 27 20 / 0.06);
   --shadow-card-hover: 0 2px 4px rgb(16 27 20 / 0.05), 0 12px 32px -8px rgb(16 27 20 / 0.14);

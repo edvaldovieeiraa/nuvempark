@@ -1,11 +1,11 @@
-import { podeExcluirComoSpam } from "@/lib/crm/regras";
 import { ROTULO_ESTAGIO } from "@/lib/crm/rotulos";
-import { ESTAGIOS, type Estagio, type Fonte } from "@/lib/crm/tipos";
+import { ESTAGIOS, type Estagio } from "@/lib/crm/tipos";
 
 /**
  * O que o menu de estágio mostra (design doc, tela 4, com o movimento livre de
  * `regras.ts`): os cinco estágios na ordem do funil, o atual marcado. Perdido
- * abre o diálogo do motivo.
+ * abre o diálogo do motivo. "Excluir…" vale para qualquer lead (db/54: excluir
+ * guarda o histórico), então não depende do lead.
  */
 
 export type DestinoMenu = Estagio;
@@ -18,21 +18,15 @@ export type MenuEstagioModelo = {
   itens: ItemMenuEstagio[];
   /** Nota fora do menu, ligada aos itens por `aria-describedby`. */
   explicacao: string;
-  podeExcluir: boolean;
 };
 
 export const EXPLICACAO_AUTOMATICOS =
-  "Trial e Ganho também mudam sozinhos: conta criada vira Trial; assinatura ativada vira Ganho.";
+  "Trial e Ganho também mudam sozinhos: conta criada vira Trial; assinatura ativada vira Ganho. " +
+  "No computador, também dá para arrastar o card.";
 
-export function itensMenuEstagio(lead: {
-  status: Estagio;
-  tenantId: string | null;
-  fonte: Fonte;
-  temInteracaoHumana: boolean;
-}): MenuEstagioModelo {
+export function itensMenuEstagio(lead: { status: Estagio }): MenuEstagioModelo {
   return {
     explicacao: EXPLICACAO_AUTOMATICOS,
-    podeExcluir: podeExcluirComoSpam(lead),
     itens: ESTAGIOS.map((e) =>
       e === lead.status
         ? { tipo: "atual" as const, estagio: e, rotulo: ROTULO_ESTAGIO[e] }

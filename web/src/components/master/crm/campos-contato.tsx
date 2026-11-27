@@ -1,10 +1,13 @@
 "use client";
 
-import { useId } from "react";
-import { AlertTriangle } from "lucide-react";
-import type { Duplicado } from "@/app/master/(console)/crm/actions";
+import { useId, useTransition } from "react";
+import { AlertTriangle, Loader2 } from "lucide-react";
+import { restaurarLead, type Duplicado } from "@/app/master/(console)/crm/actions";
 import { ROTULO_ESTAGIO } from "@/lib/crm/rotulos";
+import { formatarData } from "@/lib/format-data";
 import { formatarTelefone } from "@/lib/telefone";
+import { useToast } from "@/components/ui/toast";
+import { chamarAction } from "@/components/master/crm/chamar-action";
 import { BTN_PEQUENO, CAMPO, ROTULO } from "@/components/master/crm/estilos";
 
 export type ValoresContato = { nome: string; empresa: string; telefone: string; email: string };
@@ -110,7 +113,10 @@ const CASOU_POR: Record<Duplicado["casouPor"], string> = {
   ambos: "mesmo e-mail e telefone",
 };
 
-/** "Esse contato já está no CRM": até 2 leads, cada um com "Abrir". */
+/**
+ * "Esse contato já está no CRM": até 2 leads, cada um com "Abrir". Um excluído
+ * (db/54) vem marcado, com "Restaurar e abrir".
+ */
 export function AvisoDuplicados({
   id,
   msg,
@@ -138,20 +144,67 @@ export function AvisoDuplicados({
             <div className="min-w-0 flex-1">
               <p className="font-bold text-texto break-words">{d.nome}</p>
               <p className="text-xs text-texto-2 break-words">
-                {[d.empresa, ROTULO_ESTAGIO[d.status], CASOU_POR[d.casouPor]].filter(Boolean).join(" · ")}
+                {(d.excluido
+                  ? [
+                      d.excluidoEm ? `Excluído em ${formatarData(new Date(d.excluidoEm))}` : "Excluído",
+                      `estava em ${ROTULO_ESTAGIO[d.status]}`,
+                      CASOU_POR[d.casouPor],
+                    ]
+                  : [d.empresa, ROTULO_ESTAGIO[d.status], CASOU_POR[d.casouPor]]
+                )
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => onAbrirLead(d.id)}
-              aria-label={`Abrir ${d.nome}`}
-              className={BTN_PEQUENO}
-            >
-              Abrir
-            </button>
+            {d.excluido ? (
+              <BotaoRestaurarEAbrir duplicado={d} onAbrirLead={onAbrirLead} />
+            ) : (
+              <button
+                type="button"
+                onClick={() => onAbrirLead(d.id)}
+                aria-label={`Abrir ${d.nome}`}
+                className={BTN_PEQUENO}
+              >
+                Abrir
+              </button>
+            )}
           </li>
         ))}
       </ul>
     </div>
+  );
+}
+
+function BotaoRestaurarEAbrir({
+  duplicado,
+  onAbrirLead,
+}: {
+  duplicado: Duplicado;
+  onAbrirLead: (id: string) => void;
+}) {
+  const toast = useToast();
+  const [pendente, comecar] = useTransition();
+  return (
+    <button
+      type="button"
+      aria-label={`Restaurar e abrir ${duplicado.nome}`}
+      aria-disabled={pendente || undefined}
+      onClick={() => {
+        if (pendente) return;
+        comecar(async () => {
+          const r = await chamarAction(() => restaurarLead(duplicado.id));
+          if (!r.ok) {
+            toast.erro(r.msg);
+            return;
+          }
+          toast.sucesso(r.msg);
+          onAbrirLead(duplicado.id);
+        });
+      }}
+      className={`${BTN_PEQUENO} !bg-brand-700 !text-white !border-brand-700 whitespace-nowrap`}
+    >
+      {pendente && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden />}
+      Restaurar e abrir
+    </button>
   );
 }

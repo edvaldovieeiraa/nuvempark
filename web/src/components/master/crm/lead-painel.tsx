@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useRef, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -12,15 +12,17 @@ import {
   MessageSquarePlus,
   Pencil,
   Phone,
+  RotateCcw,
   Shuffle,
+  Trash2,
   UserPlus,
 } from "lucide-react";
 import { linksContato } from "@/lib/crm/atalhos";
 import type { DestinoMenu } from "@/lib/crm/menu-estagio";
 import { alertaTrial, classificarTrial } from "@/lib/crm/prazos";
 import { ROTULO_ASSINATURA, ROTULO_ESTAGIO, rotuloFonte } from "@/lib/crm/rotulos";
-import { seloCard, subtituloCard, textoTrial, type TomSelo } from "@/lib/crm/textos-card";
-import type { LeadCrm } from "@/lib/crm/tipos";
+import { seloCard, subtituloCard, textoProximaAcao, textoTrial, type TomSelo } from "@/lib/crm/textos-card";
+import type { LeadCrm, Temperatura } from "@/lib/crm/tipos";
 import { formatarDataHora } from "@/lib/format-data";
 import { formatarTelefone } from "@/lib/telefone";
 import { Folha } from "@/components/ui/folha";
@@ -32,6 +34,9 @@ import { FormContato } from "@/components/master/crm/form-contato";
 import { FormInteracao } from "@/components/master/crm/form-interacao";
 import { LinhaDoTempo } from "@/components/master/crm/linha-do-tempo";
 import { MenuEstagio } from "@/components/master/crm/menu-estagio";
+import { ConfirmarAcao, descricaoExcluirLead } from "@/components/master/crm/confirmar-acao";
+import { SeletorTemperatura } from "@/components/master/crm/seletor-temperatura";
+import { SeloTemperatura } from "@/components/master/crm/selo-temperatura";
 
 type Props = {
   lead: LeadCrm | null;
@@ -44,6 +49,14 @@ type Props = {
   onEscolherEstagio: (lead: LeadCrm, destino: DestinoMenu) => void;
   /** "Abrir" de um duplicado na edição de contato. */
   onAbrirLead: (id: string) => void;
+  /** Temperatura (otimista no pai). */
+  temperaturaPendente: boolean;
+  onDefinirTemperatura: (lead: LeadCrm, para: Temperatura | null) => void;
+  /** Antes de excluir: o pai guarda para onde o foco vai quando o card sumir. */
+  onExcluindo: (id: string) => void;
+  /** O pai chama a action; true = excluído. */
+  onExcluir: (lead: LeadCrm) => Promise<boolean>;
+  onRestaurar: (lead: LeadCrm) => Promise<boolean>;
 };
 
 // Abaixo de 640 px a Folha é tela cheia: é aí que entra a barra de baixo.
@@ -86,8 +99,19 @@ function PainelAberto({
   onFechar,
   onEscolherEstagio,
   onAbrirLead,
+  temperaturaPendente,
+  onDefinirTemperatura,
+  onExcluindo,
+  onExcluir,
+  onRestaurar,
 }: Props & { lead: LeadCrm }) {
   const celular = useCelular();
+  // Excluído: modo leitura (design, revisão 1, item 8). Só "Restaurar" age.
+  const excluido = !!lead.excluidoEm;
+  const [confirmandoExcluir, setConfirmandoExcluir] = useState(false);
+  const [excluindo, comecarExclusao] = useTransition();
+  const [restaurando, comecarRestauracao] = useTransition();
+  const btnExcluirRef = useRef<HTMLButtonElement>(null);
   const [menuAberto, setMenuAberto] = useState(false);
   const [btnEstagio, setBtnEstagio] = useState<HTMLButtonElement | null>(null);
   const [folhaEstagio, setFolhaEstagio] = useState(false);
@@ -113,8 +137,37 @@ function PainelAberto({
     onEscolherEstagio(lead, destino);
   }
 
+  function excluir() {
+    onExcluindo(lead.id);
+    comecarExclusao(async () => {
+      const ok = await onExcluir(lead);
+      if (!ok) {
+        setConfirmandoExcluir(false);
+        btnExcluirRef.current?.focus({ preventScroll: true });
+      }
+      // Excluído: o lead some dos dados e o pai fecha o painel.
+    });
+  }
+
+  function restaurar() {
+    comecarRestauracao(async () => {
+      await onRestaurar(lead);
+    });
+  }
+
+  const seletorTemperatura = (
+    <SeletorTemperatura
+      valor={lead.temperatura}
+      pendente={temperaturaPendente}
+      onEscolher={(t) => onDefinirTemperatura(lead, t)}
+    />
+  );
+
   const cabecalho = (
     <div className="flex flex-col gap-2">
+      {excluido && lead.excluidoEm && (
+        <FaixaExcluido excluidoEm={lead.excluidoEm} pendente={restaurando} onRestaurar={restaurar} celular={celular} />
+      )}
       {subtitulo && <p className="text-sm text-texto-2 break-words">{subtitulo}</p>}
       <div className="flex flex-wrap items-center gap-2">
         <span
@@ -136,22 +189,50 @@ function PainelAberto({
             {selo.texto}
           </span>
         )}
-        {!celular && (
-          <button
-            ref={setBtnEstagio}
-            type="button"
-            aria-haspopup="menu"
-            aria-expanded={menuAberto}
-            onClick={() => setMenuAberto((a) => !a)}
-            className={`${BTN_PEQUENO} ml-auto`}
-          >
-            <Shuffle className="w-3.5 h-3.5" aria-hidden />
-            Mudar estágio
-            <ChevronDown className="w-3.5 h-3.5" aria-hidden />
-          </button>
+        {excluido && <SeloTemperatura temperatura={lead.temperatura} />}
+        {!celular && !excluido && (
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              ref={setBtnEstagio}
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={menuAberto}
+              onClick={() => setMenuAberto((a) => !a)}
+              className={BTN_PEQUENO}
+            >
+              <Shuffle className="w-3.5 h-3.5" aria-hidden />
+              Mudar estágio
+              <ChevronDown className="w-3.5 h-3.5" aria-hidden />
+            </button>
+            {/* Botão solto: neutro, vermelho só no hover (revisão 1, item 10). */}
+            <button
+              ref={btnExcluirRef}
+              type="button"
+              onClick={() => setConfirmandoExcluir(true)}
+              className={`${BTN_PEQUENO} hover:!text-perigo-texto hover:!border-perigo-borda hover:bg-perigo-bg`}
+            >
+              <Trash2 className="w-3.5 h-3.5" aria-hidden />
+              Excluir…
+            </button>
+          </div>
         )}
       </div>
-      {!celular && (
+      {!celular && !excluido && <div className="pt-1">{seletorTemperatura}</div>}
+      {confirmandoExcluir && (
+        <ConfirmarAcao
+          noLugar
+          titulo={`Excluir ${lead.nome}?`}
+          descricao={descricaoExcluirLead()}
+          rotuloConfirmar="Excluir"
+          pendente={excluindo}
+          onCancelar={() => {
+            setConfirmandoExcluir(false);
+            btnExcluirRef.current?.focus({ preventScroll: true });
+          }}
+          onConfirmar={excluir}
+        />
+      )}
+      {!celular && !excluido && (
         <MenuEstagio
           lead={lead}
           ancora={btnEstagio}
@@ -159,13 +240,18 @@ function PainelAberto({
           modo="embutido"
           onFechar={() => setMenuAberto(false)}
           onEscolher={escolher}
-          onAtualizado={mudou}
+          onExcluindo={onExcluindo}
         />
       )}
     </div>
   );
 
-  const rodape = celular ? (
+  const rodape = !celular ? undefined : excluido ? (
+    <button type="button" onClick={restaurar} disabled={restaurando} className={`${BTN_PRIMARIO} w-full`}>
+      <RotateCcw className="w-4 h-4" aria-hidden />
+      Restaurar
+    </button>
+  ) : (
     <div className="flex gap-3">
       <button
         ref={setBtnBarraEstagio}
@@ -186,7 +272,7 @@ function PainelAberto({
         Registrar interação
       </button>
     </div>
-  ) : undefined;
+  );
 
   return (
     <Folha
@@ -198,7 +284,10 @@ function PainelAberto({
       focoAoFechar={focoAoFechar}
     >
       <div className="flex flex-col gap-6">
-        {editandoContato ? (
+        {/* < 640 px: a temperatura é a 1ª seção do corpo, que rola (revisão 1, item 9). */}
+        {celular && !excluido && <section aria-label="Temperatura">{seletorTemperatura}</section>}
+
+        {editandoContato && !excluido ? (
           <section aria-label="Editar contato" className="flex flex-col gap-2">
             <h3 className={SECAO_TITULO}>Contato</h3>
             <FormContato
@@ -212,14 +301,18 @@ function PainelAberto({
             />
           </section>
         ) : (
-          <Contato lead={lead} celular={celular} onEditar={() => setEditandoContato(true)} />
+          <Contato lead={lead} celular={celular} somenteLeitura={excluido} onEditar={() => setEditandoContato(true)} />
         )}
 
-        <BlocoProximaAcao lead={lead} agora={agora} onAlterado={mudou} />
+        {excluido ? (
+          <ProximaAcaoLeitura lead={lead} agora={agora} />
+        ) : (
+          <BlocoProximaAcao lead={lead} agora={agora} onAlterado={mudou} />
+        )}
 
         {lead.assunto && !celular && <MensagemOriginal lead={lead} />}
 
-        {!celular && (
+        {!celular && !excluido && (
           <section aria-label="Registrar interação" className="flex flex-col gap-2">
             <h3 className={SECAO_TITULO}>Registrar interação</h3>
             <FormInteracao lead={lead} onRegistrado={mudou} />
@@ -227,7 +320,11 @@ function PainelAberto({
         )}
 
         {/* estagioEm: o movimento feito pelo pai grava um item `sistema`. */}
-        <LinhaDoTempo key={`${lead.estagioEm}-${versao}`} leadId={lead.id} />
+        <LinhaDoTempo
+          key={`${lead.estagioEm}-${lead.temperatura ?? ""}-${lead.excluidoEm ?? ""}-${versao}`}
+          leadId={lead.id}
+          somenteLeitura={excluido}
+        />
 
         {/* Tela 7: no celular a mensagem original vem depois da linha do tempo. */}
         {lead.assunto && celular && <MensagemOriginal lead={lead} />}
@@ -237,7 +334,7 @@ function PainelAberto({
         {lead.tenantId && <CartaoRede lead={lead} agoraD={agoraD} />}
       </div>
 
-      {celular && (
+      {celular && !excluido && (
         <Folha
           aberta={folhaEstagio}
           onFechar={() => setFolhaEstagio(false)}
@@ -251,12 +348,12 @@ function PainelAberto({
             modo="embutido"
             onFechar={() => setFolhaEstagio(false)}
             onEscolher={escolher}
-            onAtualizado={mudou}
+            onExcluindo={onExcluindo}
           />
         </Folha>
       )}
 
-      {celular && (
+      {celular && !excluido && (
         <Folha
           aberta={folhaInteracao}
           onFechar={() => setFolhaInteracao(false)}
@@ -278,7 +375,17 @@ function PainelAberto({
   );
 }
 
-function Contato({ lead, celular, onEditar }: { lead: LeadCrm; celular: boolean; onEditar: () => void }) {
+function Contato({
+  lead,
+  celular,
+  somenteLeitura,
+  onEditar,
+}: {
+  lead: LeadCrm;
+  celular: boolean;
+  somenteLeitura: boolean;
+  onEditar: () => void;
+}) {
   const toast = useToast();
   const l = linksContato(lead);
   const semContato = !l.telefone && !l.email;
@@ -329,10 +436,12 @@ function Contato({ lead, celular, onEditar }: { lead: LeadCrm; celular: boolean;
           <p className="flex-1 min-w-40 text-sm text-texto-2">
             Sem telefone nem e-mail: os atalhos ficam desligados até você adicionar um contato.
           </p>
-          <button type="button" onClick={onEditar} className={BTN_PEQUENO}>
-            <UserPlus className="w-3.5 h-3.5" aria-hidden />
-            Adicionar contato
-          </button>
+          {!somenteLeitura && (
+            <button type="button" onClick={onEditar} className={BTN_PEQUENO}>
+              <UserPlus className="w-3.5 h-3.5" aria-hidden />
+              Adicionar contato
+            </button>
+          )}
         </div>
       ) : (
         <dl className="flex flex-col gap-1.5 text-sm">
@@ -370,7 +479,7 @@ function Contato({ lead, celular, onEditar }: { lead: LeadCrm; celular: boolean;
         </dl>
       )}
 
-      {!semContato && (
+      {!semContato && !somenteLeitura && (
         <div>
           <button type="button" onClick={onEditar} className={BTN_PEQUENO}>
             <Pencil className="w-3.5 h-3.5" aria-hidden />
@@ -378,6 +487,54 @@ function Contato({ lead, celular, onEditar }: { lead: LeadCrm; celular: boolean;
           </button>
         </div>
       )}
+    </section>
+  );
+}
+
+/** Faixa do lead excluído (design, tela 5): diz quando e oferece Restaurar. */
+function FaixaExcluido({
+  excluidoEm,
+  pendente,
+  onRestaurar,
+  celular,
+}: {
+  excluidoEm: string;
+  pendente: boolean;
+  onRestaurar: () => void;
+  celular: boolean;
+}) {
+  return (
+    <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-borda bg-[#EEF1EF] px-3.5 py-2.5">
+      <p className="flex-1 min-w-40 text-sm text-texto">
+        <b>Excluído em {formatarDataHora(excluidoEm)}.</b> Só leitura até restaurar.
+      </p>
+      {/* No celular, o Restaurar fica na barra de baixo. */}
+      {!celular && (
+        <button type="button" onClick={onRestaurar} disabled={pendente} className={`${BTN_PRIMARIO} h-9 px-3.5`}>
+          <RotateCcw className="w-4 h-4" aria-hidden />
+          Restaurar
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ProximaAcaoLeitura({ lead, agora }: { lead: LeadCrm; agora: string }) {
+  const quando = textoProximaAcao(lead.proximaAcaoEm, new Date(agora));
+  return (
+    <section aria-label="Próxima ação" className="flex flex-col gap-2">
+      <h3 className={SECAO_TITULO}>Próxima ação</h3>
+      <p className="text-sm text-texto-2">
+        {lead.proximaAcao || quando ? (
+          <>
+            {quando && <b className="text-texto">{quando}</b>}
+            {quando && lead.proximaAcao ? " · " : null}
+            {lead.proximaAcao}
+          </>
+        ) : (
+          "Sem próxima ação."
+        )}
+      </p>
     </section>
   );
 }

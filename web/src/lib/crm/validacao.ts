@@ -37,13 +37,15 @@ export function validarMovimento(
   return { ok: true };
 }
 
+/** Com print, o texto fica opcional (spec, req. 21). */
 export function validarInteracao(entrada: {
   tipo: TipoInteracaoManual;
   texto: string;
+  temPrint?: boolean;
 }): { ok: true; tipo: TipoInteracaoManual; texto: string } | Falha {
   if (!TIPOS_INTERACAO_MANUAL.includes(entrada.tipo)) return { ok: false, msg: "Tipo de interação inválido." };
   const texto = String(entrada.texto ?? "").trim();
-  if (!texto) return { ok: false, msg: "Escreva o que aconteceu." };
+  if (!texto && !entrada.temPrint) return { ok: false, msg: "Escreva o que aconteceu ou cole um print." };
   if (texto.length > LIMITE_TEXTO) return { ok: false, msg: `O texto passou de ${LIMITE_TEXTO} caracteres.` };
   return { ok: true, tipo: entrada.tipo, texto };
 }

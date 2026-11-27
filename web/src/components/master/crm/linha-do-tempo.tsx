@@ -29,7 +29,13 @@ type Estado =
  * componente com outra `key` (o `revalidatePath` não chega aqui, que é
  * buscado pelo navegador). Itens `sistema` ficam discretos.
  */
-export function LinhaDoTempo({ leadId }: { leadId: string }) {
+export function LinhaDoTempo({
+  leadId,
+}: {
+  leadId: string;
+  /** Lead excluído: os prints não podem ser removidos (usado pelos prints). */
+  somenteLeitura?: boolean;
+}) {
   const id = useId();
   const [estado, setEstado] = useState<Estado>({ fase: "carregando" });
   const [maisErro, setMaisErro] = useState<string | null>(null);

@@ -52,6 +52,18 @@ describe("validarInteracao", () => {
     expect(validarInteracao({ tipo: "nota", texto: "   " }).ok).toBe(false);
     expect(validarInteracao({ tipo: "nota", texto: "x".repeat(4001) }).ok).toBe(false);
   });
+  it("com print, o texto fica opcional", () => {
+    expect(validarInteracao({ tipo: "whatsapp", texto: "  ", temPrint: true })).toEqual({
+      ok: true,
+      tipo: "whatsapp",
+      texto: "",
+    });
+    expect(validarInteracao({ tipo: "nota", texto: "" })).toEqual({
+      ok: false,
+      msg: "Escreva o que aconteceu ou cole um print.",
+    });
+    expect(validarInteracao({ tipo: "nota", texto: "x".repeat(4001), temPrint: true }).ok).toBe(false);
+  });
 });
 
 describe("validarProximaAcao", () => {
