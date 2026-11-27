@@ -249,8 +249,12 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial, e
 
   async function excluir(lead: LeadCrm): Promise<boolean> {
     const r = await chamarAction(() => excluirLead(lead.id));
-    if (r.ok) toast.sucesso(r.msg);
-    else {
+    if (r.ok) {
+      // Fecha já: com `?lead=` na URL, a página recarregada traria o lead de
+      // volta como avulso (excluído, em modo leitura) e o painel ficaria aberto.
+      if (params.get("lead") === lead.id) fecharPainel();
+      toast.sucesso(r.msg);
+    } else {
       toast.erro(r.msg);
       focarCardRef.current = null;
     }
