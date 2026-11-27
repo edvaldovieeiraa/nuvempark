@@ -130,7 +130,7 @@ class ComoChegamosCard extends StatelessWidget {
           const SizedBox(height: 10),
           ...linhas,
           if (fare.motivo == FareMotivo.tetoDiaria)
-            ajuste('Teto da diária', _moeda.format(fare.valor)),
+            ajuste('Limitado ao teto da diária', _moeda.format(fare.valor)),
           if (descontoVoucher != null && descontoVoucher! > 0)
             ajuste('Voucher', '−${_moeda.format(descontoVoucher)}'),
           if (jaPagoOnline != null && jaPagoOnline! > 0)

@@ -68,15 +68,36 @@ class RegraHorario {
     if (valor is! List) return const [];
     final out = <RegraHorario>[];
     for (final item in valor) {
-      if (item is Map) {
+      if (item is! Map) continue;
+      // Uma regra com tipo inesperado não pode derrubar as tarifas do pátio
+      // inteiro (o app ficaria sem cobrar, inclusive offline): só ela some.
+      try {
         final regra = _deMapa(item);
         if (regra != null) out.add(regra);
-      }
+      } catch (_) {}
     }
     return out;
   }
 
   static RegraHorario? _deMapa(Map m) {
+    // `requer` PRIMEIRO: uma regra de versão futura pode ter outro formato, e
+    // descartá-la faria a tabela ser cobrada pelo preço base. Ela entra como
+    // marcador para `TarifaConfig.exigeAppNovo` tirar a tabela das listas.
+    final requer = (m['requer'] as num?)?.toInt() ?? 1;
+    if (requer > regrasHorarioVersaoSuportada) {
+      return RegraHorario(
+        id: '${m['id'] ?? ''}',
+        nome: '${m['nome'] ?? 'Regra'}',
+        dias: const {},
+        inicioMinutos: 0,
+        fimMinutos: 0,
+        cobrarDoInicio: false,
+        degraus: const [DegrauPreco(ateMinutos: 0, centavos: 0)],
+        adicionalMinutos: 0,
+        adicionalCentavos: 0,
+        requer: requer,
+      );
+    }
     final inicio = _minutos(m['hora_inicio']);
     final fim = _minutos(m['hora_fim']);
     final degraus = <DegrauPreco>[
@@ -104,7 +125,7 @@ class RegraHorario {
       degraus: degraus,
       adicionalMinutos: (m['adicional_minutos'] as num?)?.toInt() ?? 0,
       adicionalCentavos: _centavos((m['adicional_valor'] as num?) ?? 0),
-      requer: (m['requer'] as num?)?.toInt() ?? 1,
+      requer: requer,
     );
   }
 
@@ -117,6 +138,7 @@ class RegraHorario {
     if (h == null || mi == null || h < 0 || h > 24 || mi < 0 || mi > 59) {
       return null;
     }
+    if (h == 24 && mi != 0) return null; // só 24:00 (= meia-noite)
     return (h * 60 + mi) % (24 * 60);
   }
 

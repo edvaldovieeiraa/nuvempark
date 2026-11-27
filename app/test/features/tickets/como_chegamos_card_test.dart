@@ -47,7 +47,7 @@ void main() {
     await tester.pumpWidget(_app(
         ComoChegamosCard(fare: teto, descontoVoucher: 10, jaPagoOnline: 20)));
 
-    expect(find.text('Teto da diária'), findsOneWidget);
+    expect(find.text('Limitado ao teto da diária'), findsOneWidget);
     expect(find.text('Voucher'), findsOneWidget);
     expect(find.text('Já pago pelo QR'), findsOneWidget);
   });

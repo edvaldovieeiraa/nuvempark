@@ -124,9 +124,10 @@ abstract final class TarifaEngine {
       if (regra != null) {
         if (primeiro && regra.cobrarDoInicio) {
           out.add(_Bloco(cursor, s, regra));
+          cursor = s;
           break;
         }
-        fim = _fimDaRegra(regra, cursor);
+        fim = _fimDaRegra(regra, cursor, s);
       } else {
         fim = _proximoInicio(cursor, regras) ?? s;
       }
@@ -135,6 +136,9 @@ abstract final class TarifaEngine {
       cursor = fim;
       primeiro = false;
     }
+    // Guarda estourou (regra malformada): o resto da estadia NUNCA sai de
+    // graça — vira um bloco final pelo que estiver em vigor.
+    if (cursor.isBefore(s)) out.add(_Bloco(cursor, s, _regraEm(cursor, regras)));
     return out;
   }
 
@@ -174,9 +178,11 @@ abstract final class TarifaEngine {
 
   /// Fim da [regra] a partir de [t], juntando ocorrências seguidas
   /// (o "dia todo" de sábado e o de domingo formam um trecho só).
-  static DateTime _fimDaRegra(RegraHorario regra, DateTime t) {
+  static DateTime _fimDaRegra(RegraHorario regra, DateTime t, DateTime s) {
     var fim = _ocorrenciaEm(regra, t)!.$2;
-    for (var i = 0; i < 14; i++) {
+    // Junta até a saída (estadia longa numa regra "todo dia, dia inteiro" é um
+    // trecho só); o limite só protege contra laço infinito.
+    for (var i = 0; i < 4000 && fim.isBefore(s); i++) {
       final seguinte = _ocorrenciaEm(regra, fim);
       if (seguinte == null) break;
       fim = seguinte.$2;
