@@ -428,7 +428,9 @@ begin
     ) x where (x.tipo = 'nota' and x.pos = 1);
     if v_n <> 1 then raise exception 'FALHOU: nota do lead manual não ficou acima da linha do sistema'; end if;
 
-    -- spam: recusa lead com nota, lead manual e lead com rede; apaga o limpo
+    -- spam: recusa lead com nota, lead manual e lead com rede; apaga o limpo.
+    -- A db/54 tirou fn_crm_excluir_spam; depois dela, este bloco é pulado.
+    if to_regprocedure('public.fn_crm_excluir_spam(uuid)') is not null then
     if public.fn_crm_excluir_spam(v_lead) then
       raise exception 'FALHOU: excluiu como spam um lead com nota humana';
     end if;
@@ -448,6 +450,7 @@ begin
     end if;
     if exists (select 1 from public.leads_site where id = v_lead2) then
       raise exception 'FALHOU: spam continua na tabela';
+    end if;
     end if;
 
     -- a view: o indicador de interação humana
