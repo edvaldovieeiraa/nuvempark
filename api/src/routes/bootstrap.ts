@@ -3,6 +3,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
 import { getAssinaturaStatus } from '../lib/assinatura.js';
 import { flagsModoRapido } from '../lib/modo-rapido.js';
+import { tarifaVaiParaApp, versaoRegrasDeclarada } from '../lib/regras-horario-bootstrap.js';
 
 /**
  * GET /bootstrap?patio_id=... — hidrata a config offline do app.
@@ -63,11 +64,12 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
     // Tarifa de hóspede só vai para o app que diz entendê-la
     // (`?modalidades=hospede`). Um app anterior a ela a mostraria como mais
     // um chip de tabela avulsa e calcularia a saída pelas frações padrão.
-    const aceitaHospede = String(
+    const modalidades = String(
       (req.query as Record<string, string | undefined>).modalidades ?? '',
-    )
-      .split(',')
-      .includes('hospede');
+    );
+    const aceitaHospede = modalidades.split(',').includes('hospede');
+    // Regras de horário: o app 1.0.2+ declara `regras_horario_v1`.
+    const versaoRegras = versaoRegrasDeclarada(modalidades);
     const consultaTarifas = () =>
       db
         .from('tarifas')
@@ -84,6 +86,11 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
     if (erroTarifas && !aceitaHospede) {
       ({ data: tarifas, error: erroTarifas } = await consultaTarifas());
     }
+    // Tabela com regras de horário só vai para quem as entende (ver
+    // regras-horario-bootstrap.ts). Sem a coluna no banco, nada muda.
+    const tarifasOut = (tarifas ?? []).filter((t) =>
+      tarifaVaiParaApp(t as { regras_horario?: unknown }, versaoRegras),
+    );
 
     // Clientes livre-passagem (p/ reconhecimento offline de placa).
     const { data: clientes } = await db
@@ -131,19 +138,44 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
       | { status: string; licenca: string; apelido: string | null; codigo_pareamento: string | null }
       | null = null;
     if (deviceUuid) {
-      const { data: d } = await db
-        .from('dispositivos')
-        .select('status, licenca, apelido, codigo_pareamento')
-        .eq('patio_id', patioId)
-        .eq('device_uuid', deviceUuid)
-        .maybeSingle();
+      const consultaDispositivo = (colunas: string) =>
+        db
+          .from('dispositivos')
+          .select(colunas)
+          .eq('patio_id', patioId)
+          .eq('device_uuid', deviceUuid)
+          .maybeSingle();
+      let { data: d, error: erroDispositivo } = await consultaDispositivo(
+        'id, status, licenca, apelido, codigo_pareamento, suporta_regras_horario',
+      );
+      // Banco ainda sem db/52: sem este retorno, o aparelho perderia o status.
+      if (erroDispositivo) {
+        ({ data: d } = await consultaDispositivo(
+          'id, status, licenca, apelido, codigo_pareamento',
+        ));
+      }
       if (d) {
-        const row = d as {
+        const row = d as unknown as {
+          id: string;
           status: string;
           licenca: string;
           apelido: string | null;
           codigo_pareamento: string | null;
+          suporta_regras_horario?: boolean;
         };
+        // Grava o suporte a regras SÓ quando muda: o bootstrap roda a cada
+        // 30 s por aparelho e `dispositivos` alimenta o realtime do painel.
+        // Falha aqui não pode derrubar o bootstrap.
+        const suporta = versaoRegras >= 1;
+        if (
+          row.suporta_regras_horario !== undefined &&
+          row.suporta_regras_horario !== suporta
+        ) {
+          await db
+            .from('dispositivos')
+            .update({ suporta_regras_horario: suporta })
+            .eq('id', row.id);
+        }
         dispositivoOut = {
           status: row.status,
           licenca: row.licenca,
@@ -235,7 +267,7 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
           },
         ),
       },
-      tarifas: tarifas ?? [],
+      tarifas: tarifasOut,
       clientes: clientesOut,
       assinatura_estado: assinaturaStatus.estado,
       assinatura: assinaturaStatus,

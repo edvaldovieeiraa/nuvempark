@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import { env } from '../env.js';
+import { regrasDoJson, type RegraHorario } from '../lib/tarifa-trechos.js';
 
 /**
  * ⚠️ EXCEÇÃO CONSCIENTE À REGRA DE OURO (ver src/supabase.ts).
@@ -111,6 +112,8 @@ export interface TarifaLinha {
   pernoite_valor: number;
   pernoite_hora_inicio: number;
   pernoite_hora_fim: number;
+  /** `tarifas.regras_horario` já lido ([] sem regras ou banco sem a db/52). */
+  regras: RegraHorario[];
 }
 
 /**
@@ -171,17 +174,22 @@ export async function assinaturaLibera(tenantId: string): Promise<boolean> {
 export async function lerTarifaDoTicket(
   t: TicketPublico,
 ): Promise<TarifaLinha | null> {
-  const campos =
+  const base =
     'fracao_inicial_minutos, fracao_inicial_valor, fracao_adicional_minutos, fracao_adicional_valor, teto_diaria, tolerancia_minutos, pernoite_valor, pernoite_hora_inicio, pernoite_hora_fim';
+  // `regras_horario` é da db/52. Banco sem a coluna: o select com ela falha, e
+  // a página ficaria sem valor — por isso a segunda tentativa sem ela.
+  let campos = `${base}, regras_horario`;
 
   if (t.tabela_preco_id) {
-    const { data, error } = await servico
-      .from('tarifas')
-      .select(campos)
-      .eq('id', t.tabela_preco_id)
-      .maybeSingle();
+    const porId = () =>
+      servico.from('tarifas').select(campos).eq('id', t.tabela_preco_id!).maybeSingle();
+    let { data, error } = await porId();
+    if (error) {
+      campos = base;
+      ({ data, error } = await porId());
+    }
     if (error) throw error;
-    if (data) return numerica(data);
+    if (data) return numerica(data as unknown as Record<string, unknown>);
   }
 
   const agora = new Date().toISOString();
@@ -199,10 +207,14 @@ export async function lerTarifaDoTicket(
   // A reserva é sempre uma tabela AVULSA: a de hóspede pode ter a menor
   // `ordem` e não tem frações. Banco sem db/42 não tem a coluna: sem filtro.
   let { data, error } = await reserva().eq('modalidade', 'avulso').maybeSingle();
+  if (error && campos !== base) {
+    campos = base;
+    ({ data, error } = await reserva().eq('modalidade', 'avulso').maybeSingle());
+  }
   if (error) ({ data, error } = await reserva().maybeSingle());
 
   if (error) throw error;
-  return data ? numerica(data) : null;
+  return data ? numerica(data as unknown as Record<string, unknown>) : null;
 }
 
 /** numeric do Postgres chega como string no supabase-js. */
@@ -217,6 +229,7 @@ function numerica(row: Record<string, unknown>): TarifaLinha {
     pernoite_valor: Number(row.pernoite_valor),
     pernoite_hora_inicio: Number(row.pernoite_hora_inicio),
     pernoite_hora_fim: Number(row.pernoite_hora_fim),
+    regras: regrasDoJson(row.regras_horario),
   };
 }
 

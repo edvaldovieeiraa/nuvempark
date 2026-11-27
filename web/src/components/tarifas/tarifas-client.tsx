@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  useActionState,
-  useEffect,
   useState,
   useTransition,
   type ButtonHTMLAttributes,
@@ -15,7 +13,6 @@ import {
   Plus,
   Trash2,
   Pencil,
-  X,
   Calculator,
   Save,
   ArrowUp,
@@ -24,18 +21,13 @@ import {
 } from "lucide-react";
 import { ModalSimulador } from "./simulador-modal";
 import {
-  atualizarTarifa,
   desativarTarifa,
   reordenarTarifas,
-  type Resultado,
 } from "@/app/painel/tarifas/actions";
 import { nomeAmigavel } from "@/lib/nome-amigavel";
 import { useToast } from "@/components/ui/toast";
 import { Botao } from "@/components/ui/botao";
-import { Campo, Input, Select } from "@/components/ui/campos";
 import { Confirmar } from "@/components/ui/confirmar";
-import { SecaoOpcional } from "@/components/ui/secao-opcional";
-import { CamposHospede, type AvulsaAtraso } from "@/components/tarifas/campos-hospede";
 
 type Tarifa = {
   id: string;
@@ -69,14 +61,11 @@ export function TarifasClient({
   tarifas,
   patioId,
   patioNome,
-  tipos,
 }: {
   tarifas: Tarifa[];
   patioId: string;
   patioNome: string;
-  tipos: string[];
 }) {
-  const [editando, setEditando] = useState<Tarifa | null>(null);
   const [simulando, setSimulando] = useState<Tarifa | null>(null);
   const [ordem, setOrdem] = useState<Tarifa[]>(tarifas);
   const [sujo, setSujo] = useState(false);
@@ -119,12 +108,6 @@ export function TarifasClient({
   const avulsasOrdem = ordem.filter((t) => !ehHospede(t));
   const primaria = avulsasOrdem[0] ?? null;
   const tetoMax = avulsasOrdem.reduce((m, t) => Math.max(m, t.teto_diaria), 0);
-  const avulsasAtraso: AvulsaAtraso[] = avulsasOrdem.map((t) => ({
-    id: t.id,
-    nome: t.nome,
-    tipo_veiculo: t.tipo_veiculo,
-    tolerancia_minutos: t.tolerancia_minutos,
-  }));
   const traco = "—";
 
   return (
@@ -440,13 +423,14 @@ export function TarifasClient({
                               <Calculator className="w-4 h-4" />
                             </AcaoBtn>
                           )}
-                          <AcaoBtn
-                            onClick={() => setEditando(t)}
+                          <Link
+                            href={`/painel/tarifas/${t.id}?patio=${patioId}`}
                             aria-label={`Editar tarifa ${t.nome}`}
                             title="Editar"
+                            className="w-8 h-8 rounded-lg grid place-items-center text-[#8695A0] hover:text-[#16A34A] hover:bg-[#F1F4F6] transition-colors"
                           >
                             <Pencil className="w-4 h-4" />
-                          </AcaoBtn>
+                          </Link>
                           <AcaoBtn
                             onClick={() => mover(i, -1)}
                             disabled={i === 0}
@@ -485,15 +469,6 @@ export function TarifasClient({
       )}
 
       <AnimatePresence>
-        {editando && (
-          <ModalEditarTarifa
-            tarifa={editando}
-            patioNome={patioNome}
-            tipos={tipos}
-            avulsas={avulsasAtraso}
-            fechar={() => setEditando(null)}
-          />
-        )}
         {simulando && (
           <ModalSimulador
             nome={simulando.nome}
@@ -586,218 +561,6 @@ function AcaoBtn({
     >
       {children}
     </button>
-  );
-}
-
-function ModalEditarTarifa({
-  tarifa,
-  patioNome,
-  tipos,
-  avulsas,
-  fechar,
-}: {
-  tarifa: Tarifa;
-  patioNome: string;
-  tipos: string[];
-  avulsas: AvulsaAtraso[];
-  fechar: () => void;
-}) {
-  const toast = useToast();
-  // A modalidade não muda na edição: avulso e hóspede têm campos diferentes, e
-  // estadias já contratadas guardam o preço congelado de qualquer forma.
-  const hospede = ehHospede(tarifa);
-  const [tipo, setTipo] = useState(tarifa.tipo_veiculo);
-  const [comTeto, setComTeto] = useState(tarifa.teto_diaria > 0);
-  const [comPernoite, setComPernoite] = useState(tarifa.pernoite_valor > 0);
-  const [estado, agir, pendente] = useActionState<Resultado, FormData>(
-    atualizarTarifa,
-    null,
-  );
-
-  useEffect(() => {
-    if (!estado) return;
-    if (estado.ok) {
-      toast.sucesso("Tarifa atualizada!", estado.msg);
-      fechar();
-    } else toast.erro("Não deu certo", estado.msg);
-  }, [estado, toast, fechar]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[90] grid place-items-center p-4 bg-noite/50 backdrop-blur-sm"
-      onClick={fechar}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.94, y: 16 }}
-        transition={{ type: "spring", stiffness: 380, damping: 30 }}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl rounded-2xl bg-superficie shadow-[var(--shadow-pop)] p-6 max-h-[85dvh] overflow-y-auto"
-      >
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-lg font-extrabold">Editar tarifa</h3>
-          <button
-            onClick={fechar}
-            aria-label="Fechar"
-            className="toque-44 text-texto-3 hover:text-texto"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <p className="text-xs text-texto-2 mb-5">
-          {patioNome} · a alteração vale já na próxima cobrança do app.
-        </p>
-        <form action={agir} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <input type="hidden" name="id" value={tarifa.id} />
-          <input type="hidden" name="modalidade" value={hospede ? "hospede" : "avulso"} />
-          <Campo label="Nome">
-            <Input name="nome" defaultValue={tarifa.nome} />
-          </Campo>
-          <Campo label="Tipo de veículo">
-            <Select
-              name="tipo_veiculo"
-              defaultValue={tarifa.tipo_veiculo}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTipo(e.target.value)}
-            >
-              {/* tipo salvo que saiu do cadastro continua selecionável */}
-              {!tipos.includes(tarifa.tipo_veiculo) &&
-                tarifa.tipo_veiculo !== "ambos" && (
-                  <option value={tarifa.tipo_veiculo}>
-                    {nomeAmigavel(tarifa.tipo_veiculo)}
-                  </option>
-                )}
-              {tipos.map((t) => (
-                <option key={t} value={t}>
-                  {nomeAmigavel(t)}
-                </option>
-              ))}
-              {!hospede && <option value="ambos">Todos os tipos</option>}
-            </Select>
-          </Campo>
-          {hospede && (
-            <div className="col-span-full">
-              <CamposHospede
-                tipo={tipo}
-                avulsas={avulsas}
-                inicial={{
-                  diaria_valor: tarifa.diaria_valor ?? null,
-                  diaria_horas: tarifa.diaria_horas ?? null,
-                  tarifa_atraso_id: tarifa.tarifa_atraso_id ?? null,
-                }}
-              />
-            </div>
-          )}
-          {!hospede && (<>
-          <Campo label="Tolerância (min)">
-            <Input
-              name="tolerancia_minutos"
-              type="number"
-              defaultValue={String(tarifa.tolerancia_minutos)}
-            />
-          </Campo>
-          <Campo label="Fração inicial (min)">
-            <Input
-              name="fracao_inicial_minutos"
-              type="number"
-              defaultValue={String(tarifa.fracao_inicial_minutos)}
-            />
-          </Campo>
-          <Campo label="Valor inicial (R$)">
-            <Input
-              name="fracao_inicial_valor"
-              defaultValue={String(tarifa.fracao_inicial_valor)}
-            />
-          </Campo>
-          <Campo label="Fração adicional (min)">
-            <Input
-              name="fracao_adicional_minutos"
-              type="number"
-              defaultValue={String(tarifa.fracao_adicional_minutos)}
-            />
-          </Campo>
-          <Campo label="Valor adicional (R$)">
-            <Input
-              name="fracao_adicional_valor"
-              defaultValue={String(tarifa.fracao_adicional_valor)}
-            />
-          </Campo>
-
-          <SecaoOpcional
-            titulo="Teto de diária"
-            descricao="Limita quanto o cliente paga no total. Se a soma das frações passar do teto, o app cobra só o valor do teto."
-            habilitado={comTeto}
-            onChange={setComTeto}
-          >
-            <Campo label="Teto (R$)">
-              <Input
-                name="teto_diaria"
-                defaultValue={
-                  tarifa.teto_diaria > 0 ? String(tarifa.teto_diaria) : "60.00"
-                }
-              />
-            </Campo>
-          </SecaoOpcional>
-          {!comTeto && <input type="hidden" name="teto_diaria" value="0" />}
-
-          <SecaoOpcional
-            titulo="Pernoite"
-            descricao="Valor fixo para quem atravessa a madrugada no pátio, dentro da janela definida. Substitui a cobrança por tempo nesse caso."
-            habilitado={comPernoite}
-            onChange={setComPernoite}
-          >
-            <Campo label="Valor do pernoite (R$)">
-              <Input
-                name="pernoite_valor"
-                defaultValue={
-                  tarifa.pernoite_valor > 0
-                    ? String(tarifa.pernoite_valor)
-                    : "40.00"
-                }
-              />
-            </Campo>
-            <Campo label="Início da janela (h)">
-              <Input
-                name="pernoite_hora_inicio"
-                type="number"
-                defaultValue={String(tarifa.pernoite_hora_inicio)}
-              />
-            </Campo>
-            <Campo label="Fim da janela (h)">
-              <Input
-                name="pernoite_hora_fim"
-                type="number"
-                defaultValue={String(tarifa.pernoite_hora_fim)}
-              />
-            </Campo>
-          </SecaoOpcional>
-          {!comPernoite && (
-            <>
-              <input type="hidden" name="pernoite_valor" value="0" />
-              <input
-                type="hidden"
-                name="pernoite_hora_inicio"
-                value={String(tarifa.pernoite_hora_inicio)}
-              />
-              <input
-                type="hidden"
-                name="pernoite_hora_fim"
-                value={String(tarifa.pernoite_hora_fim)}
-              />
-            </>
-          )}
-          </>)}
-          <div className="col-span-full pt-1">
-            <Botao carregando={pendente} className="w-full">
-              Salvar alterações
-            </Botao>
-          </div>
-        </form>
-      </motion.div>
-    </motion.div>
   );
 }
 

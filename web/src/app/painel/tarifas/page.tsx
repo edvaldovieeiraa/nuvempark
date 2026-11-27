@@ -15,31 +15,19 @@ export default async function TarifasPage({
   if (!patioId) return <SemPatio />;
 
   const supabase = await createClient();
-  const [{ data: tarifas }, { data: config }] = await Promise.all([
-    supabase
-      .from("tarifas")
-      .select("*")
-      .eq("patio_id", patioId)
-      .eq("ativo", true)
-      .order("ordem")
-      .order("nome"),
-    supabase
-      .from("patio_config")
-      .select("tipos_veiculo")
-      .eq("patio_id", patioId)
-      .maybeSingle(),
-  ]);
-
-  const tipos = Array.isArray(config?.tipos_veiculo)
-    ? (config.tipos_veiculo as string[])
-    : ["carro", "moto", "caminhonete", "van"];
+  const { data: tarifas } = await supabase
+    .from("tarifas")
+    .select("*")
+    .eq("patio_id", patioId)
+    .eq("ativo", true)
+    .order("ordem")
+    .order("nome");
 
   return (
     <TarifasClient
       tarifas={tarifas ?? []}
       patioId={patioId}
       patioNome={patioNome ?? ""}
-      tipos={tipos}
     />
   );
 }

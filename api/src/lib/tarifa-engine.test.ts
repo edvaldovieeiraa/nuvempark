@@ -25,9 +25,14 @@ const tarifa: TarifaConfig = {
   pernoiteHoraFim: 6,
 };
 
-/** Dia base dos cenários sem pernoite: 15/01/2024, hora local. */
+/** 15/01/2024 no relógio de Brasília (o motor lê hora e dia em UTC−3 fixo). */
+function br(dia: number, horas: number, minutos = 0, segundos = 0): Date {
+  return new Date(Date.UTC(2024, 0, dia, horas + 3, minutos, segundos));
+}
+
+/** Dia base dos cenários sem pernoite: 15/01/2024, Brasília. */
 function base(horas: number, minutos = 0): Date {
-  return new Date(2024, 0, 15, horas, minutos);
+  return br(15, horas, minutos);
 }
 
 describe('TarifaEngine (port do Dart)', () => {
@@ -97,8 +102,8 @@ describe('TarifaEngine (port do Dart)', () => {
   it('Cenário 7 — pernoite (20h → 08h do dia seguinte) → R$ 25,00', () => {
     // Janela: 22h de D até 06h de D+1. Entrada 20h ≤ 22h e saída 08h ≥ 06h.
     const r = TarifaEngine.calcular({
-      entrada: new Date(2024, 0, 15, 20, 0),
-      saida: new Date(2024, 0, 16, 8, 0),
+      entrada: br(15, 20),
+      saida: br(16, 8),
       tarifa,
     });
     expect(r.motivo).toBe('pernoite');
@@ -119,7 +124,7 @@ describe('TarifaEngine — tolerância em segundos', () => {
 
   /** 15/01/2024 10:00:SS local, para variar o segundo da saída. */
   function seg(segundos: number): Date {
-    return new Date(2024, 0, 15, 10, 0, segundos);
+    return br(15, 10, 0, segundos);
   }
 
   it('tolerância 0 · 30s → cobra fração inicial (não é grátis)', () => {
@@ -155,7 +160,7 @@ describe('TarifaEngine — tolerância em segundos', () => {
   it('tolerância 10min · 600s (10min exatos) → grátis (limite inclusivo)', () => {
     const r = TarifaEngine.calcular({
       entrada: seg(0),
-      saida: new Date(2024, 0, 15, 10, 10, 0),
+      saida: br(15, 10, 10, 0),
       tarifa: tarifaCom(10),
     });
     expect(r.motivo).toBe('tolerancia');
@@ -165,7 +170,7 @@ describe('TarifaEngine — tolerância em segundos', () => {
   it('tolerância 10min · 601s (10min01s) → cobra (passou 1s do limite)', () => {
     const r = TarifaEngine.calcular({
       entrada: seg(0),
-      saida: new Date(2024, 0, 15, 10, 10, 1),
+      saida: br(15, 10, 10, 1),
       tarifa: tarifaCom(10),
     });
     expect(r.motivo).toBe('normal');
