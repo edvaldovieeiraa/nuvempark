@@ -3,8 +3,12 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Gauge, Loader2, Plus } from "lucide-react";
-import { criarTarifa, type Resultado } from "@/app/painel/tarifas/actions";
+import { ChevronDown, Gauge, Loader2, Plus, Save } from "lucide-react";
+import {
+  atualizarTarifa,
+  criarTarifa,
+  type Resultado,
+} from "@/app/painel/tarifas/actions";
 import { nomeAmigavel } from "@/lib/nome-amigavel";
 import type { TarifaSim } from "@/lib/tarifa-engine";
 import { useToast } from "@/components/ui/toast";
@@ -168,30 +172,65 @@ function LinhaToggle({
   );
 }
 
-/** Formulário da página /painel/tarifas/nova — redireciona pra consulta ao salvar. */
+/** Tarifa salva, como a página de edição lê do banco. */
+export type TarifaEdicao = {
+  id: string;
+  nome: string;
+  tipo_veiculo: string;
+  fracao_inicial_minutos: number;
+  fracao_inicial_valor: number;
+  fracao_adicional_minutos: number;
+  fracao_adicional_valor: number;
+  teto_diaria: number;
+  tolerancia_minutos: number;
+  pernoite_valor: number;
+  pernoite_hora_inicio: number;
+  pernoite_hora_fim: number;
+  // db/42 — ausentes num banco anterior à migração.
+  modalidade?: string;
+  diaria_valor?: number | null;
+  diaria_horas?: number | null;
+  tarifa_atraso_id?: string | null;
+};
+
+/**
+ * Formulário de tarifa: cria (/painel/tarifas/nova) ou edita
+ * (/painel/tarifas/[id], com `tarifa`). Volta para a lista ao salvar.
+ */
 export function NovaTarifaForm({
   patioId,
   tipos,
   avulsas,
+  tarifa,
 }: {
   patioId: string;
   tipos: string[];
   avulsas: AvulsaAtraso[];
+  tarifa?: TarifaEdicao;
 }) {
   const router = useRouter();
   const toast = useToast();
   const formRef = useRef<HTMLFormElement>(null);
-  const [modalidade, setModalidade] = useState<"avulso" | "hospede">("avulso");
-  const [tipo, setTipo] = useState(tipos[0] ?? "carro");
+  const edicao = tarifa !== undefined;
+  const [modalidade, setModalidade] = useState<"avulso" | "hospede">(
+    tarifa?.modalidade === "hospede" ? "hospede" : "avulso",
+  );
+  const [tipo, setTipo] = useState(tarifa?.tipo_veiculo ?? tipos[0] ?? "carro");
   const hospede = modalidade === "hospede";
-  const [comTeto, setComTeto] = useState(false);
-  const [comPernoite, setComPernoite] = useState(false);
+  const [comTeto, setComTeto] = useState((tarifa?.teto_diaria ?? 0) > 0);
+  const [comPernoite, setComPernoite] = useState((tarifa?.pernoite_valor ?? 0) > 0);
+  // Mudanças não salvas (só na edição): avisa antes de sair da página.
+  const [sujo, setSujo] = useState(false);
+  const urlLista = `/painel/tarifas?patio=${patioId}`;
+  /** Valor inicial de um campo: o salvo na edição, o padrão na criação. */
+  const ini = (k: keyof TarifaEdicao, padrao: string) =>
+    tarifa && tarifa[k] !== undefined && tarifa[k] !== null ? String(tarifa[k]) : padrao;
   const [simulacao, setSimulacao] = useState<{
     nome: string;
     tarifa: TarifaSim;
   } | null>(null);
   const [estado, agir, pendente] = useActionState<Resultado, FormData>(
-    criarTarifa,
+    edicao ? atualizarTarifa : criarTarifa,
     null,
   );
 
@@ -221,12 +260,44 @@ export function NovaTarifaForm({
   useEffect(() => {
     if (!estado) return;
     if (estado.ok) {
-      toast.sucesso("Tarifa criada!", estado.msg);
-      router.push(`/painel/tarifas?patio=${patioId}`);
+      // router.push é navegação do cliente: o aviso de "sair sem salvar"
+      // (beforeunload e clique em link) não dispara aqui.
+      toast.sucesso(edicao ? "Tarifa atualizada!" : "Tarifa criada!", estado.msg);
+      router.push(urlLista);
     } else {
       toast.erro("Não deu certo", estado.msg);
     }
-  }, [estado, toast, router, patioId]);
+  }, [estado, toast, router, urlLista, edicao]);
+
+  // Sair sem salvar: fechar/recarregar a aba (beforeunload) e clicar num link
+  // do painel (navegação do cliente, que o beforeunload não pega).
+  useEffect(() => {
+    if (!sujo) return;
+    const antesDeSair = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    const aoClicar = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.("a[href]");
+      if (!a || a.getAttribute("target") === "_blank") return;
+      if (!window.confirm("Sair sem salvar? As mudanças desta tarifa serão perdidas.")) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener("beforeunload", antesDeSair);
+    document.addEventListener("click", aoClicar, true);
+    return () => {
+      window.removeEventListener("beforeunload", antesDeSair);
+      document.removeEventListener("click", aoClicar, true);
+    };
+  }, [sujo]);
+
+  function cancelar() {
+    if (sujo && !window.confirm("Sair sem salvar? As mudanças desta tarifa serão perdidas.")) {
+      return;
+    }
+    router.push(urlLista);
+  }
 
   return (
     <motion.section
@@ -241,17 +312,44 @@ export function NovaTarifaForm({
         padding: 22,
       }}
     >
-      <form ref={formRef} action={agir}>
+      <form
+        ref={formRef}
+        action={agir}
+        onChange={() => edicao && setSujo(true)}
+      >
         <input type="hidden" name="patio_id" value={patioId} />
         <input type="hidden" name="modalidade" value={modalidade} />
+        {tarifa && <input type="hidden" name="id" value={tarifa.id} />}
+
+        {edicao && (
+          <p
+            style={{
+              margin: "0 0 16px",
+              padding: "10px 13px",
+              borderRadius: 11,
+              background: "#F0FDF4",
+              border: "1px solid #BBF7D0",
+              fontSize: 13,
+              color: "#14532D",
+            }}
+          >
+            A alteração vale já na próxima cobrança do app, depois da
+            sincronização do aparelho.
+          </p>
+        )}
 
         {/* ── Como cobra: muda o formulário, por isso vem primeiro ── */}
-        <ComoCobra valor={modalidade} aoMudar={setModalidade} />
+        <ComoCobra valor={modalidade} aoMudar={setModalidade} travado={edicao} />
 
         {/* ── Básico ── */}
         <div style={{ ...cssGrid3, marginTop: 18 }}>
           <Campo label="Nome">
-            <input name="nome" placeholder="Padrão" style={cssInput} />
+            <input
+              name="nome"
+              placeholder="Padrão"
+              defaultValue={tarifa?.nome ?? ""}
+              style={cssInput}
+            />
           </Campo>
           <Campo label="Tipo de veículo">
             <div style={{ position: "relative" }}>
@@ -268,6 +366,14 @@ export function NovaTarifaForm({
                   paddingRight: 34,
                 }}
               >
+                {/* tipo salvo que saiu do cadastro continua selecionável */}
+                {tarifa &&
+                  !tipos.includes(tarifa.tipo_veiculo) &&
+                  tarifa.tipo_veiculo !== "ambos" && (
+                    <option value={tarifa.tipo_veiculo}>
+                      {nomeAmigavel(tarifa.tipo_veiculo)}
+                    </option>
+                  )}
                 {tipos.map((t) => (
                   <option key={t} value={t}>
                     {nomeAmigavel(t)}
@@ -296,7 +402,7 @@ export function NovaTarifaForm({
               <input
                 name="tolerancia_minutos"
                 type="number"
-                defaultValue="10"
+                defaultValue={ini("tolerancia_minutos", "10")}
                 className="mono"
                 style={cssInput}
               />
@@ -308,18 +414,30 @@ export function NovaTarifaForm({
           <CamposHospede
             tipo={hospede && tipo === "ambos" ? (tipos[0] ?? "carro") : tipo}
             avulsas={avulsas}
+            inicial={
+              tarifa
+                ? {
+                    diaria_valor: tarifa.diaria_valor ?? null,
+                    diaria_horas: tarifa.diaria_horas ?? null,
+                    tarifa_atraso_id: tarifa.tarifa_atraso_id ?? null,
+                  }
+                : undefined
+            }
           />
         )}
 
         {!hospede && (<>
-        {/* ── Cobrança por tempo ── */}
-        <div style={cssSection}>Cobrança por tempo</div>
+        {/* ── Preço base: a cobrança por tempo de sempre ── */}
+        <div style={cssSection}>Preço base</div>
+        <p style={{ margin: "6px 0 0", fontSize: 12, color: "#56655B" }}>
+          Quanto o cliente paga pelo tempo que fica no pátio.
+        </p>
         <div style={{ ...cssGrid3, marginTop: 12 }}>
           <Campo label="Fração inicial (min)">
             <input
               name="fracao_inicial_minutos"
               type="number"
-              defaultValue="15"
+              defaultValue={ini("fracao_inicial_minutos", "15")}
               className="mono"
               style={cssInput}
             />
@@ -327,7 +445,7 @@ export function NovaTarifaForm({
           <Campo label="Valor inicial (R$)">
             <input
               name="fracao_inicial_valor"
-              defaultValue="5.00"
+              defaultValue={ini("fracao_inicial_valor", "5.00")}
               className="mono"
               style={cssInput}
             />
@@ -337,7 +455,7 @@ export function NovaTarifaForm({
             <input
               name="fracao_adicional_minutos"
               type="number"
-              defaultValue="15"
+              defaultValue={ini("fracao_adicional_minutos", "15")}
               className="mono"
               style={cssInput}
             />
@@ -345,7 +463,7 @@ export function NovaTarifaForm({
           <Campo label="Valor adicional (R$)">
             <input
               name="fracao_adicional_valor"
-              defaultValue="3.00"
+              defaultValue={ini("fracao_adicional_valor", "3.00")}
               className="mono"
               style={cssInput}
             />
@@ -366,12 +484,15 @@ export function NovaTarifaForm({
             titulo="Teto de diária"
             descricao="Limita quanto o cliente paga no total. Se a soma das frações passar do teto, o app cobra só o valor do teto — bom para quem deixa o carro o dia inteiro."
             ligado={comTeto}
-            aoAlternar={() => setComTeto((v) => !v)}
+            aoAlternar={() => {
+              setComTeto((v) => !v);
+              if (edicao) setSujo(true);
+            }}
           >
             <Campo label="Teto (R$)">
               <input
                 name="teto_diaria"
-                defaultValue="60.00"
+                defaultValue={(tarifa?.teto_diaria ?? 0) > 0 ? ini("teto_diaria", "60.00") : "60.00"}
                 className="mono"
                 style={cssInput}
               />
@@ -383,12 +504,15 @@ export function NovaTarifaForm({
             titulo="Pernoite"
             descricao="Valor fixo para quem atravessa a madrugada no pátio. Se o veículo estiver dentro na janela definida (ex.: 22h às 8h do dia seguinte), o app cobra este valor no lugar da cobrança por tempo."
             ligado={comPernoite}
-            aoAlternar={() => setComPernoite((v) => !v)}
+            aoAlternar={() => {
+              setComPernoite((v) => !v);
+              if (edicao) setSujo(true);
+            }}
           >
             <Campo label="Valor do pernoite (R$)">
               <input
                 name="pernoite_valor"
-                defaultValue="40.00"
+                defaultValue={(tarifa?.pernoite_valor ?? 0) > 0 ? ini("pernoite_valor", "40.00") : "40.00"}
                 className="mono"
                 style={cssInput}
               />
@@ -397,7 +521,7 @@ export function NovaTarifaForm({
               <input
                 name="pernoite_hora_inicio"
                 type="number"
-                defaultValue="22"
+                defaultValue={ini("pernoite_hora_inicio", "22")}
                 className="mono"
                 style={cssInput}
               />
@@ -406,7 +530,7 @@ export function NovaTarifaForm({
               <input
                 name="pernoite_hora_fim"
                 type="number"
-                defaultValue="8"
+                defaultValue={ini("pernoite_hora_fim", "8")}
                 className="mono"
                 style={cssInput}
               />
@@ -415,8 +539,16 @@ export function NovaTarifaForm({
           {!comPernoite && (
             <>
               <input type="hidden" name="pernoite_valor" value="0" />
-              <input type="hidden" name="pernoite_hora_inicio" value="22" />
-              <input type="hidden" name="pernoite_hora_fim" value="8" />
+              <input
+                type="hidden"
+                name="pernoite_hora_inicio"
+                value={ini("pernoite_hora_inicio", "22")}
+              />
+              <input
+                type="hidden"
+                name="pernoite_hora_fim"
+                value={ini("pernoite_hora_fim", "8")}
+              />
             </>
           )}
         </div>
@@ -453,10 +585,12 @@ export function NovaTarifaForm({
           >
             {pendente ? (
               <Loader2 style={{ width: 15, height: 15 }} className="animate-spin" />
+            ) : edicao ? (
+              <Save style={{ width: 15, height: 15 }} />
             ) : (
               <Plus style={{ width: 15, height: 15 }} />
             )}
-            Criar tarifa
+            {edicao ? "Salvar alterações" : "Criar tarifa"}
           </button>
           {!hospede && (
             <button type="button" onClick={simular} style={cssBtnOutline}>
@@ -466,7 +600,7 @@ export function NovaTarifaForm({
           )}
           <button
             type="button"
-            onClick={() => router.push(`/painel/tarifas?patio=${patioId}`)}
+            onClick={cancelar}
             style={cssBtnOutline}
           >
             Cancelar

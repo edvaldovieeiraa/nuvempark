@@ -44,9 +44,12 @@ const brl = (v: number) =>
 export function ComoCobra({
   valor,
   aoMudar,
+  travado = false,
 }: {
   valor: "avulso" | "hospede";
   aoMudar: (v: "avulso" | "hospede") => void;
+  /** Na edição a modalidade não muda (avulso e hóspede têm campos diferentes). */
+  travado?: boolean;
 }) {
   const opcao = (
     v: "avulso" | "hospede",
@@ -64,13 +67,15 @@ export function ComoCobra({
           display: "flex",
           gap: 10,
           alignItems: "flex-start",
-          cursor: "pointer",
+          cursor: travado ? "default" : "pointer",
+          opacity: travado && !sel ? 0.55 : 1,
         }}
       >
         <input
           type="radio"
           name="como_cobra"
           checked={sel}
+          disabled={travado}
           onChange={() => aoMudar(v)}
           style={{ marginTop: 3, width: 16, height: 16, accentColor: "#15803D" }}
         />
@@ -83,7 +88,14 @@ export function ComoCobra({
   };
   return (
     <fieldset style={{ border: 0, margin: 0, padding: 0 }}>
-      <legend style={{ ...cssLabel, padding: 0 }}>COMO COBRA</legend>
+      <legend style={{ ...cssLabel, padding: 0 }}>
+        COMO COBRA
+        {travado && (
+          <span style={{ fontWeight: 600, textTransform: "none", marginLeft: 6 }}>
+            · não muda depois de criada
+          </span>
+        )}
+      </legend>
       <div
         style={{
           display: "grid",
