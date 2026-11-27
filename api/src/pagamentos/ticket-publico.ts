@@ -1,4 +1,5 @@
 import { TarifaEngine } from '../lib/tarifa-engine.js';
+import { exigeMotorNovo } from '../lib/tarifa-trechos.js';
 import type { TarifaLinha, TicketPublico } from './repo.js';
 
 /**
@@ -113,6 +114,9 @@ export function calcularValor(params: {
 }): number | null {
   const { ticket, tarifa, agora } = params;
   if (!tarifa) return null;
+  // Regra feita para um motor mais novo: não dá para calcular aqui. Sem valor,
+  // a página não cobra (o cliente paga na saída), em vez de cobrar errado.
+  if (exigeMotorNovo(tarifa.regras)) return null;
 
   const r = TarifaEngine.calcular({
     entrada: new Date(ticket.entrada),
@@ -127,6 +131,7 @@ export function calcularValor(params: {
       pernoiteValor: tarifa.pernoite_valor,
       pernoiteHoraInicio: tarifa.pernoite_hora_inicio,
       pernoiteHoraFim: tarifa.pernoite_hora_fim,
+      regras: tarifa.regras,
     },
   });
   return arredondar(r.valor);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { regrasDoJson } from '../lib/tarifa-trechos.js';
 import type { TarifaLinha, TicketPublico } from './repo.js';
 import {
   CARENCIA_MINUTOS,
@@ -19,6 +20,7 @@ const tarifa: TarifaLinha = {
   pernoite_valor: 0,
   pernoite_hora_inicio: 22,
   pernoite_hora_fim: 6,
+  regras: [],
 };
 
 const ENTRADA = new Date(2026, 6, 14, 10, 0);
@@ -179,5 +181,44 @@ describe('ticket de hóspede (estadia)', () => {
 
   it('continua visível enquanto aberto (a página explica o balcão)', () => {
     expect(ticketVisivel(ticket({ estadia_id: 'est-1' }))).toBe(true);
+  });
+});
+
+describe('tabela com regras de horário', () => {
+  // Terça 24/11/2026. Comercial seg–sex 08–18, "cobrar só o trecho":
+  // até 60 min R$ 10, até 120 min R$ 15, depois +R$ 5 a cada 30 min.
+  const comercial = {
+    id: 'r-com',
+    nome: 'Comercial',
+    dias: [1, 2, 3, 4, 5],
+    hora_inicio: '08:00',
+    hora_fim: '18:00',
+    cobrar_do_inicio: false,
+    degraus: [
+      { ate_minutos: 60, valor: 10 },
+      { ate_minutos: 120, valor: 15 },
+    ],
+    adicional_minutos: 30,
+    adicional_valor: 5,
+  };
+  const entrada = '2026-11-24T07:30:00-03:00';
+
+  it('a página cobra pelos trechos, como a saída do app', () => {
+    // 07:30–08:00 preço base (30 min = 5 + 1×3 = 8) + 08:00–09:10 Comercial (70 min = 15)
+    const e = derivarEstado({
+      ticket: ticket({ entrada }),
+      tarifa: { ...tarifa, regras: regrasDoJson([comercial]) },
+      agora: new Date('2026-11-24T09:10:00-03:00'),
+    });
+    expect(e.valorAtual).toBe(23);
+  });
+
+  it('regra feita para um motor mais novo: a página não inventa valor', () => {
+    const e = derivarEstado({
+      ticket: ticket({ entrada }),
+      tarifa: { ...tarifa, regras: regrasDoJson([comercial, { id: 'x', requer: 2 }]) },
+      agora: new Date('2026-11-24T09:10:00-03:00'),
+    });
+    expect(e.valorAtual).toBeNull();
   });
 });
