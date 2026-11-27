@@ -10,13 +10,30 @@ todo aparelho diz "1.0.0" e o painel não sabe quem está desatualizado).
 ```sh
 V=$(grep '^version:' pubspec.yaml | sed 's/version: //; s/+.*//')   # ex.: 1.0.2
 N=$(grep '^version:' pubspec.yaml | sed 's/.*+//')                  # ex.: 22
-DEFS="--dart-define=API_BASE_URL=https://api.nuvempark.com --dart-define=TICKET_PUBLIC_BASE_URL=https://nuvempark.com/t --dart-define=APP_VERSION=$V"
-flutter build appbundle --release --build-number=30$N $DEFS        # Play
-flutter build ios --release --no-codesign --build-number=30$N $DEFS  # App Store (depois: archive/export/altool)
+DEFS=(
+  --dart-define=API_BASE_URL=https://api.nuvempark.com
+  --dart-define=TICKET_PUBLIC_BASE_URL=https://nuvempark.com/t
+  --dart-define=APP_VERSION=$V
+)
+flutter build appbundle --release --build-number=30$N "${DEFS[@]}"        # Play
+flutter build ios --release --no-codesign --build-number=30$N "${DEFS[@]}"  # App Store (depois: archive/export/altool)
 ```
 
-Antes de enviar, conferir no binário as duas URLs de produção, a versão e a
-ausência do `10.0.2.2:8080`.
+⚠️ `DEFS` é um **array**. A versão antiga era uma string (`DEFS="..."` + `$DEFS`),
+e o zsh do Mac **não divide** variável em palavras: os três `--dart-define`
+viraram um só e a 1.0.2 (build 3022) foi para as lojas com
+`API_BASE_URL="https://api.nuvempark.com --dart-define=TICKET_PUBLIC_BASE_URL=..."`.
+O app instalava, mas todo login dava "Erro inesperado." sem o pedido sair do
+celular.
+
+Antes de enviar, conferir no binário (Android: `base/lib/arm64-v8a/libapp.so`
+dentro do `.aab`; iOS: `Runner.app/Frameworks/App.framework/App`):
+
+```sh
+strings libapp.so | grep -E '^https://api\.nuvempark\.com$'   # tem de achar a linha EXATA
+strings libapp.so | grep -c -- '--dart-define'                # tem de dar 0
+strings libapp.so | grep -c '10.0.2.2:8080'                   # tem de dar 0
+```
 
 ---
 
