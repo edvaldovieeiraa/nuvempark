@@ -1,9 +1,7 @@
 "use client";
 
-import { CalendarClock, Clock, Loader2, Lock, MoreVertical } from "lucide-react";
+import { CalendarClock, Clock, Loader2, MoreVertical } from "lucide-react";
 import { alertaTrial, temAlertaVencido, varianteProximaAcao } from "@/lib/crm/prazos";
-import { EXPLICACAO_TRIAL } from "@/lib/crm/menu-estagio";
-import { destinosPossiveis, motivoSemDestino } from "@/lib/crm/regras";
 import {
   rodapeCard,
   seloCard,
@@ -61,14 +59,6 @@ export function CrmCard({
   const quandoAcao = textoProximaAcao(lead.proximaAcaoEm, agoraD);
   const varAcao = varianteProximaAcao(lead.proximaAcaoEm, agoraD);
   const vencido = temAlertaVencido(lead, agoraD);
-  const temMenu = destinosPossiveis(lead).length > 0;
-  // Cadeado: Trial e Ganho são automáticos (design doc, tela 1); Perdido
-  // com rede fora do trial também não tem destino manual e mostra o motivo.
-  const aviso =
-    lead.status === "trial"
-      ? EXPLICACAO_TRIAL
-      : motivoSemDestino(lead);
-
   return (
     <article
       data-lead-id={lead.id}
@@ -93,28 +83,16 @@ export function CrmCard({
           {subtitulo && <p className="mt-px text-xs text-texto-2 break-words">{subtitulo}</p>}
         </div>
 
-        {aviso && (
-          <span
-            title={aviso}
-            className="relative z-10 shrink-0 w-8 h-8 grid place-items-center text-texto-2"
-          >
-            <Lock className="w-3.5 h-3.5" aria-hidden />
-            <span className="sr-only">{aviso}</span>
-          </span>
-        )}
-
-        {temMenu && (
-          <button
-            type="button"
-            aria-haspopup="menu"
-            aria-label={`Mudar estágio de ${lead.nome}`}
-            disabled={movendo}
-            onClick={(e) => onAbrirMenu(lead, e.currentTarget)}
-            className={`toque-44 relative z-10 shrink-0 w-8 h-8 grid place-items-center rounded-lg text-texto-2 hover:bg-fundo hover:text-texto transition-colors disabled:opacity-50 ${FOCO}`}
-          >
-            <MoreVertical className="w-4 h-4" aria-hidden />
-          </button>
-        )}
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-label={`Mudar estágio de ${lead.nome}`}
+          disabled={movendo}
+          onClick={(e) => onAbrirMenu(lead, e.currentTarget)}
+          className={`toque-44 relative z-10 shrink-0 w-8 h-8 grid place-items-center rounded-lg text-texto-2 hover:bg-fundo hover:text-texto transition-colors disabled:opacity-50 ${FOCO}`}
+        >
+          <MoreVertical className="w-4 h-4" aria-hidden />
+        </button>
       </div>
 
       {selo && (

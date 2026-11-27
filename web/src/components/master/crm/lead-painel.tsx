@@ -7,7 +7,6 @@ import {
   ChevronDown,
   Clock,
   Copy,
-  Lock,
   Mail,
   MessageCircle,
   MessageSquarePlus,
@@ -17,7 +16,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { linksContato } from "@/lib/crm/atalhos";
-import { itensMenuEstagio, type DestinoMenu } from "@/lib/crm/menu-estagio";
+import type { DestinoMenu } from "@/lib/crm/menu-estagio";
 import { alertaTrial, classificarTrial } from "@/lib/crm/prazos";
 import { ROTULO_ASSINATURA, ROTULO_ESTAGIO, rotuloFonte } from "@/lib/crm/rotulos";
 import { seloCard, subtituloCard, textoTrial, type TomSelo } from "@/lib/crm/textos-card";
@@ -104,8 +103,6 @@ function PainelAberto({
   const mudou = () => setVersao((v) => v + 1);
 
   const agoraD = new Date(agora);
-  const modeloMenu = itensMenuEstagio(lead);
-  const semMenu = modeloMenu.itens.length === 0 && !modeloMenu.podeExcluir;
   const trial = alertaTrial(lead, agoraD);
   const selo = seloCard(lead);
   const subtitulo = subtituloCard(lead);
@@ -139,28 +136,21 @@ function PainelAberto({
             {selo.texto}
           </span>
         )}
-        {!celular &&
-          (semMenu ? null : (
-            <button
-              ref={setBtnEstagio}
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={menuAberto}
-              onClick={() => setMenuAberto((a) => !a)}
-              className={`${BTN_PEQUENO} ml-auto`}
-            >
-              <Shuffle className="w-3.5 h-3.5" aria-hidden />
-              Mudar estágio
-              <ChevronDown className="w-3.5 h-3.5" aria-hidden />
-            </button>
-          ))}
+        {!celular && (
+          <button
+            ref={setBtnEstagio}
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={menuAberto}
+            onClick={() => setMenuAberto((a) => !a)}
+            className={`${BTN_PEQUENO} ml-auto`}
+          >
+            <Shuffle className="w-3.5 h-3.5" aria-hidden />
+            Mudar estágio
+            <ChevronDown className="w-3.5 h-3.5" aria-hidden />
+          </button>
+        )}
       </div>
-      {semMenu && modeloMenu.bloqueio && (
-        <p className="flex items-start gap-1.5 text-xs text-texto-2">
-          <Lock className="w-3.5 h-3.5 mt-px shrink-0" aria-hidden />
-          {modeloMenu.bloqueio}
-        </p>
-      )}
       {!celular && (
         <MenuEstagio
           lead={lead}

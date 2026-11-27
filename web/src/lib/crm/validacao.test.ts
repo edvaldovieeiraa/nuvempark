@@ -17,8 +17,10 @@ describe("validarMovimento", () => {
     const r = validarMovimento(lead, { de: "novo", para: "perdido", motivoPerda: "preco" });
     expect(r).toEqual({ ok: false, msg: expect.stringMatching(/mudou/i) });
   });
-  it("recusa destino fora da matriz", () => {
-    expect(validarMovimento({ ...lead, status: "trial" }, { de: "trial", para: "novo" }).ok).toBe(false);
+  it("aceita Trial e Ganho como destino; recusa o próprio estágio", () => {
+    expect(validarMovimento({ ...lead, status: "ganho" }, { de: "ganho", para: "trial" }).ok).toBe(true);
+    expect(validarMovimento(lead, { de: "em_contato", para: "ganho" }).ok).toBe(true);
+    expect(validarMovimento(lead, { de: "em_contato", para: "em_contato" }).ok).toBe(false);
   });
   it("perdido exige um dos 6 motivos; cancelou é do sistema", () => {
     expect(validarMovimento(lead, { de: "em_contato", para: "perdido" }).ok).toBe(false);

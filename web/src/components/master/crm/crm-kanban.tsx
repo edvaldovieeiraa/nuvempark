@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { Lock } from "lucide-react";
+import { Zap } from "lucide-react";
 import { CrmCard } from "@/components/master/crm/crm-card";
 import { COR_ESTAGIO, ESTAGIOS_COM_JANELA, FOCO } from "@/components/master/crm/cores-estagio";
 import { ordenarColuna } from "@/lib/crm/ordenacao";
@@ -124,11 +124,11 @@ export function CrmKanban({
 function DicaAutomatico() {
   return (
     <span
-      title={`Automático: ${EXPLICACAO_AUTOMATICO}.`}
+      title={`Entra sozinho: ${EXPLICACAO_AUTOMATICO}.`}
       className="inline-flex items-center gap-1 text-[11px] font-bold text-texto-2"
     >
-      <Lock className="w-3 h-3" aria-hidden />
-      automático
+      <Zap className="w-3 h-3" aria-hidden />
+      entra sozinho
       <span className="sr-only">: {EXPLICACAO_AUTOMATICO}.</span>
     </span>
   );
@@ -215,8 +215,8 @@ function CabecalhoMobile({
       {janela && <span>Mostrando os últimos 30 dias</span>}
       {auto && (
         <span className="inline-flex items-center gap-1">
-          <Lock className="w-3 h-3 shrink-0" aria-hidden />
-          Automático: {EXPLICACAO_AUTOMATICO}.
+          <Zap className="w-3 h-3 shrink-0" aria-hidden />
+          Entra sozinho: {EXPLICACAO_AUTOMATICO}.
         </span>
       )}
       {janela && <BotaoVerTodos estagio={estagio} onVerTodos={onVerTodos} />}

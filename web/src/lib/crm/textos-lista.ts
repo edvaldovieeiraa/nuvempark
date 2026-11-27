@@ -70,6 +70,6 @@ export const REGRA_ORDEM = {
   lista: "Com próxima ação primeiro, pela mais cedo; depois os mais recentes.",
 } as const;
 
-/** Explicação do cadeado de Trial e Ganho (spec, req. 3). */
+/** Dica das colunas Trial e Ganho: os cards entram sozinhos, mas também se movem à mão. */
 export const EXPLICACAO_AUTOMATICO =
-  "vira Trial quando a conta é criada; vira Ganho quando a assinatura é ativada";
+  "conta criada vira Trial; assinatura ativada vira Ganho. Também dá para mover à mão";

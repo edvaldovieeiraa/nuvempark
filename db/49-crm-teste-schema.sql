@@ -317,9 +317,9 @@ begin
     select motivo_perda into v_txt from public.leads_site where id = v_lead;
     if v_res <> 'ok' or v_txt is not null then raise exception 'FALHOU: sair de perdido não limpou o motivo'; end if;
 
-    -- invariantes: ganho não é destino, cancelou é do sistema, outro exige texto
+    -- invariantes: mesmo estágio não é movimento, cancelou é do sistema, outro exige texto
     for r in select * from (values
-        ('ganho', null::text, null::text),
+        ('em_contato', null::text, null::text),
         ('perdido', 'cancelou', null),
         ('perdido', null, null),
         ('perdido', 'outro', '   ')
@@ -333,11 +333,18 @@ begin
       if v_ok then raise exception 'FALHOU: fn_crm_mover aceitou % / %', r.para, coalesce(r.motivo, 'sem motivo'); end if;
     end loop;
 
-    -- trial só volta com a rede em trial: lead sem rede não "reabre"
+    -- movimento livre (db/51): Trial e Ganho também são destinos manuais
     v_res := public.fn_crm_mover(v_lead, 'em_contato', 'trial');
-    if v_res <> 'mudou' then raise exception 'FALHOU: lead sem rede foi para trial (%)', v_res; end if;
+    if v_res <> 'ok' then raise exception 'FALHOU: mover para trial devolveu %', v_res; end if;
+    v_res := public.fn_crm_mover(v_lead, 'trial', 'ganho');
+    if v_res <> 'ok' then raise exception 'FALHOU: mover para ganho devolveu %', v_res; end if;
+    v_res := public.fn_crm_mover(v_lead, 'ganho', 'em_contato');
+    if v_res <> 'ok' then raise exception 'FALHOU: sair de ganho à mão devolveu %', v_res; end if;
+    select count(*) into v_n from public.lead_interacoes
+     where lead_id = v_lead and texto in ('Estágio: Em contato → Trial', 'Estágio: Trial → Ganho', 'Estágio: Ganho → Em contato');
+    if v_n <> 3 then raise exception 'FALHOU: movimentos livres gravaram % de 3 interações', v_n; end if;
     if coalesce(current_setting('crm.motivo', true), '') <> '' then
-      raise exception 'FALHOU: crm.motivo ficou sujo depois de um mover recusado';
+      raise exception 'FALHOU: crm.motivo ficou sujo depois de mover';
     end if;
 
     -- registrar interação: grava, conclui a próxima ação, recusa 'sistema'

@@ -15,43 +15,23 @@ function lead(
   return { status, tenantId, assinaturaEstado };
 }
 
-describe("podeMoverPara — matriz da Revisão 1", () => {
-  it("sem rede: livre entre novo, em_contato e perdido", () => {
-    expect(destinosPossiveis(lead("novo"))).toEqual(["em_contato", "perdido"]);
-    expect(destinosPossiveis(lead("em_contato"))).toEqual(["novo", "perdido"]);
-    expect(destinosPossiveis(lead("perdido"))).toEqual(["novo", "em_contato"]);
-  });
+describe("podeMoverPara — movimento livre (decisão de 26/11/2026)", () => {
+  const TODOS = ["novo", "em_contato", "trial", "ganho", "perdido"] as const;
 
-  it("nunca deixa ir para ganho, nem mover para o próprio estágio", () => {
-    for (const s of ["novo", "em_contato", "trial", "perdido", "ganho"] as const) {
-      expect(podeMoverPara(lead(s), "ganho" as never)).toBe(false);
-      expect(podeMoverPara(lead(s), s as never)).toBe(false);
+  it("qualquer estágio vai para os outros quatro, na ordem do funil", () => {
+    for (const s of TODOS) {
+      expect(destinosPossiveis(lead(s))).toEqual(TODOS.filter((d) => d !== s));
     }
   });
 
-  it("sem rede, trial não é destino", () => {
-    expect(podeMoverPara(lead("novo"), "trial")).toBe(false);
-    expect(podeMoverPara(lead("perdido"), "trial")).toBe(false);
+  it("vale com ou sem rede, e qualquer estado da assinatura", () => {
+    expect(destinosPossiveis(lead("ganho", "t1", "ativa"))).toEqual(["novo", "em_contato", "trial", "perdido"]);
+    expect(podeMoverPara(lead("perdido", "t1", "cancelada"), "trial")).toBe(true);
+    expect(podeMoverPara(lead("novo"), "ganho")).toBe(true);
   });
 
-  it("trial só vai para perdido", () => {
-    expect(destinosPossiveis(lead("trial", "t1", "trial"))).toEqual(["perdido"]);
-  });
-
-  it("perdido com rede: só reabre (volta a trial) com a assinatura em trial", () => {
-    expect(destinosPossiveis(lead("perdido", "t1", "trial"))).toEqual(["trial"]);
-    for (const e of ["ativa", "atrasada", "suspensa", "cancelada"] as const) {
-      expect(destinosPossiveis(lead("perdido", "t1", e))).toEqual([]);
-    }
-    expect(destinosPossiveis(lead("perdido", "t1", null))).toEqual([]);
-  });
-
-  it("ganho não tem destino manual", () => {
-    expect(destinosPossiveis(lead("ganho"))).toEqual([]);
-    expect(destinosPossiveis(lead("ganho", "t1", "ativa"))).toEqual([]);
-  });
-
-  it("rejeita estágio desconhecido vindo da rede", () => {
+  it("nunca move para o próprio estágio nem para estágio desconhecido", () => {
+    for (const s of TODOS) expect(podeMoverPara(lead(s), s)).toBe(false);
     expect(podeMoverPara(lead("novo"), "fechado" as never)).toBe(false);
   });
 });

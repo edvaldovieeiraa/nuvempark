@@ -1,58 +1,25 @@
-import type { Estagio, EstadoAssinatura, Fonte, MotivoPerda } from "@/lib/crm/tipos";
+import { ESTAGIOS, type Estagio, type Fonte, type MotivoPerda } from "@/lib/crm/tipos";
 
 /**
- * Matriz de estágio do CRM (Revisão 1 da spec). A regra mora só aqui: o menu do
- * card mostra `destinosPossiveis` e a action confere `podeMoverPara` antes de
- * gravar. O banco só guarda as invariantes que nunca mudam (db/47,
- * `fn_crm_mover`).
+ * Movimento de estágio do CRM. Decisão de 26/11/2026 (substitui a matriz da
+ * Revisão 1 da spec): o master move qualquer card para qualquer estágio,
+ * inclusive Trial e Ganho. Caso real: rede ativada só para estender o teste
+ * entra em Ganho pelo vínculo e precisa voltar para Trial à mão.
  *
- * - sem rede ligada: livre entre novo, em_contato e perdido;
- * - trial: só perdido (desistiu no teste);
- * - perdido com rede: só "Reabrir" (volta a trial), e só com a assinatura
- *   ainda em trial. Se a rede pagar, o card vai sozinho para ganho;
- * - ganho: nenhum destino manual (churn fora do escopo).
+ * Os movimentos automáticos continuam (db/48): conta criada → Trial, assinatura
+ * ativada → Ganho, trial cancelado → Perdido. Eles só acontecem quando o estado
+ * da assinatura MUDA, então não desfazem um movimento manual sozinhos.
+ * Perdido continua exigindo o motivo (`validacao.ts`).
  */
 
-/** Destinos que o master pode escolher. `trial` só aparece como "Reabrir". */
-export type DestinoManual = "novo" | "em_contato" | "perdido" | "trial";
+export type DestinoManual = Estagio;
 
-type LeadParaRegra = {
-  status: Estagio;
-  tenantId: string | null;
-  assinaturaEstado: EstadoAssinatura | null;
-};
-
-const LIVRES: readonly DestinoManual[] = ["novo", "em_contato", "perdido"];
-
-export function destinosPossiveis(lead: LeadParaRegra): DestinoManual[] {
-  switch (lead.status) {
-    case "ganho":
-      return [];
-    case "trial":
-      return ["perdido"];
-    case "perdido":
-      if (lead.tenantId) return lead.assinaturaEstado === "trial" ? ["trial"] : [];
-      return LIVRES.filter((d) => d !== "perdido");
-    case "novo":
-    case "em_contato":
-      return LIVRES.filter((d) => d !== lead.status);
-    default:
-      return [];
-  }
+export function destinosPossiveis(lead: { status: Estagio }): DestinoManual[] {
+  return ESTAGIOS.filter((e) => e !== lead.status);
 }
 
-export function podeMoverPara(lead: LeadParaRegra, destino: DestinoManual): boolean {
+export function podeMoverPara(lead: { status: Estagio }, destino: DestinoManual): boolean {
   return destinosPossiveis(lead).includes(destino);
-}
-
-/** Por que o card não tem destino manual; null quando tem. */
-export function motivoSemDestino(lead: LeadParaRegra): string | null {
-  if (destinosPossiveis(lead).length > 0) return null;
-  if (lead.status === "ganho")
-    return "Ganho é automático: o card chega aqui quando a assinatura é ativada e não muda à mão.";
-  if (lead.status === "perdido" && lead.tenantId)
-    return "A rede não está mais em trial. Se ela pagar, o card vai sozinho para Ganho.";
-  return null;
 }
 
 /** Os 6 motivos que o master escolhe. `cancelou` é só do sistema (req. 2). */

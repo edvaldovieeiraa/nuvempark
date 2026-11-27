@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sessaoMasterAtiva } from "@/lib/master-auth";
-import { podeExcluirComoSpam, podeMoverPara, type DestinoManual } from "@/lib/crm/regras";
-import type {
-  Estagio,
+import { podeExcluirComoSpam, type DestinoManual } from "@/lib/crm/regras";
+import {
+  ESTAGIOS,
+  type Estagio,
   EstadoAssinatura,
   Fonte,
   InteracaoCrm,
@@ -89,22 +90,24 @@ function mensagemDoMover(res: string | null): Resultado | null {
   return { ok: false, msg: "Não foi possível mudar o estágio." };
 }
 
-const ROTULO_DESTINO: Record<Exclude<DestinoManual, "trial">, string> = {
-  novo: "de volta para Novo",
+const ROTULO_DESTINO: Record<DestinoManual, string> = {
+  novo: "em Novo",
   em_contato: "em Em contato",
+  trial: "em Trial",
+  ganho: "em Ganho",
   perdido: "em Perdido",
 };
 
-/** Muda o estágio pela matriz (Revisão 1). Trial não é destino aqui: é "Reabrir". */
+/** Muda o estágio (movimento livre; ver `lib/crm/regras.ts`). Perdido exige o motivo. */
 export async function moverEstagio(entrada: {
   id: string;
   de: Estagio;
-  para: Exclude<DestinoManual, "trial">;
+  para: DestinoManual;
   motivoPerda?: MotivoPerda | null;
   texto?: string | null;
 }): Promise<Resultado> {
   if (!(await sessaoMasterAtiva())) return SESSAO_EXPIRADA;
-  if (!["novo", "em_contato", "perdido"].includes(entrada.para))
+  if (!(ESTAGIOS as readonly string[]).includes(entrada.para))
     return { ok: false, msg: "Estágio inválido." };
 
   const sb = createAdminClient();
@@ -130,33 +133,6 @@ export async function moverEstagio(entrada: {
 
   revalidatePath(ROTA);
   return { ok: true, msg: `Lead ${ROTULO_DESTINO[entrada.para]}.` };
-}
-
-/** Perdido com rede ligada e assinatura ainda em trial → volta a Trial. */
-export async function reabrirLead(id: string): Promise<Resultado> {
-  if (!(await sessaoMasterAtiva())) return SESSAO_EXPIRADA;
-  const sb = createAdminClient();
-  const lead = await lerLead(sb, id);
-  if (!lead) return { ok: false, msg: "Lead não encontrado." };
-  if (!podeMoverPara(lead, "trial"))
-    return { ok: false, msg: "Só dá para reabrir um lead perdido cuja rede ainda está em trial." };
-
-  const { data, error } = await sb.rpc("fn_crm_mover", {
-    p_id: id,
-    p_de: "perdido",
-    p_para: "trial",
-    p_motivo_perda: null,
-    p_texto: null,
-  });
-  if (error) {
-    console.error("[master/crm] reabrir:", error.message);
-    return { ok: false, msg: "Não foi possível reabrir o lead." };
-  }
-  const falha = mensagemDoMover(data as string | null);
-  if (falha) return falha;
-
-  revalidatePath(ROTA);
-  return { ok: true, msg: "Lead reaberto em Trial." };
 }
 
 export async function registrarInteracao(entrada: {

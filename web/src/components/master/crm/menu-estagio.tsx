@@ -10,8 +10,8 @@ import {
   type KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, Check, Loader2, Lock, Trash2 } from "lucide-react";
-import { excluirLeadSpam, reabrirLead } from "@/app/master/(console)/crm/actions";
+import { AlertTriangle, Check, Loader2, Trash2 } from "lucide-react";
+import { excluirLeadSpam } from "@/app/master/(console)/crm/actions";
 import { indiceAoTeclar, itensMenuEstagio, type DestinoMenu } from "@/lib/crm/menu-estagio";
 import type { LeadCrm } from "@/lib/crm/tipos";
 import { calcularPosMenu, estiloMenu, useFecharAoRolar } from "@/components/ui/menu-flutuante";
@@ -52,7 +52,6 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
   const raizRef = useRef<HTMLDivElement>(null);
   const itensRef = useRef<(HTMLButtonElement | null)[]>([]);
   const [focado, setFocado] = useState(0);
-  const [pendente, comecar] = useTransition();
   const [confirmando, setConfirmando] = useState(false);
   const [excluindo, comecarExclusao] = useTransition();
   const flutuante = modo === "flutuante";
@@ -120,19 +119,6 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
     itensRef.current[proximo]?.focus();
   }
 
-  function reabrir() {
-    comecar(async () => {
-      const r = await chamarAction(() => reabrirLead(lead.id));
-      if (r.ok) {
-        toast.sucesso(r.msg);
-        onAtualizado?.();
-        fechar(true);
-      } else {
-        toast.erro(r.msg);
-      }
-    });
-  }
-
   function fecharConfirmacao() {
     setConfirmando(false);
     itensRef.current[modelo.itens.length]?.focus({ preventScroll: true });
@@ -160,38 +146,25 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
 
   const conteudo = (
     <div ref={caixaRef} className={caixaClasse} onKeyDown={aoTeclar} tabIndex={-1}>
-      {modelo.itens.length === 0 && !modelo.podeExcluir ? (
-        <p className="flex items-start gap-2 px-2.5 py-2 text-sm text-texto-2">
-          <Lock className="w-4 h-4 mt-0.5 shrink-0" aria-hidden />
-          {modelo.bloqueio ?? "Este lead não muda de estágio à mão."}
-        </p>
-      ) : (
-        <>
-          <div role="menu" aria-label={`Estágio de ${lead.nome}`} aria-busy={pendente || undefined}>
+      <>
+          <div role="menu" aria-label={`Estágio de ${lead.nome}`}>
             {modelo.itens.map((item, i) => {
               const atual = item.tipo === "atual";
-              const ponto =
-                item.tipo === "atual"
-                  ? COR_ESTAGIO[item.estagio].ponto
-                  : item.tipo === "mover"
-                    ? COR_ESTAGIO[item.destino].ponto
-                    : COR_ESTAGIO.trial.ponto;
+              const ponto = COR_ESTAGIO[item.tipo === "atual" ? item.estagio : item.destino].ponto;
               return (
                 <button
-                  key={item.tipo === "mover" ? item.destino : item.tipo}
+                  key={item.tipo === "mover" ? item.destino : "atual"}
                   ref={(el) => {
                     itensRef.current[i] = el;
                   }}
                   type="button"
                   role="menuitemradio"
                   aria-checked={atual}
-                  aria-describedby={modelo.explicacao ? idExplicacao : undefined}
+                  aria-describedby={idExplicacao}
                   tabIndex={focado === i ? 0 : -1}
-                  disabled={pendente}
                   onFocus={() => setFocado(i)}
                   onClick={() => {
                     if (item.tipo === "atual") fechar(true);
-                    else if (item.tipo === "reabrir") reabrir();
                     else {
                       // Foco na âncora antes do pai abrir o DialogoPerda: a
                       // Folha dele guarda o foco atual para devolver ao fechar.
@@ -204,9 +177,6 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
                   <span aria-hidden className={`w-2 h-2 rounded-full shrink-0 ${ponto}`} />
                   <span className="flex-1">{item.rotulo}</span>
                   {atual && <Check className="w-4 h-4 text-brand-700" aria-hidden />}
-                  {item.tipo === "reabrir" && pendente && (
-                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
-                  )}
                 </button>
               );
             })}
@@ -220,7 +190,6 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
                   type="button"
                   role="menuitem"
                   tabIndex={focado === modelo.itens.length ? 0 : -1}
-                  disabled={pendente}
                   onFocus={() => setFocado(modelo.itens.length)}
                   onClick={() => setConfirmando(true)}
                   className={`${ITEM} text-perigo-texto hover:bg-perigo-bg focus:bg-perigo-bg`}
@@ -231,13 +200,10 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
               </>
             )}
           </div>
-          {modelo.explicacao && (
-            <p id={idExplicacao} className="mt-1 border-t border-borda px-2.5 pt-2 pb-1 text-xs text-texto-2">
-              {modelo.explicacao}
-            </p>
-          )}
-        </>
-      )}
+          <p id={idExplicacao} className="mt-1 border-t border-borda px-2.5 pt-2 pb-1 text-xs text-texto-2">
+            {modelo.explicacao}
+          </p>
+      </>
     </div>
   );
 

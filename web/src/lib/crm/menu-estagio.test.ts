@@ -21,57 +21,20 @@ function lead(
 }
 
 describe("itensMenuEstagio", () => {
-  it("livre: estágio atual marcado e os destinos possíveis, na ordem do funil", () => {
-    const m = itensMenuEstagio(lead("novo"));
-    expect(m.itens).toEqual([
-      { tipo: "atual", estagio: "novo", rotulo: "Novo" },
-      { tipo: "mover", destino: "em_contato", rotulo: "Em contato" },
-      { tipo: "mover", destino: "perdido", rotulo: "Perdido…" },
-    ]);
-    expect(m.explicacao).toBeNull();
-    expect(m.bloqueio).toBeNull();
-  });
-
-  it("perdido sem rede volta para novo ou em contato", () => {
-    const m = itensMenuEstagio(lead("perdido"));
-    expect(m.itens.map((i) => (i.tipo === "mover" ? i.destino : i.tipo))).toEqual([
+  it("todo estágio aparece, o atual marcado, na ordem do funil; perdido abre o motivo", () => {
+    const m = itensMenuEstagio(lead("ganho", { tenantId: "t1", assinaturaEstado: "ativa" }));
+    expect(m.itens.map((i) => (i.tipo === "atual" ? `[${i.estagio}]` : i.destino))).toEqual([
       "novo",
       "em_contato",
-      "atual",
+      "trial",
+      "[ganho]",
+      "perdido",
     ]);
+    expect(m.itens.find((i) => i.tipo === "mover" && i.destino === "perdido")?.rotulo).toBe("Perdido…");
   });
 
-  it("trial: um item só, com a explicação fora do menu", () => {
-    const m = itensMenuEstagio(lead("trial", { tenantId: "t1", assinaturaEstado: "trial" }));
-    expect(m.itens).toEqual([
-      { tipo: "mover", destino: "perdido", rotulo: "Perdido… (desistiu no teste)" },
-    ]);
-    expect(m.explicacao).toMatch(/automático/);
-  });
-
-  it("perdido com rede em trial: só Reabrir", () => {
-    const m = itensMenuEstagio(lead("perdido", { tenantId: "t1", assinaturaEstado: "trial" }));
-    expect(m.itens).toEqual([{ tipo: "reabrir", rotulo: "Reabrir (volta para Trial)" }]);
-  });
-
-  it("perdido com rede fora do trial e ganho: sem itens, com o motivo", () => {
-    const p = itensMenuEstagio(lead("perdido", { tenantId: "t1", assinaturaEstado: "cancelada" }));
-    expect(p.itens).toEqual([]);
-    expect(p.bloqueio).toMatch(/não está mais em trial/);
-
-    const g = itensMenuEstagio(lead("ganho", { tenantId: "t1", assinaturaEstado: "ativa" }));
-    expect(g.itens).toEqual([]);
-    expect(g.bloqueio).toMatch(/Ganho é automático/);
-  });
-
-  it("nunca oferece mover para o próprio estágio nem para trial ou ganho", () => {
-    for (const s of ["novo", "em_contato", "trial", "ganho", "perdido"] as const) {
-      for (const i of itensMenuEstagio(lead(s, { tenantId: "t1", assinaturaEstado: "trial" })).itens) {
-        if (i.tipo !== "mover") continue;
-        expect(i.destino).not.toBe(s);
-        expect(["novo", "em_contato", "perdido"]).toContain(i.destino);
-      }
-    }
+  it("explica que Trial e Ganho também mudam sozinhos", () => {
+    expect(itensMenuEstagio(lead("novo")).explicacao).toMatch(/sozinh/i);
   });
 
   it("excluir como spam só para lead do formulário sem rede e sem interação humana", () => {

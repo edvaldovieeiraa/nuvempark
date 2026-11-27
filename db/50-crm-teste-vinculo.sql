@@ -410,6 +410,12 @@ begin
     select count(*) into v_n from public.lead_interacoes where lead_id = l.id and texto like 'Importado: trial expirado em %';
     if v_n <> 1 then raise exception 'FALHOU: trial expirado sem a interação de importação'; end if;
 
+    -- card criado pela importação não conta como "nascido do vínculo": apagar a
+    -- rede só desliga o lead, não o apaga (db/51)
+    if l.vinculo_criou_lead then
+      raise exception 'FALHOU: card importado marcado como criado pelo vínculo';
+    end if;
+
     -- 29 dias → Trial desde o cadastro da rede
     select * into l from public.leads_site where tenant_id = (t->>'imp29')::uuid;
     if l.status <> 'trial' or l.estagio_em <> '2026-10-01T12:00:00Z'::timestamptz
