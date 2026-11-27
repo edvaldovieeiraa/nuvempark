@@ -171,10 +171,18 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
           row.suporta_regras_horario !== undefined &&
           row.suporta_regras_horario !== suporta
         ) {
-          await db
+          const { error: erroSuporte } = await db
             .from('dispositivos')
             .update({ suporta_regras_horario: suporta })
             .eq('id', row.id);
+          // Sem este log, uma falha deixaria o aparelho "sem suporte" para
+          // sempre na confirmação do painel, sem ninguém saber por quê.
+          if (erroSuporte) {
+            req.log.warn(
+              { err: erroSuporte, dispositivo: row.id },
+              'bootstrap: falha ao gravar suporta_regras_horario',
+            );
+          }
         }
         dispositivoOut = {
           status: row.status,

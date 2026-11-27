@@ -45,8 +45,9 @@ const cssSection: React.CSSProperties = {
   borderTop: "1px solid #EEF1F3",
 };
 const cssGrid3: React.CSSProperties = {
+  // Colunas pela classe "grid-cols-1 sm:grid-cols-3": no celular os campos
+  // empilham (o modal antigo de edição fazia isso).
   display: "grid",
-  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   gap: 16,
 };
 const cssBtnOutline: React.CSSProperties = {
@@ -164,7 +165,7 @@ function LinhaToggle({
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             style={{ overflow: "hidden" }}
           >
-            <div style={{ ...cssGrid3, marginTop: 14 }}>{children}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3" style={{ ...cssGrid3, marginTop: 14 }}>{children}</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -342,7 +343,7 @@ export function NovaTarifaForm({
         <ComoCobra valor={modalidade} aoMudar={setModalidade} travado={edicao} />
 
         {/* ── Básico ── */}
-        <div style={{ ...cssGrid3, marginTop: 18 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3" style={{ ...cssGrid3, marginTop: 18 }}>
           <Campo label="Nome">
             <input
               name="nome"
@@ -432,7 +433,7 @@ export function NovaTarifaForm({
         <p style={{ margin: "6px 0 0", fontSize: 12, color: "#56655B" }}>
           Quanto o cliente paga pelo tempo que fica no pátio.
         </p>
-        <div style={{ ...cssGrid3, marginTop: 12 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3" style={{ ...cssGrid3, marginTop: 12 }}>
           <Campo label="Fração inicial (min)">
             <input
               name="fracao_inicial_minutos"
@@ -450,7 +451,7 @@ export function NovaTarifaForm({
               style={cssInput}
             />
           </Campo>
-          <div />
+          <div className="hidden sm:block" />
           <Campo label="Fração adicional (min)">
             <input
               name="fracao_adicional_minutos"
@@ -468,7 +469,7 @@ export function NovaTarifaForm({
               style={cssInput}
             />
           </Campo>
-          <div />
+          <div className="hidden sm:block" />
         </div>
 
         {/* ── Regras opcionais (teto / pernoite) ── */}

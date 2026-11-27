@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import { env } from '../env.js';
+import { colunaAusente } from '../lib/coluna-ausente.js';
 import { regrasDoJson, type RegraHorario } from '../lib/tarifa-trechos.js';
 
 /**
@@ -177,14 +178,16 @@ export async function lerTarifaDoTicket(
   const base =
     'fracao_inicial_minutos, fracao_inicial_valor, fracao_adicional_minutos, fracao_adicional_valor, teto_diaria, tolerancia_minutos, pernoite_valor, pernoite_hora_inicio, pernoite_hora_fim';
   // `regras_horario` é da db/52. Banco sem a coluna: o select com ela falha, e
-  // a página ficaria sem valor — por isso a segunda tentativa sem ela.
+  // a página ficaria sem valor — por isso a segunda tentativa sem ela. SÓ
+  // nesse erro: com outro, seguir sem as regras cobraria um valor diferente
+  // do app.
   let campos = `${base}, regras_horario`;
 
   if (t.tabela_preco_id) {
     const porId = () =>
       servico.from('tarifas').select(campos).eq('id', t.tabela_preco_id!).maybeSingle();
     let { data, error } = await porId();
-    if (error) {
+    if (colunaAusente(error, 'regras_horario')) {
       campos = base;
       ({ data, error } = await porId());
     }
@@ -207,11 +210,11 @@ export async function lerTarifaDoTicket(
   // A reserva é sempre uma tabela AVULSA: a de hóspede pode ter a menor
   // `ordem` e não tem frações. Banco sem db/42 não tem a coluna: sem filtro.
   let { data, error } = await reserva().eq('modalidade', 'avulso').maybeSingle();
-  if (error && campos !== base) {
+  if (campos !== base && colunaAusente(error, 'regras_horario')) {
     campos = base;
     ({ data, error } = await reserva().eq('modalidade', 'avulso').maybeSingle());
   }
-  if (error) ({ data, error } = await reserva().maybeSingle());
+  if (colunaAusente(error, 'modalidade')) ({ data, error } = await reserva().maybeSingle());
 
   if (error) throw error;
   return data ? numerica(data as unknown as Record<string, unknown>) : null;
