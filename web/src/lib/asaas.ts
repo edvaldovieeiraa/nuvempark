@@ -138,6 +138,34 @@ export async function criarCobranca(params: {
   });
 }
 
+/**
+ * Estado de uma cobrança no Asaas, ou `null` se ela não existe (404).
+ * Qualquer outro erro sobe: quem chama decide se isso bloqueia o fluxo.
+ */
+export async function obterCobranca(
+  cobrancaId: string,
+): Promise<{ deleted?: boolean; status?: string } | null> {
+  try {
+    return await req<{ deleted?: boolean; status?: string }>(
+      `/payments/${encodeURIComponent(cobrancaId)}`,
+      { method: "GET" },
+    );
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith("Asaas 404")) return null;
+    throw e;
+  }
+}
+
+/**
+ * Exclui uma cobrança no Asaas (DELETE /v3/payments/{id}). Não estorna nada que
+ * já foi pago: só tira a cobrança do fluxo, e o Asaas para de lembrar o cliente.
+ */
+export async function excluirCobranca(cobrancaId: string): Promise<void> {
+  await req<{ deleted: boolean }>(`/payments/${encodeURIComponent(cobrancaId)}`, {
+    method: "DELETE",
+  });
+}
+
 export type PixCobranca = {
   copiaCola: string | null;
   /** base64 do PNG do QR (sem o prefixo data:). */

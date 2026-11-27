@@ -16,14 +16,21 @@ import {
   Rocket,
   Phone,
   IdCard,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import {
   criarTenant,
   mudarEstadoAssinatura,
   alternarTenantAtivo,
   ativarAssinatura,
   estenderTrial,
+  excluirTenant,
+  resumoExclusaoTenant,
   type Resultado,
+  type ResumoExclusao,
 } from "@/app/master/(console)/tenants/actions";
 import { useToast } from "@/components/ui/toast";
 import { Botao } from "@/components/ui/botao";
@@ -151,15 +158,16 @@ export function TenantsClient({ tenants }: { tenants: TenantRow[] }) {
 function LinhaTenant({ tenant }: { tenant: TenantRow }) {
   const toast = useToast();
   const [menu, setMenu] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
   const [paraCima, setParaCima] = useState(false);
   const botaoRef = useRef<HTMLButtonElement>(null);
   const [, comecar] = useTransition();
   const estado = ESTADOS[tenant.estadoAssinatura] ?? ESTADOS.ativa;
 
   function abrirMenu() {
-    // Abre pra cima se não houver espaço abaixo (menu ~230px de altura)
+    // Abre pra cima se não houver espaço abaixo (menu até ~370px no trial)
     const r = botaoRef.current?.getBoundingClientRect();
-    if (r) setParaCima(window.innerHeight - r.bottom < 240);
+    if (r) setParaCima(window.innerHeight - r.bottom < 380);
     setMenu((m) => !m);
   }
 
@@ -332,10 +340,32 @@ function LinhaTenant({ tenant }: { tenant: TenantRow }) {
                   <Power className="w-4 h-4" />
                   {tenant.ativo ? "Desativar rede" : "Reativar rede"}
                 </MenuItem>
+                <MenuItem
+                  perigo
+                  onClick={() => {
+                    setMenu(false);
+                    setExcluindo(true);
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Excluir rede
+                </MenuItem>
               </motion.div>
             </>
           )}
         </AnimatePresence>
+        {typeof document !== "undefined" &&
+          createPortal(
+            <AnimatePresence>
+              {excluindo && (
+                <ModalExcluirTenant
+                  tenantId={tenant.id}
+                  fechar={() => setExcluindo(false)}
+                />
+              )}
+            </AnimatePresence>,
+            document.body,
+          )}
       </td>
     </tr>
   );
@@ -379,6 +409,196 @@ function MenuItem({
     <button onClick={onClick} className={cls}>
       {children}
     </button>
+  );
+}
+
+/**
+ * Confirmação da exclusão definitiva. Mostra o que some junto (o que o master
+ * precisaria ter perguntado antes) e só libera o botão com o código da rede
+ * digitado. As mesmas guardas rodam de novo na action e no banco.
+ */
+function ModalExcluirTenant({
+  tenantId,
+  fechar,
+}: {
+  tenantId: string;
+  fechar: () => void;
+}) {
+  const toast = useToast();
+  const [resumo, setResumo] = useState<ResumoExclusao | null>(null);
+  const [codigo, setCodigo] = useState("");
+  const [pendente, comecar] = useTransition();
+
+  useEffect(() => {
+    let vivo = true;
+    resumoExclusaoTenant(tenantId)
+      .then((r) => vivo && setResumo(r))
+      .catch(() => vivo && setResumo({ ok: false, msg: "Não foi possível carregar a rede." }));
+    return () => {
+      vivo = false;
+    };
+  }, [tenantId]);
+
+  const bloqueio =
+    resumo?.ok === true
+      ? resumo.contaRevisao
+        ? "Esta é a conta de revisão das lojas de app e não pode ser excluída."
+        : resumo.ativo
+          ? "A rede está ativa. Desative pelo menu ⋮ antes de excluir."
+          : null
+      : null;
+  const confere = resumo?.ok === true && codigo.trim() === resumo.codigo;
+
+  function confirmar() {
+    if (!confere || pendente) return;
+    comecar(async () => {
+      const r = await excluirTenant(tenantId, codigo);
+      if (r?.ok) {
+        toast.sucesso("Rede excluída", r.msg);
+        fechar();
+      } else {
+        toast.erro("Não excluída", r?.msg ?? "Erro inesperado.");
+      }
+    });
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[90] grid place-items-center p-4 bg-noite/50 backdrop-blur-sm"
+      onClick={() => !pendente && fechar()}
+    >
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-excluir-rede"
+        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 16 }}
+        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-2xl bg-superficie shadow-[var(--shadow-pop)] p-6 max-h-[85dvh] overflow-y-auto text-left"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 id="titulo-excluir-rede" className="text-lg font-extrabold flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-perigo" />
+            Excluir rede
+          </h3>
+          <button
+            onClick={fechar}
+            disabled={pendente}
+            aria-label="Fechar"
+            className="toque-44 text-texto-3 hover:text-texto"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {!resumo ? (
+          <div className="py-10 grid place-items-center text-texto-3">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+        ) : !resumo.ok ? (
+          <p className="text-sm text-perigo">{resumo.msg}</p>
+        ) : (
+          <div className="space-y-4 text-sm">
+            <p className="text-texto-2">
+              <b className="text-texto">{resumo.nome}</b>{" "}
+              <span className="font-mono font-black tracking-[0.2em] text-texto-3">
+                {resumo.codigo}
+              </span>{" "}
+              sai do sistema para sempre. Não dá para desfazer.
+            </p>
+
+            <ul className="rounded-xl border border-borda bg-fundo px-4 py-3 space-y-1.5 text-texto-2">
+              <li>
+                <b className="text-texto tabular-nums">{resumo.patios}</b>{" "}
+                {resumo.patios === 1 ? "pátio" : "pátios"} e{" "}
+                <b className="text-texto tabular-nums">{resumo.tickets}</b>{" "}
+                {resumo.tickets === 1 ? "ticket" : "tickets"}, com caixa, tarifas, aparelhos e fotos
+              </li>
+              {resumo.faturasPagas > 0 && (
+                <li className="text-aviso font-semibold">
+                  {resumo.faturasPagas}{" "}
+                  {resumo.faturasPagas === 1 ? "fatura paga sai" : "faturas pagas saem"} do
+                  histórico financeiro
+                </li>
+              )}
+              {resumo.cobrancasAbertas.length > 0 && (
+                <li className={resumo.asaasLigado ? "" : "text-aviso font-semibold"}>
+                  {resumo.cobrancasAbertas.length}{" "}
+                  {resumo.cobrancasAbertas.length === 1
+                    ? "cobrança em aberto no Asaas"
+                    : "cobranças em aberto no Asaas"}
+                  {resumo.asaasLigado
+                    ? " (são excluídas lá antes)"
+                    : `: Asaas desligado aqui, cancele à mão (${resumo.cobrancasAbertas.join(", ")})`}
+                </li>
+              )}
+              <li>
+                {resumo.logins.length === 0 ? (
+                  "Nenhum login de painel"
+                ) : (
+                  <>
+                    Perdem o acesso:{" "}
+                    <span className="text-texto break-all">{resumo.logins.join(", ")}</span>
+                  </>
+                )}
+              </li>
+              <li className="text-texto-3">O lead do CRM fica, desligado da rede.</li>
+            </ul>
+
+            {bloqueio ? (
+              <p className="flex items-start gap-2 rounded-xl bg-aviso-bg border border-aviso/25 px-3 py-2.5 text-aviso font-semibold">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                {bloqueio}
+              </p>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  confirmar();
+                }}
+                className="space-y-3"
+              >
+                <Campo label={`Digite o código ${resumo.codigo} para confirmar`}>
+                  <Input
+                    value={codigo}
+                    onChange={(e) => setCodigo(e.target.value)}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    autoFocus
+                    maxLength={4}
+                    className="font-mono tracking-[0.3em]"
+                  />
+                </Campo>
+                <div className="flex gap-2">
+                  <Botao
+                    type="button"
+                    variante="fantasma"
+                    onClick={fechar}
+                    disabled={pendente}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Botao>
+                  <Botao
+                    variante="perigo"
+                    disabled={!confere}
+                    carregando={pendente}
+                    className="flex-1"
+                  >
+                    Excluir para sempre
+                  </Botao>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 }
 
