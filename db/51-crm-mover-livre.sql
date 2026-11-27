@@ -24,6 +24,8 @@
 
 -- ----------------------------------------------------------------------------
 -- 1) fn_crm_mover com movimento livre
+--    `p_de` é o compare-and-set: só grava se o estágio ainda for o que a tela leu.
+--    Ganho à mão vale para qualquer lead, com ou sem rede ligada (de propósito).
 -- ----------------------------------------------------------------------------
 create or replace function public.fn_crm_mover(
   p_id           uuid,

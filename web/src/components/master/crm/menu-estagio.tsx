@@ -146,64 +146,62 @@ function MenuAberto({ lead, ancora, modo = "flutuante", onFechar, onEscolher, on
 
   const conteudo = (
     <div ref={caixaRef} className={caixaClasse} onKeyDown={aoTeclar} tabIndex={-1}>
-      <>
-          <div role="menu" aria-label={`Estágio de ${lead.nome}`}>
-            {modelo.itens.map((item, i) => {
-              const atual = item.tipo === "atual";
-              const ponto = COR_ESTAGIO[item.tipo === "atual" ? item.estagio : item.destino].ponto;
-              return (
-                <button
-                  key={item.tipo === "mover" ? item.destino : "atual"}
-                  ref={(el) => {
-                    itensRef.current[i] = el;
-                  }}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={atual}
-                  aria-describedby={idExplicacao}
-                  tabIndex={focado === i ? 0 : -1}
-                  onFocus={() => setFocado(i)}
-                  onClick={() => {
-                    if (item.tipo === "atual") fechar(true);
-                    else {
-                      // Foco na âncora antes do pai abrir o DialogoPerda: a
-                      // Folha dele guarda o foco atual para devolver ao fechar.
-                      fechar(true);
-                      onEscolher(item.destino);
-                    }
-                  }}
-                  className={ITEM}
-                >
-                  <span aria-hidden className={`w-2 h-2 rounded-full shrink-0 ${ponto}`} />
-                  <span className="flex-1">{item.rotulo}</span>
-                  {atual && <Check className="w-4 h-4 text-brand-700" aria-hidden />}
-                </button>
-              );
-            })}
-            {modelo.podeExcluir && (
-              <>
-                {modelo.itens.length > 0 && <div role="separator" className="my-1 h-px bg-borda" />}
-                <button
-                  ref={(el) => {
-                    itensRef.current[modelo.itens.length] = el;
-                  }}
-                  type="button"
-                  role="menuitem"
-                  tabIndex={focado === modelo.itens.length ? 0 : -1}
-                  onFocus={() => setFocado(modelo.itens.length)}
-                  onClick={() => setConfirmando(true)}
-                  className={`${ITEM} text-perigo-texto hover:bg-perigo-bg focus:bg-perigo-bg`}
-                >
-                  <Trash2 className="w-4 h-4 shrink-0" aria-hidden />
-                  <span className="flex-1">Excluir: é spam</span>
-                </button>
-              </>
-            )}
-          </div>
-          <p id={idExplicacao} className="mt-1 border-t border-borda px-2.5 pt-2 pb-1 text-xs text-texto-2">
-            {modelo.explicacao}
-          </p>
-      </>
+        <div role="menu" aria-label={`Estágio de ${lead.nome}`}>
+          {modelo.itens.map((item, i) => {
+            const atual = item.tipo === "atual";
+            const ponto = COR_ESTAGIO[item.tipo === "atual" ? item.estagio : item.destino].ponto;
+            return (
+              <button
+                key={item.tipo === "mover" ? item.destino : "atual"}
+                ref={(el) => {
+                  itensRef.current[i] = el;
+                }}
+                type="button"
+                role="menuitemradio"
+                aria-checked={atual}
+                aria-describedby={idExplicacao}
+                tabIndex={focado === i ? 0 : -1}
+                onFocus={() => setFocado(i)}
+                onClick={() => {
+                  if (item.tipo === "atual") fechar(true);
+                  else {
+                    // Foco na âncora antes do pai abrir o DialogoPerda: a
+                    // Folha dele guarda o foco atual para devolver ao fechar.
+                    fechar(true);
+                    onEscolher(item.destino);
+                  }
+                }}
+                className={ITEM}
+              >
+                <span aria-hidden className={`w-2 h-2 rounded-full shrink-0 ${ponto}`} />
+                <span className="flex-1">{item.rotulo}</span>
+                {atual && <Check className="w-4 h-4 text-brand-700" aria-hidden />}
+              </button>
+            );
+          })}
+          {modelo.podeExcluir && (
+            <>
+              {modelo.itens.length > 0 && <div role="separator" className="my-1 h-px bg-borda" />}
+              <button
+                ref={(el) => {
+                  itensRef.current[modelo.itens.length] = el;
+                }}
+                type="button"
+                role="menuitem"
+                tabIndex={focado === modelo.itens.length ? 0 : -1}
+                onFocus={() => setFocado(modelo.itens.length)}
+                onClick={() => setConfirmando(true)}
+                className={`${ITEM} text-perigo-texto hover:bg-perigo-bg focus:bg-perigo-bg`}
+              >
+                <Trash2 className="w-4 h-4 shrink-0" aria-hidden />
+                <span className="flex-1">Excluir: é spam</span>
+              </button>
+            </>
+          )}
+        </div>
+        <p id={idExplicacao} className="mt-1 border-t border-borda px-2.5 pt-2 pb-1 text-xs text-texto-2">
+          {modelo.explicacao}
+        </p>
     </div>
   );
 

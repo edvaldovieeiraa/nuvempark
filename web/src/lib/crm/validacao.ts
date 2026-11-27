@@ -3,7 +3,6 @@ import { MOTIVOS_MANUAIS, podeMoverPara, type DestinoManual } from "@/lib/crm/re
 import {
   TIPOS_INTERACAO_MANUAL,
   type Estagio,
-  type EstadoAssinatura,
   type MotivoPerda,
   type TipoInteracaoManual,
 } from "@/lib/crm/tipos";
@@ -19,7 +18,7 @@ export const LIMITE_TEXTO = 4000;
 export const LIMITE_ACAO = 200;
 
 export function validarMovimento(
-  lead: { status: Estagio; tenantId: string | null; assinaturaEstado: EstadoAssinatura | null },
+  lead: { status: Estagio },
   entrada: { de: Estagio; para: DestinoManual; motivoPerda?: MotivoPerda | null; texto?: string | null },
 ): { ok: true } | Falha {
   if (lead.status !== entrada.de)
