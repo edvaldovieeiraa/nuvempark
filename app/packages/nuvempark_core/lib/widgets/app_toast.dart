@@ -21,6 +21,25 @@ class AppToast {
     _show(context, message, _azul, Icons.info_outline);
   }
 
+  /// Informação com uma AÇÃO (ex.: "Imprimir" quando o pátio pede para
+  /// perguntar). Mesmo tempo longo do [errorAcao], para dar tempo de tocar.
+  static void infoAcao(
+    BuildContext context,
+    String message, {
+    required String acaoLabel,
+    required VoidCallback onAcao,
+  }) {
+    _show(
+      context,
+      message,
+      _azul,
+      Icons.print_outlined,
+      acaoLabel: acaoLabel,
+      onAcao: onAcao,
+      duration: const Duration(seconds: 8),
+    );
+  }
+
   /// Erro com uma AÇÃO (ex.: "Reimprimir"). Fica visível por mais tempo para o
   /// operador ter tempo de tocar. Usado por trabalhos de fundo (impressão) que
   /// falham depois da tela ter saído.

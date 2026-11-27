@@ -3,6 +3,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { tenantClient } from '../supabase.js';
 import { getAssinaturaStatus } from '../lib/assinatura.js';
 import { flagsModoRapido } from '../lib/modo-rapido.js';
+import { modosRecibo } from '../lib/modos-recibo.js';
 import { tarifaVaiParaApp, versaoRegrasDeclarada } from '../lib/regras-horario-bootstrap.js';
 
 /**
@@ -29,9 +30,10 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
     // Pátio
     const { data: patio, error: patioErr } = await db
       .from('patios')
-      // modo_rapido_*: colunas da db/43 — aplicar a migração ANTES desta API.
+      // modo_rapido_*: colunas da db/43; recibo_*_modo: db/53 — aplicar as
+      // migrações ANTES desta API (coluna ausente derruba o bootstrap de todos).
       .select(
-        'id, nome, codigo, qtd_vagas, ativo, foto_recibo_modo, modo_quiosque, modo_rapido_entrada, modo_rapido_imprime',
+        'id, nome, codigo, qtd_vagas, ativo, foto_recibo_modo, modo_quiosque, modo_rapido_entrada, modo_rapido_imprime, recibo_saida_modo, recibo_estadia_modo, recibo_caixa_modo',
       )
       .eq('id', patioId)
       .maybeSingle();
@@ -267,6 +269,15 @@ export async function bootstrapRoutes(app: FastifyInstance): Promise<void> {
           'desativada',
         modo_quiosque:
           (patio as { modo_quiosque?: boolean }).modo_quiosque ?? false,
+        // Impressão automática dos recibos (db/53): automatica | perguntar |
+        // desativada. App anterior à 1.0.4 ignora e continua imprimindo.
+        ...modosRecibo(
+          patio as {
+            recibo_saida_modo?: string | null;
+            recibo_estadia_modo?: string | null;
+            recibo_caixa_modo?: string | null;
+          },
+        ),
         // Modo rápido de entrada: o pátio libera e diz se imprime o cupom.
         ...flagsModoRapido(
           patio as {

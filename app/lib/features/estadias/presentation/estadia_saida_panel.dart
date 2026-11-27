@@ -184,6 +184,7 @@ class _EstadiaSaidaPanelState extends ConsumerState<EstadiaSaidaPanel> {
         cabecalho: p.ticketCabecalho,
         rodape: p.ticketRodape,
       ),
+      modo: p.reciboEstadiaModo,
     );
     AppToast.success(context, 'Saída registrada!');
     fecharSaida(context);

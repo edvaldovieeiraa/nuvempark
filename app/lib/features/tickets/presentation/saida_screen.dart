@@ -18,6 +18,7 @@ import '../../patio/domain/patio_model.dart';
 import '../../patio/domain/tarifa_config.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/data/print_templates.dart';
+import '../../printing/domain/modo_impressao.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tarifa/domain/fare_result.dart';
 import '../../vouchers/data/liberacao_service.dart';
@@ -551,6 +552,10 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
     required PatioModel patio,
     required bool isIsento,
   }) async {
+    // Parametrização do pátio (painel): desativada não imprime; perguntar
+    // grava igual e só oferece o botão "Imprimir".
+    final modo = patio.reciboSaidaModo;
+    if (modo == ModoImpressao.desativada) return;
     final printer =
         await printerFuture.catchError((_) => const PrinterState());
     if (!printer.temImpressora) return;
@@ -569,6 +574,18 @@ class _SaidaScreenState extends ConsumerState<SaidaScreen> {
       cabecalho: patio.ticketCabecalho,
       rodape: patio.ticketRodape,
     );
+    if (modo == ModoImpressao.perguntar) {
+      final ctx = rootNavigatorKey.currentContext;
+      if (ctx != null && ctx.mounted) {
+        AppToast.infoAcao(
+          ctx,
+          'Saída registrada. Imprimir o recibo?',
+          acaoLabel: 'Imprimir',
+          onAcao: () => _tentarImprimir(printerNotifier, bytes),
+        );
+      }
+      return;
+    }
     await _tentarImprimir(printerNotifier, bytes);
   }
 

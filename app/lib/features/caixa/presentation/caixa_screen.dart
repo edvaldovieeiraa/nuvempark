@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/brisa.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/data/print_templates.dart';
+import '../../printing/domain/modo_impressao.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../domain/caixa_model.dart';
 import '../domain/resumo_fechamento.dart';
@@ -668,15 +669,36 @@ class CaixaScreen extends ConsumerWidget {
     // Imprime o relatório (se houver impressora). Mesmo helper da reimpressão.
     // Falha de impressão NÃO invalida o fechamento — ele já está gravado; o
     // operador reimprime pelo botão da tela de caixa fechado.
-    final impresso = await _imprimirFechamento(ref, s, res, fechamento);
-    if (context.mounted && impresso == false) {
-      AppToast.error(context,
-          'Caixa fechado, mas o cupom não saiu. Use "Reimprimir último fechamento".');
+    // Parametrização do pátio: só a impressão AUTOMÁTICA depende dela; o
+    // "Reimprimir último fechamento" vale em qualquer modo.
+    final modo = ref.read(patioNotifierProvider).value?.reciboCaixaModo ??
+        ModoImpressao.automatica;
+    if (modo == ModoImpressao.automatica) {
+      final impresso = await _imprimirFechamento(ref, s, res, fechamento);
+      if (context.mounted && impresso == false) {
+        AppToast.error(context,
+            'Caixa fechado, mas o cupom não saiu. Use "Reimprimir último fechamento".');
+      }
     }
 
     // Conferência PERSISTENTE — fica na tela até o operador confirmar. Antes era
     // só um toast que sumia em ~2s ("as validações não apareciam").
     if (context.mounted) await _dialogResultado(context, res);
+
+    if (modo == ModoImpressao.perguntar && context.mounted) {
+      AppToast.infoAcao(
+        context,
+        'Imprimir o relatório do fechamento?',
+        acaoLabel: 'Imprimir',
+        onAcao: () async {
+          final impresso = await _imprimirFechamento(ref, s, res, fechamento);
+          if (context.mounted && impresso == false) {
+            AppToast.error(context,
+                'O cupom não saiu. Use "Reimprimir último fechamento".');
+          }
+        },
+      );
+    }
   }
 
   /// Monta e envia o cupom de fechamento. Reutilizado no fechamento e na

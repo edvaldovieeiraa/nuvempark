@@ -131,6 +131,7 @@ class _ConverterEstadiaSheetState extends ConsumerState<ConverterEstadiaSheet> {
           cabecalho: patio.ticketCabecalho,
           rodape: patio.ticketRodape,
         ),
+        modo: patio.reciboEstadiaModo,
       );
     }
     Navigator.of(context).pop(true);

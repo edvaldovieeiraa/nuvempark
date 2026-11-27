@@ -15,6 +15,7 @@ import {
   Building2,
   MonitorSmartphone,
   Zap,
+  Receipt,
   type LucideIcon,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
@@ -56,6 +57,35 @@ const OPCOES: OpcaoModo[] = [
     titulo: "Impressão desativada",
     descricao: "A foto do veículo nunca é impressa no recibo.",
     Icone: CircleSlash,
+  },
+];
+
+/* Impressão automática dos recibos de pagamento (db/53). */
+type ModoRecibo = "automatica" | "perguntar" | "desativada";
+type Recibos = { saida: ModoRecibo; estadia: ModoRecibo; caixa: ModoRecibo };
+
+const MODOS_RECIBO: { valor: ModoRecibo; rotulo: string }[] = [
+  { valor: "automatica", rotulo: "Automática" },
+  { valor: "perguntar", rotulo: "Perguntar" },
+  { valor: "desativada", rotulo: "Não imprimir" },
+];
+
+const RECIBOS: { chave: keyof Recibos; titulo: string; descricao: string }[] = [
+  {
+    chave: "saida",
+    titulo: "Recibo da saída",
+    descricao: "O recibo do pagamento quando o carro sai.",
+  },
+  {
+    chave: "estadia",
+    titulo: "Comprovante de estadia",
+    descricao:
+      "Ao cobrar a estadia do hóspede: conversão, renovação e saída. Se a renovação já põe o carro para dentro, o cupom de entrada sai sempre.",
+  },
+  {
+    chave: "caixa",
+    titulo: "Fechamento de caixa",
+    descricao: "O relatório impresso ao fechar o caixa.",
   },
 ];
 
@@ -130,12 +160,14 @@ export function ParametrizacaoClient({
   modoInicial,
   quiosqueInicial,
   rapidoInicial,
+  recibosIniciais,
 }: {
   patioId: string | null;
   patioNome: string | null;
   modoInicial: ModoFoto;
   quiosqueInicial: boolean;
   rapidoInicial: boolean;
+  recibosIniciais: Recibos;
 }) {
   const toast = useToast();
   const [salvando, iniciarSalvar] = useTransition();
@@ -145,11 +177,19 @@ export function ParametrizacaoClient({
   const [quiosque, setQuiosque] = useState(quiosqueInicial);
   const [rapidoInic, setRapidoInic] = useState(rapidoInicial);
   const [rapido, setRapido] = useState(rapidoInicial);
+  const [recibosInic, setRecibosInic] = useState<Recibos>(recibosIniciais);
+  const [recibos, setRecibos] = useState<Recibos>(recibosIniciais);
+
+  const recibosSujos =
+    recibos.saida !== recibosInic.saida ||
+    recibos.estadia !== recibosInic.estadia ||
+    recibos.caixa !== recibosInic.caixa;
 
   const sujo =
     modoFoto !== inicial ||
     quiosque !== quiosqueInic ||
-    rapido !== rapidoInic;
+    rapido !== rapidoInic ||
+    recibosSujos;
 
   const salvar = () => {
     if (!patioId) {
@@ -161,11 +201,15 @@ export function ParametrizacaoClient({
         fotoReciboModo: modoFoto,
         modoQuiosque: quiosque,
         modoRapidoEntrada: rapido,
+        reciboSaidaModo: recibos.saida,
+        reciboEstadiaModo: recibos.estadia,
+        reciboCaixaModo: recibos.caixa,
       });
       if (r.ok) {
         setInicial(modoFoto);
         setQuiosqueInic(quiosque);
         setRapidoInic(rapido);
+        setRecibosInic(recibos);
         toast.sucesso("Parametrização salva.");
       } else {
         toast.erro(r.erro ?? "Não foi possível salvar.");
@@ -388,6 +432,106 @@ export function ParametrizacaoClient({
         </div>
       </section>
 
+      {/* Feature 1b — Impressão automática dos recibos de pagamento */}
+      <section style={cardStyle}>
+        <div style={cardHeaderStyle}>
+          <span
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 11,
+              background: "#DCFCE7",
+              color: "#16A34A",
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Receipt style={{ width: 20, height: 20 }} />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>
+              Impressão de recibos
+            </div>
+            <div style={{ fontSize: 12, color: "#8695A0" }}>
+              O que o app faz depois de registrar o pagamento. Reimprimir pela
+              tela continua disponível em qualquer opção. Vale a partir do app
+              1.0.4.
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {RECIBOS.map((r, i) => (
+            <div
+              key={r.chave}
+              className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+              style={{
+                padding: "14px 18px",
+                borderTop: i === 0 ? "none" : "1px solid #EEF1F4",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>{r.titulo}</div>
+                <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
+                  {r.descricao}
+                </div>
+              </div>
+              <div
+                role="radiogroup"
+                aria-label={r.titulo}
+                style={{
+                  display: "flex",
+                  flexShrink: 0,
+                  gap: 4,
+                  padding: 4,
+                  borderRadius: 12,
+                  background: "#F1F4F6",
+                  border: "1px solid #E4E8EC",
+                }}
+              >
+                {MODOS_RECIBO.map((m) => {
+                  const sel = recibos[r.chave] === m.valor;
+                  return (
+                    <button
+                      key={m.valor}
+                      type="button"
+                      role="radio"
+                      aria-checked={sel}
+                      onClick={() =>
+                        setRecibos((atual) => ({ ...atual, [r.chave]: m.valor }))
+                      }
+                      style={{
+                        flex: 1,
+                        minHeight: 40,
+                        padding: "0 12px",
+                        borderRadius: 9,
+                        border: "none",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        transition: "background .15s, color .15s",
+                        background: sel
+                          ? m.valor === "desativada"
+                            ? "#6B7280"
+                            : "#16A34A"
+                          : "transparent",
+                        color: sel ? "#fff" : "#6B7280",
+                        boxShadow: sel
+                          ? "0 2px 6px -2px rgba(16,27,20,.3)"
+                          : "none",
+                      }}
+                    >
+                      {m.rotulo}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Feature 2 — Modo quiosque do Android */}
       <section style={cardStyle}>
         <div style={cardHeaderStyle}>
@@ -546,6 +690,7 @@ export function ParametrizacaoClient({
                   setModoFoto(inicial);
                   setQuiosque(quiosqueInic);
                   setRapido(rapidoInic);
+                  setRecibos(recibosInic);
                 }}
                 disabled={salvando}
                 style={{

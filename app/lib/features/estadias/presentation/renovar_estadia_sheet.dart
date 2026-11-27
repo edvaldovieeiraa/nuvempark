@@ -8,6 +8,7 @@ import '../../../database/app_database.dart';
 import '../../caixa/presentation/providers/caixa_provider.dart';
 import '../../patio/presentation/providers/patio_provider.dart';
 import '../../printing/data/print_templates.dart';
+import '../../printing/domain/modo_impressao.dart';
 import '../domain/estadia_engine.dart';
 import '../data/estadia_repository.dart';
 import 'estadia_acoes.dart';
@@ -206,6 +207,11 @@ class _RenovarEstadiaSheetState extends ConsumerState<RenovarEstadiaSheet> {
                 cabecalho: patio.ticketCabecalho,
                 rodape: patio.ticketRodape,
               ),
+        // Com carro entrando, o papel é o cupom de entrada (o QR da saída):
+        // sai sempre. Só o comprovante avulso obedece à parametrização.
+        modo: ticketNovo != null
+            ? ModoImpressao.automatica
+            : patio.reciboEstadiaModo,
       );
     }
     Navigator.of(context).pop(true);

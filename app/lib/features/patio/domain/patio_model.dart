@@ -1,3 +1,4 @@
+import '../../printing/domain/modo_impressao.dart';
 import 'tarifa_config.dart';
 
 /// Modelo do pátio montado a partir do cache (config) + tarifas.
@@ -18,6 +19,9 @@ class PatioModel {
     this.fotoReciboModo = 'desativada',
     this.modoQuiosque = false,
     this.modoRapidoEntrada = false,
+    this.reciboSaidaModo = ModoImpressao.automatica,
+    this.reciboEstadiaModo = ModoImpressao.automatica,
+    this.reciboCaixaModo = ModoImpressao.automatica,
   });
 
   /// Monta o pátio a partir do cache do bootstrap (`OperacaoCache.configJson`
@@ -50,6 +54,9 @@ class PatioModel {
       fotoReciboModo: (config['foto_recibo_modo'] as String?) ?? 'desativada',
       modoQuiosque: (config['modo_quiosque'] as bool?) ?? false,
       modoRapidoEntrada: (config['modo_rapido_entrada'] as bool?) ?? false,
+      reciboSaidaModo: ModoImpressao.parse(config['recibo_saida_modo']),
+      reciboEstadiaModo: ModoImpressao.parse(config['recibo_estadia_modo']),
+      reciboCaixaModo: ModoImpressao.parse(config['recibo_caixa_modo']),
     );
   }
 
@@ -75,6 +82,18 @@ class PatioModel {
 
   /// O operador escolhe na entrada se imprime a foto.
   bool get fotoReciboOperadorDecide => fotoReciboModo == 'operador';
+
+  /// Recibo da saída avulsa (parametrização do painel, por pátio).
+  final ModoImpressao reciboSaidaModo;
+
+  /// Comprovantes de estadia: saída de hóspede, conversão e renovação sem
+  /// entrada. A renovação que já põe o carro para dentro imprime o cupom de
+  /// entrada (com o QR da saída) em qualquer modo.
+  final ModoImpressao reciboEstadiaModo;
+
+  /// Relatório do fechamento de caixa. "Reimprimir último fechamento" vale
+  /// em qualquer modo.
+  final ModoImpressao reciboCaixaModo;
 
   /// Modo quiosque (Lock Task) do Android ligado para este pátio.
   final bool modoQuiosque;

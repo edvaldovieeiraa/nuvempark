@@ -83,6 +83,10 @@ class BootstrapRepository {
       'foto_recibo_modo': configJson['foto_recibo_modo'],
       'modo_quiosque': configJson['modo_quiosque'],
       'modo_rapido_entrada': configJson['modo_rapido_entrada'],
+      // Impressão dos recibos: 'automatica' | 'perguntar' | 'desativada'.
+      'recibo_saida_modo': configJson['recibo_saida_modo'],
+      'recibo_estadia_modo': configJson['recibo_estadia_modo'],
+      'recibo_caixa_modo': configJson['recibo_caixa_modo'],
       // modo_rapido_imprime ainda chega da API (APKs até a 1.0.0+18 leem),
       // mas a escolha agora é do aparelho: não entra no cache.
     });

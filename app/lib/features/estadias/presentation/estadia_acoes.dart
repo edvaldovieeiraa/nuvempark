@@ -7,6 +7,7 @@ import 'package:nuvempark_core/nuvempark_core.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../caixa/presentation/providers/caixa_provider.dart';
+import '../../printing/domain/modo_impressao.dart';
 import '../../printing/presentation/providers/printer_provider.dart';
 import '../../tickets/presentation/providers/ticket_provider.dart';
 import '../data/estadia_repository.dart';
@@ -75,18 +76,39 @@ Future<bool> executarCobrancaEstadia(
 
 /// Impressão fora do caminho crítico (como a entrada): a gravação já valeu;
 /// falha de impressora vira aviso pelo navigator raiz.
+///
+/// [modo] vem da parametrização do pátio: `perguntar` troca a impressão por um
+/// aviso com o botão "Imprimir"; `desativada` não imprime.
 void imprimirEmSegundoPlano(
   WidgetRef ref,
-  List<int> Function(PrinterState printer) montar,
-) {
+  List<int> Function(PrinterState printer) montar, {
+  ModoImpressao modo = ModoImpressao.automatica,
+}) {
+  if (modo == ModoImpressao.desativada) return;
   final printerFuture = ref.read(printerNotifierProvider.future);
   final printerNotifier = ref.read(printerNotifierProvider.notifier);
   unawaited(() async {
     final printer = await printerFuture.catchError((_) => const PrinterState());
     if (!printer.temImpressora) return;
-    final ok = await printerNotifier.print(montar(printer));
-    if (ok) return;
-    final ctx = rootNavigatorKey.currentContext;
-    if (ctx != null && ctx.mounted) AppToast.error(ctx, 'Falha ao imprimir o comprovante.');
+    final bytes = montar(printer);
+    Future<void> imprimir() async {
+      final ok = await printerNotifier.print(bytes);
+      if (ok) return;
+      final ctx = rootNavigatorKey.currentContext;
+      if (ctx != null && ctx.mounted) {
+        AppToast.errorAcao(ctx, 'Falha ao imprimir o comprovante.',
+            acaoLabel: 'Reimprimir', onAcao: imprimir);
+      }
+    }
+
+    if (modo == ModoImpressao.perguntar) {
+      final ctx = rootNavigatorKey.currentContext;
+      if (ctx != null && ctx.mounted) {
+        AppToast.infoAcao(ctx, 'Imprimir o comprovante?',
+            acaoLabel: 'Imprimir', onAcao: imprimir);
+      }
+      return;
+    }
+    await imprimir();
   }());
 }
