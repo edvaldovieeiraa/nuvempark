@@ -8,9 +8,7 @@
 --   ❌ qualquer falha para o script com "FALHOU: <o quê>". Nada fica gravado.
 --
 -- As redes de teste se chamam "Teste 50 …", os e-mails são @exemplo.invalid e
--- os telefones têm DDD 00. Toda conferência é limitada a esses dados, menos a
--- primeira (contagem de Ganho = redes pagantes), que vale para a base inteira
--- e só é garantida logo depois da importação da 48.
+-- os telefones têm DDD 00. Toda conferência é limitada a esses dados.
 --
 -- Ensaio antes de aplicar de verdade (com a 47 já aplicada):
 --   begin;  <db/48>  <db/50>  rollback;
@@ -39,20 +37,9 @@ declare
 begin
   begin  -- subtransação: desfeita no fim pelo sentinela '__crm_ok__'
 
-    ---------------------------------------------------------------------------
-    -- 0) "Pronto quando": Ganho ligado a rede = redes pagantes (sem revisão)
-    ---------------------------------------------------------------------------
-    select count(*) into v_n
-      from public.leads_site ls
-      join public.tenants tt on tt.id = ls.tenant_id and tt.conta_revisao = false
-     where ls.status = 'ganho';
-    select count(*) into v_n2
-      from public.assinaturas a
-      join public.tenants tt on tt.id = a.tenant_id and tt.conta_revisao = false
-     where a.estado in ('ativa', 'atrasada', 'suspensa');
-    if v_n <> v_n2 then
-      raise exception 'FALHOU: % cards em Ganho ligados a rede, mas % redes pagantes', v_n, v_n2;
-    end if;
+    -- (A checagem "Ganho ligado = redes pagantes" saiu com a db/51: com o
+    -- movimento livre, o master tira de Ganho, por exemplo, uma rede ativada só
+    -- para estender o teste. Ela valeu logo depois da importação, em 26/11/2026.)
 
     -- Telefones e e-mails dos casos
     for r in select unnest(array['liga_email','liga_tel','cria','cancela','perdido','master',
