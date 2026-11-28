@@ -50,19 +50,26 @@ export function CallbackHandler() {
       const refreshToken = hash.get("refresh_token");
 
       if (accessToken && refreshToken) {
-        // O clique no link confirma o e-mail. Não mantemos a sessão aqui —
-        // por decisão de UX, o usuário faz o primeiro login com e-mail+senha
-        // (assim ele fixa a senha na memória). Encerramos a sessão temporária
-        // e mandamos pro login com aviso de sucesso.
+        // O clique no link confirma o e-mail E já entra: guardamos a sessão
+        // (o cliente do navegador grava nos cookies, que o middleware lê) e
+        // abrimos o painel direto. O tenant_id está no app_metadata desde o
+        // cadastro, então o JWT já chega com ele. `replace` tira da história
+        // a URL com os tokens no fragmento.
         const supabase = createClient();
-        await supabase.auth.setSession({
+        const { error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         });
-        await supabase.auth.signOut();
+        if (error) {
+          // Sessão não pegou, mas o e-mail já foi confirmado no clique:
+          // segue o caminho antigo (login com aviso de sucesso).
+          router.replace("/login?confirmado=1");
+          return;
+        }
         setEstado({ tipo: "sucesso" });
         setTimeout(() => {
-          router.push("/login?confirmado=1");
+          router.replace("/painel");
+          router.refresh();
         }, 1200);
         return;
       }
@@ -98,7 +105,7 @@ export function CallbackHandler() {
               E-mail confirmado! 🎉
             </h1>
             <p className="mt-2 text-sm text-texto-2">
-              Tudo certo. Levando você para o login…
+              Tudo certo. Abrindo seu painel…
             </p>
             <Loader2 className="w-5 h-5 text-brand-500 animate-spin mx-auto mt-4" />
           </>
