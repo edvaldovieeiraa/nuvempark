@@ -43,26 +43,63 @@ const TOM_ACAO = {
  * Arrastar (spec crm-temperatura, req. 1–8): só com `arrastavel` (kanban de
  * desktop com mouse). Do `useDraggable` entram só a ref e os `listeners`: os
  * `attributes` poriam `role="button"` num `<article>` que já tem botões, e o
- * caminho acessível para mover continua sendo o ⋮. `estatico` é a cópia que
- * segue o mouse (`DragOverlay`): sem ⋮, `aria-hidden` e `inert`.
+ * caminho acessível para mover continua sendo o ⋮.
+ *
+ * O `useDraggable` mora só aqui, e não no visual: a cópia que segue o mouse
+ * (`CrmCardCopia`, dentro do `DragOverlay`) não pode registrar o mesmo id no
+ * dnd-kit, senão sobrescreve o nó do original e, num segundo arrasto do mesmo
+ * card sem remontar, a cópia não aparece.
  */
-export function CrmCard({
+export function CrmCard(props: PropsCard & { movendo?: boolean; arrastavel?: boolean }) {
+  const { lead, movendo = false, arrastavel = false } = props;
+  const { setNodeRef, listeners, isDragging } = useDraggable({
+    id: lead.id,
+    data: { status: lead.status },
+    disabled: !arrastavel || movendo,
+  });
+  return (
+    <CartaoVisual
+      {...props}
+      movendo={movendo}
+      arrastavel={arrastavel}
+      refNo={setNodeRef}
+      listeners={arrastavel ? listeners : undefined}
+      fantasma={isDragging}
+    />
+  );
+}
+
+/** A cópia do `DragOverlay`: sem ⋮, `aria-hidden`, `inert` e sem dnd-kit. */
+export function CrmCardCopia({ lead, agora }: { lead: LeadCrm; agora: string }) {
+  return <CartaoVisual lead={lead} agora={agora} estatico onAbrir={() => {}} onAbrirMenu={() => {}} />;
+}
+
+type PropsCard = {
+  lead: LeadCrm;
+  /** ISO vindo da página do servidor; o card nunca lê o relógio. */
+  agora: string;
+  onAbrir: (id: string, gatilho: HTMLElement) => void;
+  onAbrirMenu: (lead: LeadCrm, botao: HTMLElement) => void;
+};
+
+function CartaoVisual({
   lead,
   agora,
   movendo = false,
   arrastavel = false,
   estatico = false,
+  fantasma = false,
+  refNo,
+  listeners,
   onAbrir,
   onAbrirMenu,
-}: {
-  lead: LeadCrm;
-  /** ISO vindo da página do servidor; o card nunca lê o relógio. */
-  agora: string;
+}: PropsCard & {
   movendo?: boolean;
   arrastavel?: boolean;
   estatico?: boolean;
-  onAbrir: (id: string, gatilho: HTMLElement) => void;
-  onAbrirMenu: (lead: LeadCrm, botao: HTMLElement) => void;
+  fantasma?: boolean;
+  refNo?: (el: HTMLElement | null) => void;
+  listeners?: ReturnType<typeof useDraggable>["listeners"];
 }) {
   const agoraD = new Date(agora);
   const subtitulo = subtituloCard(lead);
@@ -71,14 +108,9 @@ export function CrmCard({
   const quandoAcao = textoProximaAcao(lead.proximaAcaoEm, agoraD);
   const varAcao = varianteProximaAcao(lead.proximaAcaoEm, agoraD);
   const vencido = temAlertaVencido(lead, agoraD);
-  const { setNodeRef, listeners, isDragging } = useDraggable({
-    id: lead.id,
-    data: { status: lead.status },
-    disabled: !arrastavel || movendo || estatico,
-  });
   // O original fica no lugar, tracejado, enquanto a cópia segue o mouse:
   // a coluna não pula.
-  const borda = isDragging
+  const borda = fantasma
     ? "border-dashed border-borda-campo opacity-45 shadow-none"
     : estatico
       ? "border-brand-700 shadow-[var(--shadow-pop)]"
@@ -87,8 +119,8 @@ export function CrmCard({
         : "border-borda";
   return (
     <article
-      ref={estatico ? undefined : setNodeRef}
-      {...(arrastavel && !estatico ? listeners : {})}
+      ref={refNo}
+      {...(listeners ?? {})}
       data-lead-id={estatico ? undefined : lead.id}
       aria-busy={movendo || undefined}
       aria-hidden={estatico || undefined}

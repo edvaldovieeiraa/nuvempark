@@ -10,11 +10,12 @@ import {
   useSensors,
   type Announcements,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { Zap } from "lucide-react";
 import { arrastoLigado, decidirSoltura, estagioDaColuna, idColuna } from "@/lib/crm/arrastar";
-import { CrmCard } from "@/components/master/crm/crm-card";
+import { CrmCard, CrmCardCopia } from "@/components/master/crm/crm-card";
 import { useArrastoMouse } from "@/components/master/crm/use-arrasto-mouse";
 import { COR_ESTAGIO, ESTAGIOS_COM_JANELA, FOCO } from "@/components/master/crm/cores-estagio";
 import { ordenarColuna } from "@/lib/crm/ordenacao";
@@ -63,6 +64,9 @@ export function CrmKanban({
 }: Props) {
   const mouse = useArrastoMouse();
   const [arrastando, setArrastando] = useState<LeadCrm | null>(null);
+  // Sobre outra coluna (fora Perdido) o card muda de lugar na hora (otimista):
+  // a cópia não volta animada para a origem, que já não existe.
+  const [vaiMudar, setVaiMudar] = useState(false);
   // Soltar o card não pode abrir o painel: o clique que às vezes vem junto
   // com o mouseup é ignorado até o próximo quadro.
   const acabouDeArrastar = useRef(false);
@@ -102,7 +106,13 @@ export function CrmKanban({
   const leadPorId = useMemo(() => new Map(leads.map((l) => [l.id, l] as const)), [leads]);
 
   function aoComecar(ev: DragStartEvent) {
+    setVaiMudar(false);
     setArrastando(leadPorId.get(String(ev.active.id)) ?? null);
+  }
+  function aoPassar(ev: DragOverEvent) {
+    const lead = leadPorId.get(String(ev.active.id));
+    const s = lead ? decidirSoltura(lead, estagioDaColuna(ev.over?.id ?? null)) : null;
+    setVaiMudar(s?.tipo === "mover");
   }
   function aoTerminar(ev: DragEndEvent) {
     const lead = leadPorId.get(String(ev.active.id));
@@ -144,7 +154,8 @@ export function CrmKanban({
               lead={l}
               agora={agora}
               movendo={movendoId === l.id}
-              arrastavel={arrastar && podeArrastar}
+              // Um movimento por vez: com um card em voo, ninguém arrasta.
+              arrastavel={arrastar && podeArrastar && !movendoId}
               onAbrir={abrir}
               onAbrirMenu={onAbrirMenu}
             />
@@ -164,8 +175,12 @@ export function CrmKanban({
           <DndContext
             sensors={sensores}
             onDragStart={aoComecar}
+            onDragOver={aoPassar}
             onDragEnd={aoTerminar}
-            onDragCancel={() => setArrastando(null)}
+            onDragCancel={() => {
+              setArrastando(null);
+              setVaiMudar(false);
+            }}
             accessibility={{ announcements: anuncios, screenReaderInstructions: { draggable: "" } }}
           >
             <div
@@ -197,9 +212,9 @@ export function CrmKanban({
             </div>
             {/* A cópia que segue o mouse: fora das colunas (o `isolate` delas
                 prenderia o z-index), estática e escondida do leitor de tela. */}
-            <DragOverlay dropAnimation={{ duration: 150, easing: "ease-out" }}>
+            <DragOverlay dropAnimation={vaiMudar ? null : { duration: 150, easing: "ease-out" }}>
               {arrastando ? (
-                <CrmCard lead={arrastando} agora={agora} estatico onAbrir={() => {}} onAbrirMenu={() => {}} />
+                <CrmCardCopia lead={arrastando} agora={agora} />
               ) : null}
             </DragOverlay>
           </DndContext>
