@@ -21,7 +21,8 @@ export type MenuEstagioModelo = {
 };
 
 export const EXPLICACAO_AUTOMATICOS =
-  "Trial e Ganho também mudam sozinhos: conta criada vira Trial; assinatura ativada vira Ganho.";
+  "Trial e Ganho também mudam sozinhos: conta criada vira Trial; assinatura ativada vira Ganho. " +
+  "No computador, também dá para arrastar o card.";
 
 export function itensMenuEstagio(lead: { status: Estagio }): MenuEstagioModelo {
   return {

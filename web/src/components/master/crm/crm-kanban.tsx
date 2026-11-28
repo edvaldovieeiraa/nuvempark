@@ -1,8 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type Announcements,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 import { Zap } from "lucide-react";
+import { arrastoLigado, decidirSoltura, estagioDaColuna, idColuna } from "@/lib/crm/arrastar";
 import { CrmCard } from "@/components/master/crm/crm-card";
+import { useArrastoMouse } from "@/components/master/crm/use-arrasto-mouse";
 import { COR_ESTAGIO, ESTAGIOS_COM_JANELA, FOCO } from "@/components/master/crm/cores-estagio";
 import { ordenarColuna } from "@/lib/crm/ordenacao";
 import { ROTULO_ESTAGIO } from "@/lib/crm/rotulos";
@@ -23,6 +36,8 @@ type Props = {
   onAbrir: (id: string, gatilho: HTMLElement) => void;
   onAbrirMenu: (lead: LeadCrm, botao: HTMLElement) => void;
   onVerTodos: (e: "ganho" | "perdido") => void;
+  /** Soltou numa coluna: o mesmo caminho do ⋮ (Perdido abre o motivo). */
+  onSoltar: (lead: LeadCrm, destino: Estagio) => void;
 };
 
 const AUTOMATICOS: readonly Estagio[] = ["trial", "ganho"];
@@ -44,7 +59,21 @@ export function CrmKanban({
   onAbrir,
   onAbrirMenu,
   onVerTodos,
+  onSoltar,
 }: Props) {
+  const mouse = useArrastoMouse();
+  const [arrastando, setArrastando] = useState<LeadCrm | null>(null);
+  // Soltar o card não pode abrir o painel: o clique que às vezes vem junto
+  // com o mouseup é ignorado até o próximo quadro.
+  const acabouDeArrastar = useRef(false);
+  const abrir = useCallback(
+    (id: string, gatilho: HTMLElement) => {
+      if (acabouDeArrastar.current) return;
+      onAbrir(id, gatilho);
+    },
+    [onAbrir],
+  );
+  const sensores = useSensors(useSensor(MouseSensor, { activationConstraint: { distance: 6 } }));
   const colunas = useMemo(() => {
     const agoraD = new Date(agora);
     const por = Object.fromEntries(ESTAGIOS.map((e) => [e, [] as LeadCrm[]])) as Record<
@@ -63,8 +92,46 @@ export function CrmKanban({
     : praHoje
       ? ESTAGIOS.filter((e) => colunas[e].length > 0)
       : [...ESTAGIOS];
+  // Com um estágio escolhido na faixa não há para onde soltar (revisão 1, item 4).
+  const podeArrastar = mouse && arrastoLigado(estagio ? 1 : ESTAGIOS.length);
+  // Durante o arrasto com "Pra hoje", as colunas escondidas voltam como faixas
+  // estreitas de soltar.
+  const naTela = arrastando && !estagio ? [...ESTAGIOS] : visiveis;
+  const estreita = (e: Estagio) => !!arrastando && !visiveis.includes(e);
 
-  const cards = (e: Estagio) =>
+  const leadPorId = useMemo(() => new Map(leads.map((l) => [l.id, l] as const)), [leads]);
+
+  function aoComecar(ev: DragStartEvent) {
+    setArrastando(leadPorId.get(String(ev.active.id)) ?? null);
+  }
+  function aoTerminar(ev: DragEndEvent) {
+    const lead = leadPorId.get(String(ev.active.id));
+    setArrastando(null);
+    acabouDeArrastar.current = true;
+    requestAnimationFrame(() => {
+      acabouDeArrastar.current = false;
+    });
+    if (!lead) return;
+    const destino = estagioDaColuna(ev.over?.id ?? null);
+    const s = decidirSoltura(lead, destino, movendoId === lead.id);
+    if (s.tipo === "pedirMotivo") onSoltar(lead, "perdido");
+    else if (s.tipo === "mover") onSoltar(lead, s.destino);
+  }
+
+  const nomeDe = (id: string | number) => leadPorId.get(String(id))?.nome ?? "Card";
+  const colunaDe = (id: string | number | undefined | null) => {
+    const e = estagioDaColuna(id ?? null);
+    return e ? ROTULO_ESTAGIO[e] : null;
+  };
+  const anuncios: Announcements = {
+    onDragStart: ({ active }) => `${nomeDe(active.id)} pego.`,
+    onDragOver: ({ active, over }) => (colunaDe(over?.id) ? `${nomeDe(active.id)} sobre ${colunaDe(over?.id)}.` : undefined),
+    onDragEnd: ({ active, over }) =>
+      colunaDe(over?.id) ? `${nomeDe(active.id)} solto em ${colunaDe(over?.id)}.` : `${nomeDe(active.id)} solto fora das colunas.`,
+    onDragCancel: ({ active }) => `Arrasto de ${nomeDe(active.id)} cancelado.`,
+  };
+
+  const cards = (e: Estagio, arrastar = false) =>
     colunas[e].length === 0 ? (
       <p className="px-2 py-6 text-center text-xs text-texto-2">{textoColunaVazia(e)}</p>
     ) : (
@@ -77,7 +144,8 @@ export function CrmKanban({
               lead={l}
               agora={agora}
               movendo={movendoId === l.id}
-              onAbrir={onAbrir}
+              arrastavel={arrastar && podeArrastar}
+              onAbrir={abrir}
               onAbrirMenu={onAbrirMenu}
             />
           </li>
@@ -93,20 +161,48 @@ export function CrmKanban({
         {visiveis.length === 0 ? (
           <p className="py-10 text-center text-sm text-texto-2">Nada pendente para hoje.</p>
         ) : (
-          <div
-            className="grid gap-3 items-start"
-            // Poucas colunas (estágio escolhido, "Pra hoje") não esticam a
-            // tela toda: um card de 900 px de largura não se lê.
-            style={{
-              gridTemplateColumns: `repeat(${visiveis.length}, minmax(176px, ${visiveis.length <= 2 ? "360px" : "1fr"}))`,
-            }}
+          <DndContext
+            sensors={sensores}
+            onDragStart={aoComecar}
+            onDragEnd={aoTerminar}
+            onDragCancel={() => setArrastando(null)}
+            accessibility={{ announcements: anuncios, screenReaderInstructions: { draggable: "" } }}
           >
-            {visiveis.map((e) => (
-              <Coluna key={e} estagio={e} total={colunas[e].length} onVerTodos={onVerTodos}>
-                {cards(e)}
-              </Coluna>
-            ))}
-          </div>
+            <div
+              // Durante o arrasto as colunas esticam até a mais alta: soltar
+              // abaixo do último card ainda cai na coluna (revisão 1, item 4).
+              className={`grid gap-3 ${arrastando ? "items-stretch" : "items-start"}`}
+              // Poucas colunas (estágio escolhido, "Pra hoje") não esticam a
+              // tela toda: um card de 900 px de largura não se lê.
+              style={{
+                gridTemplateColumns: naTela
+                  .map((e) =>
+                    estreita(e) ? "minmax(88px, 104px)" : `minmax(176px, ${visiveis.length <= 2 ? "360px" : "1fr"})`,
+                  )
+                  .join(" "),
+              }}
+            >
+              {naTela.map((e) => (
+                <Coluna
+                  key={e}
+                  estagio={e}
+                  total={colunas[e].length}
+                  onVerTodos={onVerTodos}
+                  soltavel={podeArrastar}
+                  estreita={estreita(e)}
+                >
+                  {estreita(e) ? null : cards(e, true)}
+                </Coluna>
+              ))}
+            </div>
+            {/* A cópia que segue o mouse: fora das colunas (o `isolate` delas
+                prenderia o z-index), estática e escondida do leitor de tela. */}
+            <DragOverlay dropAnimation={{ duration: 150, easing: "ease-out" }}>
+              {arrastando ? (
+                <CrmCard lead={arrastando} agora={agora} estatico onAbrir={() => {}} onAbrirMenu={() => {}} />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
       </div>
 
@@ -161,32 +257,47 @@ function Coluna({
   estagio,
   total,
   onVerTodos,
+  soltavel = false,
+  estreita = false,
   children,
 }: {
   estagio: Estagio;
   total: number;
   onVerTodos: (e: "ganho" | "perdido") => void;
+  soltavel?: boolean;
+  /** Coluna escondida pelo "Pra hoje" que volta só durante o arrasto. */
+  estreita?: boolean;
   children: React.ReactNode;
 }) {
   const id = useId();
+  const { setNodeRef, isOver, active } = useDroppable({ id: idColuna(estagio), disabled: !soltavel });
+  // "Soltar aqui" só numa coluna diferente da do card.
+  const alvo = isOver && !!active && active.data.current?.status !== estagio;
+  const fundo = alvo ? "bg-brand-50" : "bg-fundo";
   return (
     <section
+      ref={setNodeRef}
       aria-labelledby={id}
       data-coluna={estagio}
-      className="min-w-0 max-h-[calc(100dvh-19rem)] min-h-[240px] overflow-y-auto [scrollbar-width:thin] rounded-2xl border border-borda bg-fundo"
+      className={`min-w-0 max-h-[calc(100dvh-19rem)] min-h-[240px] overflow-y-auto [scrollbar-width:thin] rounded-2xl border border-borda transition-shadow ${fundo} ${
+        alvo ? "ring-2 ring-brand-700" : ""
+      }`}
     >
-      <header className="sticky top-0 z-30 bg-fundo px-3 pt-3 pb-2 border-b border-borda">
+      <header className={`sticky top-0 z-30 px-3 pt-3 pb-2 border-b border-borda ${fundo}`}>
         {/* tabIndex -1: recebe o foco quando o último card da coluna é excluído. */}
         <h2 id={id} tabIndex={-1} data-coluna-titulo={estagio} className="flex items-center gap-1.5 text-sm font-extrabold text-texto outline-none">
           <span aria-hidden className={`w-2 h-2 rounded-full ${COR_ESTAGIO[estagio].ponto}`} />
           {ROTULO_ESTAGIO[estagio]}
-          <span className="ml-auto min-w-[22px] h-[22px] px-1.5 rounded-full grid place-items-center bg-superficie border border-borda text-xs font-extrabold tabular-nums text-texto-2">
-            <span className="sr-only">, </span>
-            {total}
-            <span className="sr-only"> {total === 1 ? "lead" : "leads"}</span>
-          </span>
+          {!estreita && (
+            <span className="ml-auto min-w-[22px] h-[22px] px-1.5 rounded-full grid place-items-center bg-superficie border border-borda text-xs font-extrabold tabular-nums text-texto-2">
+              <span className="sr-only">, </span>
+              {total}
+              <span className="sr-only"> {total === 1 ? "lead" : "leads"}</span>
+            </span>
+          )}
         </h2>
-        {(ehJanela(estagio) || AUTOMATICOS.includes(estagio)) && (
+        {alvo && <p className="mt-1 text-[11px] font-bold text-brand-700">Soltar aqui</p>}
+        {!alvo && !estreita && (ehJanela(estagio) || AUTOMATICOS.includes(estagio)) && (
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
             {ehJanela(estagio) && (
               <span className="text-[11px] text-texto-2">últimos 30 dias</span>

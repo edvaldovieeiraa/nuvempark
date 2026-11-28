@@ -518,6 +518,7 @@ export function CrmClient({ leads, agora, erro, estagioCompleto, visaoInicial, e
         onAbrir={abrir}
         onAbrirMenu={(lead, botao) => setMenu({ lead, ancora: botao })}
         onVerTodos={verTodos}
+        onSoltar={escolher}
       />
     );
 

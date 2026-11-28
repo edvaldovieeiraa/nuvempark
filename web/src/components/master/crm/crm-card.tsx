@@ -1,5 +1,6 @@
 "use client";
 
+import { useDraggable } from "@dnd-kit/core";
 import { CalendarClock, Clock, Loader2, MoreVertical } from "lucide-react";
 import { alertaTrial, temAlertaVencido, varianteProximaAcao } from "@/lib/crm/prazos";
 import {
@@ -38,11 +39,19 @@ const TOM_ACAO = {
  * Card do kanban (design doc, tela 1). O nome é o botão que abre o painel, e
  * a área dele cobre o card inteiro (`::after`); o ⋮ fica por cima dela.
  * Nenhuma regra mora aqui: cor, borda e textos vêm de `lib/crm`.
+ *
+ * Arrastar (spec crm-temperatura, req. 1–8): só com `arrastavel` (kanban de
+ * desktop com mouse). Do `useDraggable` entram só a ref e os `listeners`: os
+ * `attributes` poriam `role="button"` num `<article>` que já tem botões, e o
+ * caminho acessível para mover continua sendo o ⋮. `estatico` é a cópia que
+ * segue o mouse (`DragOverlay`): sem ⋮, `aria-hidden` e `inert`.
  */
 export function CrmCard({
   lead,
   agora,
   movendo = false,
+  arrastavel = false,
+  estatico = false,
   onAbrir,
   onAbrirMenu,
 }: {
@@ -50,6 +59,8 @@ export function CrmCard({
   /** ISO vindo da página do servidor; o card nunca lê o relógio. */
   agora: string;
   movendo?: boolean;
+  arrastavel?: boolean;
+  estatico?: boolean;
   onAbrir: (id: string, gatilho: HTMLElement) => void;
   onAbrirMenu: (lead: LeadCrm, botao: HTMLElement) => void;
 }) {
@@ -60,12 +71,30 @@ export function CrmCard({
   const quandoAcao = textoProximaAcao(lead.proximaAcaoEm, agoraD);
   const varAcao = varianteProximaAcao(lead.proximaAcaoEm, agoraD);
   const vencido = temAlertaVencido(lead, agoraD);
+  const { setNodeRef, listeners, isDragging } = useDraggable({
+    id: lead.id,
+    data: { status: lead.status },
+    disabled: !arrastavel || movendo || estatico,
+  });
+  // O original fica no lugar, tracejado, enquanto a cópia segue o mouse:
+  // a coluna não pula.
+  const borda = isDragging
+    ? "border-dashed border-borda-campo opacity-45 shadow-none"
+    : estatico
+      ? "border-brand-700 shadow-[var(--shadow-pop)]"
+      : vencido
+        ? "border-borda-vencido"
+        : "border-borda";
   return (
     <article
-      data-lead-id={lead.id}
+      ref={estatico ? undefined : setNodeRef}
+      {...(arrastavel && !estatico ? listeners : {})}
+      data-lead-id={estatico ? undefined : lead.id}
       aria-busy={movendo || undefined}
-      className={`relative flex flex-col gap-2 rounded-xl border bg-superficie pl-3 pr-2.5 pt-3 pb-2.5 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-card-hover)] ${
-        vencido ? "border-borda-vencido" : "border-borda"
+      aria-hidden={estatico || undefined}
+      inert={estatico || undefined}
+      className={`relative flex flex-col gap-2 rounded-xl border bg-superficie pl-3 pr-2.5 pt-3 pb-2.5 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-card-hover)] ${borda} ${
+        estatico ? "cursor-grabbing motion-safe:-rotate-2" : ""
       }`}
     >
       <div className="flex items-start gap-1">
@@ -76,7 +105,7 @@ export function CrmCard({
             <button
               type="button"
               onClick={(e) => onAbrir(lead.id, e.currentTarget)}
-              className="block w-full text-left text-sm font-bold leading-snug text-texto break-words outline-none after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-brand-700"
+              className={`block w-full ${arrastavel ? "cursor-grab" : ""} text-left text-sm font-bold leading-snug text-texto break-words outline-none after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-brand-700`}
             >
               <span className="line-clamp-2">{lead.nome}</span>
             </button>
@@ -84,8 +113,11 @@ export function CrmCard({
           {subtitulo && <p className="mt-px text-xs text-texto-2 break-words">{subtitulo}</p>}
         </div>
 
+        {!estatico && (
         <button
           type="button"
+          // O ⋮ nunca começa um arrasto (o listener é do <article>).
+          onMouseDown={(e) => e.stopPropagation()}
           aria-haspopup="menu"
           aria-label={`Mudar estágio de ${lead.nome}`}
           disabled={movendo}
@@ -94,6 +126,7 @@ export function CrmCard({
         >
           <MoreVertical className="w-4 h-4" aria-hidden />
         </button>
+        )}
       </div>
 
       {(selo || lead.temperatura) && (
